@@ -1,0 +1,9 @@
+# Internal authoring aids — NOT shipped to the published manual.
+platform/_authoring/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

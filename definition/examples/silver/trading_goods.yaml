@@ -1,0 +1,836 @@
+# Generado automáticamente por OneConnect ASK Ingestor
+---
+id: silver_ecc_sd_trading_goods
+internal_id: ecc_100_32
+db_table_name: SILVER_TRADING_GOODS
+layer: silver
+version: '1'
+source_system: ecc
+source_system_no: 100
+business_process: ORDER TO CASH
+module: SD
+name: trading_goods
+classification: M
+description: Material Master for trading goods with descriptions, sales data, units of measure, and status. Used for product-level sales analysis, material catalog filtering, availability cross-reference, and UoM resolution.
+entity_role: dimension
+grain:
+  entity_grain:
+  - MATNR
+  - SPRAS
+  - MEINH
+  - STATM
+  - ZHLER
+  - VKORG
+  - VTWEG
+  business_grain: trading_goods_item
+composed_of:
+- bronze_ecc_makt_description_material
+- bronze_ecc_mara_master_material
+- bronze_ecc_marm_material_unit_measurement
+- bronze_ecc_msta_status_material
+- bronze_ecc_mvke_material_sales_data
+join_graph:
+- left_table: MARA
+  right_table: MAKT
+  join_type: INNER
+  condition: MARA.MATNR = MAKT.MATNR
+  sequence: 2
+- left_table: MARA
+  right_table: MARM
+  join_type: INNER
+  condition: MARA.MATNR = MARM.MATNR
+  sequence: 4
+- left_table: MARA
+  right_table: MSTA
+  join_type: LEFT OUTER
+  condition: MARA.MATNR = MSTA.MATNR
+  sequence: 5
+- left_table: MARA
+  right_table: MVKE
+  join_type: LEFT OUTER
+  condition: MARA.MATNR = MVKE.MATNR
+  sequence: 3
+fields:
+- name: mandt_makt
+  source: MAKT.MANDT
+  field_role: dimension
+  type: C3
+  description: Client
+- name: matnr_makt
+  source: MAKT.MATNR
+  field_role: identifier
+  type: C18
+  description: Material
+- name: spras_makt
+  source: MAKT.SPRAS
+  field_role: identifier
+  type: C1
+  description: Language Key
+- name: maktx_makt
+  source: MAKT.MAKTX
+  field_role: dimension
+  type: C40
+  description: Descr.
+- name: maktg_makt
+  source: MAKT.MAKTG
+  field_role: dimension
+  type: C40
+  description: Descr.
+- name: mandt_mara
+  source: MARA.MANDT
+  field_role: dimension
+  type: C3
+  description: Client
+- name: matnr_mara
+  source: MARA.MATNR
+  field_role: identifier
+  type: C18
+  description: Material
+- name: ersda_mara
+  source: MARA.ERSDA
+  field_role: timestamp
+  type: D8
+  description: Created On
+- name: ernam_mara
+  source: MARA.ERNAM
+  field_role: dimension
+  type: C12
+  description: Name Respon. Creat. Obj.
+- name: laeda_mara
+  source: MARA.LAEDA
+  field_role: timestamp
+  type: D8
+  description: Last Chg.
+- name: aenam_mara
+  source: MARA.AENAM
+  field_role: dimension
+  type: C12
+  description: By
+- name: vpsta_mara
+  source: MARA.VPSTA
+  field_role: dimension
+  type: C15
+  description: Maint.stat
+- name: lvorm_mara
+  source: MARA.LVORM
+  field_role: dimension
+  type: C1
+  description: Client lvl
+- name: mtart_mara
+  source: MARA.MTART
+  field_role: dimension
+  type: C4
+  description: Material Typ
+- name: matkl_mara
+  source: MARA.MATKL
+  field_role: dimension
+  type: C9
+  description: Matl Group
+- name: bismt_mara
+  source: MARA.BISMT
+  field_role: dimension
+  type: C18
+  description: Matl no.
+- name: meins_mara
+  source: MARA.MEINS
+  field_role: dimension
+  type: C3
+  description: Unit
+- name: zeiar_mara
+  source: MARA.ZEIAR
+  field_role: dimension
+  type: C3
+  description: Doc.type
+- name: zeifo_mara
+  source: MARA.ZEIFO
+  field_role: dimension
+  type: C4
+  description: Format
+- name: blatt_mara
+  source: MARA.BLATT
+  field_role: dimension
+  type: C3
+  description: Page No.
+- name: blanz_mara
+  source: MARA.BLANZ
+  field_role: dimension
+  type: N3
+  description: No. Sheets
+- name: wrkst_mara
+  source: MARA.WRKST
+  field_role: dimension
+  type: C48
+  description: Basic matl
+- name: brgew_mara
+  source: MARA.BRGEW
+  field_role: measure
+  type: P13
+  description: Gross
+- name: ntgew_mara
+  source: MARA.NTGEW
+  field_role: measure
+  type: P13
+  description: Net Weight
+- name: gewei_mara
+  source: MARA.GEWEI
+  field_role: dimension
+  type: C3
+  description: WeightUnit
+- name: volum_mara
+  source: MARA.VOLUM
+  field_role: measure
+  type: P13
+  description: Volume
+- name: voleh_mara
+  source: MARA.VOLEH
+  field_role: dimension
+  type: C3
+  description: VolumeUnit
+- name: disst_mara
+  source: MARA.DISST
+  field_role: dimension
+  type: C3
+  description: L-L code
+- name: wesch_mara
+  source: MARA.WESCH
+  field_role: measure
+  type: P13
+  description: Quantity
+- name: laeng_mara
+  source: MARA.LAENG
+  field_role: measure
+  type: P13
+  description: Length
+- name: meabm_mara
+  source: MARA.MEABM
+  field_role: dimension
+  type: C3
+  description: Unit
+- name: prdha_mara
+  source: MARA.PRDHA
+  field_role: dimension
+  type: C18
+  description: Product Hierarchy
+- name: aeklk_mara
+  source: MARA.AEKLK
+  field_role: dimension
+  type: C1
+  description: Net Change
+- name: ergei_mara
+  source: MARA.ERGEI
+  field_role: dimension
+  type: C3
+  description: Unit
+- name: ervoe_mara
+  source: MARA.ERVOE
+  field_role: dimension
+  type: C3
+  description: VolumeUnit
+- name: volto_mara
+  source: MARA.VOLTO
+  field_role: measure
+  type: P3
+  description: Ex.vol.tol
+- name: kzkfg_mara
+  source: MARA.KZKFG
+  field_role: dimension
+  type: C1
+  description: Conf Matl
+- name: xchpf_mara
+  source: MARA.XCHPF
+  field_role: dimension
+  type: C1
+  description: Batch mgmt
+- name: vhart_mara
+  source: MARA.VHART
+  field_role: dimension
+  type: C4
+  description: PkgMtlType
+- name: magrv_mara
+  source: MARA.MAGRV
+  field_role: dimension
+  type: C4
+  description: Mat.Grp PM
+- name: datab_mara
+  source: MARA.DATAB
+  field_role: timestamp
+  type: D8
+  description: Valid From
+- name: liqdt_mara
+  source: MARA.LIQDT
+  field_role: timestamp
+  type: D8
+  description: Valid To
+- name: mstdv_mara
+  source: MARA.MSTDV
+  field_role: timestamp
+  type: D8
+  description: Valid from
+- name: inhme_mara
+  source: MARA.INHME
+  field_role: dimension
+  type: C3
+  description: Cont. unit
+- name: cmeth_mara
+  source: MARA.CMETH
+  field_role: dimension
+  type: C1
+  description: Conv. Meth
+- name: cuobf_mara
+  source: MARA.CUOBF
+  field_role: dimension
+  type: N18
+  description: Int.obj.no
+- name: kosch_mara
+  source: MARA.KOSCH
+  field_role: dimension
+  type: C18
+  description: Prod.all.
+- name: bmatn_mara
+  source: MARA.BMATN
+  field_role: dimension
+  type: C18
+  description: Int. no.
+- name: saity_mara
+  source: MARA.SAITY
+  field_role: dimension
+  type: C2
+  description: Rollout
+- name: kzgvh_mara
+  source: MARA.KZGVH
+  field_role: dimension
+  type: C1
+  description: Closed
+- name: xgchp_mara
+  source: MARA.XGCHP
+  field_role: dimension
+  type: C1
+  description: Batch rec.
+- name: kzeff_mara
+  source: MARA.KZEFF
+  field_role: dimension
+  type: C1
+  description: Eff.values
+- name: matfi_mara
+  source: MARA.MATFI
+  field_role: dimension
+  type: C1
+  description: Locked
+- name: cmrel_mara
+  source: MARA.CMREL
+  field_role: dimension
+  type: C1
+  description: CM rel.
+- name: weora_mara
+  source: MARA.WEORA
+  field_role: dimension
+  type: C1
+  description: Orig. Acc.
+- name: whstc_mara
+  source: MARA.WHSTC
+  field_role: dimension
+  type: C2
+  description: Condition
+- name: whmatgr_mara
+  source: MARA.WHMATGR
+  field_role: dimension
+  type: C4
+  description: WHMatGrp
+- name: maxdim_uom_mara
+  source: MARA.MAXDIM_UOM
+  field_role: dimension
+  type: C3
+  description: UoM
+- name: qqtimeuom_mara
+  source: MARA.QQTIMEUOM
+  field_role: dimension
+  type: C3
+  description: Time Unit
+- name: logunit_mara
+  source: MARA.LOGUNIT
+  field_role: dimension
+  type: C3
+  description: Log. UoM
+- name: cwqrel_mara
+  source: MARA.CWQREL
+  field_role: dimension
+  type: C1
+  description: CW-Relev.
+- name: cwqproc_mara
+  source: MARA.CWQPROC
+  field_role: dimension
+  type: C2
+  description: CW Profile
+- name: cwqtolgr_mara
+  source: MARA.CWQTOLGR
+  field_role: dimension
+  type: C9
+  description: Tol. Group
+- name: loglev_reto_mara
+  source: MARA.LOGLEV_RETO
+  field_role: dimension
+  type: C1
+  description: To LogLvl
+- name: color_mara
+  source: MARA.COLOR
+  field_role: dimension
+  type: C18
+  description: Color
+- name: care_code_mara
+  source: MARA.CARE_CODE
+  field_role: dimension
+  type: C16
+  description: Care Code
+- name: mandt_marm
+  source: MARM.MANDT
+  field_role: dimension
+  type: C3
+  description: Client
+- name: matnr_marm
+  source: MARM.MATNR
+  field_role: identifier
+  type: C18
+  description: Material
+- name: meinh_marm
+  source: MARM.MEINH
+  field_role: identifier
+  type: C3
+  description: Alternative Unit of Measure
+- name: umrez_marm
+  source: MARM.UMREZ
+  field_role: measure
+  type: P5
+  description: Numerator
+- name: umren_marm
+  source: MARM.UMREN
+  field_role: measure
+  type: P5
+  description: Denominat.
+- name: eannr_marm
+  source: MARM.EANNR
+  field_role: dimension
+  type: C13
+  description: EAN No.
+- name: ean11_marm
+  source: MARM.EAN11
+  field_role: dimension
+  type: C18
+  description: EAN/UPC
+- name: numtp_marm
+  source: MARM.NUMTP
+  field_role: dimension
+  type: C2
+  description: EAN Cat.
+- name: laeng_marm
+  source: MARM.LAENG
+  field_role: measure
+  type: P13
+  description: Length
+- name: breit_marm
+  source: MARM.BREIT
+  field_role: measure
+  type: P13
+  description: Width
+- name: hoehe_marm
+  source: MARM.HOEHE
+  field_role: measure
+  type: P13
+  description: Height
+- name: meabm_marm
+  source: MARM.MEABM
+  field_role: dimension
+  type: C3
+  description: Unit
+- name: volum_marm
+  source: MARM.VOLUM
+  field_role: measure
+  type: P13
+  description: Volume
+- name: voleh_marm
+  source: MARM.VOLEH
+  field_role: dimension
+  type: C3
+  description: VolumeUnit
+- name: brgew_marm
+  source: MARM.BRGEW
+  field_role: measure
+  type: P13
+  description: Gross
+- name: gewei_marm
+  source: MARM.GEWEI
+  field_role: dimension
+  type: C3
+  description: WeightUnit
+- name: mesub_marm
+  source: MARM.MESUB
+  field_role: dimension
+  type: C3
+  description: L-lev.unit
+- name: atinn_marm
+  source: MARM.ATINN
+  field_role: dimension
+  type: N10
+  description: Int. char.
+- name: mesrt_marm
+  source: MARM.MESRT
+  field_role: dimension
+  type: N2
+  description: UoMSortNo.
+- name: xfhdw_marm
+  source: MARM.XFHDW
+  field_role: dimension
+  type: C1
+  description: Leading Un
+- name: xbeww_marm
+  source: MARM.XBEWW
+  field_role: dimension
+  type: C1
+  description: Val. Un.
+- name: kzwso_marm
+  source: MARM.KZWSO
+  field_role: dimension
+  type: C1
+  description: Usage UoM
+- name: msehi_marm
+  source: MARM.MSEHI
+  field_role: dimension
+  type: C3
+  description: UoM
+- name: bflme_marm_marm
+  source: MARM.BFLME_MARM
+  field_role: dimension
+  type: C1
+  description: Log. vars
+- name: gtin_variant_marm
+  source: MARM.GTIN_VARIANT
+  field_role: dimension
+  type: C2
+  description: EAN Var.
+- name: nest_ftr_marm
+  source: MARM.NEST_FTR
+  field_role: measure
+  type: P3
+  description: RemVolNest
+- name: max_stack_marm
+  source: MARM.MAX_STACK
+  field_role: dimension
+  type: b3
+  description: Max. Stack
+- name: capause_marm
+  source: MARM.CAPAUSE
+  field_role: measure
+  type: P15
+  description: Capa.
+- name: ty2tq_marm
+  source: MARM.TY2TQ
+  field_role: dimension
+  type: C1
+  description: UoM Cat.
+- name: mandt_msta
+  source: MSTA.MANDT
+  field_role: dimension
+  type: C3
+  description: Client
+- name: matnr_msta
+  source: MSTA.MATNR
+  field_role: identifier
+  type: C18
+  description: Material
+- name: statm_msta
+  source: MSTA.STATM
+  field_role: identifier
+  type: C1
+  description: Maintenance status
+- name: zhler_msta
+  source: MSTA.ZHLER
+  field_role: identifier
+  type: C5
+  description: Counter
+- name: ersda_msta
+  source: MSTA.ERSDA
+  field_role: timestamp
+  type: D8
+  description: Created
+- name: ernam_msta
+  source: MSTA.ERNAM
+  field_role: dimension
+  type: C12
+  description: Created
+- name: laeda_msta
+  source: MSTA.LAEDA
+  field_role: timestamp
+  type: D8
+  description: Last Chg.
+- name: aenam_msta
+  source: MSTA.AENAM
+  field_role: dimension
+  type: C12
+  description: By
+- name: werks_msta
+  source: MSTA.WERKS
+  field_role: dimension
+  type: C4
+  description: Plant
+- name: lgort_msta
+  source: MSTA.LGORT
+  field_role: dimension
+  type: C4
+  description: Location
+- name: lgnum_msta
+  source: MSTA.LGNUM
+  field_role: dimension
+  type: C3
+  description: Whse No.
+- name: lgtyp_msta
+  source: MSTA.LGTYP
+  field_role: dimension
+  type: C3
+  description: Stge Type
+- name: vkorg_msta
+  source: MSTA.VKORG
+  field_role: dimension
+  type: C4
+  description: Sales org.
+- name: vtweg_msta
+  source: MSTA.VTWEG
+  field_role: dimension
+  type: C2
+  description: Distr. Chl
+- name: bwkey_msta
+  source: MSTA.BWKEY
+  field_role: dimension
+  type: C4
+  description: Val. Area
+- name: bwtar_msta
+  source: MSTA.BWTAR
+  field_role: dimension
+  type: C10
+  description: Val. Type
+- name: mandt_mvke
+  source: MVKE.MANDT
+  field_role: dimension
+  type: C3
+  description: Client
+- name: matnr_mvke
+  source: MVKE.MATNR
+  field_role: identifier
+  type: C18
+  description: Material
+- name: vkorg_mvke
+  source: MVKE.VKORG
+  field_role: identifier
+  type: C4
+  description: Sales Organization
+- name: vtweg_mvke
+  source: MVKE.VTWEG
+  field_role: identifier
+  type: C2
+  description: Distribution Channel
+- name: lvorm_mvke
+  source: MVKE.LVORM
+  field_role: dimension
+  type: C1
+  description: DChain lvl
+- name: versg_mvke
+  source: MVKE.VERSG
+  field_role: dimension
+  type: C1
+  description: Matl stats
+- name: bonus_mvke
+  source: MVKE.BONUS
+  field_role: dimension
+  type: C2
+  description: Rebate Grp
+- name: provg_mvke
+  source: MVKE.PROVG
+  field_role: dimension
+  type: C2
+  description: Comm.Grp
+- name: sktof_mvke
+  source: MVKE.SKTOF
+  field_role: dimension
+  type: C1
+  description: Cash.Disc.
+- name: vmsta_mvke
+  source: MVKE.VMSTA
+  field_role: dimension
+  type: C2
+  description: Status
+- name: aumng_mvke
+  source: MVKE.AUMNG
+  field_role: measure
+  type: P13
+  description: Order qty
+- name: lfmng_mvke
+  source: MVKE.LFMNG
+  field_role: measure
+  type: P13
+  description: Dely Qty
+- name: efmng_mvke
+  source: MVKE.EFMNG
+  field_role: measure
+  type: P13
+  description: MtO qty
+- name: scmng_mvke
+  source: MVKE.SCMNG
+  field_role: measure
+  type: P13
+  description: Deliv.unit
+- name: schme_mvke
+  source: MVKE.SCHME
+  field_role: dimension
+  type: C3
+  description: Unit
+- name: mtpos_mvke
+  source: MVKE.MTPOS
+  field_role: dimension
+  type: C4
+  description: ItemCatGrp
+- name: dwerk_mvke
+  source: MVKE.DWERK
+  field_role: dimension
+  type: C4
+  description: Dlv.Plant
+- name: prodh_mvke
+  source: MVKE.PRODH
+  field_role: dimension
+  type: C18
+  description: Prod.Hier.
+- name: kondm_mvke
+  source: MVKE.KONDM
+  field_role: dimension
+  type: C2
+  description: Mat.Pr.Grp
+- name: ktgrm_mvke
+  source: MVKE.KTGRM
+  field_role: dimension
+  type: C2
+  description: AccAsmtGrM
+- name: mvgr1_mvke
+  source: MVKE.MVGR1
+  field_role: dimension
+  type: C3
+  description: Matl Grp 1
+- name: mvgr5_mvke
+  source: MVKE.MVGR5
+  field_role: dimension
+  type: C3
+  description: Matl Grp 5
+- name: sstuf_mvke
+  source: MVKE.SSTUF
+  field_role: dimension
+  type: C2
+  description: Assort.Gr.
+- name: lstfl_mvke
+  source: MVKE.LSTFL
+  field_role: dimension
+  type: C2
+  description: LP Stores
+- name: lstvz_mvke
+  source: MVKE.LSTVZ
+  field_role: dimension
+  type: C2
+  description: LP for DCs
+- name: lstak_mvke
+  source: MVKE.LSTAK
+  field_role: dimension
+  type: C1
+  description: ListActive
+- name: ldvfl_mvke
+  source: MVKE.LDVFL
+  field_role: timestamp
+  type: D8
+  description: From
+- name: ldbfl_mvke
+  source: MVKE.LDBFL
+  field_role: timestamp
+  type: D8
+  description: To
+- name: ldvzl_mvke
+  source: MVKE.LDVZL
+  field_role: timestamp
+  type: D8
+  description: ListedFrom
+- name: ldbzl_mvke
+  source: MVKE.LDBZL
+  field_role: timestamp
+  type: D8
+  description: To
+- name: vdvfl_mvke
+  source: MVKE.VDVFL
+  field_role: timestamp
+  type: D8
+  description: From
+- name: vdvzl_mvke
+  source: MVKE.VDVZL
+  field_role: timestamp
+  type: D8
+  description: From
+- name: vdbzl_mvke
+  source: MVKE.VDBZL
+  field_role: timestamp
+  type: D8
+  description: To
+- name: prat1_mvke
+  source: MVKE.PRAT1
+  field_role: dimension
+  type: C1
+  description: ProdAttr.1
+- name: rdprf_mvke
+  source: MVKE.RDPRF
+  field_role: dimension
+  type: C4
+  description: R. Profile
+- name: megru_mvke
+  source: MVKE.MEGRU
+  field_role: dimension
+  type: C4
+  description: UoM Group
+- name: lfmax_mvke
+  source: MVKE.LFMAX
+  field_role: measure
+  type: P13
+  description: Max. DQ
+- name: rjart_mvke
+  source: MVKE.RJART
+  field_role: dimension
+  type: C1
+  description: Rackjobber
+- name: pbind_mvke
+  source: MVKE.PBIND
+  field_role: dimension
+  type: C1
+  description: Pr. fixing
+- name: vavme_mvke
+  source: MVKE.VAVME
+  field_role: dimension
+  type: C1
+  description: SUn n.var.
+- name: matkc_mvke
+  source: MVKE.MATKC
+  field_role: dimension
+  type: C1
+  description: CompCharac
+- name: pvmso_mvke
+  source: MVKE.PVMSO
+  field_role: dimension
+  type: N8
+  description: PP sorting
+relationships:
+  - target_entity: "silver_ecc_mm_material_group"
+    relationship_type: "many_to_one"
+    join_condition: "SILVER_TRADING_GOODS.matkl_mara = SILVER_MATERIAL_GROUP.matkl_t023"
+    semantic_label: "belongs_to_group"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Material Group classification for purchasing and reporting"
+
+  - target_entity: "silver_ecc_mm_material_hierarchy"
+    relationship_type: "many_to_one"
+    join_condition: "SILVER_TRADING_GOODS.prdha_mara = SILVER_MATERIAL_HIERARCHY.prodh_t179"
+    semantic_label: "classified_in_hierarchy"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Product Hierarchy classification for sales analysis"

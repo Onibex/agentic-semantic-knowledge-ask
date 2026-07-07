@@ -1,0 +1,323 @@
+# Generado automáticamente por OneConnect ASK Ingestor
+---
+id: bronze_ecc_mara_master_material
+layer: bronze
+version: '1'
+source_system: ecc
+source_system_id: 100
+name: MARA
+alias: MASTER_MATERIAL
+description: SAP Table MARA
+primary_key:
+- MATNR
+fields:
+  MANDT:
+    type: C3
+    alias: client
+    key_field: false
+    description: Client
+  MATNR:
+    type: C18
+    alias: material
+    key_field: true
+    description: Material
+  ERSDA:
+    type: D8
+    alias: created_on
+    key_field: false
+    description: Created On
+  ERNAM:
+    type: C12
+    alias: nm_responsible
+    key_field: false
+    description: Name Respon. Creat. Obj.
+  LAEDA:
+    type: D8
+    alias: last_chg
+    key_field: false
+    description: Last Chg.
+  AENAM:
+    type: C12
+    alias: by
+    key_field: false
+    description: By
+  VPSTA:
+    type: C15
+    alias: maint_stat
+    key_field: false
+    description: Maint.stat
+  LVORM:
+    type: C1
+    alias: client_lvl
+    key_field: false
+    description: Client lvl
+  MTART:
+    type: C4
+    alias: matl_type
+    key_field: false
+    description: Material Typ
+  MATKL:
+    type: C9
+    alias: matl_group
+    key_field: false
+    description: Matl Group
+  BISMT:
+    type: C18
+    alias: matl_no
+    key_field: false
+    description: Matl no.
+  MEINS:
+    type: C3
+    alias: unit
+    key_field: false
+    description: Unit
+  ZEIAR:
+    type: C3
+    alias: doc_type
+    key_field: false
+    description: Doc.type
+  ZEIFO:
+    type: C4
+    alias: format
+    key_field: false
+    description: Format
+  BLATT:
+    type: C3
+    alias: page_no
+    key_field: false
+    description: Page No.
+  BLANZ:
+    type: N3
+    alias: no_sheets
+    key_field: false
+    description: No. Sheets
+  WRKST:
+    type: C48
+    alias: basic_matl
+    key_field: false
+    description: Basic matl
+  BRGEW:
+    type: P13
+    alias: gross
+    key_field: false
+    description: Gross
+  NTGEW:
+    type: P13
+    alias: net_weight
+    key_field: false
+    description: Net Weight
+  GEWEI:
+    type: C3
+    alias: weightunit
+    key_field: false
+    description: WeightUnit
+  VOLUM:
+    type: P13
+    alias: volume
+    key_field: false
+    description: Volume
+  VOLEH:
+    type: C3
+    alias: volumeunit
+    key_field: false
+    description: VolumeUnit
+  DISST:
+    type: C3
+    alias: l_l_code
+    key_field: false
+    description: L-L code
+  KUNNR:
+    type: C10
+    alias: competitor
+    key_field: false
+    description: Competitor
+  WESCH:
+    type: P13
+    alias: quantity
+    key_field: false
+    description: Quantity
+  LAENG:
+    type: P13
+    alias: length
+    key_field: false
+    description: Length
+  MEABM:
+    type: C3
+    alias: unit1
+    key_field: false
+    description: Unit
+  PRDHA:
+    type: C18
+    alias: prodhier
+    key_field: false
+    description: Product Hierarchy
+  AEKLK:
+    type: C1
+    alias: net_change
+    key_field: false
+    description: Net Change
+  ERGEI:
+    type: C3
+    alias: unit11
+    key_field: false
+    description: Unit
+  ERVOE:
+    type: C3
+    alias: volumeunit1
+    key_field: false
+    description: VolumeUnit
+  VOLTO:
+    type: P3
+    alias: ex_vol_tol
+    key_field: false
+    description: Ex.vol.tol
+  KZKFG:
+    type: C1
+    alias: conf_matl
+    key_field: false
+    description: Conf Matl
+  XCHPF:
+    type: C1
+    alias: batch_mgmt
+    key_field: false
+    description: Batch mgmt
+  VHART:
+    type: C4
+    alias: pkgmtltype
+    key_field: false
+    description: PkgMtlType
+  MAGRV:
+    type: C4
+    alias: mat_grp_pm
+    key_field: false
+    description: Mat.Grp PM
+  DATAB:
+    type: D8
+    alias: valid_from
+    key_field: false
+    description: Valid From
+  LIQDT:
+    type: D8
+    alias: valid_to
+    key_field: false
+    description: Valid To
+  MSTDV:
+    type: D8
+    alias: valid_from1
+    key_field: false
+    description: Valid from
+  INHME:
+    type: C3
+    alias: contunit
+    key_field: false
+    description: Cont. unit
+  CMETH:
+    type: C1
+    alias: conv_meth
+    key_field: false
+    description: Conv. Meth
+  CUOBF:
+    type: N18
+    alias: int_obj_no
+    key_field: false
+    description: Int.obj.no
+  KOSCH:
+    type: C18
+    alias: prod_all
+    key_field: false
+    description: Prod.all.
+  BMATN:
+    type: C18
+    alias: int_no
+    key_field: false
+    description: Int. no.
+  SAITY:
+    type: C2
+    alias: rollout
+    key_field: false
+    description: Rollout
+  KZGVH:
+    type: C1
+    alias: closed
+    key_field: false
+    description: Closed
+  XGCHP:
+    type: C1
+    alias: batch_rec
+    key_field: false
+    description: Batch rec.
+  KZEFF:
+    type: C1
+    alias: eff_values
+    key_field: false
+    description: Eff.values
+  MATFI:
+    type: C1
+    alias: locked
+    key_field: false
+    description: Locked
+  CMREL:
+    type: C1
+    alias: cm_rel
+    key_field: false
+    description: CM rel.
+  WEORA:
+    type: C1
+    alias: orig_acc
+    key_field: false
+    description: Orig. Acc.
+  WHSTC:
+    type: C2
+    alias: condition
+    key_field: false
+    description: Condition
+  WHMATGR:
+    type: C4
+    alias: whmatgrp
+    key_field: false
+    description: WHMatGrp
+  MAXDIM_UOM:
+    type: C3
+    alias: uom
+    key_field: false
+    description: UoM
+  QQTIMEUOM:
+    type: C3
+    alias: timeunit
+    key_field: false
+    description: Time Unit
+  LOGUNIT:
+    type: C3
+    alias: log_uom
+    key_field: false
+    description: Log. UoM
+  CWQREL:
+    type: C1
+    alias: cw_relev
+    key_field: false
+    description: CW-Relev.
+  CWQPROC:
+    type: C2
+    alias: cw_profile
+    key_field: false
+    description: CW Profile
+  CWQTOLGR:
+    type: C9
+    alias: tol_group
+    key_field: false
+    description: Tol. Group
+  LOGLEV_RETO:
+    type: C1
+    alias: to_loglvl
+    key_field: false
+    description: To LogLvl
+  COLOR:
+    type: C18
+    alias: color_1
+    key_field: false
+    description: Color
+  CARE_CODE:
+    type: C16
+    alias: care_code_1
+    key_field: false
+    description: Care Code

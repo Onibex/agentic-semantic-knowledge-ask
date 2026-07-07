@@ -1,0 +1,303 @@
+# Generado automáticamente por OneConnect ASK Ingestor
+---
+id: bronze_ecc_vbak_order_header
+layer: bronze
+version: '1'
+source_system: ecc
+source_system_id: 100
+name: VBAK
+alias: ORDER_HEADER
+description: SAP Table VBAK
+primary_key:
+- VBELN
+fields:
+  MANDT:
+    type: C3
+    alias: client
+    key_field: false
+    description: Client
+  VBELN:
+    type: C10
+    alias: sales_doc
+    key_field: true
+    description: Sales document
+  ERDAT:
+    type: D8
+    alias: created_on
+    key_field: false
+    description: Created on
+  ERNAM:
+    type: C12
+    alias: created_by
+    key_field: false
+    description: Created by
+  ANGDT:
+    type: D8
+    alias: valid_from
+    key_field: false
+    description: Valid from
+  BNDDT:
+    type: D8
+    alias: valid_to
+    key_field: false
+    description: Valid to
+  AUDAT:
+    type: D8
+    alias: doc_date
+    key_field: false
+    description: Document Date
+  AUART:
+    type: C4
+    alias: salesdocty
+    key_field: false
+    description: Sales Document Type
+  AUGRU:
+    type: C3
+    alias: ordreason
+    key_field: false
+    description: Order Reason
+  GWLDT:
+    type: D8
+    alias: warrstart
+    key_field: false
+    description: Warranty Start
+  LIFSK:
+    type: C2
+    alias: delivblock
+    key_field: false
+    description: Delivery Block
+  FAKSK:
+    type: C2
+    alias: billblock
+    key_field: false
+    description: Billing Block
+  NETWR:
+    type: P15
+    alias: net_value
+    key_field: false
+    description: Net Value
+  WAERK:
+    type: C5
+    alias: currency
+    key_field: false
+    description: Currency
+  VKORG:
+    type: C4
+    alias: sales_org
+    key_field: false
+    description: Sales Organization
+  VTWEG:
+    type: C2
+    alias: distr_chl
+    key_field: false
+    description: Distribution Channel
+  SPART:
+    type: C2
+    alias: division
+    key_field: false
+    description: Division
+  VKGRP:
+    type: C3
+    alias: sales_grp
+    key_field: false
+    description: Sales Group
+  VKBUR:
+    type: C4
+    alias: sales_off
+    key_field: false
+    description: Sales Office
+  KNUMV:
+    type: C10
+    alias: doccond
+    key_field: false
+    description: Document Condition
+  VDATU:
+    type: D8
+    alias: reqdlvdt
+    key_field: false
+    description: Requested Delivery Date
+  AUTLF:
+    type: C1
+    alias: compldlv
+    key_field: false
+    description: Complete Delivery
+  KALSM:
+    type: C6
+    alias: pricproc
+    key_field: false
+    description: Pricing Procedure
+  VSBED:
+    type: C2
+    alias: shp_cond
+    key_field: false
+    description: Shipping Conditions
+  FKARA:
+    type: C4
+    alias: ordbilltyp
+    key_field: false
+    description: Order-related Billing Type
+  AWAHR:
+    type: N3
+    alias: probab
+    key_field: false
+    description: Probability
+  KTEXT:
+    type: C40
+    alias: descriptn
+    key_field: false
+    description: Description
+  BSTNK:
+    type: C20
+    alias: pur_order
+    key_field: false
+    description: Purchase Order Number
+  BSARK:
+    type: C4
+    alias: po_type
+    key_field: false
+    description: Purchase Order Type
+  BSTDK:
+    type: D8
+    alias: po_date
+    key_field: false
+    description: Purchase Order Date
+  IHREZ:
+    type: C12
+    alias: ref_1
+    key_field: false
+    description: Your Reference
+  BNAME:
+    type: C35
+    alias: name
+    key_field: false
+    description: Name
+  KUNNR:
+    type: C10
+    alias: sold_to_pt
+    key_field: false
+    description: Sold-to Party
+  KOSTL:
+    type: C10
+    alias: cost_ctr
+    key_field: false
+    description: Cost Center
+  AEDAT:
+    type: D8
+    alias: chngd
+    key_field: false
+    description: Changed on
+  KVGR1:
+    type: C3
+    alias: custgrp_1
+    key_field: false
+    description: Customer Group 1
+  KVGR2:
+    type: C3
+    alias: custgrp_2
+    key_field: false
+    description: Customer Group 2
+  KVGR3:
+    type: C3
+    alias: custgrp_3
+    key_field: false
+    description: Customer Group 3
+  KVGR4:
+    type: C3
+    alias: custgrp_4
+    key_field: false
+    description: Customer Group 4
+  KVGR5:
+    type: C3
+    alias: custgrp_5
+    key_field: false
+    description: Customer Group 5
+  KNUMA:
+    type: C10
+    alias: agreement
+    key_field: false
+    description: Agreement
+  KKBER:
+    type: C4
+    alias: creditarea
+    key_field: false
+    description: Credit Control Area
+  KNKLI:
+    type: C10
+    alias: cred_acct
+    key_field: false
+    description: Credit Account
+  GRUPP:
+    type: C4
+    alias: credgrp
+    key_field: false
+    description: Customer Credit Group
+  CMWAE:
+    type: C5
+    alias: currency1
+    key_field: false
+    description: Currency
+  CMFRE:
+    type: D8
+    alias: release
+    key_field: false
+    description: Release Date
+  AMTBL:
+    type: P15
+    alias: credvalue
+    key_field: false
+    description: Credit Value
+  HITYP_PR:
+    type: C1
+    alias: hiertyppri
+    key_field: false
+    description: Hierarchy Type Pricing
+  ABRVW:
+    type: C3
+    alias: usage
+    key_field: false
+    description: Usage
+  ABDIS:
+    type: C1
+    alias: mrp
+    key_field: false
+    description: MRP for DS Type
+  BUKRS_VF:
+    type: C4
+    alias: ccodebill
+    key_field: false
+    description: Company Code to be Billed
+  AGRZR:
+    type: N2
+    alias: accrperiod
+    key_field: false
+    description: Accrual Period
+  AUFNR:
+    type: C12
+    alias: order
+    key_field: false
+    description: Order
+  ABRUF_PART:
+    type: C1
+    alias: checkpart
+    key_field: false
+    description: Check Partner
+  ABHOD:
+    type: D8
+    alias: pick_up_dt
+    key_field: false
+    description: Pick-up Date
+  ABHOB:
+    type: T6
+    alias: pick_up_tm
+    key_field: false
+    description: Pick-up Time
+  FMBDAT:
+    type: D8
+    alias: matavdt
+    key_field: false
+    description: Material Availability Date
+  CONT_DG:
+    type: C1
+    alias: containsdg
+    key_field: false
+    description: Contains Dangerous Goods

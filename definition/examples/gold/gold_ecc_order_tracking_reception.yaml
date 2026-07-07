@@ -1,0 +1,196 @@
+id: "gold_ecc_order_tracking_reception"
+internal_id: "gold_ecc_order_tracking_reception"
+db_table_name: GOLD_ORDER_TRACKING_RECEPTION
+layer: "gold"
+version: "1"
+source_system: "ecc"
+source_system_no: 100
+business_process: "SCM"
+module: ["MM", "PP", "SD"]
+tag1: "SCM"
+tag2: "MM"
+name: "order_tracking_reception"
+classification: "T"
+description: "Per-operation-type incoming-supply / outgoing-demand reception tracker. One row per (client + operation + order + item + date_reception), with operation in {Production Order, Purchase Order, Stock Order, Sale Order}. SPARSE measures: each row populates ONLY ONE of qty_production_order / qty_purchase_order / qty_stock_order / qty_sale_order (the other three are 0). date_reception source SAP field varies by operation: Production = AFPO.DGLTS, Sale Order = VBAK.VDATU, Purchase Order / Stock Order = EKET.SLFDT (schedule-line). order_status ('OPEN' / 'CLOSE') rules also differ per operation — see field. Use for order-level supply/demand drill-down, expediting, reception scheduling. For aggregated daily projection see gold_ecc_inventory_situation; for SD line-level OTC detail see gold_ecc_open_order_tracker."
+entity_role: "fact"
+grain:
+  entity_grain: ["client", "operation", "order", "item", "date_reception"]
+  business_grain: "order_item_operation_reception_level"
+
+composed_of: ["US_ONEC_TECH.GOLD_ORDER_TRACKING_RECEPTION"]
+
+fields:
+  - name: "client"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.client"
+    field_role: "identifier"
+    type: "TEXT"
+    description: "SAP Client"
+    aggregation_behavior: "none"
+
+  - name: "operation"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.operation"
+    field_role: "identifier"
+    type: "TEXT"
+    description: "Operation type — discriminator field. Possible values: 'Production Order', 'Sale Order', 'Purchase Order', 'Stock Order' (intra-company stock transfer, derived from EKPO.PSTYP='7'). Use to filter by supply/demand source. Note 'Stock Order' (NOT 'Stock Transfer') is the literal stored value."
+    aggregation_behavior: "none"
+
+  - name: "order"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.order"
+    field_role: "identifier"
+    type: "TEXT"
+    description: "Order Document Number"
+    aggregation_behavior: "none"
+
+  - name: "item"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.item"
+    field_role: "identifier"
+    type: "INTEGER"
+    description: "Order Item Number"
+    aggregation_behavior: "none"
+
+  - name: "plant_id"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.plant_id"
+    field_role: "dimension"
+    type: "TEXT"
+    description: "Plant Number / Plant ID"
+    aggregation_behavior: "none"
+
+  - name: "material_id"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.material_id"
+    field_role: "dimension"
+    type: "TEXT"
+    description: "Material Number / Material ID"
+    aggregation_behavior: "none"
+
+  - name: "date_reception"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.date_reception"
+    field_role: "timestamp"
+    type: "TEXT"
+    description: "Expected reception / delivery date as 'YYYY-MM-DD' string. Source SAP field varies by operation: Production Order = AFPO.DGLTS (scheduled production end), Sale Order = VBAK.VDATU (requested delivery), Purchase Order / Stock Order = EKET.SLFDT (statistical delivery, schedule-line)."
+    aggregation_behavior: "none"
+
+  - name: "date_reception_ts"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.date_reception_ts"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "Expected or actual reception date as Timestamp"
+    aggregation_behavior: "none"
+
+  - name: "qty_production_order"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.qty_production_order"
+    field_role: "measure"
+    type: "NUMERIC"
+    description: "Production-order quantity (AFPO.PSMNG). SPARSE: populated only on rows where operation = 'Production Order', 0 elsewhere."
+    aggregation_behavior: "SUM"
+
+  - name: "qty_purchase_order"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.qty_purchase_order"
+    field_role: "measure"
+    type: "NUMERIC"
+    description: "Purchase-order quantity (EKPO.MENGE where PSTYP<>'7'). Procurement supply / incoming from supplier. SPARSE: populated only on rows where operation = 'Purchase Order', 0 elsewhere."
+    aggregation_behavior: "SUM"
+
+  - name: "qty_stock_order"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.qty_stock_order"
+    field_role: "measure"
+    type: "NUMERIC"
+    description: "Stock-transfer quantity (EKPO.MENGE where PSTYP='7'). Intra-company / inter-plant transfer. SPARSE: populated only on rows where operation = 'Stock Order', 0 elsewhere."
+    aggregation_behavior: "SUM"
+
+  - name: "qty_sale_order"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.qty_sale_order"
+    field_role: "measure"
+    type: "NUMERIC"
+    description: "Sales-order DEMAND quantity (VBAP.KWMENG). Outbound customer demand — NOT a supply receiving. SPARSE: populated only on rows where operation = 'Sale Order', 0 elsewhere."
+    aggregation_behavior: "SUM"
+
+  - name: "month_reception"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.month_reception"
+    field_role: "dimension"
+    type: "TEXT"
+    description: "Month-Year of reception"
+    aggregation_behavior: "none"
+
+  - name: "plant"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.plant"
+    field_role: "dimension"
+    type: "TEXT"
+    description: "Plant Description/Name"
+    aggregation_behavior: "none"
+
+  - name: "material"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.material"
+    field_role: "dimension"
+    type: "TEXT"
+    description: "Material Description/Name"
+    aggregation_behavior: "none"
+
+  - name: "order_status"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.order_status"
+    field_role: "status_flag"
+    type: "TEXT"
+    description: "Operation status — 'OPEN' (active / pending) or 'CLOSE' (finalized / canceled). Note value is 'CLOSE' (no D). Rules differ per operation: Production = OPEN if AFPO.DGLTS set AND AUERU<>'X'; Sale Order = CLOSE if VBUK.GBSTK='C' else OPEN; PO/Stock Order = OPEN if SLFDT set AND MENGE<>0 AND ELIKZ<>'X' AND MATNR set."
+    aggregation_behavior: "none"
+
+  - name: "loaded_at"
+    source: "GOLD_ORDER_TRACKING_RECEPTION.loaded_at"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "ETL load timestamp into this gold table (CURRENT_TIMESTAMP at MERGE time)."
+    aggregation_behavior: "none"
+
+join_graph: []
+
+relationships:
+  - target_entity: "silver_ecc_sd_trading_goods"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.material_id = SILVER_TRADING_GOODS.matnr_mara"
+    semantic_label: "material_detail_of"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Material Master for global attributes"
+  - target_entity: "silver_ecc_sd_plant"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.plant_id = SILVER_PLANTS.werks_t001w"
+    semantic_label: "received_at_plant"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Plant Master for location details"
+
+  - target_entity: "silver_ecc_mm_purchase_order"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.order = SILVER_MM_PURCHASE_ORDER.ebeln_ekko"
+    semantic_label: "tracks_purchase_order"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Source Silver for rows where operation='Purchase Order'. Traverse to get supplier, PO doc type, account assignment, and other procurement details. Apply filter operation='Purchase Order' when composing SQL. JOIN keys shown are placeholders for user enrichment (real keys may involve item/schedule line and PO creation context)."
+
+  - target_entity: "silver_ecc_pp_production_confirmation"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.order = SILVER_PP_PRODUCTION_CONFIRMATION.aufnr_afko"
+    semantic_label: "tracks_production_order"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Source Silver for rows where operation='Production Order'. Traverse to get order header (AFKO), operations, confirmations, and actual costs. Apply filter operation='Production Order' when composing SQL. JOIN keys shown are placeholders for user enrichment."
+
+  - target_entity: "silver_ecc_sd_sales_order"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.order = SILVER_SD_SALES_ORDER.vbeln_vbak"
+    semantic_label: "tracks_sales_order"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Source Silver for rows where operation='Sale Order'. Traverse to get sales doc header, line items, document flow, and business data. Apply filter operation='Sale Order' when composing SQL. JOIN keys shown are placeholders for user enrichment (real composite key may include item/posnr)."
+
+  - target_entity: "gold_ecc_mm_inventory_position"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_ORDER_TRACKING_RECEPTION.client = GOLD_MM_INVENTORY_POSITION.client AND GOLD_ORDER_TRACKING_RECEPTION.plant_id = GOLD_MM_INVENTORY_POSITION.plant_id AND GOLD_ORDER_TRACKING_RECEPTION.material_id = GOLD_MM_INVENTORY_POSITION.material_id"
+    semantic_label: "current_stock_context"
+    traversal_cost: 3
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Cross-fact lookup: enrich each pending reception (PO / Production / Stock Transfer / SO arrival) with the current stock position of its (plant, material). Use to evaluate post-reception state: 'will this arrival push us over max_level?', 'does this delivery cover the current shortfall vs safety_stk?', 'which incoming receptions land into already-balanced stock vs critical materials?'."
