@@ -7,6 +7,8 @@
 
 ---
 
+> **New here?** Start with the [repository overview](../README.md) for the big picture and the companion **Onibex ASK Platform** manual. This document is the normative specification.
+
 ## What is ASK?
 
 **Agentic Semantic Knowledge (ASK)** is an open YAML specification that describes enterprise data in a way AI agents can actually understand, reason over, and act on.
@@ -243,11 +245,7 @@ Please open an issue to discuss substantial changes before submitting a PR.
 
 ## Maintainers
 
-ASK is initiated and maintained by **[Onibex, Inc.](https://onibex.com)** — an SAP Silver Partner and Confluent Gold Partner building real-time SAP data hyperconnectivity for the enterprise.
-
-The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP. Onibex is open-sourcing the YAML contract so that any vendor, customer, or community member can adopt, extend, or implement it without lock-in.
-
-> *"Tables don't think. Schemas don't reason. ASK is what an agent reads when it needs to know what your data means."*
+ASK is initiated and maintained by **[Onibex, Inc.](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex open-sources the YAML contract so any vendor, customer, or community member can adopt, extend, or implement it without lock-in. See the [repository overview](../README.md) for how this specification relates to the Onibex ASK Platform.
 
 ---
 

@@ -8,7 +8,7 @@ work — an **open standard** and the **product** that implements it. Pick your 
 
 | If you want to… | Go to | What it is |
 |---|---|---|
-| **Adopt the open standard** — describe your own AI-ready data products in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The open **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. Licensed AGPL-3.0. |
+| **Adopt the open standard** — describe your own AI-ready data products in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The open **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. |
 | **Use the Onibex ASK Platform** — install it, author a semantic layer, publish it, and query it from chat | **[`platform/`](platform/README.md)** | The complete, screenshot-driven **product manual**: ASK Admin, the Configuration app, and the Chat. |
 
 ---
@@ -34,6 +34,24 @@ This repository expresses that idea at two levels:
   product that implements the standard end to end: author the semantic layer in **ASK
   Admin**, wire up databases and models in the **Configuration app**, publish
   dev → prod, and let business users query it in plain language through the **Chat**.
+
+---
+
+## The three layers
+
+Both halves of this repository speak the same vocabulary — a medallion model in which
+every data product sits in one of three layers, and an agent resolves a question by
+preferring the most business-ready layer first:
+
+| Layer | What it is | Agent visibility |
+|-------|------------|------------------|
+| **Gold** | A business definition, pre-joined and semantically resolved (e.g. "Open Sales Order Tracker"). | **Primary** — preferred first |
+| **Silver** | A reusable enterprise artifact (Customer, Product, Sales Order), composed from Bronze. | **Fallback** — used when no Gold fits |
+| **Bronze** | A raw source table, mostly uninterpreted. | **Avoided** — lineage only, not agent context |
+
+The [`definition/`](definition/README.md) folder gives the **normative rules** for each
+layer; the [`platform/`](platform/README.md) manual shows how to **author them** in the
+product.
 
 ---
 
@@ -70,18 +88,12 @@ agentic-semantic-knowledge-ask/
 
 ---
 
-## Licensing
+## License
 
-This repository intentionally carries two different licensing regimes, one per top-level
-folder:
-
-- **`definition/` (the specification)** is open source under **AGPL-3.0** — see
-  [`definition/LICENSE`](definition/LICENSE). Onibex publishes the YAML contract so any
-  vendor, customer, or community member can adopt, extend, or implement it without
-  lock-in.
-- **`platform/` (the product manual)** is **Onibex product documentation**,
-  © Onibex, Inc. It is provided to help you operate the Onibex ASK Platform and is not
-  covered by the AGPL-3.0 license above.
+The entire repository — both the open ASK specification under `definition/` and the
+Onibex ASK Platform manual under `platform/` — is licensed under **AGPL-3.0**. See
+[`LICENSE`](LICENSE). Onibex publishes ASK so any vendor, customer, or community member
+can adopt, extend, or implement it without proprietary lock-in.
 
 ---
 

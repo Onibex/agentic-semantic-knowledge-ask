@@ -5,6 +5,8 @@ get going fast, start with [Installation](01-installation.md) then [Concepts](02
 the in-depth reference that documents **every flow** across ASK Admin, the Configuration app
 and the Chat.
 
+> Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
+
 All walkthroughs use one consistent, **illustrative** example — **SAP Production Planning
 (Production Orders)**. It is a demonstration dataset: substitute your own Data Products, and
 expect the sample questions to return results only against matching data.
