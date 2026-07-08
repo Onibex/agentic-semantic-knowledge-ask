@@ -1,9 +1,10 @@
-# Onibex ASK Platform — User Manual
+# ASK — Agentic Semantic Knowledge Platform
 
-The complete, screenshot-driven manual for the **Onibex ASK Platform**. If you just want to
-get going fast, start with [Installation](01-installation.md) then [Concepts](02-concepts.md); this manual is
-the in-depth reference that documents **every flow** across ASK Admin, the Configuration app
-and the Chat.
+> The complete user manual for the **Onibex ASK Platform** — install it, author a semantic layer, publish it dev → prod, and let business users query enterprise data in plain language.
+
+If you just want to get going fast, start with [Installation](01-installation.md) then
+[Concepts](02-concepts.md); this manual is the in-depth reference that documents **every
+flow** across ASK Admin, the Configuration app and the Chat.
 
 > Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
 
