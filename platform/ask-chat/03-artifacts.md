@@ -38,8 +38,6 @@
 Open the **Artifacts** page from the sidebar. The gallery shows all saved artifacts as cards
 in a responsive grid.
 
-![Artifacts gallery: a grid of artifact cards with type badge, name, creation date, and a hover action](../images/chat-artifacts-gallery.png)
-
 **Toolbar controls:**
 
 | Control | Behaviour |
@@ -58,8 +56,6 @@ indicator.
 Click **New artifact**. The page switches to a **conversational wizard** that walks you
 through four steps, one at a time. Each step shows an assistant prompt; you type your answer
 and press **Enter** to advance.
-
-![The artifact creation wizard at step 2 (Purpose), showing the assistant prompt and the user's answer for step 1](../images/chat-artifacts-wizard.png)
 
 | Step | Prompt | What to enter | Demo value |
 |---|---|---|---|
@@ -91,8 +87,6 @@ status messages.
 
 Once generation completes — or when you click a card in the gallery — the **Artifact
 Viewer** opens.
-
-![Artifact Viewer: header bar with actions, the Document tab showing formatted content, and the Data tab](../images/chat-artifacts-viewer.png)
 
 ### Header bar
 
@@ -141,8 +135,6 @@ The file is downloaded immediately with the artifact name as the filename.
 ## 5. Edit and regenerate
 
 Click **Edit** in the header to open the Edit panel alongside the document.
-
-![Edit panel open on the right: Name, Format, Purpose, Data Focus, and SQL Override fields with Apply & Regenerate](../images/chat-artifacts-edit.png)
 
 | Field | What you can change |
 |---|---|

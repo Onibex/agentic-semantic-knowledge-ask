@@ -38,8 +38,6 @@
 The **Chat history sidebar** sits on the left side of the Chat page — separate from the
 main navigation sidebar. It lists all sessions for the currently selected workspace.
 
-![Chat page with the history sidebar on the left listing three sessions, the active session highlighted in blue](../images/chat-sessions-sidebar.png)
-
 | Action | How |
 |---|---|
 | **New session** | Click **New Chat** at the top of the history sidebar. |
@@ -79,8 +77,6 @@ Using the demo's Sales & Distribution model, try:
 customers by revenue", "Sales orders this month", and "Pending purchase orders". Clicking
 any chip sends it as a message immediately.
 
-![Chat empty state with the Onibex logo, a prompt, and three quick-start chips](../images/chat-empty-state.png)
-
 ---
 
 ## 3. Read the answer
@@ -98,8 +94,6 @@ result exceeds 100 rows, a note shows the total count. Columns are auto-detected
 result set; all values are rendered as strings. A **Copy answer** button copies the written
 answer text to the clipboard.
 
-![An assistant message showing the written answer and the Table tab with a striped results table](../images/chat-answer-table.png)
-
 **Chart tab**
 
 Appears only when the result has **at least 2 rows** and at least one numeric column. Click
@@ -114,15 +108,11 @@ Appears only when the result has **at least 2 rows** and at least one numeric co
 Bar charts use a blue gradient scale; line charts use Onibex blue (`#2563eb`). The Y axis
 picks the numeric column with the highest maximum value.
 
-![The Chart tab showing a horizontal bar chart of the top 10 materials by net value](../images/chat-answer-chart.png)
-
 **SQL tab**
 
 Collapsed by default. Click **SQL** to expand the raw SQL the agent sent to the database.
 A **Copy SQL** button copies it to the clipboard — useful for reuse in an external tool or
 for verifying the query logic.
-
-![The SQL tab expanded showing the generated SQL query with a Copy SQL button](../images/chat-answer-sql.png)
 
 > **Tip —** the mode badge (e.g. *precise*) shown next to the answer tells you which engine
 > produced it, in case you switch modes between questions.
@@ -163,8 +153,6 @@ original question.
 While the backend is processing, a **thinking bubble** appears — a pulsing indicator with
 rotating status messages ("Translating your question into SQL…", "Querying the database…",
 etc.). The indicator disappears as soon as streaming begins.
-
-![The thinking bubble with a rotating humorous status message while the agent processes a query](../images/chat-thinking-bubble.png)
 
 ---
 
