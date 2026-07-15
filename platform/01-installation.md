@@ -66,8 +66,10 @@ edit the values in place:
 cp .env.example .env
 ```
 
-For a remote host (e.g. an EC2 dev box) use `.env.ec2.example` instead, which additionally
-documents the host-port remaps.
+For a remote host (e.g. an EC2 dev box) start from `.env.ec2.example` instead — the same
+variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. **There is no separate EC2
+compose file:** the remote deploy is this same `docker-compose.yml` plus a filled-in `.env`; only
+the values differ.
 
 Set the following variables **by name** — never paste real secret values into the manual or into
 version control (`.env` is gitignored). Generate secrets with the one-liners the file documents.
@@ -78,6 +80,7 @@ version control (`.env` is gitignored). Generate secrets with the one-liners the
 | **`SEMANTIC_LAYER_HOST_PATH`** | Yes | Absolute host path to your semantic-layer git repo. It is bind-mounted into `ask-admin-api` at `/app/semantic-layer`. **The directory must contain a `.git`** — without it, YAML commits become silent no-ops and publish-to-environment can't work. |
 | **`AUTH_MODE`** | Yes | Auth backend: `keycloak` (local IdP), `xsuaa` (SAP BTP), or `none` (open dev). **Baked into the SPA bundles at build time** — changing it requires a SPA rebuild (see Step 6). |
 | **`DEV_BYPASS_AUTH`** | Yes | `true` disables authentication (local convenience, honored only when `ENVIRONMENT=local`); `false` enforces `AUTH_MODE`. |
+| **`CHAT_AUTH_MODE`** | No | Overrides the **Chat** SPA's auth independently of `AUTH_MODE` (unset = follows `AUTH_MODE`). Set `dev` on a plain-HTTP remote box: browser PKCE needs a secure context that `http://<ip>` can't provide (`localhost` is exempt). Also baked at build time. |
 | **`OPENSEARCH_HOST`** | Yes | Host of the OpenSearch cluster. **Env-first** (the store's own connection can't live inside the store it holds). Inside the compose network this is the service name **`opensearch`** (the default) — no `settings.json` edit needed. It is shown **read-only** in ASK Setup. |
 | **`OPENSEARCH_PORT`** | Yes | OpenSearch port — default `9200`. |
 | **`OPENSEARCH_USE_SSL`** | Yes | `false` for the single-node dev cluster (its security plugin is disabled). |
@@ -85,8 +88,7 @@ version control (`.env` is gitignored). Generate secrets with the one-liners the
 | **`EXTERNAL_HOST`** | For remote hosts | The host address the **browser** uses to reach the stack (no scheme, no port). Baked into the SPAs (their Keycloak URL and cross-app links) at build time; **defaults to `localhost`**. Set it — and rebuild the SPAs — when serving from a remote box. |
 | **`EXECUTOR_EXTRAS`** | No (has default) | Which SQL drivers are baked into the `ask-orchestrator` and `ask-admin-api` images for multi-database support. Default `[snowflake,databricks,clickhouse,bigquery]`. Add `sqlserver` / `db2` only if the images carry the system ODBC/CLI libs. **Must match** across both services so a green connection Test means chat can actually connect. |
 | `ASK_INGEST_API_KEY` | For M2M ingest | API key for the machine ingest endpoint (`POST /v1/ingest/*`). |
-| `KC_ADMIN_USER` / `KC_ADMIN_PASSWORD` | If Keycloak | Keycloak admin-console login. |
-| `OAUTH2_PROXY_COOKIE_SECRET` / `OAUTH2_PROXY_CLIENT_SECRET` | — | **Vestigial.** The old login proxy no longer exists in this stack; the SPAs authenticate against Keycloak directly (PKCE). These keys may linger in older `.env` templates — leave them blank and ignore them. |
+| `KC_ADMIN_USER` / `KC_ADMIN_PASSWORD` | If Keycloak | Keycloak admin-console login (compose defaults to `admin` / `admin`; change them on any shared box). |
 
 > **Warning — the encryption key is not recoverable.** If you lose `ONIBEX_ENCRYPTION_KEY`, every
 > encrypted credential in OpenSearch becomes unreadable and you must re-enter every provider and
@@ -138,11 +140,28 @@ if one stays unhealthy:
 docker compose logs -f ask-orchestrator
 ```
 
-![Terminal output of docker compose ps showing every ASK service Up and healthy](images/install-compose-ps.png)
+You should see every service report **Up (healthy)** — something like:
 
-The FastAPI backends also publish on host ports for their `/v1/health` endpoints and API traffic:
-**`ask-orchestrator`** on `:8083` and **`ask-admin-api`** on `:8081` by default (remap with
-`ORCH_HOST_PORT` / `ADMIN_API_HOST_PORT` if those clash with other software).
+```text
+NAME               SERVICE            STATUS          PORTS
+opensearch         opensearch         Up (healthy)    0.0.0.0:9200->9200/tcp
+keycloak           keycloak           Up (healthy)    0.0.0.0:8180->8080/tcp
+ask-orchestrator   ask-orchestrator   Up (healthy)    0.0.0.0:8083->8080/tcp
+ask-admin-api      ask-admin-api      Up (healthy)    0.0.0.0:8081->8081/tcp
+ask-admin-spa      ask-admin-spa      Up (healthy)    0.0.0.0:5173->80/tcp
+ask-chat-spa       ask-chat-spa       Up (healthy)    0.0.0.0:5174->80/tcp
+ask-setup-spa      ask-setup-spa      Up (healthy)    0.0.0.0:5175->80/tcp
+```
+
+(`mcp-server` and `teams-bot` also appear; they are opt-in and stay idle until their
+credentials are set.)
+
+The FastAPI backends also publish on host ports for their `/v1/health` endpoints and external
+traffic: **`ask-orchestrator`** on `:8083` and **`ask-admin-api`** on `:8081` by default. Each SPA
+reaches its backend by **container name** (not host port), so remapping these does **not** affect
+the browser flow — they only matter for external / machine callers (watsonx, Kafka ingest) and
+health probes. Remap with `ORCH_HOST_PORT` / `ADMIN_API_HOST_PORT` in `.env` to coexist with a
+co-located Confluent stack (which takes `8083` for Kafka Connect and `8081` for the Schema Registry).
 
 ## 5. Reach each UI
 
@@ -159,16 +178,8 @@ mappings in `docker-compose.yml`:
 Each SPA runs its own Keycloak sign-in — there is no shared login proxy routing several apps
 behind one port. Substitute your `EXTERNAL_HOST` for `localhost` when serving from a remote box.
 
-![ASK Admin landing view in the browser at localhost:5173](images/install-ui-admin.png)
-
-![Chat UI landing at localhost:5174](images/install-ui-chat.png)
-
-![ASK Setup landing at localhost:5175](images/install-ui-setup.png)
-
 If authentication is enabled (`DEV_BYPASS_AUTH=false`), the first visit to any SPA redirects
 through the Keycloak login before landing on the UI.
-
-![Keycloak login / admin console at localhost:8180](images/install-ui-keycloak.png)
 
 ## 6. Stop / rebuild
 
