@@ -83,6 +83,8 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 | **Up to date** | prod already holds the exact version that's in dev (`prod.sha == dev.sha`). | Nothing to do — prod is current. Push a new dev version first if you have changes. |
 | **Publish to prod** (enabled) | dev is ahead of prod, or prod has never been published yet (the note reads *ready for first prod publish*). | Click to promote the dev version to prod. |
 
+![The prod row locked on a never-dev-published Data Product: a grey lock, the disabled "Publish to dev first" button, and a "waiting on dev" note](../images/admin-publish-prod-disabled.png)
+
 > **Warning — you promote dev, not Working.** Publishing to prod ships whatever version is
 > currently in **dev**, not your latest unsaved edits. If you changed the definition after the
 > last dev publish, dev will read **behind working** — publish to dev again first so the version
