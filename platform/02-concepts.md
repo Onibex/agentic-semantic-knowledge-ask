@@ -39,21 +39,27 @@ The platform is three applications, used by two kinds of people.
 | Surface | Who uses it | What it's for |
 |---|---|---|
 | **ASK Admin** | Administrator / data steward | Author and publish the **semantic layer**: workspaces, business domains, Data Products. |
-| **Configuration app** | Administrator | Technical setup: database connection, LLM/embeddings provider, search index. |
+| **ASK Setup** | Administrator | Technical setup: database connections, LLM/embeddings provider, search index. |
 | **Chat** | Business user | Ask questions in natural language and read the answers. |
 
 The two roles map cleanly onto the surfaces:
 
-- The **administrator** (or data steward) works in the **Configuration app** and **ASK
+- The **administrator** (or data steward) works in **ASK Setup** and **ASK
   Admin**. They connect the database, pick the model provider, model the SAP tables into
   business entities, and publish them.
 - The **business user** works only in the **Chat**. They pick a workspace, ask a question
   in plain language, and read the answer — no SQL, no schema knowledge required.
 
+> **How the two roles are enforced.** Access is governed by two platform roles: **ask-admin**
+> (full authoring and configuration — ASK Admin and ASK Setup) and **ask-user** (the chat).
+> Every user of the realm is auto-granted **ask-user**, so business users can ask questions
+> without extra setup; **ask-admin** is assigned deliberately to the people who author and
+> configure the platform.
+
 ```mermaid
 flowchart LR
     subgraph ADMIN["Administrator / data steward"]
-        CFG["Configuration app<br/><i>DB · LLM · Search index</i>"]
+        CFG["ASK Setup<br/><i>DB · LLM · Search index</i>"]
         ADM["ASK Admin<br/><i>Workspaces · Domains · Data Products</i>"]
     end
     subgraph USER["Business user"]
@@ -78,7 +84,7 @@ queries. The diagram below is the full path from an empty platform to a first an
 ```mermaid
 flowchart LR
     subgraph SETUP["Administrator (one-time setup)"]
-        C["1 · Configure<br/>DB · LLM · Search<br/><i>Config app</i>"]
+        C["1 · Configure<br/>DB · LLM · Search<br/><i>ASK Setup</i>"]
         S["2 · Author semantic layer<br/>Workspace → Business Domain → Data Products<br/><i>ASK Admin</i>"]
         P["3 · Publish<br/>dev → prod<br/><i>ASK Admin</i>"]
         C --> S --> P
@@ -204,7 +210,7 @@ flowchart LR
     Q["Question<br/>(any language)"] --> M["LLM maps business terms<br/>to the semantic layer"]
     L[("Semantic layer<br/>fields · joins · descriptions")] --> M
     M --> SQL["Governed SQL<br/><i>only real columns + real joins</i>"]
-    SQL --> DB[("SAP HANA / PostgreSQL")]
+    SQL --> DB[("Any supported<br/>SQL engine")]
     DB --> ANS["Answer<br/>text · table · chart"]
 ```
 
@@ -258,8 +264,10 @@ they vary with your model provider and question complexity.*
 All three engines share the same downstream contract, which is what makes them
 interchangeable from the chat's point of view:
 
-- They target the **same database** (SAP HANA or PostgreSQL) and the same published
-  environment (`dev` / `prod`).
+- They target the **same database** — any of the supported SQL engines (**PostgreSQL**,
+  **SAP HANA**, **ClickHouse**, **IBM Db2**, **Snowflake**, **Databricks**, **Google
+  BigQuery**, **SQL Server**, **Microsoft Fabric**) — and the same published
+  environment (`dev` / `prod`). The active connection is chosen in ASK Setup, not in the chat.
 - They emit **governed SQL** constrained by the semantic layer — none of them invents
   columns.
 - They return the same response shape: generated **SQL**, a **results table**, a written

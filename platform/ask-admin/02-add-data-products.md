@@ -8,7 +8,7 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 2–10 minutes depending on the mode |
-| **Prerequisites** | Signed in to **ASK Admin**; a provider configured (see [Configuration](../config/configuration-app.md)) for the AI-assisted modes. |
+| **Prerequisites** | Signed in to **ASK Admin**; a provider configured (see [ASK Setup](../config/00-overview.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
 
 **Where this fits:** Configure → **Author — Data Products (you are here)** → Organize → Publish → Ask
@@ -73,8 +73,14 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 
 ## Mode C — DDL + AI
 
-**Use when:** you have SQL `CREATE TABLE` statements and want the AI to map them into ASK
-YAML for you. Great for bootstrapping Bronze tables quickly.
+**Use when:** you have SQL DDL and want the AI to map it into ASK YAML for you.
+
+The importer is **dialect-tolerant across all nine supported engines** (PostgreSQL, SAP HANA,
+ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
+Fabric) and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VIEW`**, as well
+as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold**
+entities too — not just Bronze — with guardrails: it will not fabricate joins from a bare
+`CREATE TABLE`, and it never guesses a layer (see the note below).
 
 Pick **DDL + AI**, then:
 
@@ -84,7 +90,9 @@ Pick **DDL + AI**, then:
    - **Upload `.sql` / `.ddl` / `.txt` files** (multiple allowed). The **layer is
      auto-detected per file** from the `CREATE TABLE` name (the `SILVER_` / `GOLD_` naming
      convention). Files that can't be detected show **pick layer** and you must choose
-     **Bronze / Silver / Gold** before importing.
+     **Bronze / Silver / Gold** before importing. Auto-detect only fires on that
+     `CREATE TABLE` naming, so a pasted or uploaded **view** (or any other relation) always
+     falls to a manual **pick layer**.
    - **…or paste a single DDL script** in the text box. If the layer can't be detected from
      the name, a **Layer** selector appears and is **required**.
 3. **Context for all files (optional)** — a sentence about what these tables are for; it

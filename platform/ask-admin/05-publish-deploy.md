@@ -57,7 +57,7 @@ Open a Data Product to reveal its detail. In the detail panel find the **Environ
 |---|---|---|---|
 | **Working** | teal `v{n} · draft` | *not published yet* (teal dot) — shown **only** while the status is **In Review** | (none) |
 | **dev** | blue `v{n}`, or *not deployed* | green **current** (`current · date · author`) when it matches Working; otherwise amber *behind working* | **Publish to dev** (blue), or **Up to date** (disabled) |
-| **prod** | red `v{n}`, or *not deployed* | green *up to date*; grey *waiting on dev*; amber *N versions behind* | **Publish to prod** (green), **Publish to dev first** (disabled), or **Up to date** (disabled) |
+| **prod** | red `v{n}`, or *not deployed* | green **current** (`current · date · author`) when it matches dev; grey *waiting on dev*; *ready for first prod publish* the first time (dev published, prod not yet); amber *N versions behind* | **Publish to prod** (green), **Publish to dev first** (disabled), or **Up to date** (disabled) |
 
 Click the button for the environment you want. A confirmation dialog appears:
 
@@ -81,7 +81,7 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 |---|---|---|
 | **Publish to dev first** — *waiting on dev* | The entity has **never** been published to dev. prod is hard-gated behind dev. | Publish to **dev** first; prod unlocks the moment dev has a version. |
 | **Up to date** | prod already holds the exact version that's in dev (`prod.sha == dev.sha`). | Nothing to do — prod is current. Push a new dev version first if you have changes. |
-| **Publish to prod** (enabled) | dev is ahead of prod. | Click to promote the dev version to prod. |
+| **Publish to prod** (enabled) | dev is ahead of prod, or prod has never been published yet (the note reads *ready for first prod publish*). | Click to promote the dev version to prod. |
 
 > **Warning — you promote dev, not Working.** Publishing to prod ships whatever version is
 > currently in **dev**, not your latest unsaved edits. If you changed the definition after the

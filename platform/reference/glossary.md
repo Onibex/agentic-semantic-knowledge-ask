@@ -10,7 +10,7 @@
 | **Who** | Anyone — administrators, data stewards, and business users |
 | **Time** | Skim as needed; ~5 minutes end to end |
 | **Prerequisites** | None. |
-| **You'll end with** | A shared vocabulary for the ASK Admin flows, the Configuration app, and the chat. |
+| **You'll end with** | A shared vocabulary for the ASK Admin flows, ASK Setup, and the chat. |
 
 **Where this fits:** **Configure · Author · Publish · Ask (all of them — this page underpins every step)**
 
@@ -31,8 +31,10 @@
 
 | Term | Meaning |
 |---|---|
-| **Agent Mode (Flash / Precise / Smart)** | The engine the chat uses to turn a data question into SQL. **Flash** is fastest: it searches your schema as text and writes SQL in one shot, with no deep validation. **Precise** is the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. **Smart** is the balanced default: it uses the Data Product catalog as context, picks Data Products naturally, and resolves joins through the relationship graph. If unsure, start with **Smart**. |
-| **ASK Admin** | The administration application where you author and publish the semantic layer — workspaces, business domains, and Data Products. Distinct from the **Configuration app** (technical setup) and the **chat** (where users ask questions). |
+| **Agent Mode (Flash / Precise / Smart)** | The engine the chat uses to turn a data question into SQL. **Flash** is fastest: it searches your schema as text and writes SQL in one shot, with no deep validation. **Precise** is the **default** — the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. **Smart** is balanced: it uses the Data Product catalog as context, picks Data Products naturally, and resolves joins through the relationship graph. The chat opens on **Precise**; switch to **Smart** or **Flash** when speed matters more than full validation. |
+| **Artifacts** | The chat's document-generation surface: a guided wizard (Name → Purpose → Data focus → Format) that turns query results into a downloadable document. See [Using the Chat](../chat/using-the-chat.md). |
+| **ASK Admin** | The administration application where you author and publish the semantic layer — workspaces, business domains, and Data Products. Distinct from **ASK Setup** (technical setup) and the **chat** (where users ask questions). |
+| **ASK Setup** | The administrator application for **technical setup** (formerly "Configuration app"). It hosts a multi-engine **Database connection registry** (the nine supported SQL engines, one active per environment), an **LLM Provider registry** (one active), and the **Identity Provider** configuration. The **OpenSearch** search index is **env-sourced and read-only** here. Separate from **ASK Admin**, which handles the semantic layer. |
 | **Alias** | A human-readable label for a field, shown instead of the technical column name — e.g. `AFKO.AUFNR` aliased as *Order Number*. Aliases help both people and the agent recognize a column. |
 | **Attribute** | A `field_role` for free-text descriptions or names (a material description, an order text). The agent may filter on an attribute but should **not** `GROUP BY` a long attribute. Contrast with **Dimension**: a material *description* is an attribute; a material *group code* is a dimension. |
 
@@ -48,9 +50,9 @@
 
 | Term | Meaning |
 |---|---|
-| **Configuration app** | The administrator application for **technical setup**: database connection, LLM/embeddings provider, and the OpenSearch search index. It is separate from **ASK Admin**, which handles the semantic layer. |
-| **Conflict** | A difference the platform detects when merging incoming content (typically a **OneConnect** import) against an existing Data Product. Conflicts are surfaced for manual resolution rather than silently overwriting your work; they appear under the **Conflicts** filter in Semantic Knowledge. |
 | **`composed_of`** | On a Silver Data Product, the ordered list of Bronze tables it is built from. On a Gold, it is usually the Gold's own physical table. |
+| **Conflict** | A difference the platform detects when merging incoming content (typically a **OneConnect** import) against an existing Data Product. Conflicts are surfaced for manual resolution rather than silently overwriting your work; they appear under the **Conflicts** filter in Semantic Knowledge. |
+| **Connection** | A named database connection in **ASK Setup**'s connection registry — an engine plus its host/credentials. The registry can hold many; **one connection is active per environment** (`dev` / `prod`), and that active connection is what the chat queries. |
 
 ## D
 
@@ -90,6 +92,7 @@
 | Term | Meaning |
 |---|---|
 | **Identifier** | A `field_role` for keys and document numbers (e.g. order number `AFKO.AUFNR`, order item `AFPO.POSNR`). Used to group or filter; **never aggregated**. |
+| **Identity Provider** | The system that authenticates users and issues the tokens the platform trusts. Configured (read-only) in **ASK Setup**; supported providers are **Keycloak**, **SAP BTP IAS**, and a **dev bypass** for local development. |
 | **In Review** | The lifecycle status a Data Product lands in when created or edited, before it is released. It is editable and not yet visible to the chat. See **Released** and **Publish**. |
 
 ## J
@@ -98,6 +101,12 @@
 |---|---|
 | **Join** | See **Relationship**. In the demo, the Silver `production_order` joins header `AFKO` to item `AFPO` on the order number (`AUFNR`). |
 | **`join_graph`** | On a Silver, the join plan **between the composed Bronze tables** (Bronze-to-Bronze only), including execution order. It is how a Silver stitches its raw tables into one entity. Distinct from **relationships**, which are cross-entity edges. |
+
+## L
+
+| Term | Meaning |
+|---|---|
+| **LLM Provider** | An entry in **ASK Setup**'s LLM Provider registry — a model provider plus its credentials and model choice. The registry can hold several, but **one provider is active** at a time and drives every AI-assisted step (chat SQL generation, enrichment, DDL mapping). The embedder is configured separately and shared. |
 
 ## M
 
@@ -112,13 +121,13 @@
 |---|---|
 | **OneConnect** | An Onibex tool that produces a SAP metadata export (a JSON payload). The **From OneConnect** creation mode runs that export through the platform's merge engine: new content is applied as a draft and any differences against an existing Data Product surface as **conflicts** to resolve. See [Add Data Products · Mode D](../ask-admin/02-add-data-products.md). |
 | **Organization profile** | Organization-level settings such as company name and default **source system** — e.g. *Pinnacle Industrial Manufacturing* on *SAP S/4HANA*. The source system pre-fills AI-assisted modes such as DDL + AI. |
-| **OpenSearch** | The search index that powers the platform's semantic (hybrid) search over your Data Products. Configured in the **Configuration app**; it is **not** your transactional database. |
+| **OpenSearch** | The search index that powers the platform's semantic (hybrid) search over your Data Products. It is **env-sourced and read-only** in **ASK Setup** (set via environment variables, not edited in the UI); it is **not** your transactional database. |
 
 ## P
 
 | Term | Meaning |
 |---|---|
-| **Precise** | See **Agent Mode**. The most rigorous, reproducible engine — extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. Best for audit and compliance, or when you need to explain exactly why a table or join was chosen. |
+| **Precise** | See **Agent Mode**. The **default** engine — the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. Best for audit and compliance, or when you need to explain exactly why a table or join was chosen. |
 | **Publish** | Promoting authored changes so the chat can see them. Publishing is **gated dev → prod**: you publish to **dev** first, and **prod** becomes available only once dev is current. You can publish a single Data Product from its detail panel or a whole business domain at once. Nothing is queryable until it is published. |
 
 ## R
@@ -128,17 +137,19 @@
 | **Reference** | An `entity_role` for lookup or configuration data (source **classification** `C` always maps to reference). There is no separate "configuration" entity role — configuration data surfaces as reference. |
 | **Relationship (join)** | A cross-entity edge the agent may traverse to build a JOIN. Each relationship names a target entity, a relationship type (one-to-one / one-to-many / …), a full SQL join condition, a business label, a traversal cost, and an aggregation-safety hint. Relationships live on **Silver** (Silver → Silver, required so the fallback plane works) and on **Gold** (Gold → Silver / Gold → Gold, for enrichment, drill-down, and lineage); a Silver never points to a Gold. |
 | **Released** | The lifecycle status of a Data Product that has been published to an environment (as opposed to **In Review**). |
+| **Roles (ask-admin / ask-user)** | The two platform roles that govern access. **ask-admin** grants full authoring and configuration (ASK Admin and ASK Setup); **ask-user** grants use of the chat. Every user of the realm is **auto-granted ask-user**, so business users can ask questions without extra setup; **ask-admin** is assigned deliberately. |
 
 ## S
 
 | Term | Meaning |
 |---|---|
-| **Semantic Dictionary** | Pre-agreed business terms — canonical labels, synonyms, and phrase mappings — maintained per SAP module in the **Configuration app**. It sharpens how the agent maps a user's words to your columns and helps disambiguation. In the demo, *Confirmed Yield* maps to `AFRU.LMNGA` with synonyms *good quantity, good output, yield*. |
+| **Semantic Dictionary** | Pre-agreed business terms — canonical labels, synonyms, and phrase mappings — maintained per SAP module under **ASK Admin** / **ASK Setup** (as applicable to your build). It sharpens how the agent maps a user's words to your columns and helps disambiguation. In the demo, *Confirmed Yield* maps to `AFRU.LMNGA` with synonyms *good quantity, good output, yield*. |
 | **Semantic layer** | The whole curated model the agent maps questions to — workspaces, business domains, and the Bronze/Silver/Gold Data Products with their fields, relationships, and descriptions. Because the agent can only use what the semantic layer defines, answers are governed and reproducible. |
 | **Silver** | A layer for a **curated business entity that owns the join topology** — the single source of truth for how its underlying tables connect (`composed_of` + `join_graph` + `relationships`). In the demo, `production_order` (AFKO + AFPO + AUFK + AFRU) is Silver. See [Add Data Products](../ask-admin/02-add-data-products.md). |
 | **Slug** | The URL- and API-safe identifier for a workspace or domain (lowercase letters, digits, hyphens), auto-derived from the name — e.g. `manufacturing-operations`. It identifies the object, so it must be unique. |
-| **Smart** | See **Agent Mode**. The balanced default engine — catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. |
+| **Smart** | See **Agent Mode**. The balanced engine — catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. (The chat's default engine is **Precise**.) |
 | **Source system** | The system your data originates from (e.g. `s4h` for SAP S/4HANA). Set on the **Organization profile** and per Data Product; it tunes the AI mapping in DDL + AI and OneConnect modes. |
+| **SQL engine / multi-DB** | The kind of database the generated SQL runs against. The platform supports nine engines — **PostgreSQL, SAP HANA, ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft Fabric** — each with its own SQL dialect. You register connections and pick the active one per environment in **ASK Setup** (see **Connection**). |
 | **Status flag** | A `field_role` for a field whose value space is a small closed set of business states (typically 2–5, e.g. `X = blocked, blank = not blocked`). The agent treats it as **filter-only** — never aggregates it or groups by it. |
 | **Synonyms** | Alternative words for a field or term that boost retrieval and disambiguation — e.g. *good quantity, good output, yield* for confirmed yield. Added by hand or suggested during **Enrichment**. |
 

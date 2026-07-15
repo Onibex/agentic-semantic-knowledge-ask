@@ -117,12 +117,12 @@ Click any node to open the **inspector** on the right. It shows:
   the shared YAML affects **every** domain that reuses it — a **reused ×N** badge appears when
   it's shared), **AI Assist** (AI-assisted enrichment), and **Lineage** (isolate this entity's
   ancestors/descendants).
-- A **Deployment & Versions** panel (per-env publish / diff / history — see
+- The **Environments** panel (per-env publish / diff / version history — see
   [Flow 5](05-publish-deploy.md)).
 - The **description**, **Info** (ID, file path, sources), **Join conditions**, and the full
   **Fields** table.
 
-![Selected node inspector: badges, actions, Deployment panel, description, join conditions, fields](../images/admin-canvas-detail.png)
+![Selected node inspector: badges, actions, Environments panel, description, join conditions, fields](../images/admin-canvas-detail.png)
 
 ## 5. Remove a Data Product from the domain
 

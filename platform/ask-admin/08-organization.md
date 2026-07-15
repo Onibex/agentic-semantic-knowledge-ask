@@ -50,6 +50,10 @@ Enter your organization's details:
 | **Source system** | Yes | The source system **and version**, demo: *SAP S/4HANA 2023 FPS01*. This value frames the agent's answers **and** defaults new entities' `source_system` — include the version so the LLM knows what's available. |
 | **Portal URL** | No | The customer's portal address — demo: *https://ask.pinnacle-mfg.com*. |
 
+> **Note —** The form does not hard-validate these fields — **Save organization** is enabled
+> whenever there are unsaved changes — but treat **Company name** and **Source system** as
+> required in practice, since the agent uses them to frame every answer.
+
 > **Tip — include the version.** The **Source system** field is free text; write the system
 > and its release together (e.g. *SAP S/4HANA 2023 FPS01*, or *Salesforce* / *PostgreSQL 15*
 > for non-SAP sources). The version tells the agent which features and tables to assume.

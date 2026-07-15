@@ -19,12 +19,12 @@
 
 ## Concepts (30-second version)
 
-- **ASK Admin** is the semantic-layer curator app. It self-identifies as
-  **Agentic Semantic Knowledge Admin** (short: **ASK Admin**). This is where you author and
-  publish the business meaning the chat agent maps questions to.
+- **ASK Admin** is the semantic-layer curator app. Its sign-in screen shows the title
+  **Agentic Semantic Knowledge** with **Admin** on a subtitle line (short: **ASK Admin**).
+  This is where you author and publish the business meaning the chat agent maps questions to.
 - It is one of two admin surfaces. ASK Admin owns the **semantic layer** (workspaces,
   domains, Data Products). Technical/system configuration — database, providers, MCP —
-  lives in the separate **Configuration app** (see [Configuration](../config/configuration-app.md)).
+  lives in the separate **ASK Setup** app (see [ASK Setup](../config/00-overview.md)).
 - The whole platform follows one journey: **Configure → Author → Publish → Ask**. ASK Admin
   covers the **Author** and **Publish** steps.
 
@@ -33,19 +33,20 @@
 ## 1. Sign in
 
 Open the app URL. If you're not already authenticated you land on the **sign-in** screen —
-the Onibex logo above the title **Agentic Semantic Knowledge Admin**.
+the Onibex logo above the title **Agentic Semantic Knowledge**, with **Admin** on the line beneath.
 
-![ASK Admin sign-in screen with the Onibex logo, the Agentic Semantic Knowledge Admin title, and the Sign in button](../images/admin-overview-login.png)
+![ASK Admin sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title with the Admin subtitle, and the Sign in button](../images/admin-overview-login.png)
 
 What you see depends on how the deployment is configured:
 
 | Auth mode | Button label | What happens |
 |---|---|---|
-| **Keycloak (SSO)** | **Sign in** | Redirects to your identity provider, then back to the app. This is the normal production mode. |
+| **Keycloak (SSO)** | **Sign in** | Redirects to your identity provider, then back to the app. The usual on-prem / self-hosted production mode. |
+| **SAP BTP (XSUAA)** | **Sign in** | Redirects to SAP BTP identity (IAS / XSUAA), then back. Used on SAP BTP deployments. |
 | **Dev bypass** | **Continue without authentication** | Enters the app directly with no login — for local development only. |
 
 After you're in, the auth mode is shown as a small chip in the sidebar footer (**SSO** for
-Keycloak, **Dev** for the bypass), next to your email and role.
+Keycloak, **XSUAA** for SAP BTP, **Dev** for the bypass), next to your email and role.
 
 > **Warning —** *Continue without authentication* only appears when the deployment is
 > explicitly set to the dev-bypass mode. Never run production with the bypass enabled.
