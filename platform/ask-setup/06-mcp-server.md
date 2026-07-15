@@ -39,7 +39,7 @@ In the left sidebar, click **MCP Server**. The page header reads **MCP Server** 
 subtitle *"Internal service that exposes SAP OData APIs as MCP tools for the AI assistant"*. A
 **Refresh** button sits top-right and re-fetches the stored values.
 
-![MCP Server page: the Connection Settings card with MCP Server URL and Port fields, and a Test Connection card](../images/config-mcp-server.png)
+![MCP Server page: the Connection Settings card with MCP Server URL and Port fields, and a Test Connection card](../images/setup-mcp-server.png)
 
 ## 2. Set the endpoint and save
 

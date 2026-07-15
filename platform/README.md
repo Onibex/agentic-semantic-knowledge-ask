@@ -22,7 +22,7 @@ mirrors it:
 
 1. [Installation & Running the Platform](01-installation.md)
 2. [Concepts & Architecture](02-concepts.md)
-3. [ASK Setup · Overview](config/00-overview.md) — configure the platform (database, providers, identity)
+3. [ASK Setup · Overview](ask-setup/00-overview.md) — configure the platform (database, providers, identity)
 4. [ASK Admin · Overview & Navigation](ask-admin/00-overview.md)
 5. [ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)
 6. [ASK Admin · Add Data Products](ask-admin/02-add-data-products.md)
@@ -38,14 +38,14 @@ mirrors it:
 - [Concepts & Architecture](02-concepts.md)
 
 ### ASK Setup (technical configuration)
-- [Overview](config/00-overview.md) — the ASK Setup home + the config-storage model
-- [Infrastructure (OpenSearch)](config/01-setup.md)
-- [Database Connections](config/02-database-connections.md) — multi-engine registry, one active per environment
-- [LLM Providers](config/03-llm-providers.md) — LLM registry + the shared embedder
-- [Identity Provider](config/04-identity-provider.md)
-- [SAP Connection](config/05-sap-connection.md)
-- [MCP Server](config/06-mcp-server.md)
-- [Contracts](config/07-contracts.md) — OpenAPI → MCP tools
+- [Overview](ask-setup/00-overview.md) — the ASK Setup home + the config-storage model
+- [Infrastructure (OpenSearch)](ask-setup/01-setup.md)
+- [Database Connections](ask-setup/02-database-connections.md) — multi-engine registry, one active per environment
+- [LLM Providers](ask-setup/03-llm-providers.md) — LLM registry + the shared embedder
+- [Identity Provider](ask-setup/04-identity-provider.md)
+- [SAP Connection](ask-setup/05-sap-connection.md)
+- [MCP Server](ask-setup/06-mcp-server.md)
+- [Contracts](ask-setup/07-contracts.md) — OpenAPI → MCP tools
 
 ### ASK Admin (semantic-layer authoring)
 - [Overview & Navigation](ask-admin/00-overview.md)

@@ -55,7 +55,7 @@ sits a grid of **seven cards**, one per configuration section, each with a short
 Click any card to open its section. At the very bottom, when a language model is active, an
 **Active model** badge shows the model id in use.
 
-![ASK Setup Home: hero, Setup progress bar, the seven section cards with status strips, and the active-model badge](../images/config-home.png)
+![ASK Setup Home: hero, Setup progress bar, the seven section cards with status strips, and the active-model badge](../images/setup-home.png)
 
 > **Tip — the cards are a checklist.** The status strips make the dashboard a live checklist:
 > work top to bottom until the progress bar reads **`7 / 7`**. Status is derived from the server,

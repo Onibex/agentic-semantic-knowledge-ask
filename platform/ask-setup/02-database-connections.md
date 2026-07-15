@@ -43,7 +43,7 @@ and **Add connection** buttons in the top-right.
 The page has two zones: an **active per environment** row at the top (two cards, **Development** and
 **Production**), and the full **All connections** list beneath it.
 
-![Database Connections page: the Development / Production active cards on top and the All connections list below, each row with Test, Edit and the actions menu](../images/config-database-list.png)
+![Database Connections page: the Development / Production active cards on top and the All connections list below, each row with Test, Edit and the actions menu](../images/setup-database-list.png)
 
 ### The active-per-environment cards
 
@@ -75,7 +75,7 @@ If nothing is registered yet, an empty state invites you to **Add connection**.
 Click **Add connection**. A drawer slides in from the right titled **Add connection**, with two
 steps.
 
-![Add connection drawer: the Engine picker grid (nine engines) in step 1 and the engine-specific Connection details in step 2](../images/config-database-drawer.png)
+![Add connection drawer: the Engine picker grid (nine engines) in step 1 and the engine-specific Connection details in step 2](../images/setup-database-drawer.png)
 
 ### Step 1 — Engine
 

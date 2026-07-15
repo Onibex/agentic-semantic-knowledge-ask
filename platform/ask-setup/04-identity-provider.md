@@ -42,7 +42,7 @@ In the ASK Setup sidebar, open **Identity Provider**. The header reads *"Who sig
 provider is chosen at deploy time; this page shows the active configuration and your current
 session, read-only."* A **Refresh** button reloads the page.
 
-![ASK Setup Identity Provider page: the Active provider card, the read-only OIDC configuration, the "Your session" panel, and the Supported providers list](../images/config-identity.png)
+![ASK Setup Identity Provider page: the Active provider card, the read-only OIDC configuration, the "Your session" panel, and the Supported providers list](../images/setup-identity.png)
 
 ## 2. Read the active provider
 

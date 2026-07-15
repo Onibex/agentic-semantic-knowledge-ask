@@ -216,7 +216,7 @@ through the Keycloak login before landing on the UI.
 
 ## What's next
 
-→ **[ASK Setup](config/00-overview.md)** — set up the database connections, LLM providers, and
+→ **[ASK Setup](ask-setup/00-overview.md)** — set up the database connections, LLM providers, and
 identity.
 → **[ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)** — create the
 containers your data lives in.

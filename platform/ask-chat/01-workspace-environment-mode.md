@@ -69,7 +69,7 @@ Under **Environment** in the sidebar, click one of the two pill buttons:
 
 > **Warning —** If the `prod` database is not configured, prod queries return a clear error
 > rather than silently falling back to dev. See
-> [ASK Setup · Database Connections](../config/02-database-connections.md).
+> [ASK Setup · Database Connections](../ask-setup/02-database-connections.md).
 
 ---
 

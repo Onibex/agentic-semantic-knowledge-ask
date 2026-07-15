@@ -49,7 +49,7 @@ right.
 Below the header you'll see three areas: the **Active model** card, the **All LLM connections**
 list, and the **Embedder** card.
 
-![ASK Setup LLM Providers page: Active model card, the list of registered connections, and the shared Embedder card](../images/config-llm-providers.png)
+![ASK Setup LLM Providers page: Active model card, the list of registered connections, and the shared Embedder card](../images/setup-llm-providers.png)
 
 If nothing is registered yet, the list shows an empty state — **"No LLM connections yet"** — with
 an **Add LLM** button.
@@ -139,7 +139,7 @@ the provider and model as in step 2 — demo: **AWS Bedrock** · `amazon.titan-e
 > from scratch; this is not automatic, and switching back will not restore rebuilt data. The drawer
 > makes you tick an acknowledgement checkbox before it will save such a change.
 
-![Edit embedder drawer showing the red "This changes the embedding vector space" warning and its acknowledgement checkbox](../images/config-llm-embedder-warning.png)
+![Edit embedder drawer showing the red "This changes the embedding vector space" warning and its acknowledgement checkbox](../images/setup-llm-embedder-warning.png)
 
 ---
 

@@ -15,7 +15,7 @@
 **Where this fits:** **Configure — System Setup & Docs (you are here)** → Author → Publish → Ask
 
 > **Provider, model, database and identity configuration now live in ASK Setup**, not here —
-> see the [ASK Setup overview](../config/00-overview.md). This page covers only the two
+> see the [ASK Setup overview](../ask-setup/00-overview.md). This page covers only the two
 > concerns that remain in ASK Admin: the **shared Embedder** and **document ingestion**. Use a
 > **real** provider when editing the Embedder; **never expose a real API key** — redact every
 > credential field before capturing a screenshot.
@@ -61,7 +61,7 @@ line** — the configured model id — rather than credential rows. On the right
 **Manage in ASK Setup** link and a **Test** button; there is **no Edit** button.
 
 To change the LLM provider, model or credentials, follow the **Manage in ASK Setup** link and
-edit them on the [LLM Providers](../config/03-llm-providers.md) page in ASK Setup. This page
+edit them on the [LLM Providers](../ask-setup/03-llm-providers.md) page in ASK Setup. This page
 only reflects what is configured there.
 
 ### 3. Edit the Embedder (the one editable provider)
@@ -129,7 +129,7 @@ then a coloured result strip appears at the bottom of the card:
 
 > **Warning — a failing Test is a real signal.** If a Test fails, the agent's corresponding
 > capability (SQL generation, embeddings, or retrieval) will fail too. Fix the Embedder here,
-> the LLM in [ASK Setup](../config/03-llm-providers.md), or OpenSearch on the deployment before
+> the LLM in [ASK Setup](../ask-setup/03-llm-providers.md), or OpenSearch on the deployment before
 > publishing a workspace.
 
 ---
@@ -180,6 +180,6 @@ A toast confirms *"Indexed N chunks from `<filename>`"*. If ingestion fails, a r
 → **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — organize Data
 Products once your Embedder is green.
 → **[Flow 2 · Add Data Products](02-add-data-products.md)** — the AI-assisted create modes rely
-on a working **LLM** provider (managed in [ASK Setup](../config/03-llm-providers.md)).
+on a working **LLM** provider (managed in [ASK Setup](../ask-setup/03-llm-providers.md)).
 → For the full provider, database and identity configuration, see the
-[ASK Setup overview](../config/00-overview.md).
+[ASK Setup overview](../ask-setup/00-overview.md).

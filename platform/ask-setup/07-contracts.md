@@ -38,7 +38,7 @@ In the left sidebar, click **Contracts**. The page header reads **API Contracts*
 subtitle *"Register SAP OData APIs as MCP tools from OpenAPI 3.0 JSON specs"*. A **Refresh**
 button top-right reloads the registered list.
 
-![Contracts page: the Upload Contract card and the list of registered contracts](../images/config-contracts.png)
+![Contracts page: the Upload Contract card and the list of registered contracts](../images/setup-contracts.png)
 
 ## 2. Upload and preview a spec
 

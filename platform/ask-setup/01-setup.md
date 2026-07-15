@@ -38,7 +38,7 @@ the top-right that re-reads the live configuration from the server.
 
 The body has two cards: **OpenSearch Connection** (read-only) and **Health check**.
 
-![Setup page: the read-only OpenSearch Connection card with source chips, the "Managed in environment" note, and the Health check card](../images/config-setup.png)
+![Setup page: the read-only OpenSearch Connection card with source chips, the "Managed in environment" note, and the Health check card](../images/setup-setup.png)
 
 ## 2. Read the OpenSearch connection
 
@@ -86,7 +86,7 @@ Click **Test connection**. The button shows **Testing…** while it runs, then a
 
 A matching toast appears in the top-right corner.
 
-![Health check card after a successful Test connection: the green result banner with cluster status and latency](../images/config-setup.png)
+![Health check card after a successful Test connection: the green result banner with cluster status and latency](../images/setup-setup.png)
 
 ---
 

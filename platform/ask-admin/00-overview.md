@@ -24,7 +24,7 @@
   This is where you author and publish the business meaning the chat agent maps questions to.
 - It is one of two admin surfaces. ASK Admin owns the **semantic layer** (workspaces,
   domains, Data Products). Technical/system configuration — database, providers, MCP —
-  lives in the separate **ASK Setup** app (see [ASK Setup](../config/00-overview.md)).
+  lives in the separate **ASK Setup** app (see [ASK Setup](../ask-setup/00-overview.md)).
 - The whole platform follows one journey: **Configure → Author → Publish → Ask**. ASK Admin
   covers the **Author** and **Publish** steps.
 
