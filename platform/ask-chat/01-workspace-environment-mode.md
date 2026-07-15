@@ -36,7 +36,7 @@
 In the left sidebar, open the **Workspace** dropdown and select the workspace you want to
 query. Workspaces are loaded from the admin API and listed by name.
 
-![Workspace dropdown in the sidebar with a workspace selected showing its name and slug](../images/chat-workspace-picker.png)
+![Workspace dropdown in the sidebar with a workspace selected, listed by name](../images/chat-workspace-picker.png)
 
 | Control | Behaviour |
 |---|---|

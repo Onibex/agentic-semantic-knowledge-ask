@@ -39,7 +39,7 @@
 In the ASK Setup sidebar, open **SAP Connection**. The page shows a **Connection Details** card and a
 **Test Connection** card. A **Refresh** button (top-right) re-fetches the stored configuration.
 
-![ASK Setup SAP Connection page: the Connection Details card with host, OData path, username and masked password, and the Test Connection card](../images/setup-sap-connection.png)
+![ASK Setup SAP Connection page: the Connection Details card with host, OData path, username and password (shown "not set" until one is saved), and the Test Connection card](../images/setup-sap-connection.png)
 
 In read mode the **Connection Details** card lists **Host URL**, **OData Service Path**, **Username**
 and **Password** (shown masked when one is stored). Fields that were never set read

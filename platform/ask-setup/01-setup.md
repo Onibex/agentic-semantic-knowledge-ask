@@ -86,7 +86,7 @@ Click **Test connection**. The button shows **Testing…** while it runs, then a
 
 A matching toast appears in the top-right corner.
 
-![Health check card after a successful Test connection: the green result banner with cluster status and latency](../images/setup-setup.png)
+![The Health check card with its Test connection button — a successful test reports the cluster status and latency](../images/setup-setup.png)
 
 ---
 

@@ -37,7 +37,7 @@ you can refine it in [Flow 3 · Edit & Enrich](03-edit-enrich.md) before publish
 Go to the sidebar → **Semantic Layer** → **Semantic Knowledge**. This is the global catalog of
 all Data Products. Click **New data product** (top-right).
 
-![Semantic Knowledge catalog with the New data product button and the All / In Review / Released / Conflicts filters](../images/admin-sk-catalog.png)
+![Semantic Knowledge catalog with the New data product button and the All / In Review / Released filters (a Conflicts filter appears only when there are pending conflicts)](../images/admin-sk-catalog.png)
 
 The dialog opens with four tabs:
 
@@ -56,7 +56,7 @@ by hand.
 Pick the **Manual** tab. Fill the structured form: header (layer, name, description, source
 system), then **fields** (name, type, role, alias), and optionally **relationships** (joins).
 
-![Manual authoring form: header fields, then the field list](../images/admin-dp-manual.png)
+![Manual authoring form for a Silver entity: the header fields, then its composed-of tables and join graph](../images/admin-dp-manual.png)
 
 Field roles and authoring rules are covered in
 [Flow 3 · Edit & Enrich](03-edit-enrich.md) and the

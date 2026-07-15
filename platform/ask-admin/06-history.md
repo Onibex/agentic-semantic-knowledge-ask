@@ -118,7 +118,7 @@ read-only). When only a unified diff is available it falls back to a line-by-lin
 **added** lines green, **removed** lines red. Either way the header reads
 **Changes from `<from-sha>` → `<to-sha>`**.
 
-![Diff viewer: FROM/TO selection banner above, side-by-side YAML diff below](../images/admin-history-diff.png)
+![Diff viewer: FROM/TO selection banner above, line-by-line YAML diff below](../images/admin-history-diff.png)
 
 > **Tip — pick order doesn't matter for reading.** FROM is the left (earlier) pane and TO is
 > the right (later) pane. If you set them the wrong way round, just re-click the intended
