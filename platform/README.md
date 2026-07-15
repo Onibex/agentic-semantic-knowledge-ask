@@ -8,9 +8,10 @@ flow** across ASK Setup, ASK Admin and the Chat.
 
 > Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
 
-All walkthroughs use one consistent, **illustrative** example — **SAP Production Planning
-(Production Orders)**. It is a demonstration dataset: substitute your own Data Products, and
-expect the sample questions to return results only against matching data.
+Most walkthroughs use one consistent, **illustrative** example — **SAP Production Planning
+(Production Orders)**; the **ASK Chat** flows use a **Sales & Distribution** example. Both are
+demonstration datasets: substitute your own Data Products, and expect the sample questions to
+return results only against matching data.
 
 ---
 
@@ -28,7 +29,7 @@ mirrors it:
 7. [ASK Admin · Edit & Enrich Data Products](ask-admin/03-edit-enrich.md)
 8. [ASK Admin · Domain Canvas (Graph)](ask-admin/04-domain-canvas.md)
 9. [ASK Admin · Publish & Deploy (dev → prod)](ask-admin/05-publish-deploy.md)
-10. [Using the Chat](chat/using-the-chat.md)
+10. [ASK Chat · Overview & Navigation](ask-chat/00-overview.md)
 
 ## By area
 
@@ -58,8 +59,11 @@ mirrors it:
 - [Organization Profile](ask-admin/08-organization.md)
 - [System Setup & Document Ingestion](ask-admin/09-providers-docs.md) — read-only providers, shared embedder, RAG docs
 
-### Chat (end users)
-- [Using the Chat](chat/using-the-chat.md)
+### ASK Chat (end users)
+- [Overview & Navigation](ask-chat/00-overview.md)
+- [Workspace, Environment & Mode](ask-chat/01-workspace-environment-mode.md)
+- [Using the Chat](ask-chat/02-chat.md)
+- [Artifacts](ask-chat/03-artifacts.md)
 
 ### Reference
 - [Glossary](reference/glossary.md)

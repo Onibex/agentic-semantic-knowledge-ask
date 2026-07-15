@@ -24,8 +24,8 @@
 - **ASK Chat** is the natural-language query interface. You type a question; the agent answers
   from the governed semantic layer — a written answer, a results table, an auto-generated chart,
   and optionally the SQL behind it.
-- It is one of two user surfaces. ASK Chat is for **querying**. The **Configuration App**
-  (see [Configuration](../config/configuration-app.md)) is for technical setup by admins.
+- It is one of two user surfaces. ASK Chat is for **querying**. **ASK Setup**
+  (see [ASK Setup](../config/00-overview.md)) is for technical setup by admins.
 - Three controls in the sidebar scope every query: **Workspace** (what data the agent sees),
   **Environment** (`dev` or `prod` database), and **Mode** (`Flash` / `Precise` / `Smart` SQL
   strategy).

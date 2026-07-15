@@ -167,4 +167,4 @@ Use this when the underlying data has changed and you want a fresh document.
 
 → **[Flow 2 · Using the Chat](02-chat.md)** — ask follow-up questions whose answers feed your next artifact.
 → **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — switch workspace or environment before generating an artifact for a different domain.
-→ **[Configuration App](../config/configuration-app.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.
+→ **[ASK Setup](../config/00-overview.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.

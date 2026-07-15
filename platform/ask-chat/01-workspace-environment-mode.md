@@ -58,7 +58,7 @@ Under **Environment** in the sidebar, click one of the two pill buttons:
 
 | Option | Label | What it targets |
 |---|---|---|
-| **dev** *(default)* | `dev` · "Safe sandbox — no prod impact" | The development database connection configured in the Configuration App. |
+| **dev** *(default)* | `dev` · "Safe sandbox — no prod impact" | The development database connection configured in ASK Setup. |
 | **prod** | `prod` · "Live production data" | The production database connection. Only available if the administrator has configured a prod connection. |
 
 ![Environment toggle showing the dev and prod pill buttons with dev selected](../images/chat-environment-toggle.png)
@@ -69,7 +69,7 @@ Under **Environment** in the sidebar, click one of the two pill buttons:
 
 > **Warning —** If the `prod` database is not configured, prod queries return a clear error
 > rather than silently falling back to dev. See
-> [Configuration App · Database](../config/configuration-app.md#database-dev--prod).
+> [ASK Setup · Database Connections](../config/02-database-connections.md).
 
 ---
 
@@ -80,18 +80,18 @@ Under **Mode** in the sidebar, click one of the three options:
 | Mode | When to use it |
 |---|---|
 | **Flash** | Quick exploration. One LLM call, no join planning, no scope check. Fastest and cheapest; least rigorous. Use when latency matters more than guarantees. |
-| **Precise** | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. Use for compliance queries or when an answer looks wrong. |
-| **Smart** *(default)* | The all-rounder. Shows the LLM a compact catalog, lets it pick the relevant Data Products, then resolves joins deterministically. Balances speed and accuracy for everyday use. |
+| **Precise** *(default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
+| **Smart** | The all-rounder. Shows the LLM a compact catalog, lets it pick the relevant Data Products, then resolves joins deterministically. Useful for broad or unusually phrased questions. |
 
-![Mode selector showing Flash, Precise, and Smart stacked vertically with Smart highlighted](../images/chat-mode-selector.png)
+![Mode selector showing Flash, Precise, and Smart stacked vertically](../images/chat-mode-selector.png)
 
 The mode is forwarded as a parameter on every `/query` and `/artifact` call. It does not
 affect **Schema** questions, **Documentation** questions, or **Action** questions — only
 data queries that produce SQL.
 
-> **Tip —** Leave the mode on **Smart** for normal use. Switch to **Precise** if an answer
-> looks incomplete or the agent struggles to resolve an unusual phrasing. Use **Flash** for
-> fast, exploratory lookups where you will validate the result yourself.
+> **Tip —** Leave the mode on **Precise** for normal, auditable answers. Use **Flash** for
+> fast, exploratory lookups where you will validate the result yourself, and **Smart** when a
+> question is broad or unusually phrased and you want the agent to pick the Data Products.
 
 ---
 

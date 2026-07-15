@@ -162,7 +162,7 @@ rows tell you which version each environment holds. When dev is ahead of prod, t
 reads **"N versions behind"** so you know the size of the gap before you promote.
 
 > The chat scopes its answers to the environment it targets (dev or prod) — see
-> [the chat manual](../chat/using-the-chat.md). Publishing to **dev** makes a Data Product
+> [the chat manual](../ask-chat/00-overview.md). Publishing to **dev** makes a Data Product
 > answerable in the dev-targeted chat; promoting to **prod** makes it answerable in production.
 
 ---
