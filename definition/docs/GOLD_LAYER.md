@@ -105,7 +105,9 @@ Each field is an object in the `fields` list:
 | `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `status_flag`. See [§3.3.1](#331-field-roles). |
 | `type` | ✅ | SQL-style type of the published column: `TEXT`, `NUMERIC`, `INTEGER`, `DATE`, `TIMESTAMP`, `BOOLEAN`. Gold is a physical table, so this describes the real column. Bronze and Silver instead use the source-agnostic *canonical* vocabulary (`STRING(n)`, `DECIMAL(p[,s])`, …) — see [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). The two map 1:1 (`TEXT` ↔ `STRING`, `NUMERIC` ↔ `DECIMAL`), so nothing misreads across the boundary. |
 | `description` | ✅ | Detailed business meaning. Include: the source SAP/source-system field, any derivation rules, sparsity rules, valid values, and gotchas. **The agent reads this verbatim.** |
-| `aggregation_behavior` | ✅ | How the field aggregates: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT_DISTINCT`, or `none`. Use `none` for identifiers, dimensions, statuses, and timestamps — **and for a measure that must never be summed** (running totals, projected balances, values repeated across the grain). See [§3.3.4](#334-additive-vs-non-additive-measures). |
+| `aggregation_behavior` | ✅ | **Which** SQL function: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, or `none`. A function name, nothing more. Use `none` for identifiers, dimensions, statuses and timestamps. See [§3.3.4](#334-additive-vs-non-additive-measures). |
+| `additivity` | ⬜ | **Over which dimensions** that function is valid: `additive` (default — omit the key), `semi_additive`, or `non_additive`. Measures only. See [§3.3.4](#334-additive-vs-non-additive-measures). |
+| `non_additive_over` | ⬜ | Grain dimensions to collapse before aggregating. Required when `additivity: semi_additive`; must name `timestamp` fields that appear in `entity_grain`. |
 
 #### 3.3.1 Field roles
 
@@ -164,7 +166,7 @@ Consider a forward-looking inventory Gold with grain `[client, plant_id, materia
 | 100 | 1000 | TG12 | 2026-08-12 | 500 | 50 | 450 |
 | 100 | 1000 | TG12 | 2026-08-20 | 500 | 90 | 410 |
 
-All three right-hand columns are `field_role: measure`. **None of them may be summed**, each for a different reason:
+All three right-hand columns are `field_role: measure`. Summing any of them **across dates** is wrong, each for a different reason:
 
 | Column | `SUM` returns | Correct answer | Why |
 |---|---|---|---|
@@ -172,23 +174,35 @@ All three right-hand columns are `field_role: measure`. **None of them may be su
 | `cumulative_sales_order` | 160 | 90 | A running total; the last row already contains the total. |
 | `future_stock` | 1340 | 410 | A per-date projected balance; you want the balance *at* a date. |
 
-Declare these with `aggregation_behavior: none` and state the reason in the description:
+But "never sum" is the wrong conclusion, and this is the part that matters. Add a second plant and ask *"what is the total projected stock of TG12 across all plants on 2026-08-20?"* — that is a perfectly ordinary question, and the answer **is** a sum. These measures are additive across `plant_id`; they are only non-additive across `future_date`.
+
+That is what the two keys express:
 
 ```yaml
 - name: "cumulative_sales_order"
   field_role: "measure"
   type: "NUMERIC"
-  description: "Cumulative outbound demand from Sales Orders. ALREADY CUMULATIVE —
-    do NOT SUM across rows; take the last value per (plant, material) up to the
-    target date."
-  aggregation_behavior: "none"
+  description: "Cumulative outbound demand from Sales Orders. Already cumulative —
+    do NOT SUM across future_date; take the last value per (plant, material) up to
+    the target date, after which it SUMS correctly across plants."
+  aggregation_behavior: "SUM"        # WHICH function
+  additivity: "semi_additive"        # over WHICH dimensions it is valid
+  non_additive_over: ["future_date"] # collapse these first
 ```
 
-**`none` on a measure is not the same as `none` on an identifier.** On an identifier it simply means there was never anything to aggregate. On a measure it is a deliberate instruction: *this is a number, you would sum it by instinct, do not*. Tooling must never treat it as an empty value to be dropped — an absent `aggregation_behavior` means "assume additive", which is the opposite.
+Read it as: *collapse `future_date` to one row per grain group — the latest at or before the target date — and only then apply `SUM` across everything else.*
 
-The mirror image also exists. Where a measure is a **repeated constant** rather than a running total, `MAX` is used as a collapse guard — it does not mean "the maximum is the answer", it means "every value in this group is identical, take any one". Say so in the description whenever you use it, because the two readings of `MAX` are indistinguishable otherwise.
+The three values of `additivity`:
 
-> **Sizing note.** Grain drives all of this. The same `on_hand` column is a legitimate `SUM` in a Gold grained `[client, plant_id, material_id]` — where each row is a distinct plant — and a repeated constant in a Gold that adds `future_date`. Decide additivity against *your* grain, not against the column name.
+| Value | Meaning |
+|---|---|
+| omitted | **Additive.** The function is valid across any grouping. This is the default; do not write it out. |
+| `semi_additive` | Valid only after collapsing the dimensions in `non_additive_over`. Those must be `timestamp` fields that appear in `entity_grain`. |
+| `non_additive` | Never aggregate arithmetically — a ratio, a score, an index. Pair it with `aggregation_behavior: none`. |
+
+> **Sizing note.** Grain drives all of this. The same `on_hand` column is a plain additive `SUM` in a Gold grained `[client, plant_id, material_id]` — where each row is already one plant — and semi-additive in a Gold that adds `future_date`. Decide additivity against *your* grain, never against the column name.
+
+**A note on older YAMLs.** Before `additivity` existed, a non-additive measure was written as `aggregation_behavior: none` and nothing else. That shape is still read correctly — as `non_additive` — so existing catalogs keep working. It is less precise than the truth (most such measures are semi-additive), so restate them when you next touch them. Tooling must never treat an explicit `none` as an empty value to be dropped: an *absent* `aggregation_behavior` means "assume additive", which is the opposite instruction.
 
 ### 3.4 Relationships
 
@@ -291,7 +305,8 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] `description` explains the business question, the grain, the sparsity, and the derivations.
 - [ ] `grain.entity_grain` matches the actual unique-key of the table.
 - [ ] Every field has `name`, `field_role`, `type`, `description`, `aggregation_behavior`.
-- [ ] Every measure declares how it aggregates — an aggregation function when it is additive, or an explicit `none` when it is not (running totals, projected balances, values repeated across the grain). A measure marked `none` states the reason in its `description`. See [§3.3.4](#334-additive-vs-non-additive-measures).
+- [ ] Every measure declares **which** function aggregates it (`aggregation_behavior`) and, when the function is not valid across every grain dimension, **over which** dimensions it is not (`additivity` + `non_additive_over`). Running totals, projected balances and values repeated across the grain are `semi_additive`, not additive. See [§3.3.4](#334-additive-vs-non-additive-measures).
+- [ ] Every `non_additive_over` entry is a `timestamp` field that appears in `grain.entity_grain`.
 - [ ] Every status field documents its rule.
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.

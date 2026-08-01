@@ -149,7 +149,8 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 | `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, or `status_flag`. |
 | `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) Silvers published before this rule may still carry source codes; both parse to the same type, but they are not canonical until regenerated. |
 | `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. |
-| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold — including the non-additive case, where an explicit `none` on a `field_role: measure` means "never sum this". See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
+| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
+| `additivity` / `non_additive_over` | ⬜ | Also as at Gold — the dimensions a measure may *not* be aggregated across. Rarely needed at Silver, whose grain is usually the document/item level rather than a time series. |
 
 #### 3.4.1 Naming convention: `<column>_<table>`
 
