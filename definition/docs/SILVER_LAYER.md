@@ -147,9 +147,9 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 | `name` | ✅ | Physical column name. Convention: `<source_alias>_<table>` (e.g. `vbeln_vbak`, `matnr_mara`) — preserves source lineage and disambiguates same-named columns from different Bronze nodes. |
 | `source` | ✅ | Lineage: `<TABLE>.<column>` referencing the Bronze node. |
 | `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, or `status_flag`. |
-| `type` | ✅ | Source-system type. SAP types are commonly used at Silver: `C3`, `C10`, `D8`, `P15`, `N6`, `T6`, etc. (See [Bronze Layer §4](BRONZE_LAYER.md#4-source-system-type-system).) |
+| `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) Silvers published before this rule may still carry source codes; both parse to the same type, but they are not canonical until regenerated. |
 | `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. |
-| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold (`SUM`, `AVG`, `none`, etc.). |
+| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold — including the non-additive case, where an explicit `none` on a `field_role: measure` means "never sum this". See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
 
 #### 3.4.1 Naming convention: `<column>_<table>`
 

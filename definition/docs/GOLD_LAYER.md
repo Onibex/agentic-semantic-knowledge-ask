@@ -66,8 +66,24 @@ grain:
 
 | Sub-key | Required | Description |
 |---|---|---|
-| `entity_grain` | ✅ | Ordered list of field names whose combination uniquely identifies a row. |
-| `business_grain` | ✅ | Plain-English description of the grain (e.g. `sales_order_item_level`, `daily_plant_material`, `customer_month`). The agent uses this for cardinality reasoning and to choose `COUNT`, `COUNT DISTINCT`, etc. |
+| `entity_grain` | ✅ | Ordered list of field names whose combination uniquely identifies a row. **This is a machine-consumed contract, not descriptive metadata** — see below. |
+| `business_grain` | ✅ | Plain-English label for the grain (e.g. `sales_order_item_level`, `daily_plant_material`, `customer_month`). |
+
+**`entity_grain` is the uniqueness contract of the physical table, and the agent treats it as authoritative:** exactly **one** row per distinct combination of those fields, and **many** rows whenever a filter pins only a *subset* of them. The agent consults it before assuming the cardinality of anything it selects, and to decide when it must aggregate or de-duplicate.
+
+Worked example — an inventory Gold declaring:
+
+```yaml
+grain:
+  entity_grain: ["client", "plant_id", "material_id"]
+```
+
+A query filtering `WHERE material_id = 'TG12'` returns **one row per plant**, not one row. An agent that assumed a single row would report one plant's stock as the company-wide figure.
+
+Two consequences for authors:
+
+- If the declared grain does not hold physically, every downstream cardinality decision is built on a false premise. Verify it against the real table, do not infer it from intent.
+- Adding a column to `entity_grain` multiplies rows. A Gold grained `[client, plant_id, material_id]` and the same Gold plus `future_date` behave differently under aggregation — see [§3.3.4](#334-additive-vs-non-additive-measures).
 
 ### 3.3 Fields
 
@@ -87,9 +103,9 @@ Each field is an object in the `fields` list:
 | `name` | ✅ | Physical column name, business-friendly snake_case (e.g. `order_qty`, not `KWMENG`). |
 | `source` | ✅ | Lineage: `<TABLE>.<column>`. For Gold this is usually the Gold table itself, since Gold is the published surface. |
 | `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `status_flag`. See [§3.3.1](#331-field-roles). |
-| `type` | ✅ | SQL-style type: `TEXT`, `INTEGER`, `NUMERIC`, `DATE`, `TIMESTAMP`, `BOOLEAN`. Gold uses SQL types (Silver and Bronze may use SAP types). |
+| `type` | ✅ | SQL-style type of the published column: `TEXT`, `NUMERIC`, `INTEGER`, `DATE`, `TIMESTAMP`, `BOOLEAN`. Gold is a physical table, so this describes the real column. Bronze and Silver instead use the source-agnostic *canonical* vocabulary (`STRING(n)`, `DECIMAL(p[,s])`, …) — see [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). The two map 1:1 (`TEXT` ↔ `STRING`, `NUMERIC` ↔ `DECIMAL`), so nothing misreads across the boundary. |
 | `description` | ✅ | Detailed business meaning. Include: the source SAP/source-system field, any derivation rules, sparsity rules, valid values, and gotchas. **The agent reads this verbatim.** |
-| `aggregation_behavior` | ✅ | How the field aggregates: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT_DISTINCT`, or `none`. Use `none` for identifiers, dimensions, statuses, and timestamps. |
+| `aggregation_behavior` | ✅ | How the field aggregates: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT_DISTINCT`, or `none`. Use `none` for identifiers, dimensions, statuses, and timestamps — **and for a measure that must never be summed** (running totals, projected balances, values repeated across the grain). See [§3.3.4](#334-additive-vs-non-additive-measures). |
 
 #### 3.3.1 Field roles
 
@@ -97,7 +113,7 @@ Each field is an object in the `fields` list:
 |---|---|---|
 | `identifier` | Part of the primary/business key. | No (`aggregation_behavior: none`). |
 | `dimension` | Categorical attribute used for grouping/filtering (customer, plant, channel). | No. |
-| `measure` | Numeric value to aggregate (quantity, amount, value, count). | Yes (`SUM`, `AVG`, etc.). |
+| `measure` | Numeric value to aggregate (quantity, amount, value, count). | Usually (`SUM`, `AVG`, …) — but a **non-additive** measure declares `none` and must never be summed. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 | `timestamp` | Date or datetime field. | No, but used for `MIN`/`MAX` framing and time-grain rollups. |
 | `status_flag` | A status-like categorical that the agent should recognize as life-cycle state (`OPEN`, `CLOSE`, `BLOCKED`, `A`/`B`/`C` codes). | No. |
 
@@ -135,6 +151,44 @@ When a Gold field is *derived* from a raw source field, the description must say
 ```
 
 This pattern saves the agent from re-deriving the rule from the raw status code, and explicitly tells it which field to choose for which question.
+
+#### 3.3.4 Additive vs non-additive measures
+
+Not every measure can be summed. A measure that is **already cumulative**, that carries a **projected balance**, or whose value is **repeated across the grain** produces a wrong answer under `SUM` — and the query still runs, so nothing warns you.
+
+Consider a forward-looking inventory Gold with grain `[client, plant_id, material_id, future_date]`:
+
+| client | plant_id | material_id | future_date | on_hand | cumulative_sales_order | future_stock |
+|---|---|---|---|---|---|---|
+| 100 | 1000 | TG12 | 2026-08-05 | 500 | 20 | 480 |
+| 100 | 1000 | TG12 | 2026-08-12 | 500 | 50 | 450 |
+| 100 | 1000 | TG12 | 2026-08-20 | 500 | 90 | 410 |
+
+All three right-hand columns are `field_role: measure`. **None of them may be summed**, each for a different reason:
+
+| Column | `SUM` returns | Correct answer | Why |
+|---|---|---|---|
+| `on_hand` | 1500 | 500 | Physical stock denormalized onto every dated row — a repeated constant. |
+| `cumulative_sales_order` | 160 | 90 | A running total; the last row already contains the total. |
+| `future_stock` | 1340 | 410 | A per-date projected balance; you want the balance *at* a date. |
+
+Declare these with `aggregation_behavior: none` and state the reason in the description:
+
+```yaml
+- name: "cumulative_sales_order"
+  field_role: "measure"
+  type: "NUMERIC"
+  description: "Cumulative outbound demand from Sales Orders. ALREADY CUMULATIVE —
+    do NOT SUM across rows; take the last value per (plant, material) up to the
+    target date."
+  aggregation_behavior: "none"
+```
+
+**`none` on a measure is not the same as `none` on an identifier.** On an identifier it simply means there was never anything to aggregate. On a measure it is a deliberate instruction: *this is a number, you would sum it by instinct, do not*. Tooling must never treat it as an empty value to be dropped — an absent `aggregation_behavior` means "assume additive", which is the opposite.
+
+The mirror image also exists. Where a measure is a **repeated constant** rather than a running total, `MAX` is used as a collapse guard — it does not mean "the maximum is the answer", it means "every value in this group is identical, take any one". Say so in the description whenever you use it, because the two readings of `MAX` are indistinguishable otherwise.
+
+> **Sizing note.** Grain drives all of this. The same `on_hand` column is a legitimate `SUM` in a Gold grained `[client, plant_id, material_id]` — where each row is a distinct plant — and a repeated constant in a Gold that adds `future_date`. Decide additivity against *your* grain, not against the column name.
 
 ### 3.4 Relationships
 
@@ -237,7 +291,7 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] `description` explains the business question, the grain, the sparsity, and the derivations.
 - [ ] `grain.entity_grain` matches the actual unique-key of the table.
 - [ ] Every field has `name`, `field_role`, `type`, `description`, `aggregation_behavior`.
-- [ ] Every measure has a non-`none` `aggregation_behavior`.
+- [ ] Every measure declares how it aggregates — an aggregation function when it is additive, or an explicit `none` when it is not (running totals, projected balances, values repeated across the grain). A measure marked `none` states the reason in its `description`. See [§3.3.4](#334-additive-vs-non-additive-measures).
 - [ ] Every status field documents its rule.
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.
