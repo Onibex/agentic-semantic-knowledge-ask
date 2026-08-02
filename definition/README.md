@@ -28,10 +28,10 @@ ASK fixes this by formalizing the **business semantics** of data — entities, g
 ┌────────────────────────────────────────────────────────────────────┐
 │                      ASK YAML SPECIFICATION                        │
 │                                                                    │
-│   ┌─────────┐    composed_of    ┌─────────┐    composed_of    ┌──┐ │
-│   │  GOLD   │ ◄───────────────  │ SILVER  │ ◄───────────────  │BR│ │
+│   ┌─────────┐   relationships   ┌─────────┐    composed_of    ┌──┐ │
+│   │  GOLD   │ ───────────────►  │ SILVER  │ ◄───────────────  │BR│ │
 │   │ Business│                   │  Found. │                   │ON│ │
-│   │  Logic  │                   │  Data   │                   │ZE│ │
+│   │  Logic  │   (drill / enrich)│  Data   │                   │ZE│ │
 │   │   DPs   │                   │  Prods  │                   │  │ │
 │   └─────────┘                   └─────────┘                   └──┘ │
 │   ▲ priority                    ▲ fallback                  ▲ raw  │
@@ -112,11 +112,10 @@ description: "Sales-order-item-level OTC snapshot. Denormalized with customer,
               plant, material, full org hierarchy, delivery context, and derived
               order_status (OPEN/CLOSE). Use for fulfillment and prioritization."
 entity_role: "fact"
+db_table_name: "GOLD_SD_OPEN_ORDER_TRACKER"
 grain:
   entity_grain: ["client", "sales_order", "item"]
   business_grain: "sales_order_item_level"
-
-composed_of: ["dataproduct.GOLD_SD_OPEN_ORDER_TRACKER"]
 
 fields:
   - name: "order_qty"

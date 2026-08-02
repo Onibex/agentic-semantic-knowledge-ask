@@ -49,10 +49,37 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | `description` | ✅ | string | **The most important field for the agent.** A long, explicit narrative that explains: what business question this answers, what the grain is, what is denormalized, what is sparse, what derivations have been applied, and how it relates to other Gold entities. Write it for a human reader, then hand it to the LLM. |
 | `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`) — you set it directly, and the server does not overwrite it. Most Gold entities are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
-| `composed_of` | ✅ | string[] | Lineage. References to the Silver Foundational Data Products and/or other Gold entities this is built from. |
 | `fields` | ✅ | object[] | Field definitions. See [§3.3](#33-fields). |
-| `join_graph` | ⬜ | object[] | Usually empty for Gold (Gold is already pre-joined). Reserved for special cases. |
 | `relationships` | ✅ | object[] | Outbound graph edges to other entities. See [§3.4](#34-relationships). |
+
+> **A Gold has no `composed_of` and no `join_graph`.** Both are Silver-layer keys and are not
+> part of the Gold schema — see [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph). Older
+> Gold YAMLs that still carry them keep validating; the values are ignored on load.
+
+#### 3.1.1 Why Gold has no `composed_of` or `join_graph`
+
+A Gold is not a composition of tables you could join back together. It is a physical table
+produced by an ETL of CTEs, calculations and summarizations — the joins happened upstream, in
+code, and are not reconstructible from a list of names.
+
+`composed_of` could therefore only ever restate `db_table_name`, and in practice it did not even
+do that consistently: authored Golds spelled it three different ways — with a warehouse schema
+prefix, with a `dataproduct.` prefix, and bare — which is what a key with no real contract looks
+like. `join_graph` goes with it: it describes joins **between the source tables a Silver
+composes**, and a Gold composes none.
+
+What carries that meaning instead:
+
+| Question | Where the answer lives |
+|---|---|
+| What physical table do I query? | `db_table_name` — stated once, unqualified. |
+| What can I join to, and how? | `relationships` — the graph the planner actually traverses. See [§3.4](#34-relationships). |
+| Where did this data come from? | The entity `description`, plus per-field `source`. |
+
+Do not invent a replacement key (`built_from`, `lineage_note`, …). The problem being solved is a
+structural key carrying prose-grade information; a new one just repeats it. If the provenance of
+a Gold matters to your users — and it usually does — write it in the `description`, which is the
+field the agent actually reads.
 
 ### 3.2 Grain
 
@@ -225,7 +252,7 @@ relationships:
 |---|---|---|
 | `target_entity` | ✅ | The `id` of the entity this relationship points to. Must resolve in the catalog. |
 | `relationship_type` | ✅ | `one_to_one`, `many_to_one`, `one_to_many`, or `many_to_many`. |
-| `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. |
+| `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
 | `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper. The planner uses it to choose between alternative paths. Suggested scale: `1` (single-key dimensional join), `2` (multi-key or bigger table), `3` (cross-fact lookup or many-to-many). |
 | `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation; the planner should reject the path unless explicitly overridden — *declared intent, not yet enforced*). See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
@@ -251,6 +278,54 @@ Gold-to-Gold relationships ("cross-fact lookups") are valid and useful — for e
 ```
 
 When two Gold entities share a natural key (e.g. `(client, plant, material)`), expose the relationship explicitly so the agent can answer questions like *"which open orders are covered by current stock?"* without inferring the join itself.
+
+#### 3.4.2 The qualifier contract
+
+**Every qualifier in a `join_condition` is the `db_table_name` of its own side.** The predicate
+names exactly two tables — this entity's `db_table_name` and the target entity's `db_table_name` —
+and nothing else.
+
+The predicate is handed to the SQL generator as an *authoritative* join condition, with an explicit
+instruction not to invent a replacement for it. So a wrong qualifier is not a cosmetic slip: it is
+SQL that cannot execute. Two spellings get this wrong.
+
+**1. The entity `id` instead of the physical table.**
+
+```yaml
+# ✗ wrong — SILVER_ECC_SD_SALES_ORDER is an id, not a selectable object
+join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_ECC_SD_SALES_ORDER.vbeln_vbak"
+
+# ✓ right — the target's db_table_name
+join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_SD_SALES_ORDER.vbeln_vbak"
+```
+
+Ids resolve entities in the catalog; they are not tables. The two look similar enough that the
+mistake survives review, which is exactly why the rule is mechanical: **look up the target's
+`db_table_name` and copy it.**
+
+**2. A third table that is neither endpoint.**
+
+```yaml
+# ✗ wrong — this Gold has no material-group column, so the author "borrowed" a path
+#   through trading_goods. The ON clause names a table that is not in the FROM list.
+- target_entity: "silver_ecc_mm_material_group"
+  join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
+  description: "Navigate through trading_goods to Material Group."
+
+# ✓ right — declare the hop you can actually make, and let the intermediary
+#   declare its own edge onward. Two edges, not one.
+- target_entity: "silver_ecc_sd_trading_goods"
+  join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
+  description: "Material master. This is also the route to material category: material group
+    and material hierarchy hang off trading_goods' own relationships, so reach them as a
+    second hop from here — this Gold carries no group or hierarchy code column of its own."
+```
+
+This second case is the one that bites at Gold, because a Gold routinely reaches a dimension only
+*through* a Silver it already links to. The temptation is to declare the destination you want and
+write whatever predicate seems to get there. Resist it: **if the join only works by passing through
+a third entity, that is two edges.** The planner is built to walk multi-hop paths; it is not built
+to repair a predicate that names a table nobody selected from.
 
 ## 4. Naming conventions
 
@@ -308,9 +383,17 @@ SQL is audited rather than rewritten. In practice `requires_dedup` tracks the ca
 one-for-one, so the default follows from `relationship_type`; set it explicitly only to
 *override* that default.
 
-### 5.7 Keep `composed_of` accurate for lineage
+### 5.7 Declare lineage as edges, not as a list of names
 
-`composed_of` is the contract between the Gold YAML and the upstream Silver world. When you change which Silver products feed a Gold, update `composed_of` — the agent uses this to walk lineage when it cannot answer from Gold alone.
+When a question cannot be answered from a Gold alone, the agent walks **`relationships`** — that
+is the lineage that actually works, because each edge carries a join predicate, a cardinality and
+a safety flag. A bare list of upstream names cannot be traversed: it tells the planner *that*
+something is upstream, never *how* to reach it.
+
+So when you change which Silver products feed a Gold, the thing to update is the edge set: add or
+remove the `relationships` entry, and make sure its `join_condition`, `relationship_type` and
+`aggregation_safety` describe the new reality. Then say in the `description` where the numbers
+come from, in prose, for the human reading the catalog.
 
 ## 6. Reference example
 
@@ -329,5 +412,13 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] Every status field documents its rule.
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.
-- [ ] `composed_of` references resolve in the catalog.
+- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side — never an
+      entity `id`, never a third table. See [§3.4.2](#342-the-qualifier-contract).
+- [ ] No relationship describes its own keys as provisional. "Placeholder", "to be enriched",
+      "real keys may differ" — an edge whose predicate is admittedly wrong is worse than no edge,
+      because the generator is told the condition is authoritative. Ship the real composite key
+      or delete the edge.
+- [ ] Every `field` name is unique within the file.
+- [ ] No `composed_of`, no `join_graph` — neither belongs to a Gold.
+      See [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
 - [ ] No SAP/source-system column codes leak into Gold field names.

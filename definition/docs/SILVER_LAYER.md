@@ -119,10 +119,37 @@ join_graph:
 | `left_table` | ✅ | Bronze node name on the left side of the join (typically the anchor / fact table). |
 | `right_table` | ✅ | Bronze node name being added. |
 | `join_type` | ✅ | `INNER`, `LEFT OUTER`, `RIGHT OUTER`, `CROSS`. `FULL OUTER` is **not** supported — do not use it; the validator rejects it. |
-| `condition` | ✅ | SQL-style join predicate. Multi-key joins use `AND`. |
+| `condition` | ✅ | SQL-style join predicate. Multi-key joins use `AND` — **one entry per table pair**, see below. |
 | `sequence` | ✅ | Numeric order in which joins are applied. Lower values are joined first. Use to communicate intent to consumers; the actual execution plan is the engine's call. |
 
 The `join_graph` is **descriptive**, not prescriptive. It tells the agent (and any downstream pipeline) how the Silver entity is *conceptually* assembled. The actual physical implementation may be a denormalized table, a view, or a virtualized Cube/dbt model.
+
+#### A composite key is ONE entry
+
+A join on several key columns is a single `join_graph` entry whose `condition` composes them with
+`AND` — never one entry per key column. Each half of a split composite key is a *different, wrong*
+join on its own:
+
+```yaml
+# ✗ wrong — two entries for the same pair. Either one, taken alone, fans out:
+#   joining EKPO to EKET on EBELN only multiplies by every schedule line of the order.
+- { left_table: EKPO, right_table: EKET, join_type: INNER, condition: EKPO.EBELN = EKET.EBELN, sequence: 3 }
+- { left_table: EKPO, right_table: EKET, join_type: INNER, condition: EKPO.EBELP = EKET.EBELP, sequence: 3 }
+
+# ✓ right — one entry, AND-composed
+- left_table: EKPO
+  right_table: EKET
+  join_type: INNER
+  condition: EKPO.EBELN = EKET.EBELN AND EKPO.EBELP = EKET.EBELP
+  sequence: 3
+```
+
+This matters most when a Silver is generated from a source-system extract, since such extracts
+commonly ship one row **per key column** — the generator must group them back into one edge before
+writing the YAML.
+
+Every column named in a `condition` must exist in the Bronze node on that side. A predicate that
+references a column the Bronze does not declare describes a lineage that cannot be built.
 
 ### 3.4 Fields
 
@@ -189,7 +216,7 @@ Silver entities can declare relationships to other Silver entities. These descri
 relationships:
   - target_entity: "silver_ecc_sd_trading_goods"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.matnr_vbap = SILVER_TRADING_GOODS.matnr_mara"
+    join_condition: "SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_TRADING_GOODS.matnr_mara"
     semantic_label: "material_of"
     traversal_cost: 2
     aggregation_safety: "safe"
@@ -198,7 +225,7 @@ relationships:
 
   - target_entity: "silver_ecc_sd_customer_master"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
+    join_condition: "SILVER_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "sold_to_customer"
     traversal_cost: 1
     aggregation_safety: "safe"
@@ -218,6 +245,28 @@ relationships:
 ```
 
 The relationship schema is identical to the Gold layer's — see [Gold Layer §3.4](GOLD_LAYER.md#34-relationships).
+
+#### 3.5.1 The qualifier contract
+
+Note the qualifiers in the example above: **`SILVER_SD_SALES_ORDER`, the entity's
+`db_table_name` — not `silver_ecc_sd_sales_order`, its `id`.**
+
+**Every qualifier in a `join_condition` is the `db_table_name` of its own side.** The predicate
+names exactly two tables — this entity's and the target's — and nothing else. It is handed to the
+SQL generator as an authoritative join condition, with an explicit instruction not to invent a
+replacement, so a wrong qualifier produces SQL that cannot execute.
+
+Two spellings get this wrong, and both are easy to ship because they look plausible:
+
+- **The entity `id` instead of the physical table.** Ids resolve entities in the catalog; they are
+  not selectable objects. Look up the target's `db_table_name` and copy it.
+- **A third table that is neither endpoint.** If the join only works by passing *through* a third
+  entity, that is **two edges, not one** — declare the hop to the intermediary, and let the
+  intermediary declare its own edge onward. A predicate naming a table absent from the `FROM` list
+  is not a join.
+
+The same rule, with worked examples of both failure modes, is in
+[Gold Layer §3.4.2](GOLD_LAYER.md#342-the-qualifier-contract).
 
 ## 4. Naming conventions
 
@@ -270,9 +319,16 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] `id`, `db_table_name`, `layer`, `version` are present and consistent.
 - [ ] `description` describes the artifact, the composing nodes, and typical use cases.
 - [ ] `composed_of` lists every Bronze node referenced anywhere in `fields` or `join_graph`.
-- [ ] `join_graph` covers every node beyond the anchor table.
+- [ ] `join_graph` covers every node beyond the anchor table, with **one entry per
+      `(left_table, right_table, sequence)`** — a composite key is one `AND`-composed
+      `condition`, never one entry per key column. See [§3.3](#33-join_graph).
+- [ ] Every column named in a `join_graph` `condition` exists in that side's Bronze node.
+- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side — never an
+      entity `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).
 - [ ] `grain.entity_grain` reflects the actual finest cardinality of the joined result.
 - [ ] Every field follows the `<column_alias>_<table>` naming pattern.
+- [ ] Every field `name` appears exactly once. A repeated field block is never meaningful — and
+      because the YAML is handed to the model verbatim, a duplicate is paid for on every question.
 - [ ] Status field descriptions enumerate every valid code.
 - [ ] Relationships have `traversal_cost` and `aggregation_safety` set; many-to-many edges are marked `requires_dedup`.
 - [ ] Field types match the Bronze source types.
