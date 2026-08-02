@@ -74,22 +74,34 @@ Silver entities have **complex grains** more often than Gold does, because they 
 ```yaml
 grain:
   entity_grain:
-    - VBELN     # Sales Document
-    - POSNR     # Item
-    - VBELV     # Predecessor doc (from VBFA)
-    - POSNV     # Predecessor item
-    - POSNN     # Successor item
-    - VBTYP_N   # Successor doc category
-    - PARVW     # Partner Function (from VBPA)
+    - vbeln_vbak      # Sales document (the anchor; VBAP/VBKD/VBPA.VBELN and VBFA.VBELV
+                      #   are the same value by the join predicates — declared ONCE)
+    - posnr_vbap      # Item
+    - posnr_vbpa      # Partner row's item  ┐ VBPA is joined on VBELN alone,
+    - parvw_vbpa      # Partner function    ┘   so it fans out by both
+    - posnv_vbfa      # Predecessor item
+    - vbeln_vbfa      # Successor doc — a DIFFERENT value from vbeln_vbak
+    - posnn_vbfa      # Successor item
+    - vbtyp_n_vbfa    # Successor doc category
+    - posnr_vbkd      # Business-data row's item
   business_grain: sales_order_item
 ```
 
 | Sub-key | Required | Description |
 |---|---|---|
-| `entity_grain` | ✅ | Ordered list of source-system field codes whose combination uniquely identifies a row. |
+| `entity_grain` | ✅ | Ordered list of **published field names** (`fields[].name`) whose combination uniquely identifies a row. |
 | `business_grain` | ✅ | Plain-English description of the grain (`sales_order_item`, `customer_address`, `material_master`). |
 
-When a Silver entity unions multiple cardinalities (header + items + partners + flow), the grain is the **finest** of them — the cross-product of all keys. This is acceptable, and the grain declaration must reflect it.
+**Members are published column names, not source-system codes.** The grain reaches the agent as YAML text and instructs it to filter and `GROUP BY` those names, so a member that is not a selectable column of the entity does not make the contract imprecise — it makes it **unexecutable**. Silver columns are named `<column>_<table>` ([§3.4](#34-fields)), and the grain uses exactly those names. This also removes a real ambiguity: `VBELN` alone is four different columns on a four-table Silver.
+
+**The grain must be MINIMAL, not merely unique.** The contract asserts two things at once — exactly one row per distinct combination, **and** many rows whenever a filter pins only a subset. A padded key satisfies the first and falsifies the second, so the agent concludes that pinning the real key returns many rows when it returns one. Both failure directions are silent: the YAML still looks plausible.
+
+Two rules decide which key columns survive, and both are read off `join_graph`:
+
+1. **A join covering the right table's ENTIRE primary key contributes nothing.** It matches at most one row, so that table multiplies nothing — a stock table joined on its full `material + plant + storage location` attaches exactly one row per movement line. This does *not* depend on which columns the join leaves FROM: reaching that table through columns that are not part of the left table's own key is the ordinary N:1 case. When a join covers only PART of the right key, it fans out, and the uncovered members are exactly what widens the grain.
+2. **Columns the predicates declare equal are ONE key column.** `VBAK.VBELN = VBAP.VBELN` means both hold the same value; declaring both states one constraint twice. Keep the member from the root-most table. Collapsing by *bare column name* instead is wrong — it merges `VBAK.VBELN` (the order) with `VBFA.VBELN` (the **successor** document), two different values under one name.
+
+When a Silver entity unions multiple cardinalities (header + items + partners + flow), the grain is the **finest** of them. Note the consequence: a loose join predicate legitimately produces a **wider** grain, and the declaration must reflect it. Tightening the predicate tightens the grain — the grain never hides a bad join.
 
 ### 3.3 `join_graph`
 
@@ -326,6 +338,8 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side — never an
       entity `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).
 - [ ] `grain.entity_grain` reflects the actual finest cardinality of the joined result.
+- [ ] Every `grain.entity_grain` member is a `fields[].name` — a selectable column, not a source-system code ([§3.2](#32-grain)).
+- [ ] The grain is MINIMAL: no member is redundant given the `join_graph` predicates.
 - [ ] Every field follows the `<column_alias>_<table>` naming pattern.
 - [ ] Every field `name` appears exactly once. A repeated field block is never meaningful — and
       because the YAML is handed to the model verbatim, a duplicate is paid for on every question.

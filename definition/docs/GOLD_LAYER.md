@@ -112,6 +112,29 @@ Two consequences for authors:
 - If the declared grain does not hold physically, every downstream cardinality decision is built on a false premise. Verify it against the real table, do not infer it from intent.
 - Adding a column to `entity_grain` multiplies rows. A Gold grained `[client, plant_id, material_id]` and the same Gold plus `future_date` behave differently under aggregation — see [§3.3.4](#334-additive-vs-non-additive-measures).
 
+#### Verify it, do not inspect it
+
+Gold's grain is authored, so nothing checks it for you. It is a claim about rows in a database, and the only way to know it is true is to ask the database:
+
+```sql
+SELECT <entity_grain...>, COUNT(*)
+FROM <db_table_name>
+GROUP BY <entity_grain...>
+HAVING COUNT(*) > 1;      -- must return zero rows
+```
+
+Run it again when data volume grows. A grain can hold on a small dataset by coincidence — one billing date per material-month, say — and start failing on a fuller load, because nothing in the schema enforces it.
+
+#### The grain must be minimal, not merely unique
+
+The contract asserts **both** halves stated above: one row per combination, *and* many rows when a filter pins only a subset. A padded superkey satisfies the first and falsifies the second, so the agent concludes that pinning the real key returns many rows when it returns exactly one. Declare the smallest set of columns that is genuinely unique — not every column that happens to look like a key.
+
+#### Columns outside the grain
+
+These are legitimate, and a pre-denormalized Gold is mostly made of them — but each must be **functionally determined** by the grain. A column that varies within a grain group falsifies the contract outright.
+
+When a column is carried at a finer granularity than the grain (a day-level date on a monthly table), say so in its `description`. A description promising `YYYY-MM-DD` on a column that only ever holds month-first values sends the agent to write day-level filters that can never match, and it will keep writing them because the description is the only signal it has.
+
 ### 3.3 Fields
 
 Each field is an object in the `fields` list:
@@ -405,7 +428,9 @@ Before publishing a Gold YAML to the catalog, verify:
 
 - [ ] `id`, `db_table_name`, `layer`, `version` are present and consistent.
 - [ ] `description` explains the business question, the grain, the sparsity, and the derivations.
-- [ ] `grain.entity_grain` matches the actual unique-key of the table.
+- [ ] `grain.entity_grain` matches the actual unique-key of the table — **verified with the uniqueness query** ([§3.2](#32-grain)), not by inspection.
+- [ ] The grain is MINIMAL (a superkey breaks the "a subset returns many rows" half of the contract).
+- [ ] Every column outside the grain is functionally determined by it, and any column carried at a finer granularity than the grain says so in its `description`.
 - [ ] Every field has `name`, `field_role`, `type`, `description`, `aggregation_behavior`.
 - [ ] Every measure declares **which** function aggregates it (`aggregation_behavior`) and, when the function is not valid across every grain dimension, **over which** dimensions it is not (`additivity` + `non_additive_over`). Running totals, projected balances and values repeated across the grain are `semi_additive`, not additive. See [§3.3.4](#334-additive-vs-non-additive-measures).
 - [ ] Every `non_additive_over` entry is a `timestamp` field that appears in `grain.entity_grain`.
