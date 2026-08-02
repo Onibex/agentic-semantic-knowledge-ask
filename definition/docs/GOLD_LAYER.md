@@ -275,10 +275,10 @@ relationships:
 |---|---|---|
 | `target_entity` | ✅ | The `id` of the entity this relationship points to. Must resolve in the catalog. |
 | `relationship_type` | ✅ | `one_to_one`, `many_to_one`, `one_to_many`, or `many_to_many`. |
-| `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
+| `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Carried and rendered **verbatim** — write it exactly as it must appear after `ON`, including non-equality terms such as `IN (...)`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
 | `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper. The planner uses it to choose between alternative paths. Suggested scale: `1` (single-key dimensional join), `2` (multi-key or bigger table), `3` (cross-fact lookup or many-to-many). |
-| `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation; the planner should reject the path unless explicitly overridden — *declared intent, not yet enforced*). See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
+| `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation — the edge is removed from the traversal graph, so no path is built through it). Defaults to the cardinality; set it explicitly to **override** that default. On the auto-generated reverse edge it is **derived from the inverted cardinality, not copied** — fan-out is directional — except `unsafe`, which propagates both ways. See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
 | `cross_module` | ✅ | Boolean. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
 | `description` | ✅ | What this join means in business terms. |
 
@@ -311,6 +311,13 @@ and nothing else.
 The predicate is handed to the SQL generator as an *authoritative* join condition, with an explicit
 instruction not to invent a replacement for it. So a wrong qualifier is not a cosmetic slip: it is
 SQL that cannot execute. Two spellings get this wrong.
+
+The contract is also **load-bearing at ingestion**: the qualifiers are read off the predicate to
+identify the edge's two physical tables — the one matching this entity's `db_table_name` is the
+source, the other is the target — and both are shown to the SQL generator next to the entity ids,
+so nothing has to infer that `gold_s4h_inventory_situation` and `GOLD_INVENTORY_SITUATION` are the
+same object. A predicate that does not name its own side, or that names more than two tables, is
+logged as a contract violation.
 
 **1. The entity `id` instead of the physical table.**
 

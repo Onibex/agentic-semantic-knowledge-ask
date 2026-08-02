@@ -268,6 +268,12 @@ names exactly two tables — this entity's and the target's — and nothing else
 SQL generator as an authoritative join condition, with an explicit instruction not to invent a
 replacement, so a wrong qualifier produces SQL that cannot execute.
 
+The contract is also **load-bearing at ingestion**: the qualifiers are read off the predicate to
+identify the edge's two physical tables, and both are shown to the SQL generator next to the entity
+ids, so nothing has to infer that `silver_s4h_sd_sales_order` and `SILVER_SD_SALES_ORDER` are the
+same object. A predicate that does not name its own side, or that names more than two tables, is
+logged as a contract violation.
+
 Two spellings get this wrong, and both are easy to ship because they look plausible:
 
 - **The entity `id` instead of the physical table.** Ids resolve entities in the catalog; they are
