@@ -55,12 +55,12 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 | `version` | ✅ | string | Spec/version of this data product. |
 | `source_system` | ✅ | string | Originating system family (e.g. `ecc`, `s4hana`, `salesforce`). |
 | `source_system_no` | ⬜ | integer | Specific instance/client number of the source system. |
-| `business_process` | ✅ | string | Process this artifact participates in (`ORDER TO CASH`, `PROCURE TO PAY`, `RECORD TO REPORT`). |
-| `module` | ✅ | string \| string[] | Source-system module (`SD`, `MM`, `FI`, etc.). |
+| `business_process` | ✅ | string | Process this artifact participates in. Recommended vocabulary — unknown values are **accepted and normalised** (trimmed, upper-cased), not rejected: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. `ORGANIZATIONAL STRUCTURE` is a legitimate value, not a gap: it marks a **generic, cross-module** artifact belonging to no single process (a plant, a sales office, an org unit). Do not put a module code here, and do not use short codes like `OTC` / `SCM` — those belong to the `<domain>` segment of a Gold **id**, not to this field. |
+| `module` | ✅ | string \| string[] | The source-system module that **owns** this artifact (`SD`, `MM`, `FI`, …). UPPERCASE here; the `id` carries the same token in lowercase. A Silver has one module; an artifact used by several processes is published once per process. A list is meaningful mainly at Gold. |
 | `name` | ✅ | string | Short business name, snake_case (e.g. `sales_order`, `trading_goods`). |
-| `classification` | ⬜ | string | `D` = document, `M` = master, `T` = transactional. |
+| `classification` | ✅ | string | `M` = master · `T` = transactional · `C` = configuration. **Required at Silver** — it derives `entity_role` (see below). |
 | `description` | ✅ | string | Narrative business description. State **what artifact this represents**, **what nodes compose it**, **what the grain is**, and **typical use cases**. |
-| `entity_role` | ✅ | string | `fact` (transactional Silver) or `dimension` (master-data Silver). |
+| `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Derived, not authored**: the server recomputes it from `classification` on every save, so a hand-written value is overwritten. The rule is `C` → `reference`; `M` → `dimension` (or `reference` when every composed table is a customizing table); `T` → `fact` when the artifact has a currency/quantity measure or is item-level, else `dimension`. To change the role, change `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `composed_of` | ✅ | string[] | Lineage: the Bronze node `id`s that make up this Silver entity. |
 | `join_graph` | ✅ | object[] | How the Bronze nodes are joined. See [§3.3](#33-join_graph). |
@@ -118,7 +118,7 @@ join_graph:
 |---|---|---|
 | `left_table` | ✅ | Bronze node name on the left side of the join (typically the anchor / fact table). |
 | `right_table` | ✅ | Bronze node name being added. |
-| `join_type` | ✅ | `INNER`, `LEFT OUTER`, `RIGHT OUTER`, `FULL OUTER`. |
+| `join_type` | ✅ | `INNER`, `LEFT OUTER`, `RIGHT OUTER`, `CROSS`. `FULL OUTER` is **not** supported — do not use it; the validator rejects it. |
 | `condition` | ✅ | SQL-style join predicate. Multi-key joins use `AND`. |
 | `sequence` | ✅ | Numeric order in which joins are applied. Lower values are joined first. Use to communicate intent to consumers; the actual execution plan is the engine's call. |
 
@@ -146,7 +146,7 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 |---|---|---|
 | `name` | ✅ | Physical column name. Convention: `<source_alias>_<table>` (e.g. `vbeln_vbak`, `matnr_mara`) — preserves source lineage and disambiguates same-named columns from different Bronze nodes. |
 | `source` | ✅ | Lineage: `<TABLE>.<column>` referencing the Bronze node. |
-| `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, or `status_flag`. |
+| `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, or `status_flag`. **`attribute`** is for free-text descriptions or names (a material description, an order text): the agent may filter on it and SELECT it, but never `GROUP BY` it — contrast **`dimension`**, which is a code from a closed set and *is* groupable. A material *description* is an `attribute`; a material *group code* is a `dimension`. **`status_flag`** is a small closed set of business states (open/partial/closed) — groupable, but never arithmetically aggregated. |
 | `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) Silvers published before this rule may still carry source codes; both parse to the same type, but they are not canonical until regenerated. |
 | `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. |
 | `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |

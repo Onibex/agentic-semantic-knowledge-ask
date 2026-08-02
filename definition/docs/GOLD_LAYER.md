@@ -41,13 +41,13 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | `version` | ✅ | string | Spec/version of this data product. Bump on breaking change. |
 | `source_system` | ✅ | string | Originating system family (e.g. `ecc`, `s4hana`, `salesforce`). |
 | `source_system_no` | ⬜ | integer | Specific instance/client number of the source system (SAP MANDT, etc.). |
-| `business_process` | ✅ | string | High-level process the entity supports: `OTC`, `P2P`, `SCM`, `Finance`, etc. |
-| `module` | ✅ | string \| string[] | One module or a list when the Gold spans modules: `["SD", "MM"]`. |
+| `business_process` | ✅ | string | High-level process the entity supports. Use the **same vocabulary as Silver** so the two layers match: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. Unknown values are accepted and normalised, not rejected. **Do not use short codes here** (`OTC`, `P2P`, `SCM`): those are the `<domain>` segment of a Gold **id**, a different thing — using them in this field is what made Silver and Gold speak different languages. |
+| `module` | ✅ | string \| string[] | One module or a list when the Gold spans modules: `["SD", "MM"]`. UPPERCASE. |
 | `tag1`, `tag2` | ⬜ | string | Optional secondary categorization for catalog faceting. |
 | `name` | ✅ | string | Short business name (snake_case). Drives natural-language matching. |
-| `classification` | ⬜ | string | Single-letter classifier: `T` = transactional, `M` = master, `D` = document. Optional but useful for catalog UIs. |
+| `classification` | ⬜ | string | `M` = master · `T` = transactional · `C` = configuration. **Optional at Gold and purely a catalog hint** — unlike Silver, it does not derive `entity_role` here, because a Gold is authored rather than ingested and has no source-system classification to inherit. |
 | `description` | ✅ | string | **The most important field for the agent.** A long, explicit narrative that explains: what business question this answers, what the grain is, what is denormalized, what is sparse, what derivations have been applied, and how it relates to other Gold entities. Write it for a human reader, then hand it to the LLM. |
-| `entity_role` | ✅ | string | `fact` or `dimension`. Most Gold entities are facts. |
+| `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`) — you set it directly, and the server does not overwrite it. Most Gold entities are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `composed_of` | ✅ | string[] | Lineage. References to the Silver Foundational Data Products and/or other Gold entities this is built from. |
 | `fields` | ✅ | object[] | Field definitions. See [§3.3](#33-fields). |
@@ -102,7 +102,7 @@ Each field is an object in the `fields` list:
 |---|---|---|
 | `name` | ✅ | Physical column name, business-friendly snake_case (e.g. `order_qty`, not `KWMENG`). |
 | `source` | ✅ | Lineage: `<TABLE>.<column>`. For Gold this is usually the Gold table itself, since Gold is the published surface. |
-| `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `status_flag`. See [§3.3.1](#331-field-roles). |
+| `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, `status_flag`. See [§3.3.1](#331-field-roles). |
 | `type` | ✅ | SQL-style type of the published column: `TEXT`, `NUMERIC`, `INTEGER`, `DATE`, `TIMESTAMP`, `BOOLEAN`. Gold is a physical table, so this describes the real column. Bronze and Silver instead use the source-agnostic *canonical* vocabulary (`STRING(n)`, `DECIMAL(p[,s])`, …) — see [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). The two map 1:1 (`TEXT` ↔ `STRING`, `NUMERIC` ↔ `DECIMAL`), so nothing misreads across the boundary. |
 | `description` | ✅ | Detailed business meaning. Include: the source SAP/source-system field, any derivation rules, sparsity rules, valid values, and gotchas. **The agent reads this verbatim.** |
 | `aggregation_behavior` | ✅ | **Which** SQL function: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, or `none`. A function name, nothing more. Use `none` for identifiers, dimensions, statuses and timestamps. See [§3.3.4](#334-additive-vs-non-additive-measures). |
@@ -117,7 +117,8 @@ Each field is an object in the `fields` list:
 | `dimension` | Categorical attribute used for grouping/filtering (customer, plant, channel). | No. |
 | `measure` | Numeric value to aggregate (quantity, amount, value, count). | Usually (`SUM`, `AVG`, …) — but a **non-additive** measure declares `none` and must never be summed. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 | `timestamp` | Date or datetime field. | No, but used for `MIN`/`MAX` framing and time-grain rollups. |
-| `status_flag` | A status-like categorical that the agent should recognize as life-cycle state (`OPEN`, `CLOSE`, `BLOCKED`, `A`/`B`/`C` codes). | No. |
+| `attribute` | Free-text description or name (a material description, an order text). Filter and SELECT only — the agent must **never `GROUP BY`** one, because its cardinality is ~1:1 with the row and the aggregate would be meaningless. Contrast `dimension`: a material *description* is an `attribute`, a material *group code* is a `dimension`. | No. |
+| `status_flag` | A status-like categorical the agent should recognize as life-cycle state (`OPEN`, `CLOSE`, `BLOCKED`, `A`/`B`/`C` codes). **Groupable** — "orders by status" is a normal question — but never arithmetically aggregated. Reserve it for a small closed set of business *states*; a code from a larger taxonomy is a `dimension`. | No. |
 
 #### 3.3.2 Sparse measures pattern
 
@@ -227,7 +228,7 @@ relationships:
 | `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
 | `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper. The planner uses it to choose between alternative paths. Suggested scale: `1` (single-key dimensional join), `2` (multi-key or bigger table), `3` (cross-fact lookup or many-to-many). |
-| `aggregation_safety` | ✅ | `safe` (join does not multiply rows) or `requires_dedup` (many-to-many or fan-out). The planner uses this to insert `DISTINCT` or warn before aggregation. |
+| `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation; the planner should reject the path unless explicitly overridden — *declared intent, not yet enforced*). See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
 | `cross_module` | ✅ | Boolean. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
 | `description` | ✅ | What this join means in business terms. |
 
@@ -287,7 +288,25 @@ Traversal cost is a planner heuristic. A 1.0 single-column join to a small dimen
 
 ### 5.6 Mark `requires_dedup` whenever there is fan-out
 
-Many-to-many or one-to-many joins that can multiply rows must be flagged `aggregation_safety: requires_dedup`. The planner will insert `DISTINCT` or warn before summing measures across that edge.
+Many-to-many or one-to-many joins that can multiply rows must be flagged
+`aggregation_safety: requires_dedup`.
+
+**What it obliges.** Traversing the edge multiplies rows on the base side, so a measure of the
+base must be reduced to **one row per its `entity_grain` before the join** — aggregate it in a
+CTE, or `DISTINCT` on its grain key. It is a statement about row multiplication, not about
+duplicate values.
+
+> **It is not "insert `SELECT DISTINCT`".** A bare `DISTINCT` over the output projection is
+> wrong in both directions: it fails to dedup when the projection carries the drill-down column
+> the question asked for, and it *over*-deduplicates when it does not, collapsing rows that are
+> legitimately identical. On a 1:N grain-change join whose true answer is 1000, the same bare
+> `DISTINCT` returns 2000 in the first case and 500 in the second. It is right only when the
+> projection happens to equal the grain — exactly the case that needed no dedup at all.
+
+This reaches the agent as a generation rule alongside the edge cardinality, and the generated
+SQL is audited rather than rewritten. In practice `requires_dedup` tracks the cardinality
+one-for-one, so the default follows from `relationship_type`; set it explicitly only to
+*override* that default.
 
 ### 5.7 Keep `composed_of` accurate for lineage
 

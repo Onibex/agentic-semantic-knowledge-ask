@@ -81,10 +81,10 @@ For a **Silver / Gold** entity the top of the editor exposes:
 | Field | Editable? | Notes |
 |---|---|---|
 | **Description** | Yes | What the entity is, its grain, when to use it. Fed into the agent's retrieval — signal, not filler. |
-| **Module** | Yes (Silver/Gold) | SAP module tag, e.g. `pp`. Blank for cross-module/shared entities. |
+| **Module** | Yes (Silver/Gold) | SAP module tag, e.g. `PP` — the module that owns the entity. **Required**: it also decides where the file lives, so it cannot be left blank. A Gold may carry several. |
 | **db_table_name** | Yes (Silver/Gold) | The physical table the agent queries, e.g. `GOLD_SD_SALES_PERFORMANCE`. |
-| **classification** | Yes (Silver/Gold) | `M · master` / `T · transactional` / `C · configuration`. **This drives** `entity_role`. |
-| **entity_role** | **No — auto** | Derived from classification (section 5.1): C→reference, M→dimension, T→fact\|dimension. Recomputed on save. |
+| **classification** | Yes (**Silver**) | `M · master` / `T · transactional` / `C · configuration`. **This drives** `entity_role`. Not shown for Gold: a Gold is authored rather than ingested, so it has no source-system classification to inherit. |
+| **entity_role** | **Silver: no — auto** · **Gold: yes** | **Silver** derives it from classification (section 5.1): C→reference, M→dimension, T→fact\|dimension, recomputed on save. **Gold** you set directly — pick `fact` (the default) unless the Gold is a pure dimensional lookup. |
 | **Context** (`grain.entity_grain`, `composed_of`, `business_grain`) | **No — auto** | Shown read-only in the left **Context** column, marked **auto**. `grain.entity_grain` = the fields whose role is `identifier`; `composed_of` = the Bronze tables set on create. |
 
 A **Bronze** entity *is* a raw SAP table, so it has no classification, `entity_role`, `grain` or
@@ -110,10 +110,15 @@ Each row has a **Advanced** expander for the less-common props — type dimensio
 
 ![Edit panel showing the entity-level fields on top and the editable field list below](../images/admin-edit-fields.png)
 
-> **Warning — `entity_role` and the Context block are auto-derived.** You can't type them
-> directly. To change the role, set **classification** (and mark the right fields as
+> **Warning — on a Silver, `entity_role` and the Context block are auto-derived.** You can't
+> type them directly. To change the role, set **classification** (and mark the right fields as
 > `identifier` for the grain). The server recomputes both on **Save**; the client is never
 > authoritative.
+>
+> **On a Gold, `entity_role` is yours to set** — it appears as a normal dropdown rather than a
+> read-only *auto* chip, and the server keeps what you choose. The derivation rule needs
+> source-system signals a Gold does not have, so applying it there produced a role decided on
+> evidence that was not present.
 
 ### 2c. Relationships & join conditions
 

@@ -69,7 +69,7 @@
 |---|---|
 | **Enrichment (Enrich)** | An AI-assisted step that suggests improved **descriptions** and **synonyms** for a field or entity. You review the before/after diff and apply it. Good descriptions and synonyms directly improve answer quality — they are how the agent maps a user's words to your columns. |
 | **Entity grain** | See **Grain**. |
-| **`entity_role` (fact / dimension / reference)** | How a Silver/Gold entity is used in SQL. A **fact** carries measures (e.g. `production_order`); a **dimension** provides groupable attributes; a **reference** is lookup/configuration data. This is a different axis from a field's **field role** and from the source-data **classification** (M / T / C). |
+| **`entity_role` (fact / dimension / reference)** | How a Silver/Gold entity is used in SQL. A **fact** carries measures (e.g. `production_order`); a **dimension** provides groupable attributes; a **reference** is lookup/configuration data. This is a different axis from a field's **field role** and from the source-data **classification** (M / T / C). On a **Silver** it is derived from `classification`; on a **Gold** it is authored, defaulting to `fact`. |
 | **Environment (dev / prod)** | Which published snapshot the chat queries. Authoring happens in a working area; you **publish to dev** first, then **promote to prod**. The chat's environment selector decides which snapshot a user sees, so a Data Product published only to dev is invisible when the chat is set to prod. |
 
 ## F
@@ -134,7 +134,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Reference** | An `entity_role` for lookup or configuration data (source **classification** `C` always maps to reference). There is no separate "configuration" entity role — configuration data surfaces as reference. |
+| **Reference** | An `entity_role` for lookup or configuration data (on a Silver, source **classification** `C` always maps to reference). There is no separate "configuration" entity role — configuration data surfaces as reference. |
 | **Relationship (join)** | A cross-entity edge the agent may traverse to build a JOIN. Each relationship names a target entity, a relationship type (one-to-one / one-to-many / …), a full SQL join condition, a business label, a traversal cost, and an aggregation-safety hint. Relationships live on **Silver** (Silver → Silver, required so the fallback plane works) and on **Gold** (Gold → Silver / Gold → Gold, for enrichment, drill-down, and lineage); a Silver never points to a Gold. |
 | **Released** | The lifecycle status of a Data Product that has been published to an environment (as opposed to **In Review**). |
 | **Roles (ask-admin / ask-user)** | The two platform roles that govern access. **ask-admin** grants full authoring and configuration (ASK Admin and ASK Setup); **ask-user** grants use of the chat. Every user of the realm is **auto-granted ask-user**, so business users can ask questions without extra setup; **ask-admin** is assigned deliberately. |
