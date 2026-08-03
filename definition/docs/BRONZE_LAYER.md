@@ -213,7 +213,7 @@ If `primary_key: [MATNR]`, then exactly the field `MATNR` has `key_field: true`.
 
 Catalog validation **rejects** mismatches rather than repairing them, and reports every violation at once so a corrupt file can be fixed in a single pass. Normalization that *is* safe — de-duplicating a key, sanitizing an alias — happens in the ingestion parser before validation, so machine-generated payloads pass while a hand-authored file that disagrees with itself fails.
 
-A source table whose export carries **no** key-flagged column is rejected by name rather than ingested keyless: without a key, the Silver that composes it cannot derive a grain.
+A source table whose export declares **no** key at all ingests as a **keyless Bronze**, with a warning naming the table. The key declaration belongs to the data-product author — ASK consumes it as authority and never reconstructs a key from the source dictionary — so a missing declaration is an upstream authoring error to fix at the source, not something ingestion should guess around. Until it is fixed, a keyless Bronze contributes no key columns to the grain of any Silver that composes it (the grain cannot express that table's fan-out), and the table's upstream data itself is suspect: materialized with no declared key, N rows per key collision collapse into 1. Treat the warning as a defect to escalate, not a state to keep.
 
 ### 6.4 One Bronze per source-system node
 
@@ -265,7 +265,7 @@ Before publishing a Bronze YAML to the catalog, verify:
 - [ ] `id` follows `bronze_<system>_<table_lower>_<alias_lower>`, lowercase, and is reconstructible from `source_system` + `name` + `alias`.
 - [ ] `name` matches the source-system table name **exactly** (case-sensitive).
 - [ ] `source_system` is a registered token (`s4h`, `ecc`, `generic`, `salesforce`, `odoo`).
-- [ ] `primary_key` is a non-empty, **duplicate-free** list of column names that exist in `fields`.
+- [ ] `primary_key` is a **duplicate-free** list of column names that exist in `fields`. Empty is valid but means a keyless Bronze — warned at ingestion, contributes nothing to any Silver grain; escalate the missing key declaration to the data-product author.
 - [ ] For every column in `primary_key`, the corresponding field has `key_field: true`.
 - [ ] For every field with `key_field: true`, the column is listed in `primary_key`.
 - [ ] The client/tenant column is **not** in `primary_key`.
