@@ -53,7 +53,7 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 | `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
 | `layer` | ✅ | string | Must be the literal value `silver`. |
 | `version` | ✅ | string | Spec/version of this data product. |
-| `source_system` | ✅ | string | Originating system family (e.g. `ecc`, `s4hana`, `salesforce`). |
+| `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo` — see [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
 | `source_system_no` | ⬜ | integer | Specific instance/client number of the source system. |
 | `business_process` | ✅ | string | Process this artifact participates in. Recommended vocabulary — unknown values are **accepted and normalised** (trimmed, upper-cased), not rejected: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. `ORGANIZATIONAL STRUCTURE` is a legitimate value, not a gap: it marks a **generic, cross-module** artifact belonging to no single process (a plant, a sales office, an org unit). Do not put a module code here, and do not use short codes like `OTC` / `SCM` — those belong to the `<domain>` segment of a Gold **id**, not to this field. |
 | `module` | ✅ | string \| string[] | The source-system module that **owns** this artifact (`SD`, `MM`, `FI`, …). UPPERCASE here; the `id` carries the same token in lowercase. A Silver has one module; an artifact used by several processes is published once per process. A list is meaningful mainly at Gold. |
@@ -132,9 +132,29 @@ join_graph:
 | `right_table` | ✅ | Bronze node name being added. |
 | `join_type` | ✅ | `INNER`, `LEFT OUTER`, `RIGHT OUTER`, `CROSS`. `FULL OUTER` is **not** supported — do not use it; the validator rejects it. |
 | `condition` | ✅ | SQL-style join predicate. Multi-key joins use `AND` — **one entry per table pair**, see below. |
-| `sequence` | ✅ | Numeric order in which joins are applied. Lower values are joined first. Use to communicate intent to consumers; the actual execution plan is the engine's call. |
+| `sequence` | ✅ | Position of the table being **added** — the `right_table` — in the assembly order. Lower is earlier. See [the sequence convention](#the-sequence-convention-starts-at-2) below. |
 
 The `join_graph` is **descriptive**, not prescriptive. It tells the agent (and any downstream pipeline) how the Silver entity is *conceptually* assembled. The actual physical implementation may be a denormalized table, a view, or a virtualized Cube/dbt model.
+
+#### The sequence convention: starts at 2
+
+`sequence` numbers the table each row **adds**, not the row itself. The anchor table is not added by
+any row — it is where assembly starts — so it holds the implicit position **1**, and the first
+authored row is `sequence: 2`. In the example above, `VBAK` is the anchor and `VBAP` is what
+position 2 brings in.
+
+Two consequences are worth stating, because both are easy to get backwards:
+
+- **The anchor still appears as a `left_table`**, including on the lowest-numbered row. Identify the
+  anchor as the table that is never a `right_table` — not as the `left_table` of `sequence: 2`. An
+  entity anchored on `EKKO` whose first row reads `EKKO → EKPO, sequence: 2` is adding `EKPO`
+  second, which is exactly right.
+- **Sequence belongs to the table pair, not to the predicate.** Every row for one
+  `(left_table, right_table)` pair carries the same sequence — which is why a composite key must be
+  one `AND`-composed row rather than several rows sharing a number.
+
+Gaps carry no meaning. An entity may run `2, 3, 4, 5` or `2, 3, 5`; renumbering to close a gap is
+churn, since only the relative order is read.
 
 #### A composite key is ONE entry
 
@@ -222,7 +242,9 @@ The Gold layer that consumes this Silver should derive a clean `order_status` (`
 
 ### 3.5 Relationships
 
-Silver entities can declare relationships to other Silver entities. These describe the **enterprise data graph** that Silver Foundational Data Products participate in.
+Silver entities declare relationships to other Silver entities. These describe the **enterprise data graph** that Silver Foundational Data Products participate in, and they are what makes the Silver fallback plane work: a Silver fact must be able to reach its dimensions through its *own* edges.
+
+**Direction rule: Silver points at Silver, never at Gold.** A Silver does not know which Gold products are built on top of it, and it must not: Silvers are reusable across many Golds, so an edge pointing upward would bind a foundational product to one consumer and invert the dependency. Lineage and drill-down edges are declared on the Gold side ([GOLD_LAYER.md §3.4](GOLD_LAYER.md#34-relationships)).
 
 ```yaml
 relationships:
@@ -340,6 +362,8 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] `join_graph` covers every node beyond the anchor table, with **one entry per
       `(left_table, right_table, sequence)`** — a composite key is one `AND`-composed
       `condition`, never one entry per key column. See [§3.3](#33-join_graph).
+- [ ] `join_graph[].sequence` starts at **2** — the anchor holds the implicit position 1
+      ([the sequence convention](#the-sequence-convention-starts-at-2)).
 - [ ] Every column named in a `join_graph` `condition` exists in that side's Bronze node.
 - [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side — never an
       entity `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).

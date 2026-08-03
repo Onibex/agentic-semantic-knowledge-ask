@@ -39,7 +39,7 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
 | `layer` | ✅ | string | Must be the literal value `gold`. |
 | `version` | ✅ | string | Spec/version of this data product. Bump on breaking change. |
-| `source_system` | ✅ | string | Originating system family (e.g. `ecc`, `s4hana`, `salesforce`). |
+| `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo` — see [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
 | `source_system_no` | ⬜ | integer | Specific instance/client number of the source system (SAP MANDT, etc.). |
 | `business_process` | ✅ | string | High-level process the entity supports. Use the **same vocabulary as Silver** so the two layers match: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. Unknown values are accepted and normalised, not rejected. **Do not use short codes here** (`OTC`, `P2P`, `SCM`): those are the `<domain>` segment of a Gold **id**, a different thing — using them in this field is what made Silver and Gold speak different languages. |
 | `module` | ✅ | string \| string[] | One module or a list when the Gold spans modules: `["SD", "MM"]`. UPPERCASE. |
@@ -271,13 +271,19 @@ relationships:
     description: "Customer who placed the sales order."
 ```
 
+**Direction rules.** Edges have an owner, and declaring them twice is a defect, not redundancy:
+
+- **Gold → Silver** and **Gold → Gold** — drill-down, enrichment, and lineage. This is where cross-layer edges live.
+- **Never Silver → Gold.** A Silver is reusable across many Golds and must not depend on any of them ([SILVER_LAYER.md §3.5](SILVER_LAYER.md#35-relationships)).
+- **Gold ↔ Gold: declare on ONE side only.** The reverse edge is generated automatically, with the cardinality inverted (`one_to_many` becomes `many_to_one`) and the label prefixed `reverse_of_`. Declaring both sides yields four edges in the graph instead of two, and the duplicates are not identical — each carries its own generated reverse — so the planner sees two competing descriptions of the same join. Pick the side the traversal naturally starts from.
+
 | Key | Required | Description |
 |---|---|---|
 | `target_entity` | ✅ | The `id` of the entity this relationship points to. Must resolve in the catalog. |
 | `relationship_type` | ✅ | `one_to_one`, `many_to_one`, `one_to_many`, or `many_to_many`. |
 | `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Carried and rendered **verbatim** — write it exactly as it must appear after `ON`, including non-equality terms such as `IN (...)`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
-| `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper. The planner uses it to choose between alternative paths. Suggested scale: `1` (single-key dimensional join), `2` (multi-key or bigger table), `3` (cross-fact lookup or many-to-many). |
+| `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper — the planner's edge weight when choosing between alternative paths. **Floats, not integers**: fractional values are what make the ranking finer than the four tiers. Rubric in [§5.5](#55-score-traversal_cost-honestly). |
 | `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation — the edge is removed from the traversal graph, so no path is built through it). Defaults to the cardinality; set it explicitly to **override** that default. On the auto-generated reverse edge it is **derived from the inverted cardinality, not copied** — fan-out is directional — except `unsafe`, which propagates both ways. See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
 | `cross_module` | ✅ | Boolean. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
 | `description` | ✅ | What this join means in business terms. |
@@ -361,11 +367,15 @@ to repair a predicate that names a table nobody selected from.
 
 | Item | Convention | Example |
 |---|---|---|
-| `id` | `gold_<system>_<module>_<name>` | `gold_ecc_sd_open_order_tracker` |
-| `db_table_name` | `GOLD_<MODULE>_<NAME>` (UPPER_SNAKE) | `GOLD_SD_OPEN_ORDER_TRACKER` |
+| `id` | `gold_<system>_[<module>_]<name>` | `gold_ecc_sd_open_order_tracker` |
+| `db_table_name` | `GOLD_[<MODULE>_]<NAME>` (UPPER_SNAKE) | `GOLD_SD_OPEN_ORDER_TRACKER` |
 | `name` | Short business label, snake_case | `open_order_tracker` |
 | Field `name` | Business-friendly snake_case, no SAP code | `customer_id`, `order_qty`, `delivery_date` |
 | `semantic_label` | Active verb phrase | `ordered_by`, `fulfilled_from`, `material_of` |
+
+**The module segment is optional, and its absence is meaningful.** A Gold that genuinely spans modules — an order-tracking product joining MM, PP and SD — omits it rather than picking one arbitrarily: `GOLD_ORDER_TRACKING_RECEPTION`, not `GOLD_SD_ORDER_TRACKING_RECEPTION`. The real classification lives in the `module` field, which accepts a list. Do not "normalize" an id by forcing a module segment in; besides being less accurate, an `id` is a stable key and renaming it breaks every `target_entity` that points there.
+
+Write `db_table_name` as an unquoted scalar. Quoting it is harmless but inconsistent — it is a plain identifier, not a string that needs protecting.
 
 Avoid leaking source-system column names (`KUNNR`, `MATNR`, `WERKS`) into Gold field names. The whole point of Gold is to expose a business vocabulary.
 
@@ -389,7 +399,27 @@ If a fact unions multiple operation types into sparse columns, every measure des
 
 ### 5.5 Score traversal_cost honestly
 
-Traversal cost is a planner heuristic. A 1.0 single-column join to a small dimension is cheap. A 3.0 cross-fact join with a multi-key composite predicate is expensive. Calibrate within your catalog so the planner can choose the cheapest path.
+Traversal cost is the planner's edge weight: lower wins. **Values are floats** — the tiers below
+are anchors, not an enumeration, and intermediate values like `1.5` are the point of using floats
+at all.
+
+| Cost | Situation |
+|---|---|
+| **1** | Direct foreign key, same module. The natural, cheap dimensional join. |
+| **1.5 – 2** | Direct foreign key, but crossing modules. |
+| **3** | Bridge table, `many_to_many`, or any edge marked `requires_dedup` — the join changes the grain. |
+| **4+** | The dimension is **already flattened into this Gold**. Discourage the traversal: it exists only for raw attributes the Gold did not denormalize. |
+
+The 4+ tier is the one authors forget, and it is specific to Gold. A Gold that already carries
+`customer_name` as a column does not need to traverse to the customer entity to answer "sales by
+customer name" — but the edge is still worth declaring for the attributes that were *not*
+flattened in. Pricing it at `4` keeps the planner from taking a join it does not need, without
+hiding the path. Say so in the description too ("…already denormalized here; traverse only for
+attributes absent from this Gold").
+
+Calibrate so that **the cheapest path is also the correct one.** Never let an unsafe or
+grain-breaking edge look cheap — cost is the only lever the planner has, and a mispriced edge is
+indistinguishable from a good one.
 
 ### 5.6 Mark `requires_dedup` whenever there is fan-out
 
@@ -427,7 +457,7 @@ come from, in prose, for the human reading the catalog.
 
 ## 6. Reference example
 
-See [`examples/gold/gold_ecc_sd_open_order_tracker.yml`](../examples/gold/gold_ecc_sd_open_order_tracker.yml) and [`examples/gold/gold_ecc_order_tracking_reception.yml`](../examples/gold/gold_ecc_order_tracking_reception.yml) for complete, production-style Gold definitions.
+See [`examples/gold/gold_ecc_sd_open_order_tracker.yml`](../examples/gold/gold_ecc_sd_open_order_tracker.yaml) and [`examples/gold/gold_ecc_order_tracking_reception.yml`](../examples/gold/gold_ecc_order_tracking_reception.yaml) for complete, production-style Gold definitions.
 
 ## 7. Validation checklist
 

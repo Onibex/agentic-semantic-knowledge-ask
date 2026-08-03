@@ -63,6 +63,8 @@ ASK exists to provide the missing semantic layer between the agent and the wareh
 
 ASK organizes data products into three layers. **Entities, Business Objects, and Data Products are equivalent terms** — ASK uses "Data Product" throughout.
 
+The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`, `target_entity`). That split is deliberate and stable: "Data Product" is the term for humans, `entity_` is the machine vocabulary, and renaming the keys would break every catalog and reference that points at them.
+
 | Layer | Concept | Purpose | Agent visibility |
 |-------|---------|---------|------------------|
 | **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Sales Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary** — agents prefer Gold |
@@ -71,13 +73,15 @@ ASK organizes data products into three layers. **Entities, Business Objects, and
 
 ### Intent Resolution priority
 
-When an agent receives a natural-language question, the resolver walks the catalog in this order:
+When an agent receives a natural-language question, the layers are ranked in this order:
 
 ```
 1. GOLD    → "Is there a Business Logic Data Product that already answers this?"
 2. SILVER  → "Is there a Foundational Data Product I can compose an answer from?"
 3. BRONZE  → (skipped by default — not good agent context)
 ```
+
+This is a **priority, not a sequence of passes.** A resolver is free to search the whole catalog at once and then rank what it found — what the contract fixes is the *outcome*: a Gold that answers the question outranks a Silver that could compose one, and Bronze is not an answer surface at all. Expressing the priority as re-ranking rather than a layer-by-layer walk is what makes a single retrieval pass sufficient.
 
 **Why Bronze is skipped:** A raw table like `VBAK` has no notion that `GBSTK='C'` means "closed", that `VDATU` is the *requested* delivery date (not actual), or how it joins to `VBAP`. Giving agents Bronze leaks raw schema noise and almost always produces wrong SQL. Bronze exists to be **lineage** for Silver and Gold — not the agent surface.
 
@@ -222,7 +226,8 @@ ASK was forged on SAP ECC and S/4HANA workloads, but the spec is source-system a
 ## Roadmap
 
 - [x] Draft v1 of Bronze, Silver, Gold layer specifications
-- [x] Reference SAP ECC examples (SD, MM, PP modules)
+- [x] Reference SAP ECC examples (SD and MM modules)
+- [ ] Refresh the reference examples on S/4HANA, adding PP
 - [ ] Examples for non-SAP source systems (Salesforce, Siemens, etc)
 - [ ] Conformance test suite
 
