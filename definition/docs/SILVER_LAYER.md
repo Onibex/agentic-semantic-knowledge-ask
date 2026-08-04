@@ -21,7 +21,7 @@ A single enterprise often needs **multiple variants** of the same Foundational D
 
 - A multi-LOB company may publish `silver_lob_a_trading_goods` *and* `silver_lob_b_trading_goods`, each with the attributes that line of business cares about.
 - A multi-region enterprise may publish `silver_emea_sales_order` *and* `silver_americas_sales_order`, each scoped to its sales-org filter and currency.
-- A company on both ECC and S/4 may publish `silver_ecc_sales_order` *and* `silver_s4_sales_order` while migrating.
+- A company on both ECC and S/4 may publish `silver_ecc_sales_order` *and* `silver_s4h_sales_order` while migrating.
 
 The data practitioner's job is to choose the right variant granularity. ASK gives you the structural language; the topology of Silver is a business decision.
 
@@ -38,7 +38,6 @@ For example, a `Sales Order` Foundational Data Product is composed of:
 | `VBKD` (Business Data) | Header- and item-level commercial data |
 | `VBPA` (Partners) | Sold-to, Ship-to, Bill-to, Payer per item |
 | `VBFA` (Document Flow) | Predecessor/successor links across documents |
-| `VBUK` (Status) | Overall processing status |
 
 The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and **which fields of the union are exposed**. The grain of the Silver entity is the natural grain of the joined result — for `Sales Order`, that is one row per `(VBELN, POSNR)` (sales order item).
 
@@ -48,7 +47,7 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 
 | Key | Required | Type | Description |
 |---|---|---|---|
-| `id` | ✅ | string | Globally unique identifier. Convention: `silver_<system>_<module>_<name>`. Example: `silver_ecc_sd_sales_order`. |
+| `id` | ✅ | string | Globally unique identifier. Convention: `silver_<system>_<module>_<name>`. Example: `silver_s4h_sd_sales_order`. **The filename is the entity `name`** (`sales_order.yaml`). |
 | `internal_id` | ⬜ | string | Internal/cataloged identifier. Often follows a numbering pattern like `<system>_<sysno>_<seq>`. |
 | `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
 | `layer` | ✅ | string | Must be the literal value `silver`. |
@@ -191,12 +190,12 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 - name: vbeln_vbak
   source: VBAK.VBELN
   field_role: identifier
-  type: C10
+  type: STRING(10)
   description: Sales document
-- name: gbstk_vbuk
-  source: VBUK.GBSTK
+- name: gbstk_vbak
+  source: VBAK.GBSTK
   field_role: status_flag
-  type: C1
+  type: STRING(1)
   description: "Overall Processing Status of sales order. A = not yet processed
     / open, B = partially processed, C = fully processed / completed."
 ```
@@ -206,10 +205,10 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 | `name` | ✅ | Physical column name. Convention: `<source_alias>_<table>` (e.g. `vbeln_vbak`, `matnr_mara`) — preserves source lineage and disambiguates same-named columns from different Bronze nodes. |
 | `source` | ✅ | Lineage: `<TABLE>.<column>` referencing the Bronze node. |
 | `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, or `status_flag`. **`attribute`** is for free-text descriptions or names (a material description, an order text): the agent may filter on it and SELECT it, but never `GROUP BY` it — contrast **`dimension`**, which is a code from a closed set and *is* groupable. A material *description* is an `attribute`; a material *group code* is a `dimension`. **`status_flag`** is a small closed set of business states (open/partial/closed) — groupable, but never arithmetically aggregated. |
-| `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) Silvers published before this rule may still carry source codes; both parse to the same type, but they are not canonical until regenerated. |
+| `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) |
 | `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. |
 | `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
-| `additivity` / `non_additive_over` | ⬜ | Also as at Gold — the dimensions a measure may *not* be aggregated across. Rarely needed at Silver, whose grain is usually the document/item level rather than a time series. |
+| `additivity` / `non_additive_over` | ⬜ | Also as at Gold — the dimensions a measure may *not* be aggregated across. **Derived at ingest** for every measure whose own source table's key does not determine the grain, which on a multi-table Silver is most of them: a header amount is restated on every item, partner and document-flow row it joins to. An explicit value authored by a curator wins; absence means additive. |
 
 #### 3.4.1 Naming convention: `<column>_<table>`
 
@@ -220,7 +219,7 @@ The standard Silver field name pattern is `<source_column_alias>_<source_table>`
 | `VBAK.VBELN` | `vbeln_vbak` |
 | `VBAP.MATNR` | `matnr_vbap` |
 | `MARA.MATNR` | `matnr_mara` |
-| `VBUK.GBSTK` | `gbstk_vbuk` |
+| `VBAK.GBSTK` | `gbstk_vbak` |
 
 This convention keeps lineage visible in the column name and avoids collisions when multiple Bronze nodes carry the same logical field (e.g. `MATNR` appears in both `VBAP` and `MARA`).
 
@@ -229,10 +228,10 @@ This convention keeps lineage visible in the column name and avoids collisions w
 Silver status fields preserve the **raw source-system codes**. The Silver description must enumerate the codes; the *interpretation* (e.g. mapping to `OPEN/CLOSE`) belongs in Gold.
 
 ```yaml
-- name: gbstk_vbuk
-  source: VBUK.GBSTK
+- name: gbstk_vbak
+  source: VBAK.GBSTK
   field_role: status_flag
-  type: C1
+  type: STRING(1)
   description: "Overall Processing Status. A = not yet processed / open,
     B = partially processed, C = fully processed / completed.
     Use to filter open or pending sales orders."
@@ -248,7 +247,7 @@ Silver entities declare relationships to other Silver entities. These describe t
 
 ```yaml
 relationships:
-  - target_entity: "silver_ecc_sd_trading_goods"
+  - target_entity: "silver_s4h_sd_trading_goods"
     relationship_type: "many_to_one"
     join_condition: "SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_TRADING_GOODS.matnr_mara"
     semantic_label: "material_of"
@@ -257,7 +256,7 @@ relationships:
     cross_module: true
     description: "Join to Material Master for material attributes."
 
-  - target_entity: "silver_ecc_sd_customer_master"
+  - target_entity: "silver_s4h_sd_customer_master"
     relationship_type: "many_to_one"
     join_condition: "SILVER_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "sold_to_customer"
@@ -266,7 +265,7 @@ relationships:
     cross_module: false
     description: "Customer / sold-to party detail."
 
-  - target_entity: "silver_ecc_mm_inv_mov_stock"
+  - target_entity: "silver_s4h_mm_inv_mov_stock"
     relationship_type: "many_to_many"
     join_condition: "SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_MM_INVENTORY_MOVEMENT.matnr_marc
                      AND SILVER_SD_SALES_ORDER.werks_vbap = SILVER_MM_INVENTORY_MOVEMENT.werks_marc"
@@ -283,7 +282,7 @@ The relationship schema is identical to the Gold layer's — see [Gold Layer §3
 #### 3.5.1 The qualifier contract
 
 Note the qualifiers in the example above: **`SILVER_SD_SALES_ORDER`, the entity's
-`db_table_name` — not `silver_ecc_sd_sales_order`, its `id`.**
+`db_table_name` — not `silver_s4h_sd_sales_order`, its `id`.**
 
 **Every qualifier in a `join_condition` is the `db_table_name` of its own side.** The predicate
 names exactly two tables — this entity's and the target's — and nothing else. It is handed to the
@@ -312,10 +311,10 @@ The same rule, with worked examples of both failure modes, is in
 
 | Item | Convention | Example |
 |---|---|---|
-| `id` | `silver_<system>_<module>_<name>` | `silver_ecc_sd_sales_order` |
+| `id` | `silver_<system>_<module>_<name>` | `silver_s4h_sd_sales_order` |
 | `db_table_name` | `SILVER_<MODULE>_<NAME>` | `SILVER_SD_SALES_ORDER` |
 | `name` | snake_case business label | `sales_order`, `trading_goods` |
-| Field `name` | `<column_alias>_<table>` | `vbeln_vbak`, `matnr_mara`, `gbstk_vbuk` |
+| Field `name` | `<column_alias>_<table>` | `vbeln_vbak`, `matnr_mara`, `gbstk_vbak` |
 
 ## 5. Best practices
 
@@ -349,7 +348,7 @@ Joins like `sales_order ↔ inventory_movement` over `(matnr, werks)` are **many
 
 ## 6. Reference examples
 
-- [`examples/silver/sales_order.yaml`](../examples/silver/sales_order.yaml) — multi-node fact entity (VBAK + VBAP + VBKD + VBPA + VBFA + VBUK).
+- [`examples/silver/sales_order.yaml`](../examples/silver/sales_order.yaml) — multi-node fact entity (VBAK + VBAP + VBKD + VBPA + VBFA).
 - [`examples/silver/trading_goods.yaml`](../examples/silver/trading_goods.yaml) — multi-node dimensional entity (MARA + MAKT + MARM + MSTA + MVKE).
 
 ## 7. Validation checklist

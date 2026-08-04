@@ -1,0 +1,270 @@
+id: "gold_s4h_inventory_situation"
+internal_id: "gold_s4h_inventory_situation"
+db_table_name: GOLD_INVENTORY_SITUATION
+layer: "gold"
+version: "1"
+source_system: "s4h"
+source_system_no: 100
+business_process: "INVENTORY SITUATION"
+module: ["MM", "PP", "SD"]
+tag1: "SCM"
+tag2: "MM"
+name: "inventory_situation"
+classification: "T"
+description: "Forward-looking stock projection per material, plant and date. Only dates with a supply or demand event have rows — read future_date before filtering by date. For the current snapshot use gold_mm_inventory_position."
+entity_role: "fact"
+grain:
+  entity_grain: ["client", "plant_id", "material_id", "future_date"]
+  business_grain: "daily_inventory_projection_by_material_and_plant"
+
+fields:
+  - name: "future_date"
+    field_role: "timestamp"
+    type: "DATE"
+    description: "Projection date. SPARSE — rows exist only on event dates, so never match with `future_date = X`: carry forward the largest future_date <= X per (plant_id, material_id). Compare as a DATE, never against a formatted string."
+    synonyms:
+      - projection date
+      - horizon date
+  - name: "client"
+    field_role: "identifier"
+    type: "STRING(6)"
+    description: "SAP Client"
+  - name: "material_id"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material Number / Material ID"
+    synonyms:
+      - SKU
+      - part number
+      - material number
+  - name: "plant_id"
+    field_role: "dimension"
+    type: "STRING(8)"
+    description: "Plant Number / Plant ID"
+    synonyms:
+      - site
+      - plant code
+      - werks
+  - name: "daily_qty_production_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Quantity expected from production orders on this date."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - manufacturing supply
+      - planned production output
+  - name: "cumulative_production_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Cumulative quantity from Production Orders"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "daily_qty_purchase_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Quantity expected from purchase orders on this date."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - procurement supply
+      - incoming replenishment
+  - name: "cumulative_purchase_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Running total of purchase-order supply up to this date."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+    synonyms:
+      - open purchase order quantity
+      - incoming goods
+
+  - name: "daily_qty_stock_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Daily quantity from Stock Transfer Orders"
+    aggregation_behavior: "SUM"
+
+  - name: "cumulative_stock_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Cumulative quantity from Stock Transfer Orders"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "daily_qty_sale_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Quantity consumed by sales-order demand on this date."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - customer demand
+      - outbound demand
+  - name: "cumulative_sales_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Cumulative quantity from Sales Orders / Open Orders Quantity /cumulative outbound demand"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "daily_qty_receivings"
+    field_role: "measure"
+    type: "DECIMAL"
+    description: "Daily SUPPLY only = daily_qty_production_order + daily_qty_purchase_order + daily_qty_stock_order. Excludes sales orders (those are demand)."
+    aggregation_behavior: "SUM"
+
+  - name: "cumulative_receivings"
+    field_role: "measure"
+    type: "DECIMAL"
+    description: "Running total of expected incoming supply up to the projection date, all sources combined."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "future_stock"
+    field_role: "measure"
+    type: "DECIMAL"
+    description: "Optimistic projected stock at future_date = on_hand + cumulative supply - cumulative demand, assuming all open supply arrives and all open demand consumes."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "actual_stock"
+    field_role: "measure"
+    type: "DECIMAL"
+    description: "Pessimistic projected stock at future_date = on_hand - cumulative open sales-order demand, assuming no new supply arrives. The uncommitted / free-to-promise figure."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "plant"
+    field_role: "dimension"
+    type: "STRING(60)"
+    description: "Plant name. For the code use `plant_id`."
+  - name: "material"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material description. For the number use `material_id`."
+  - name: "postal_code"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Postal code of the plant. Useful for geographic stock distribution."
+  - name: "on_hand"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Gross unrestricted-use stock, before any demand is subtracted, denormalized from gold_s4h_mm_inventory_position.on_hand. For the netted figures use `actual_stock` or `future_stock`."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "in_transit"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock moving between locations on a transport order."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+    synonyms:
+      - stock in transfer
+      - goods in transit
+
+  - name: "on_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Ordered but not yet received."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+    synonyms:
+      - open purchase order quantity
+      - incoming stock
+
+  - name: "allocated"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock reserved for sales orders or production, so not freely available."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+    synonyms:
+      - reserved stock
+      - committed stock
+
+  - name: "damaged"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Damaged stock / Blocked stock"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "in_quality_control"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock in Quality Inspection"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "max_level"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Maximum stock level parameter"
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+
+  - name: "safety_stk"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Buffer stock to keep on hand. A planning target, not a quantity held."
+    aggregation_behavior: "SUM"
+    additivity: semi_additive
+    non_additive_over: [future_date]
+    synonyms:
+      - safety stock
+      - minimum stock level
+      - reorder buffer
+
+  - name: "stock_status"
+    field_role: "status_flag"
+    type: "STRING(14)"
+    description: "Calculated stock health. Values: 'Out of Stock' (nothing on hand), 'Low Stock' (below safety_stk), 'Excess Stock' (above max_level), 'Balanced Stock' (within thresholds)."
+  - name: "loaded_at"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "ETL load timestamp for this row. Not a business date."
+  - name: event_ts
+    field_role: timestamp
+    description: Last source-system event timestamp contributing to this row. Use to judge data freshness or filter recent changes.
+    type: TIMESTAMP
+relationships:
+  - target_entity: "silver_s4h_sd_trading_goods"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_INVENTORY_SITUATION.material_id = SILVER_TRADING_GOODS.matnr_mara"
+    semantic_label: "material_of"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Material Master for global attributes. This is also the ONLY route to material category: material group (T023) and material hierarchy (T179) hang off trading_goods' own relationships, so reach them as a second hop from here — this gold carries no group or hierarchy code column of its own."
+  - target_entity: "silver_s4h_sd_plant"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_INVENTORY_SITUATION.plant_id = SILVER_PLANTS.werks_t001w"
+    semantic_label: "projected_at_plant"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Plant Master for location details"
+
+  # ── Gold lineage relationships ─────────────────────────────────────────────
+  - target_entity: "gold_s4h_order_tracking_reception"
+    relationship_type: "one_to_many"
+    join_condition: "GOLD_INVENTORY_SITUATION.plant_id = GOLD_ORDER_TRACKING_RECEPTION.plant_id AND GOLD_INVENTORY_SITUATION.material_id = GOLD_ORDER_TRACKING_RECEPTION.material_id AND GOLD_INVENTORY_SITUATION.future_date = GOLD_ORDER_TRACKING_RECEPTION.date_reception_ts"
+    semantic_label: "aggregates_reception_tracking"
+    traversal_cost: 3
+    aggregation_safety: "requires_dedup"
+    cross_module: false
+    description: "Daily net inventory projection is aggregated from per-operation-type reception records (Sale Order, Production Order, Purchase Order, or Stock Transfer). Traverse to drill down from aggregated stock to individual order-level reception detail. Grain changes (plant+material+date -> client+operation+order+item) — never SUM cumulative_* / on_hand / future_stock after this join without grain-aware dedup."

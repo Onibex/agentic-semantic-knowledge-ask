@@ -1,0 +1,1302 @@
+id: silver_s4h_mm_inv_mov_stock
+internal_id: s4h_100_4
+db_table_name: SILVER_MM_INVENTORY_MOVEMENT
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: PROCURE TO PAY
+module: MM
+tag1: ''
+tag2: MM-IM
+name: inv_mov_stock
+classification: T
+description: Inventory movement stock items detailing inbound and outbound stock operations.
+entity_role: fact
+grain:
+  entity_grain:
+    - mblnr_mkpf
+    - mjahr_mkpf
+    - zeile_mseg
+    - matnr_marc
+    - werks_marc
+    - lgort_mard
+  business_grain: inv_mov_stock_item
+composed_of:
+  - bronze_s4h_mkpf_header_material_document
+  - bronze_s4h_mseg_item_material_document
+  - bronze_s4h_marc_plant_material
+  - bronze_s4h_mard_store_material
+join_graph:
+  - left_table: MKPF
+    right_table: MSEG
+    join_type: INNER
+    condition: MKPF.MBLNR = MSEG.MBLNR AND MKPF.MJAHR = MSEG.MJAHR
+    sequence: 2
+  - left_table: MSEG
+    right_table: MARC
+    join_type: LEFT OUTER
+    condition: MSEG.MATNR = MARC.MATNR AND MSEG.WERKS = MARC.WERKS
+    sequence: 3
+  - left_table: MSEG
+    right_table: MARD
+    join_type: LEFT OUTER
+    condition: MSEG.MATNR = MARD.MATNR AND MSEG.WERKS = MARD.WERKS AND MSEG.LGORT = MARD.LGORT
+    sequence: 4
+fields:
+  - name: mandt_mkpf
+    source: MKPF.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: mblnr_mkpf
+    source: MKPF.MBLNR
+    type: STRING(10)
+    description: Mat. Doc.
+    field_role: identifier
+  - name: mjahr_mkpf
+    source: MKPF.MJAHR
+    type: STRING(4)
+    description: Mat. Year
+    field_role: identifier
+  - name: vgart_mkpf
+    source: MKPF.VGART
+    type: STRING(2)
+    description: Tr Ev.Type
+    field_role: dimension
+  - name: blart_mkpf
+    source: MKPF.BLART
+    type: STRING(2)
+    description: Type
+    field_role: dimension
+  - name: blaum_mkpf
+    source: MKPF.BLAUM
+    type: STRING(2)
+    description: DocTypeRev
+    field_role: dimension
+  - name: bldat_mkpf
+    source: MKPF.BLDAT
+    type: DATE
+    description: Doc. Date
+    field_role: timestamp
+  - name: budat_mkpf
+    source: MKPF.BUDAT
+    type: DATE
+    description: Pstng Date
+    field_role: timestamp
+  - name: cpudt_mkpf
+    source: MKPF.CPUDT
+    type: DATE
+    description: Entered
+    field_role: timestamp
+  - name: cputm_mkpf
+    source: MKPF.CPUTM
+    type: STRING(6)
+    description: Time
+    field_role: dimension
+  - name: aedat_mkpf
+    source: MKPF.AEDAT
+    type: DATE
+    description: Chngd
+    field_role: timestamp
+  - name: usnam_mkpf
+    source: MKPF.USNAM
+    type: STRING(12)
+    description: User
+    field_role: dimension
+  - name: tcode_mkpf
+    source: MKPF.TCODE
+    type: STRING(4)
+    description: tcode
+    field_role: dimension
+  - name: xblnr_mkpf
+    source: MKPF.XBLNR
+    type: STRING(16)
+    description: Reference
+    field_role: dimension
+  - name: bktxt_mkpf
+    source: MKPF.BKTXT
+    type: STRING(25)
+    description: HeaderText
+    field_role: dimension
+  - name: frath_mkpf
+    source: MKPF.FRATH
+    type: DECIMAL(13)
+    description: Un.del.cts
+    field_role: measure
+    non_additive_over:
+      - zeile_mseg
+      - matnr_marc
+      - werks_marc
+      - lgort_mard
+    additivity: semi_additive
+  - name: frbnr_mkpf
+    source: MKPF.FRBNR
+    type: STRING(16)
+    description: B/Lading
+    field_role: dimension
+  - name: wever_mkpf
+    source: MKPF.WEVER
+    type: STRING(1)
+    description: Version
+    field_role: dimension
+  - name: xabln_mkpf
+    source: MKPF.XABLN
+    type: STRING(10)
+    description: GR/GI Slip
+    field_role: dimension
+  - name: awsys_mkpf
+    source: MKPF.AWSYS
+    type: STRING(10)
+    description: Log.System
+    field_role: dimension
+  - name: bla2d_mkpf
+    source: MKPF.BLA2D
+    type: STRING(2)
+    description: DocType AD
+    field_role: dimension
+  - name: tcode2_mkpf
+    source: MKPF.TCODE2
+    type: STRING(20)
+    description: TCode
+    field_role: dimension
+  - name: bfwms_mkpf
+    source: MKPF.BFWMS
+    type: STRING(1)
+    description: Ext. WMS
+    field_role: dimension
+  - name: exnum_mkpf
+    source: MKPF.EXNUM
+    type: STRING(10)
+    description: Frgn TrdNo
+    field_role: dimension
+  - name: spe_budat_uhr_mkpf
+    source: MKPF.SPE_BUDAT_UHR
+    type: STRING(6)
+    description: GI Time
+    field_role: dimension
+  - name: spe_budat_zone_mkpf
+    source: MKPF.SPE_BUDAT_ZONE
+    type: STRING(6)
+    description: Time Zone
+    field_role: dimension
+  - name: le_vbeln_mkpf
+    source: MKPF.LE_VBELN
+    type: STRING(10)
+    description: Delivery
+    field_role: dimension
+  - name: spe_logsys_mkpf
+    source: MKPF.SPE_LOGSYS
+    type: STRING(10)
+    description: LogSystem
+    field_role: dimension
+  - name: spe_mdnum_ewm_mkpf
+    source: MKPF.SPE_MDNUM_EWM
+    type: STRING(16)
+    description: MatDocEWM
+    field_role: dimension
+  - name: gts_cusref_no_mkpf
+    source: MKPF.GTS_CUSREF_NO
+    type: STRING(35)
+    description: CustRefNo.
+    field_role: dimension
+  - name: fls_rsto_mkpf
+    source: MKPF.FLS_RSTO
+    type: STRING(1)
+    description: Enh.StRet.
+    field_role: dimension
+  - name: msr_active_mkpf
+    source: MKPF.MSR_ACTIVE
+    type: STRING(1)
+    description: AdvReturns
+    field_role: dimension
+  - name: knumv_mkpf
+    source: MKPF.KNUMV
+    type: STRING(10)
+    description: Doc.Cond.
+    field_role: dimension
+  - name: mandt_mseg
+    source: MSEG.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: mblnr_mseg
+    source: MSEG.MBLNR
+    type: STRING(10)
+    description: Mat. Doc.
+    field_role: identifier
+  - name: mjahr_mseg
+    source: MSEG.MJAHR
+    type: STRING(4)
+    description: Mat. Year
+    field_role: identifier
+  - name: zeile_mseg
+    source: MSEG.ZEILE
+    type: STRING(4)
+    description: Item
+    field_role: identifier
+  - name: bwart_mseg
+    source: MSEG.BWART
+    type: STRING(3)
+    description: Movmt Type
+    field_role: dimension
+  - name: matnr_mseg
+    source: MSEG.MATNR
+    type: STRING(40)
+    description: Material
+    field_role: dimension
+  - name: werks_mseg
+    source: MSEG.WERKS
+    type: STRING(4)
+    description: Plant
+    field_role: dimension
+  - name: lgort_mseg
+    source: MSEG.LGORT
+    type: STRING(4)
+    description: Location
+    field_role: dimension
+  - name: insmk_mseg
+    source: MSEG.INSMK
+    type: STRING(1)
+    description: Stock Type
+    field_role: dimension
+  - name: lifnr_mseg
+    source: MSEG.LIFNR
+    type: STRING(10)
+    description: Supplier
+    field_role: dimension
+  - name: kunnr_mseg
+    source: MSEG.KUNNR
+    type: STRING(10)
+    description: Customer
+    field_role: dimension
+  - name: waers_mseg
+    source: MSEG.WAERS
+    type: STRING(5)
+    description: Currency
+    field_role: dimension
+  - name: bualt_mseg
+    source: MSEG.BUALT
+    type: DECIMAL(13)
+    description: Amount
+    field_role: measure
+  - name: bwtar_mseg
+    source: MSEG.BWTAR
+    type: STRING(10)
+    description: Val. Type
+    field_role: dimension
+  - name: menge_mseg
+    source: MSEG.MENGE
+    type: DECIMAL(13)
+    description: Quantity
+    field_role: measure
+  - name: meins_mseg
+    source: MSEG.MEINS
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: erfme_mseg
+    source: MSEG.ERFME
+    type: STRING(3)
+    description: Entry unit
+    field_role: dimension
+  - name: bprme_mseg
+    source: MSEG.BPRME
+    type: STRING(3)
+    description: OrderPr.Un
+    field_role: dimension
+  - name: ebeln_mseg
+    source: MSEG.EBELN
+    type: STRING(10)
+    description: PO
+    field_role: dimension
+  - name: ebelp_mseg
+    source: MSEG.EBELP
+    type: STRING(5)
+    description: Item
+    field_role: dimension
+  - name: lfpos_mseg
+    source: MSEG.LFPOS
+    type: STRING(4)
+    description: Item
+    field_role: dimension
+  - name: wempf_mseg
+    source: MSEG.WEMPF
+    type: STRING(12)
+    description: Recipient
+    field_role: dimension
+  - name: gsber_mseg
+    source: MSEG.GSBER
+    type: STRING(4)
+    description: Bus. Area
+    field_role: dimension
+  - name: kokrs_mseg
+    source: MSEG.KOKRS
+    type: STRING(4)
+    description: CO Area
+    field_role: dimension
+  - name: kostl_mseg
+    source: MSEG.KOSTL
+    type: STRING(10)
+    description: Cost Ctr
+    field_role: dimension
+  - name: aufnr_mseg
+    source: MSEG.AUFNR
+    type: STRING(12)
+    description: Order
+    field_role: dimension
+  - name: xspro_mseg
+    source: MSEG.XSPRO
+    type: STRING(1)
+    description: ProjStat
+    field_role: dimension
+  - name: gjahr_mseg
+    source: MSEG.GJAHR
+    type: STRING(4)
+    description: Fiscal Yr
+    field_role: dimension
+  - name: belnr_mseg
+    source: MSEG.BELNR
+    type: STRING(10)
+    description: DocumentNo
+    field_role: dimension
+  - name: belum_mseg
+    source: MSEG.BELUM
+    type: STRING(10)
+    description: DocumentNo
+    field_role: dimension
+  - name: rspos_mseg
+    source: MSEG.RSPOS
+    type: STRING(4)
+    description: Item no.
+    field_role: dimension
+  - name: weunb_mseg
+    source: MSEG.WEUNB
+    type: STRING(1)
+    description: GR Non-Val
+    field_role: dimension
+  - name: lgnum_mseg
+    source: MSEG.LGNUM
+    type: STRING(3)
+    description: Whse No.
+    field_role: dimension
+  - name: lgtyp_mseg
+    source: MSEG.LGTYP
+    type: STRING(3)
+    description: Stge Type
+    field_role: dimension
+  - name: lgpla_mseg
+    source: MSEG.LGPLA
+    type: STRING(10)
+    description: StorageBin
+    field_role: dimension
+  - name: bwlvs_mseg
+    source: MSEG.BWLVS
+    type: STRING(3)
+    description: Mvmt Type
+    field_role: dimension
+  - name: vschn_mseg
+    source: MSEG.VSCHN
+    type: STRING(1)
+    description: Int.st.pst
+    field_role: dimension
+  - name: weanz_mseg
+    source: MSEG.WEANZ
+    type: STRING(3)
+    description: No. of GR
+    field_role: dimension
+  - name: grund_mseg
+    source: MSEG.GRUND
+    type: STRING(4)
+    description: Reason
+    field_role: dimension
+  - name: imkey_mseg
+    source: MSEG.IMKEY
+    type: STRING(8)
+    description: RE Key
+    field_role: dimension
+  - name: kstrg_mseg
+    source: MSEG.KSTRG
+    type: STRING(12)
+    description: CostObject
+    field_role: dimension
+  - name: nplnr_mseg
+    source: MSEG.NPLNR
+    type: STRING(12)
+    description: Network
+    field_role: dimension
+  - name: aufpl_mseg
+    source: MSEG.AUFPL
+    type: STRING(10)
+    description: Plan no.
+    field_role: dimension
+  - name: aufps_mseg
+    source: MSEG.AUFPS
+    type: STRING(4)
+    description: Item no.
+    field_role: dimension
+  - name: sakto_mseg
+    source: MSEG.SAKTO
+    type: STRING(10)
+    description: G/L Acct
+    field_role: dimension
+  - name: bstmg_mseg
+    source: MSEG.BSTMG
+    type: DECIMAL(13)
+    description: Qty OUn
+    field_role: measure
+  - name: bstme_mseg
+    source: MSEG.BSTME
+    type: STRING(3)
+    description: Order Unit
+    field_role: dimension
+  - name: xwsbr_mseg
+    source: MSEG.XWSBR
+    type: STRING(1)
+    description: RevGR IR
+    field_role: dimension
+  - name: exbwr_mseg
+    source: MSEG.EXBWR
+    type: DECIMAL(13)
+    description: ExtAmnt LC
+    field_role: measure
+  - name: zekkn_mseg
+    source: MSEG.ZEKKN
+    type: STRING(2)
+    description: SqNoAccAss
+    field_role: dimension
+  - name: geber_mseg
+    source: MSEG.GEBER
+    type: STRING(10)
+    description: Fund
+    field_role: dimension
+  - name: matbf_mseg
+    source: MSEG.MATBF
+    type: STRING(40)
+    description: Material
+    field_role: dimension
+  - name: mengu_mseg
+    source: MSEG.MENGU
+    type: STRING(1)
+    description: Qty update
+    field_role: dimension
+  - name: wertu_mseg
+    source: MSEG.WERTU
+    type: STRING(1)
+    description: Val.update
+    field_role: dimension
+  - name: lsmeh_mseg
+    source: MSEG.LSMEH
+    type: STRING(3)
+    description: Del.NoteUn
+    field_role: dimension
+  - name: mwskz_mseg
+    source: MSEG.MWSKZ
+    type: STRING(2)
+    description: Tax Code
+    field_role: dimension
+  - name: hsdat_mseg
+    source: MSEG.HSDAT
+    type: DATE
+    description: Manuf. Dte
+    field_role: timestamp
+  - name: mat_pspnr_mseg
+    source: MSEG.MAT_PSPNR
+    type: STRING(8)
+    description: WBS Elem.
+    field_role: dimension
+  - name: xwoff_mseg
+    source: MSEG.XWOFF
+    type: STRING(1)
+    description: Value open
+    field_role: dimension
+  - name: /cwm/meins_mseg
+    source: MSEG./CWM/MEINS
+    type: STRING(3)
+    description: PUoM
+    field_role: dimension
+  - name: /cwm/erfme_mseg
+    source: MSEG./CWM/ERFME
+    type: STRING(3)
+    description: PUn EUn
+    field_role: dimension
+  - name: condi_mseg
+    source: MSEG.CONDI
+    type: STRING(2)
+    description: CondKey
+    field_role: dimension
+  - name: mandt_marc
+    source: MARC.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: matnr_marc
+    source: MARC.MATNR
+    type: STRING(40)
+    description: Material
+    field_role: identifier
+  - name: werks_marc
+    source: MARC.WERKS
+    type: STRING(4)
+    description: Plant
+    field_role: identifier
+  - name: lvorm_marc
+    source: MARC.LVORM
+    type: STRING(1)
+    description: PlantLevel
+    field_role: dimension
+  - name: maabc_marc
+    source: MARC.MAABC
+    type: STRING(1)
+    description: ABC
+    field_role: dimension
+  - name: kzkri_marc
+    source: MARC.KZKRI
+    type: STRING(1)
+    description: Critical
+    field_role: dimension
+  - name: ausme_marc
+    source: MARC.AUSME
+    type: STRING(3)
+    description: Unit Issue
+    field_role: dimension
+  - name: dispr_marc
+    source: MARC.DISPR
+    type: STRING(4)
+    description: MRP prof.
+    field_role: dimension
+  - name: dismm_marc
+    source: MARC.DISMM
+    type: STRING(2)
+    description: MRP Type
+    field_role: dimension
+  - name: dispo_marc
+    source: MARC.DISPO
+    type: STRING(3)
+    description: MRP Ctrlr
+    field_role: dimension
+  - name: webaz_marc
+    source: MARC.WEBAZ
+    type: DECIMAL(3)
+    description: GR pr.time
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: ausss_marc
+    source: MARC.AUSSS
+    type: DECIMAL(5)
+    description: Assy scrap
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: disls_marc
+    source: MARC.DISLS
+    type: STRING(2)
+    description: Lot Sizing
+    field_role: dimension
+  - name: eisbe_marc
+    source: MARC.EISBE
+    type: DECIMAL(13)
+    description: 'Safety stock level - a planning target, not an actual quantity'
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: mabst_marc
+    source: MARC.MABST
+    type: DECIMAL(13)
+    description: Maximum stock level
+    field_role: measure
+    synonyms:
+      - max stock
+      - max level
+      - maximum inventory
+      - stock ceiling
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: losfx_marc
+    source: MARC.LOSFX
+    type: DECIMAL(11)
+    description: LSI Costs
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: ausdt_marc
+    source: MARC.AUSDT
+    type: DATE
+    description: Date
+    field_role: timestamp
+  - name: maxlz_marc
+    source: MARC.MAXLZ
+    type: DECIMAL(5)
+    description: Stor. Per.
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: lzeih_marc
+    source: MARC.LZEIH
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: uneto_marc
+    source: MARC.UNETO
+    type: DECIMAL(3)
+    description: Under.tol.
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: atpkz_marc
+    source: MARC.ATPKZ
+    type: STRING(1)
+    description: Replacemt
+    field_role: dimension
+  - name: vzusl_marc
+    source: MARC.VZUSL
+    type: DECIMAL(5)
+    description: Surcharge
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: ssqss_marc
+    source: MARC.SSQSS
+    type: STRING(8)
+    description: QM ContKey
+    field_role: dimension
+  - name: kzppv_marc
+    source: MARC.KZPPV
+    type: STRING(1)
+    description: Insp. plan
+    field_role: dimension
+  - name: usequ_marc
+    source: MARC.USEQU
+    type: STRING(1)
+    description: QuotaUsage
+    field_role: dimension
+  - name: auftl_marc
+    source: MARC.AUFTL
+    type: STRING(1)
+    description: Splitting
+    field_role: dimension
+  - name: kzkfk_marc
+    source: MARC.KZKFK
+    type: STRING(1)
+    description: CorrFact.
+    field_role: dimension
+  - name: vbamg_marc
+    source: MARC.VBAMG
+    type: DECIMAL(13)
+    description: Base qty
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: vbeaz_marc
+    source: MARC.VBEAZ
+    type: DECIMAL(5)
+    description: Proc. time
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: stawn_marc
+    source: MARC.STAWN
+    type: STRING(17)
+    description: Comm. Code
+    field_role: dimension
+  - name: vint1_marc
+    source: MARC.VINT1
+    type: STRING(3)
+    description: Bwd cons.
+    field_role: dimension
+  - name: vint2_marc
+    source: MARC.VINT2
+    type: STRING(3)
+    description: Fwd cons.
+    field_role: dimension
+  - name: verkz_marc
+    source: MARC.VERKZ
+    type: STRING(1)
+    description: Version
+    field_role: dimension
+  - name: losgr_marc
+    source: MARC.LOSGR
+    type: DECIMAL(13)
+    description: Lot Size
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: disgr_marc
+    source: MARC.DISGR
+    type: STRING(4)
+    description: MRP Group
+    field_role: dimension
+  - name: qmatv_marc
+    source: MARC.QMATV
+    type: STRING(1)
+    description: Insp.setup
+    field_role: dimension
+  - name: awsls_marc
+    source: MARC.AWSLS
+    type: STRING(6)
+    description: Var. key
+    field_role: dimension
+  - name: stdpd_marc
+    source: MARC.STDPD
+    type: STRING(40)
+    description: Material
+    field_role: dimension
+  - name: autru_marc
+    source: MARC.AUTRU
+    type: STRING(1)
+    description: Auto.Reset
+    field_role: dimension
+  - name: prenc_marc
+    source: MARC.PRENC
+    type: STRING(1)
+    description: ExemptCert
+    field_role: dimension
+  - name: prend_marc
+    source: MARC.PREND
+    type: DATE
+    description: IssDateCrt
+    field_role: timestamp
+  - name: prene_marc
+    source: MARC.PRENE
+    type: STRING(1)
+    description: Vdr decl.
+    field_role: dimension
+  - name: preng_marc
+    source: MARC.PRENG
+    type: DATE
+    description: VrDeclDate
+    field_role: timestamp
+  - name: kzkup_marc
+    source: MARC.KZKUP
+    type: STRING(1)
+    description: Co-Product
+    field_role: dimension
+  - name: plnty_marc
+    source: MARC.PLNTY
+    type: STRING(1)
+    description: Type
+    field_role: dimension
+  - name: uomgr_marc
+    source: MARC.UOMGR
+    type: STRING(3)
+    description: UoM Group
+    field_role: dimension
+  - name: vktrw_marc
+    source: MARC.VKTRW
+    type: DECIMAL(13)
+    description: Transit/SP
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: vkglg_marc
+    source: MARC.VKGLG
+    type: DECIMAL(13)
+    description: SlsValEmpt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: steuc_marc
+    source: MARC.STEUC
+    type: STRING(16)
+    description: Ctrl Code
+    field_role: dimension
+  - name: matgr_marc
+    source: MARC.MATGR
+    type: STRING(20)
+    description: Mat.Grping
+    field_role: dimension
+  - name: vspvb_marc
+    source: MARC.VSPVB
+    type: STRING(10)
+    description: Area
+    field_role: dimension
+  - name: dplfs_marc
+    source: MARC.DPLFS
+    type: STRING(2)
+    description: Fair share
+    field_role: dimension
+  - name: dplpu_marc
+    source: MARC.DPLPU
+    type: STRING(1)
+    description: Push
+    field_role: dimension
+  - name: dplho_marc
+    source: MARC.DPLHO
+    type: DECIMAL(3)
+    description: Depl. hrzn
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: maxls_marc
+    source: MARC.MAXLS
+    type: DECIMAL(13)
+    description: MaxLotsize
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: ltinc_marc
+    source: MARC.LTINC
+    type: DECIMAL(13)
+    description: LotsizeInc
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+      - lgort_mard
+    additivity: semi_additive
+  - name: diber_marc
+    source: MARC.DIBER
+    type: STRING(1)
+    description: MRPa exist
+    field_role: dimension
+  - name: apokz_marc
+    source: MARC.APOKZ
+    type: STRING(1)
+    description: APO relev.
+    field_role: dimension
+  - name: temp_uom_marc
+    source: MARC.TEMP_UOM
+    type: STRING(3)
+    description: UoM
+    field_role: dimension
+  - name: scm_hunit_marc
+    source: MARC.SCM_HUNIT
+    type: STRING(3)
+    description: UoM:HCapGR
+    field_role: dimension
+  - name: scm_hunit_out_marc
+    source: MARC.SCM_HUNIT_OUT
+    type: STRING(3)
+    description: UoM:HCapGI
+    field_role: dimension
+  - name: mandt_mard
+    source: MARD.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: matnr_mard
+    source: MARD.MATNR
+    type: STRING(40)
+    description: Material
+    field_role: identifier
+  - name: werks_mard
+    source: MARD.WERKS
+    type: STRING(4)
+    description: Plant
+    field_role: identifier
+  - name: lgort_mard
+    source: MARD.LGORT
+    type: STRING(4)
+    description: Location
+    field_role: identifier
+  - name: pstat_mard
+    source: MARD.PSTAT
+    type: STRING(15)
+    description: Status
+    field_role: dimension
+  - name: lvorm_mard
+    source: MARD.LVORM
+    type: STRING(1)
+    description: SLoc level
+    field_role: dimension
+  - name: lfgja_mard
+    source: MARD.LFGJA
+    type: STRING(4)
+    description: Year
+    field_role: dimension
+  - name: lfmon_mard
+    source: MARD.LFMON
+    type: STRING(2)
+    description: Period
+    field_role: dimension
+  - name: sperr_mard
+    source: MARD.SPERR
+    type: STRING(1)
+    description: Inv.Block
+    field_role: dimension
+  - name: labst_mard
+    source: MARD.LABST
+    type: DECIMAL(13)
+    description: 'Unrestricted (available) stock on hand at the storage location'
+    field_role: measure
+    aggregation_behavior: SUM
+    synonyms:
+      - unrestricted stock
+      - unres stock
+      - free stock
+      - available stock
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: umlme_mard
+    source: MARD.UMLME
+    type: DECIMAL(13)
+    description: 'Stock in transfer between storage locations'
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: insme_mard
+    source: MARD.INSME
+    type: DECIMAL(13)
+    description: 'Stock held in quality inspection'
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: einme_mard
+    source: MARD.EINME
+    type: DECIMAL(13)
+    description: Restricted
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: speme_mard
+    source: MARD.SPEME
+    type: DECIMAL(13)
+    description: 'Blocked stock, not available for use'
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: retme_mard
+    source: MARD.RETME
+    type: DECIMAL(13)
+    description: Returns
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmlab_mard
+    source: MARD.VMLAB
+    type: DECIMAL(13)
+    description: Unrestr.
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmuml_mard
+    source: MARD.VMUML
+    type: DECIMAL(13)
+    description: Stk in tfr
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmins_mard
+    source: MARD.VMINS
+    type: DECIMAL(13)
+    description: Qual.insp.
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmein_mard
+    source: MARD.VMEIN
+    type: DECIMAL(13)
+    description: Restr.-use
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmspe_mard
+    source: MARD.VMSPE
+    type: DECIMAL(13)
+    description: Blocked
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vmret_mard
+    source: MARD.VMRET
+    type: DECIMAL(13)
+    description: Returns
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: kzill_mard
+    source: MARD.KZILL
+    type: STRING(3)
+    description: Whse stock
+    field_role: dimension
+  - name: kzilq_mard
+    source: MARD.KZILQ
+    type: STRING(3)
+    description: QulInspStk
+    field_role: dimension
+  - name: kzile_mard
+    source: MARD.KZILE
+    type: STRING(3)
+    description: Restr.-use
+    field_role: dimension
+  - name: kzils_mard
+    source: MARD.KZILS
+    type: STRING(3)
+    description: Blocked
+    field_role: dimension
+  - name: kzvll_mard
+    source: MARD.KZVLL
+    type: STRING(3)
+    description: Whse stock
+    field_role: dimension
+  - name: kzvlq_mard
+    source: MARD.KZVLQ
+    type: STRING(3)
+    description: QulInspStk
+    field_role: dimension
+  - name: kzvle_mard
+    source: MARD.KZVLE
+    type: STRING(3)
+    description: Restr.-use
+    field_role: dimension
+  - name: kzvls_mard
+    source: MARD.KZVLS
+    type: STRING(3)
+    description: Block.stck
+    field_role: dimension
+  - name: diskz_mard
+    source: MARD.DISKZ
+    type: STRING(1)
+    description: MRP
+    field_role: dimension
+  - name: lsobs_mard
+    source: MARD.LSOBS
+    type: STRING(2)
+    description: SP type
+    field_role: dimension
+  - name: lminb_mard
+    source: MARD.LMINB
+    type: DECIMAL(13)
+    description: Reorder pt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: lbstf_mard
+    source: MARD.LBSTF
+    type: DECIMAL(13)
+    description: ReplenshQt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: herkl_mard
+    source: MARD.HERKL
+    type: STRING(3)
+    description: Origin
+    field_role: dimension
+  - name: exppg_mard
+    source: MARD.EXPPG
+    type: STRING(1)
+    description: Preference
+    field_role: dimension
+  - name: exver_mard
+    source: MARD.EXVER
+    type: STRING(2)
+    description: Export
+    field_role: dimension
+  - name: lgpbe_mard
+    source: MARD.LGPBE
+    type: STRING(10)
+    description: Bin
+    field_role: dimension
+  - name: klabs_mard
+    source: MARD.KLABS
+    type: DECIMAL(13)
+    description: Unr. Cnsgt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: kinsm_mard
+    source: MARD.KINSM
+    type: DECIMAL(13)
+    description: Cnsgt QIns
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: keinm_mard
+    source: MARD.KEINM
+    type: DECIMAL(13)
+    description: RestrCnsgt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: kspem_mard
+    source: MARD.KSPEM
+    type: DECIMAL(13)
+    description: Blkd Cnsgt
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: dlinl_mard
+    source: MARD.DLINL
+    type: DATE
+    description: PhyInvDate
+    field_role: timestamp
+  - name: prctl_mard
+    source: MARD.PRCTL
+    type: STRING(10)
+    description: Profit Ctr
+    field_role: dimension
+  - name: ersda_mard
+    source: MARD.ERSDA
+    type: DATE
+    description: Created
+    field_role: timestamp
+  - name: vklab_mard
+    source: MARD.VKLAB
+    type: DECIMAL(13)
+    description: SP value
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: vkuml_mard
+    source: MARD.VKUML
+    type: DECIMAL(13)
+    description: Stk tr. SV
+    field_role: measure
+    non_additive_over:
+      - mblnr_mkpf
+      - mjahr_mkpf
+      - zeile_mseg
+    additivity: semi_additive
+  - name: lwmkb_mard
+    source: MARD.LWMKB
+    type: STRING(3)
+    description: Pick. area
+    field_role: dimension
+  - name: bskrf_mard
+    source: MARD.BSKRF
+    type: DECIMAL(16)
+    description: CorrFactor
+    field_role: dimension
+relationships:
+  - target_entity: "silver_s4h_sd_trading_goods"
+    relationship_type: "many_to_one"
+    join_condition: "SILVER_MM_INVENTORY_MOVEMENT.matnr_marc = SILVER_TRADING_GOODS.matnr_mara"
+    semantic_label: "material_of"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Material Master for material attributes"
+
+  - target_entity: "silver_s4h_sd_plant"
+    relationship_type: "many_to_one"
+    join_condition: "SILVER_MM_INVENTORY_MOVEMENT.werks_marc = SILVER_PLANTS.werks_t001w"
+    semantic_label: "stocked_at"
+    traversal_cost: 1.5
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Plant where inventory is located"
+alias: Inventory Movement Stock

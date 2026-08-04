@@ -1,0 +1,396 @@
+id: silver_s4h_sd_plant
+internal_id: s4h_100_5
+db_table_name: SILVER_PLANTS
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORGANIZATIONAL STRUCTURE
+module: SD
+tag1: ''
+tag2: SD-SLS
+name: plant
+classification: C
+description: 'Plant master: the manufacturing, shipping and branch locations stock and orders are assigned to, with their address and organisational assignments. Use to filter or group any inventory, sales, purchasing or production figure by site.'
+entity_role: reference
+grain:
+  entity_grain:
+    - werks_t001w
+  business_grain: plant_item
+composed_of:
+  - bronze_s4h_t001w_plants
+join_graph: []
+fields:
+  - name: mandt_t001w
+    source: T001W.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: werks_t001w
+    source: T001W.WERKS
+    field_role: identifier
+    type: STRING(4)
+    description: Plant code. The key every fact joins on; for the name select `name1_t001w`.
+    synonyms: []
+  - name: name1_t001w
+    source: T001W.NAME1
+    field_role: dimension
+    type: STRING(30)
+    description: Plant name. Already resolved — for the code use `werks_t001w`.
+    synonyms: []
+  - name: bwkey_t001w
+    source: T001W.BWKEY
+    field_role: dimension
+    type: STRING(4)
+    description: Valuation area — the org unit stock is valued in, usually the plant itself.
+    synonyms: []
+  - name: kunnr_t001w
+    source: T001W.KUNNR
+    field_role: dimension
+    type: STRING(10)
+    description: Customer Number of Plant
+    synonyms: []
+  - name: lifnr_t001w
+    source: T001W.LIFNR
+    field_role: dimension
+    type: STRING(10)
+    description: Supplier Number of Plant
+    synonyms: []
+  - name: fabkl_t001w
+    source: T001W.FABKL
+    field_role: dimension
+    type: STRING(2)
+    description: Factory calendar key. Determines which days count as working days.
+    synonyms: []
+  - name: name2_t001w
+    source: T001W.NAME2
+    field_role: dimension
+    type: STRING(30)
+    description: Name 2
+    synonyms: []
+  - name: stras_t001w
+    source: T001W.STRAS
+    field_role: dimension
+    type: STRING(30)
+    description: Street and House No.
+    synonyms: []
+  - name: pfach_t001w
+    source: T001W.PFACH
+    field_role: dimension
+    type: STRING(10)
+    description: PO Box
+    synonyms: []
+  - name: pstlz_t001w
+    source: T001W.PSTLZ
+    field_role: dimension
+    type: STRING(10)
+    description: Postal code of the plant. Useful for geographic distribution.
+    synonyms: []
+  - name: ort01_t001w
+    source: T001W.ORT01
+    field_role: dimension
+    type: STRING(25)
+    description: City the plant is located in.
+    synonyms: []
+  - name: ekorg_t001w
+    source: T001W.EKORG
+    field_role: dimension
+    type: STRING(4)
+    description: Purch. Organization
+    synonyms: []
+  - name: vkorg_t001w
+    source: T001W.VKORG
+    field_role: dimension
+    type: STRING(4)
+    description: Sales organisation the plant delivers for.
+    synonyms: []
+  - name: chazv_t001w
+    source: T001W.CHAZV
+    field_role: dimension
+    type: STRING(1)
+    description: Batch status mgmt
+    synonyms: []
+  - name: kkowk_t001w
+    source: T001W.KKOWK
+    field_role: dimension
+    type: STRING(1)
+    description: Conds. at plant level
+    synonyms: []
+  - name: kordb_t001w
+    source: T001W.KORDB
+    field_role: dimension
+    type: STRING(1)
+    description: Source list
+    synonyms: []
+  - name: bedpl_t001w
+    source: T001W.BEDPL
+    field_role: dimension
+    type: STRING(1)
+    description: MRP
+    synonyms: []
+  - name: land1_t001w
+    source: T001W.LAND1
+    field_role: dimension
+    type: STRING(3)
+    description: Country key of the plant.
+    synonyms: []
+  - name: regio_t001w
+    source: T001W.REGIO
+    field_role: dimension
+    type: STRING(3)
+    description: Region / state of the plant. Group by this for regional roll-ups.
+    synonyms: []
+  - name: counc_t001w
+    source: T001W.COUNC
+    field_role: dimension
+    type: STRING(3)
+    description: County Code
+    synonyms: []
+  - name: cityc_t001w
+    source: T001W.CITYC
+    field_role: dimension
+    type: STRING(4)
+    description: City Code
+    synonyms: []
+  - name: adrnr_t001w
+    source: T001W.ADRNR
+    field_role: dimension
+    type: STRING(10)
+    description: Address
+    synonyms: []
+  - name: iwerk_t001w
+    source: T001W.IWERK
+    field_role: dimension
+    type: STRING(4)
+    description: Planning Plant
+    synonyms: []
+  - name: txjcd_t001w
+    source: T001W.TXJCD
+    field_role: dimension
+    type: STRING(15)
+    description: Tax Jurisdiction
+    synonyms: []
+  - name: vtweg_t001w
+    source: T001W.VTWEG
+    field_role: dimension
+    type: STRING(2)
+    description: Distribution channel used when the plant ships.
+    synonyms: []
+  - name: spart_t001w
+    source: T001W.SPART
+    field_role: dimension
+    type: STRING(2)
+    description: Interco. Billing Div
+    synonyms: []
+  - name: spras_t001w
+    source: T001W.SPRAS
+    field_role: dimension
+    type: STRING(1)
+    description: Language Key
+    synonyms: []
+  - name: wksop_t001w
+    source: T001W.WKSOP
+    field_role: dimension
+    type: STRING(1)
+    description: SOP plant
+    synonyms: []
+  - name: awsls_t001w
+    source: T001W.AWSLS
+    field_role: dimension
+    type: STRING(6)
+    description: Variance Key
+    synonyms: []
+  - name: chazv_old_t001w
+    source: T001W.CHAZV_OLD
+    field_role: dimension
+    type: STRING(1)
+    description: Batch status mgmt
+    synonyms: []
+  - name: vlfkz_t001w
+    source: T001W.VLFKZ
+    field_role: dimension
+    type: STRING(1)
+    description: Plant Cat.
+    synonyms: []
+  - name: bzirk_t001w
+    source: T001W.BZIRK
+    field_role: dimension
+    type: STRING(6)
+    description: Sales District
+    synonyms: []
+  - name: zone1_t001w
+    source: T001W.ZONE1
+    field_role: dimension
+    type: STRING(10)
+    description: Supply region
+    synonyms: []
+  - name: taxiw_t001w
+    source: T001W.TAXIW
+    field_role: dimension
+    type: STRING(1)
+    description: 'Tax Indicator: Plant'
+    synonyms: []
+  - name: bzqhl_t001w
+    source: T001W.BZQHL
+    field_role: dimension
+    type: STRING(1)
+    description: Regular Supplier
+    synonyms: []
+  - name: let01_t001w
+    source: T001W.LET01
+    field_role: measure
+    type: DECIMAL(3)
+    description: 1st Reminder/Exped.
+    synonyms: []
+  - name: let02_t001w
+    source: T001W.LET02
+    field_role: measure
+    type: DECIMAL(3)
+    description: 2nd Reminder/Exped.
+    synonyms: []
+  - name: let03_t001w
+    source: T001W.LET03
+    field_role: measure
+    type: DECIMAL(3)
+    description: 3rd Reminder/Exped.
+    synonyms: []
+  - name: txnam_ma1_t001w
+    source: T001W.TXNAM_MA1
+    field_role: dimension
+    type: STRING(16)
+    description: Text 1st dunning
+    synonyms: []
+  - name: txnam_ma2_t001w
+    source: T001W.TXNAM_MA2
+    field_role: dimension
+    type: STRING(16)
+    description: Text 2nd dunning
+    synonyms: []
+  - name: txnam_ma3_t001w
+    source: T001W.TXNAM_MA3
+    field_role: dimension
+    type: STRING(16)
+    description: Text 3rd dunning
+    synonyms: []
+  - name: betol_t001w
+    source: T001W.BETOL
+    field_role: dimension
+    type: STRING(3)
+    description: PO tolerance
+    synonyms: []
+  - name: j_1bbranch_t001w
+    source: T001W.J_1BBRANCH
+    field_role: dimension
+    type: STRING(4)
+    description: Business Place
+    synonyms: []
+  - name: vtbfi_t001w
+    source: T001W.VTBFI
+    field_role: dimension
+    type: STRING(2)
+    description: Sales area detrm.
+    synonyms: []
+  - name: fprfw_t001w
+    source: T001W.FPRFW
+    field_role: dimension
+    type: STRING(3)
+    description: Distrib. profile of plant
+    synonyms: []
+  - name: achvm_t001w
+    source: T001W.ACHVM
+    field_role: dimension
+    type: STRING(1)
+    description: Archiving Marker
+    synonyms: []
+  - name: dvsart_t001w
+    source: T001W.DVSART
+    field_role: dimension
+    type: STRING(1)
+    description: Batch rec. DMS type
+    synonyms: []
+  - name: nodetype_t001w
+    source: T001W.NODETYPE
+    field_role: dimension
+    type: STRING(3)
+    description: Node type:supply chain
+    synonyms: []
+  - name: nschema_t001w
+    source: T001W.NSCHEMA
+    field_role: dimension
+    type: STRING(4)
+    description: Naming Structure
+    synonyms: []
+  - name: pkosa_t001w
+    source: T001W.PKOSA
+    field_role: dimension
+    type: STRING(1)
+    description: Cost Obj.Controlling
+    synonyms: []
+  - name: misch_t001w
+    source: T001W.MISCH
+    field_role: dimension
+    type: STRING(1)
+    description: Mixed Costing
+    synonyms: []
+  - name: mgvupd_t001w
+    source: T001W.MGVUPD
+    field_role: dimension
+    type: STRING(1)
+    description: Actual Costing
+    synonyms: []
+  - name: vstel_t001w
+    source: T001W.VSTEL
+    field_role: dimension
+    type: STRING(4)
+    description: Shipping Point/Receiving Pt
+    synonyms: []
+  - name: mgvlaupd_t001w
+    source: T001W.MGVLAUPD
+    field_role: dimension
+    type: STRING(1)
+    description: Actual Activities Updated
+    synonyms: []
+  - name: mgvlareval_t001w
+    source: T001W.MGVLAREVAL
+    field_role: dimension
+    type: STRING(1)
+    description: Control of Credit of Cost Centers
+    synonyms: []
+  - name: sourcing_t001w
+    source: T001W.SOURCING
+    field_role: dimension
+    type: STRING(1)
+    description: AF srce det. via ATP
+    synonyms: []
+  - name: oilival_t001w
+    source: T001W.OILIVAL
+    field_role: dimension
+    type: STRING(1)
+    description: Exchange valuation
+    synonyms: []
+  - name: oihvtype_t001w
+    source: T001W.OIHVTYPE
+    field_role: dimension
+    type: STRING(1)
+    description: Vendor type
+    synonyms: []
+  - name: oihcredipi_t001w
+    source: T001W.OIHCREDIPI
+    field_role: dimension
+    type: STRING(1)
+    description: Cred IPI?
+    synonyms: []
+  - name: storetype_t001w
+    source: T001W.STORETYPE
+    field_role: dimension
+    type: STRING(1)
+    description: Store Cat
+    synonyms: []
+  - name: dep_store_t001w
+    source: T001W.DEP_STORE
+    field_role: dimension
+    type: STRING(4)
+    description: Superior Dept. Store
+    synonyms: []
+relationships: []

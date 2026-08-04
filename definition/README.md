@@ -13,7 +13,7 @@
 
 **Agentic Semantic Knowledge (ASK)** is an open YAML specification that describes enterprise data in a way AI agents can actually understand, reason over, and act on.
 
-LLMs and agents are good at generating SQL, calling tools, and chaining steps. They are bad at knowing *which* table answers *which* business question, what `MATNR` means, why `VBUK.GBSTK = 'C'` means an order is closed, or which join path is the cheapest one to traverse. Without that context, agents either hallucinate or refuse.
+LLMs and agents are good at generating SQL, calling tools, and chaining steps. They are bad at knowing *which* table answers *which* business question, what `MATNR` means, why `VBAK.GBSTK = 'C'` means an order is closed, or which join path is the cheapest one to traverse. Without that context, agents either hallucinate or refuse.
 
 ASK fixes this by formalizing the **business semantics** of data — entities, grains, measures, statuses, relationships, and intent — into a layered specification that any agent runtime can consume.
 
@@ -104,14 +104,14 @@ If your Gold "Available-to-Sell" data product is built by a 400-line dbt model, 
 
 ## Quick example
 
-Here is the shape of a Gold Business Logic Data Product (full example: [`examples/gold/gold_ecc_sd_open_order_tracker.yaml`](examples/gold/gold_ecc_sd_open_order_tracker.yaml)):
+Here is the shape of a Gold Business Logic Data Product (full example: [`examples/gold/gold_s4h_open_order_tracker.yaml`](examples/gold/gold_s4h_open_order_tracker.yaml)):
 
 ```yaml
-id: "gold_ecc_open_order_tracker"
+id: "gold_s4h_open_order_tracker"
 layer: "gold"
 name: "open_order_tracker"
-business_process: "OTC"
-module: ["SD", "MM"]
+business_process: "ORDER TO CASH"
+module: ["SD"]
 description: "Sales-order-item-level OTC snapshot. Denormalized with customer,
               plant, material, full org hierarchy, delivery context, and derived
               order_status (OPEN/CLOSE). Use for fulfillment and prioritization."
@@ -124,19 +124,20 @@ grain:
 fields:
   - name: "order_qty"
     field_role: "measure"
-    type: "NUMERIC"
-    description: "Quantity ordered by customer / demand quantity"
+    type: "DECIMAL"
+    description: "Quantity the customer ordered on this line."
     aggregation_behavior: "SUM"
 
   - name: "order_status"
     field_role: "status_flag"
-    type: "TEXT"
+    type: "STRING(5)"
     description: "Derived OPEN/CLOSE classification. Rule: GBSTK='C' -> CLOSE,
                   else OPEN. Use this for binary 'is the order still active?'."
 
 relationships:
-  - target_entity: "silver_ecc_sd_customer_master"
+  - target_entity: "silver_s4h_sd_customer_master"
     relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "ordered_by"
     traversal_cost: 1
     aggregation_safety: "safe"
@@ -162,16 +163,10 @@ definition/               # (this folder inside agentic-semantic-knowledge-ask)
 │   ├── GOLD_LAYER.md                  ← Gold layer specification
 │   ├── SILVER_LAYER.md                ← Silver layer specification
 │   └── BRONZE_LAYER.md                ← Bronze layer specification
-├── examples/
-│   ├── gold/
-│   │   ├── gold_ecc_sd_open_order_tracker.yaml
-│   │   └── gold_ecc_order_tracking_reception.yaml
-│   ├── silver/
-│   │   ├── sales_order.yaml
-│   │   └── trading_goods.yaml
-│   └── bronze/
-│       ├── mara.yaml
-│       └── vbak.yaml
+├── examples/                          ← organised by LAYER, never by module
+│   ├── gold/                          ← 4 Business Logic Data Products
+│   ├── silver/                        ← 4 Foundational Data Products
+│   └── bronze/                        ← 15 raw nodes (the lineage of the four Silvers)
 └── LICENSE
 ```
 

@@ -34,7 +34,7 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 
 | Key | Required | Type | Description |
 |---|---|---|---|
-| `id` | ✅ | string | Globally unique identifier. Convention: `gold_<system>_<module>_<name>`. Example: `gold_ecc_sd_open_order_tracker`. |
+| `id` | ✅ | string | Globally unique identifier. Convention: `gold_<system>_[<module>_]<name>` — the module segment is optional, used when a single module owns the data product. Example: `gold_s4h_open_order_tracker`. **The filename is `<id>.yaml`.** |
 | `internal_id` | ⬜ | string | Optional internal/cataloged identifier (often equals `id`). |
 | `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
 | `layer` | ✅ | string | Must be the literal value `gold`. |
@@ -46,15 +46,14 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | `tag1`, `tag2` | ⬜ | string | Optional secondary categorization for catalog faceting. |
 | `name` | ✅ | string | Short business name (snake_case). Drives natural-language matching. |
 | `classification` | ⬜ | string | `M` = master · `T` = transactional · `C` = configuration. **Optional at Gold and purely a catalog hint** — unlike Silver, it does not derive `entity_role` here, because a Gold is authored rather than ingested and has no source-system classification to inherit. |
-| `description` | ✅ | string | **The most important field for the agent.** A long, explicit narrative that explains: what business question this answers, what the grain is, what is denormalized, what is sparse, what derivations have been applied, and how it relates to other Gold entities. Write it for a human reader, then hand it to the LLM. |
+| `description` | ✅ | string | What business question this entity answers, and the load-bearing facts no key expresses — what is denormalized, what is sparse, what the entity does *not* contain. The grain belongs to `grain`, not here. See [§5.1](#51-write-descriptions-that-carry-only-what-no-key-does). |
 | `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`) — you set it directly, and the server does not overwrite it. Most Gold entities are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `fields` | ✅ | object[] | Field definitions. See [§3.3](#33-fields). |
 | `relationships` | ✅ | object[] | Outbound graph edges to other entities. See [§3.4](#34-relationships). |
 
 > **A Gold has no `composed_of` and no `join_graph`.** Both are Silver-layer keys and are not
-> part of the Gold schema — see [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph). Older
-> Gold YAMLs that still carry them keep validating; the values are ignored on load.
+> part of the Gold schema — see [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
 
 #### 3.1.1 Why Gold has no `composed_of` or `join_graph`
 
@@ -74,7 +73,7 @@ What carries that meaning instead:
 |---|---|
 | What physical table do I query? | `db_table_name` — stated once, unqualified. |
 | What can I join to, and how? | `relationships` — the graph the planner actually traverses. See [§3.4](#34-relationships). |
-| Where did this data come from? | The entity `description`, plus per-field `source`. |
+| Where did this data come from? | The entity `description`. |
 
 Do not invent a replacement key (`built_from`, `lineage_note`, …). The problem being solved is a
 structural key carrying prose-grade information; a new one just repeats it. If the provenance of
@@ -141,9 +140,8 @@ Each field is an object in the `fields` list:
 
 ```yaml
 - name: "order_qty"
-  source: "GOLD_SD_OPEN_ORDER_TRACKER.order_qty"
   field_role: "measure"
-  type: "NUMERIC"
+  type: "DECIMAL"
   description: "Quantity ordered by customer / demand quantity."
   aggregation_behavior: "SUM"
 ```
@@ -151,13 +149,12 @@ Each field is an object in the `fields` list:
 | Key | Required | Description |
 |---|---|---|
 | `name` | ✅ | Physical column name, business-friendly snake_case (e.g. `order_qty`, not `KWMENG`). |
-| `source` | ✅ | Lineage: `<TABLE>.<column>`. For Gold this is usually the Gold table itself, since Gold is the published surface. |
 | `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, `status_flag`. See [§3.3.1](#331-field-roles). |
-| `type` | ✅ | SQL-style type of the published column: `TEXT`, `NUMERIC`, `INTEGER`, `DATE`, `TIMESTAMP`, `BOOLEAN`. Gold is a physical table, so this describes the real column. Bronze and Silver instead use the source-agnostic *canonical* vocabulary (`STRING(n)`, `DECIMAL(p[,s])`, …) — see [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). The two map 1:1 (`TEXT` ↔ `STRING`, `NUMERIC` ↔ `DECIMAL`), so nothing misreads across the boundary. |
-| `description` | ✅ | Detailed business meaning. Include: the source SAP/source-system field, any derivation rules, sparsity rules, valid values, and gotchas. **The agent reads this verbatim.** |
+| `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN` — the same vocabulary as Bronze and Silver. See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). |
+| `description` | ✅ | The business meaning of the column, and the facts about it that no other key expresses — a sparsity condition, a sentinel value, the value set behind a status. **The agent reads this verbatim**, so anything already carried by a key does not belong here. See [§5.1](#51-write-descriptions-that-carry-only-what-no-key-does). |
 | `aggregation_behavior` | ✅ | **Which** SQL function: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, or `none`. A function name, nothing more. Use `none` for identifiers, dimensions, statuses and timestamps. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 | `additivity` | ⬜ | **Over which dimensions** that function is valid: `additive` (default — omit the key), `semi_additive`, or `non_additive`. Measures only. See [§3.3.4](#334-additive-vs-non-additive-measures). |
-| `non_additive_over` | ⬜ | Grain dimensions to collapse before aggregating. Required when `additivity: semi_additive`; must name `timestamp` fields that appear in `entity_grain`. |
+| `non_additive_over` | ⬜ | Grain dimensions to collapse before aggregating. Required when `additivity: semi_additive`; any member of `entity_grain` is accepted. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 
 #### 3.3.1 Field roles
 
@@ -179,7 +176,7 @@ When using sparse measures, **always state the sparsity rule in the field's `des
 ```yaml
 - name: "qty_purchase_order"
   field_role: "measure"
-  type: "NUMERIC"
+  type: "DECIMAL"
   description: "Purchase-order quantity (EKPO.MENGE where PSTYP<>'7'). Procurement
     supply / incoming from supplier. SPARSE: populated only on rows where
     operation = 'Purchase Order', 0 elsewhere."
@@ -195,8 +192,8 @@ When a Gold field is *derived* from a raw source field, the description must say
 ```yaml
 - name: "order_status"
   field_role: "status_flag"
-  type: "TEXT"
-  description: "Derived OPEN/CLOSE classification from ovrll_sts (VBUK.GBSTK).
+  type: "STRING(5)"
+  description: "Derived OPEN/CLOSE classification from ovrll_sts (VBAK.GBSTK).
     Rule: 'C' (fully processed) -> 'CLOSE', anything else (A=open, B=partial,
     NULL) -> 'OPEN'. Use this for a clean binary 'is the order still active?'
     filter. For partial-vs-fully-open distinction use ovrll_sts instead."
@@ -232,10 +229,9 @@ That is what the two keys express:
 ```yaml
 - name: "cumulative_sales_order"
   field_role: "measure"
-  type: "NUMERIC"
-  description: "Cumulative outbound demand from Sales Orders. Already cumulative —
-    do NOT SUM across future_date; take the last value per (plant, material) up to
-    the target date, after which it SUMS correctly across plants."
+  type: "DECIMAL(38,6)"
+  description: "Outbound demand from Sales Orders, accumulated up to and including
+    the projection date."
   aggregation_behavior: "SUM"        # WHICH function
   additivity: "semi_additive"        # over WHICH dimensions it is valid
   non_additive_over: ["future_date"] # collapse these first
@@ -248,7 +244,7 @@ The three values of `additivity`:
 | Value | Meaning |
 |---|---|
 | omitted | **Additive.** The function is valid across any grouping. This is the default; do not write it out. |
-| `semi_additive` | Valid only after collapsing the dimensions in `non_additive_over`. Those must be `timestamp` fields that appear in `entity_grain`. |
+| `semi_additive` | Valid only after collapsing the dimensions in `non_additive_over`, which may be **any** members of `entity_grain`. A value repeats along a structural dimension — a plant-level figure restated on every projection row — as readily as it accumulates along a time one, and both need the collapse. Which row to keep: the **latest** when the value accumulates along an ordered dimension, **any** when a join merely repeats it, since every row of the group then carries the same value. |
 | `non_additive` | Never aggregate arithmetically — a ratio, a score, an index. Pair it with `aggregation_behavior: none`. |
 
 > **Sizing note.** Grain drives all of this. The same `on_hand` column is a plain additive `SUM` in a Gold grained `[client, plant_id, material_id]` — where each row is already one plant — and semi-additive in a Gold that adds `future_date`. Decide additivity against *your* grain, never against the column name.
@@ -261,7 +257,7 @@ The three values of `additivity`:
 
 ```yaml
 relationships:
-  - target_entity: "silver_ecc_sd_customer_master"
+  - target_entity: "silver_s4h_sd_customer_master"
     relationship_type: "many_to_one"
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "ordered_by"
@@ -293,7 +289,7 @@ relationships:
 Gold-to-Gold relationships ("cross-fact lookups") are valid and useful — for example, enriching an open-order-tracker fact with a current-inventory-position fact:
 
 ```yaml
-- target_entity: "gold_ecc_mm_inventory_position"
+- target_entity: "gold_s4h_mm_inventory_position"
   relationship_type: "many_to_one"
   join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.client = GOLD_MM_INVENTORY_POSITION.client
                    AND GOLD_SD_OPEN_ORDER_TRACKER.plant_id = GOLD_MM_INVENTORY_POSITION.plant_id
@@ -344,13 +340,13 @@ mistake survives review, which is exactly why the rule is mechanical: **look up 
 ```yaml
 # ✗ wrong — this Gold has no material-group column, so the author "borrowed" a path
 #   through trading_goods. The ON clause names a table that is not in the FROM list.
-- target_entity: "silver_ecc_mm_material_group"
+- target_entity: "silver_s4h_mm_material_group"
   join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
   description: "Navigate through trading_goods to Material Group."
 
 # ✓ right — declare the hop you can actually make, and let the intermediary
 #   declare its own edge onward. Two edges, not one.
-- target_entity: "silver_ecc_sd_trading_goods"
+- target_entity: "silver_s4h_sd_trading_goods"
   join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
   description: "Material master. This is also the route to material category: material group
     and material hierarchy hang off trading_goods' own relationships, so reach them as a
@@ -367,7 +363,7 @@ to repair a predicate that names a table nobody selected from.
 
 | Item | Convention | Example |
 |---|---|---|
-| `id` | `gold_<system>_[<module>_]<name>` | `gold_ecc_sd_open_order_tracker` |
+| `id` | `gold_<system>_[<module>_]<name>` | `gold_s4h_open_order_tracker` |
 | `db_table_name` | `GOLD_[<MODULE>_]<NAME>` (UPPER_SNAKE) | `GOLD_SD_OPEN_ORDER_TRACKER` |
 | `name` | Short business label, snake_case | `open_order_tracker` |
 | Field `name` | Business-friendly snake_case, no SAP code | `customer_id`, `order_qty`, `delivery_date` |
@@ -381,9 +377,22 @@ Avoid leaking source-system column names (`KUNNR`, `MATNR`, `WERKS`) into Gold f
 
 ## 5. Best practices
 
-### 5.1 Write the description like a runbook
+### 5.1 Write descriptions that carry only what no key does
 
-The agent has nothing to go on except `description`. Treat each description as a mini-runbook: what is this, what is the grain, what is denormalized, what is derived, what is sparse, what are the gotchas.
+**Every fact has exactly one authoritative carrier.** The structured keys own what they express, and a description that restates one is a second carrier that drifts from the first — and the drift is silent, because both reach the agent. Before writing a sentence, ask: *is this already in a key?*
+
+| Already carried by a key — never restate it | Where it lives |
+|---|---|
+| The grain | `grain.entity_grain` |
+| Which function aggregates a measure | `aggregation_behavior` |
+| What to collapse before aggregating | `additivity` + `non_additive_over` |
+| Cardinality of a join | `relationship_type` |
+| Whether a join needs dedup | `aggregation_safety` |
+| The physical table | `db_table_name` |
+
+What a description **must** carry is what no key can say: a lifecycle flag the agent should filter out, a sentinel value that breaks a cast, a sparse column populated only under one condition, the value set behind a status, a series that needs carry-forward, or a limit of the entity ("this is *not* filtered to open lines despite the name").
+
+Descriptions are also the embedded text used for retrieval, so a sentence that restates a key does not merely mislead — it displaces business meaning in the vector.
 
 ### 5.2 Pre-derive status fields
 
@@ -457,7 +466,37 @@ come from, in prose, for the human reading the catalog.
 
 ## 6. Reference example
 
-See [`examples/gold/gold_ecc_sd_open_order_tracker.yml`](../examples/gold/gold_ecc_sd_open_order_tracker.yaml) and [`examples/gold/gold_ecc_order_tracking_reception.yml`](../examples/gold/gold_ecc_order_tracking_reception.yaml) for complete, production-style Gold definitions.
+Four complete, production-style Gold definitions, ordered by how much of the contract they
+exercise — start with the first if you are reading one:
+
+| Example | Fields | What it is the clearest example of |
+|---|---:|---|
+| [`gold_s4h_mm_inventory_position`](../examples/gold/gold_s4h_mm_inventory_position.yaml) | 17 | The smallest complete Gold. A snapshot fact with **no time dimension**, `synonyms` on every measure, one computed `status_flag`, and all three relationship shapes (`safe` to two dimensions, `requires_dedup` down to its source Silver). |
+| [`gold_s4h_open_order_tracker`](../examples/gold/gold_s4h_open_order_tracker.yaml) | 37 | Breadth: 12 relationships including a gold→gold cross-fact lookup, and the `status_flag` descriptions §9.6 holds up as the bar. |
+| [`gold_s4h_order_tracking_reception`](../examples/gold/gold_s4h_order_tracking_reception.yaml) | 18 | A 5-column grain, and a field named `order` — a SQL reserved word, which is why every identifier the generator emits is quoted. |
+| [`gold_s4h_inventory_situation`](../examples/gold/gold_s4h_inventory_situation.yaml) | 30 | The time-series counterpart of the first: same domain projected forward by `future_date`, so the two together show what a time dimension changes. |
+
+**Every `type` in these files was checked against the physical table** (`information_schema`),
+not transcribed by hand.
+
+Each `grain` was then checked with the uniqueness query of
+[§3.2](#32-the-grain-is-a-promise-about-the-physical-table) against real rows:
+
+| Example | Rows | Distinct grain | Unique? |
+|---|---:|---:|---|
+| `gold_s4h_mm_inventory_position` | 257 | 257 | ✅ |
+| `gold_s4h_open_order_tracker` | 8,060 | 8,060 | ✅ |
+| `gold_s4h_order_tracking_reception` | 17,913 | 17,913 | ✅ |
+| `gold_s4h_inventory_situation` | 1,449 | 1,449 | ✅ |
+
+> **What that query can and cannot prove.** It proves a grain is not too NARROW — if rows
+> outnumber distinct keys, the grain is a lie and every measure on it can be double-counted. It
+> cannot prove a grain is not too WIDE, because adding columns to a unique key leaves it unique.
+> In all four examples `client` is constant (a single-tenant dataset), so dropping it keeps
+> uniqueness — yet `client` genuinely belongs to the key in a multi-tenant system. **Minimality
+> is a domain judgement; only uniqueness is measurable.** Of the two errors, too wide is the
+> benign one: it weakens rule 7's subset clause, while too narrow hides fan-out and returns
+> confident wrong numbers.
 
 ## 7. Validation checklist
 
@@ -470,7 +509,7 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] Every column outside the grain is functionally determined by it, and any column carried at a finer granularity than the grain says so in its `description`.
 - [ ] Every field has `name`, `field_role`, `type`, `description`, `aggregation_behavior`.
 - [ ] Every measure declares **which** function aggregates it (`aggregation_behavior`) and, when the function is not valid across every grain dimension, **over which** dimensions it is not (`additivity` + `non_additive_over`). Running totals, projected balances and values repeated across the grain are `semi_additive`, not additive. See [§3.3.4](#334-additive-vs-non-additive-measures).
-- [ ] Every `non_additive_over` entry is a `timestamp` field that appears in `grain.entity_grain`.
+- [ ] Every `non_additive_over` entry appears in `grain.entity_grain` and resolves to a selectable column.
 - [ ] Every status field documents its rule.
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.

@@ -1,0 +1,298 @@
+id: "gold_s4h_open_order_tracker"
+internal_id: "gold_s4h_open_order_tracker"
+db_table_name: GOLD_SD_OPEN_ORDER_TRACKER
+layer: "gold"
+version: "1"
+source_system: "s4h"
+source_system_no: 100
+business_process: "ORDER TO CASH"
+module: ["SD"]
+tag1: "OTC"
+tag2: "SD"
+name: "open_order_tracker"
+classification: "T"
+description: "Sales order lines for order-to-cash analysis, with customer, material, plant and the full sales-org structure already resolved — no joins needed for names. NOT restricted to open lines despite the name: filter on order_status yourself (the current load is 641 open of 8,060). For stock levels behind these lines use gold_s4h_mm_inventory_position."
+entity_role: "fact"
+grain:
+  entity_grain: ["client", "sales_order", "item"]
+  business_grain: "sales_order_item_level"
+
+fields:
+  - name: "client"
+    field_role: "identifier"
+    type: "STRING(6)"
+    description: "SAP Client"
+  - name: "sales_order"
+    field_role: "identifier"
+    type: "STRING(20)"
+    description: "Sales Order Document Number"
+  - name: "item"
+    field_role: "identifier"
+    type: "INTEGER"
+    description: "Sales Order Item Number"
+  - name: "material_id"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material number code. Group by this; for the readable label select `material`."
+    synonyms:
+      - SKU
+      - part number
+      - material number
+  - name: "plant_id"
+    field_role: "dimension"
+    type: "STRING(8)"
+    description: "Plant code. Group by this; for the readable label select `plant`."
+    synonyms:
+      - site
+      - plant code
+      - werks
+  - name: "order_qty"
+    field_role: "measure"
+    type: "DECIMAL"
+    description: "Quantity the customer ordered on this line."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - ordered quantity
+      - demand quantity
+      - sales order quantity
+      - order volume
+  - name: "customer_id"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Sold-to party (KNA1.KUNNR). For the name use the denormalized `customer` field."
+    synonyms:
+      - sold-to
+      - customer number
+      - account
+  - name: "matl_group_vbap"
+    field_role: "dimension"
+    type: "STRING(18)"
+    description: "Material group code (VBAP.MATKL). Group by this; the trading-goods entity carries its label."
+  - name: "delivery_date"
+    field_role: "timestamp"
+    type: "STRING(16)"
+    description: "Requested delivery date (VBAK.VDATU). 150 of 8,060 rows hold the SAP sentinel '0000-00-00', so a direct cast errors: prefer `delivery_date_ts`, which is already a real timestamp, or NULLIF the sentinel first."
+  - name: "delivery_date_ts"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "Requested Delivery Date as Timestamp"
+  - name: "delivery_month"
+    field_role: "timestamp"
+    type: "STRING(7)"
+    description: "Year-month of the delivery date as a 7-character string in 'YYYY-MM' format (e.g. '2026-04'). Computed as SUBSTR(delivery_date, 1, 7). Use for monthly bucketing without parsing the full date."
+  - name: "order_date"
+    field_role: "timestamp"
+    type: "STRING(16)"
+    description: "Sales-order document date (VBAK.AUDAT). May hold the SAP sentinel '0000-00-00' - NULLIF it before casting or extracting."
+  - name: "addr_no"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Address number of the SHIP-TO partner from VBPA.ADRNR — points to the central address master (ADRC) used for delivery. NOT the sold-to / payer address."
+  - name: "shipping_conditions_id"
+    field_role: "dimension"
+    type: "STRING(4)"
+    description: "Shipping conditions code. Group by this; for the readable label select `shipping_conditions`."
+  - name: "sales_org_id"
+    field_role: "dimension"
+    type: "STRING(8)"
+    description: "Sales organization code. Group by this; for the readable label select `sales_org`."
+  - name: "distr_chl_id"
+    field_role: "dimension"
+    type: "STRING(4)"
+    description: "Distribution channel code. Group by this; for the readable label select `channel`."
+  - name: "sales_office_id"
+    field_role: "dimension"
+    type: "STRING(8)"
+    description: "Sales office code. Group by this; for the readable label select `sales_office`."
+  - name: "prodh_id"
+    field_role: "dimension"
+    type: "STRING(36)"
+    description: "Product hierarchy code (VBAP.PRODH). Group by this; no label is carried here."
+  - name: "division_id"
+    field_role: "dimension"
+    type: "STRING(4)"
+    description: "Division code. Group by this; for the readable label select `division`."
+  - name: "delivery_priority"
+    field_role: "dimension"
+    type: "INTEGER"
+    description: "Delivery priority (VBAP.LPRIO) on the SAP 1-99 scale where LOWER = MORE URGENT. Bucket meanings are per-customising — do not assume only 1-3."
+  - name: "route_id"
+    field_role: "dimension"
+    type: "STRING(12)"
+    description: "Shipping route code (VBAP.ROUTE). Group by this; no label is carried here."
+  - name: "zone_id"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Transportation zone of the ship-to party (VBPA.LZONE) — NOT a sales territory."
+  - name: "ovrll_sts"
+    field_role: "status_flag"
+    type: "STRING(2)"
+    description: "RAW overall processing status from VBAK.GBSTK: 'A' = open, 'B' = partially processed, 'C' = fully processed, blank = not set (counted as OPEN). Use to tell partial from fully open; for a binary OPEN/CLOSE use `order_status`."
+  - name: "delivery_time"
+    field_role: "measure"
+    type: "INTEGER"
+    description: "Lead time in days to the delivery date, measured from `event_ts` — the last sales-order event — and NOT from the order creation date. POSITIVE = days remaining, NEGATIVE = overdue. Uncapped: for the capped bucket use `delivery_status`."
+    aggregation_behavior: "AVG"
+    synonyms:
+      - lead time
+      - days to delivery
+  - name: "delivery_status"
+    field_role: "dimension"
+    type: "INTEGER"
+    description: "Capped lead-time bucket, NOT a status code despite the name: negative = days overdue, 0 = due today, 1..7 = days remaining, 8 = eight or more. For fulfilment status use `order_status`."
+  - name: "postal_code"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Postal code of the ship-to address. For the address key use `addr_no`."
+  - name: "plant"
+    field_role: "dimension"
+    type: "STRING(60)"
+    description: "Plant. For the code use `plant_id`."
+  - name: "material"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material number. For the code use `material_id`."
+  - name: "sales_org"
+    field_role: "dimension"
+    type: "STRING(40)"
+    description: "Sales organization. For the code use `sales_org_id`."
+  - name: "channel"
+    field_role: "dimension"
+    type: "STRING(40)"
+    description: "Distribution channel. For the code use `distr_chl_id`."
+  - name: "division"
+    field_role: "dimension"
+    type: "STRING(40)"
+    description: "Division. For the code use `division_id`."
+  - name: "sales_office"
+    field_role: "dimension"
+    type: "STRING(40)"
+    description: "Sales office. For the code use `sales_office_id`."
+  - name: "shipping_conditions"
+    field_role: "dimension"
+    type: "STRING(40)"
+    description: "Shipping conditions. For the code use `shipping_conditions_id`."
+  - name: "customer"
+    field_role: "dimension"
+    type: "STRING(70)"
+    description: "Sold-to party of the order line, already resolved — no JOIN needed. For the code use `customer_id`."
+  - name: "order_status"
+    field_role: "status_flag"
+    type: "STRING(5)"
+    description: "Derived OPEN/CLOSE classification from ovrll_sts (VBAK.GBSTK). Rule: 'C' (fully processed) -> 'CLOSE', anything else (A=open, B=partial, NULL) -> 'OPEN'. Use this for a clean binary 'is the order still active?' filter. For partial-vs-fully-open distinction use ovrll_sts instead."
+  - name: "event_ts"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "Latest source-system event on the sales-order header, from silver_s4h_sd_sales_order.event_ts_vbak. Use to judge freshness, and note it is the as-of reference for `delivery_time` and `delivery_status`."
+  - name: "loaded_at"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "ETL load timestamp into this gold table (CURRENT_TIMESTAMP at MERGE time)."
+relationships:
+  - target_entity: "silver_s4h_sd_sales_order"
+    relationship_type: "one_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_SD_SALES_ORDER.vbeln_vbak AND GOLD_SD_OPEN_ORDER_TRACKER.item = SILVER_SD_SALES_ORDER.posnr_vbap"
+    semantic_label: "originates_from"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Join to silver sales order for original document details"
+
+  - target_entity: "silver_s4h_sd_trading_goods"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.material_id = SILVER_TRADING_GOODS.matnr_mara"
+    semantic_label: "material_of"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Material Master for material attributes"
+
+  - target_entity: "silver_s4h_sd_plant"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.plant_id = SILVER_PLANTS.werks_t001w"
+    semantic_label: "fulfilled_from"
+    traversal_cost: 1.5
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Plant responsible for fulfilling the order"
+
+  - target_entity: "silver_s4h_sd_sales_organization"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_org_id = SILVER_SALES_ORGANIZATION.vkorg_tvkot"
+    semantic_label: "sold_by_org"
+    traversal_cost: 4
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Sales org owning the order. The org NAME is already denormalized as `sales_org` — only traverse for other org attributes."
+
+  - target_entity: "silver_s4h_sd_distribution_channel"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.distr_chl_id = SILVER_DISTRIBUTION_CHANNEL.vtweg_tvtw"
+    semantic_label: "sold_through_channel"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Distribution channel through which the order was placed"
+
+  - target_entity: "silver_s4h_sd_sales_division"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.division_id = SILVER_SALES_DIVISION.spart_tspa"
+    semantic_label: "belongs_to_division"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Sales division responsible for the product line"
+
+  - target_entity: "silver_s4h_sd_sales_office"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_office_id = SILVER_SALES_OFFICE.vkbur_tvbur"
+    semantic_label: "managed_by_office"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Sales office managing this order"
+
+  - target_entity: "silver_s4h_sd_shipping_condition"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.shipping_conditions_id = SILVER_SHIPPING_CONDITION.vsbed_tvsbt"
+    semantic_label: "shipped_under"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Shipping conditions applied to this order"
+
+  - target_entity: "silver_s4h_sd_customer_master"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
+    semantic_label: "ordered_by"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: false
+    description: "Customer who placed the sales order"
+
+  - target_entity: "silver_s4h_mm_material_group"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.matl_group_vbap = SILVER_MATERIAL_GROUP.matkl_t023"
+    semantic_label: "belongs_to_material_group"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Material group classification for this order item"
+
+  - target_entity: "silver_s4h_mm_material_hierarchy"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.prodh_id = SILVER_MATERIAL_HIERARCHY.prodh_t179"
+    semantic_label: "classified_in_hierarchy"
+    traversal_cost: 1
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Product hierarchy classification for this order item"
+
+  - target_entity: "gold_s4h_mm_inventory_position"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.client = GOLD_MM_INVENTORY_POSITION.client AND GOLD_SD_OPEN_ORDER_TRACKER.plant_id = GOLD_MM_INVENTORY_POSITION.plant_id AND GOLD_SD_OPEN_ORDER_TRACKER.material_id = GOLD_MM_INVENTORY_POSITION.material_id"
+    semantic_label: "covered_by_current_stock"
+    traversal_cost: 3
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Cross-fact lookup: enrich each open sales order line with the current stock position of its (plant, material) — on_hand, allocated, safety_stk, stock_status. Use to assess ATP/coverage: 'can we fulfill this order from current stock?', 'which open orders are covered by available inventory vs. waiting on incoming supply?'."

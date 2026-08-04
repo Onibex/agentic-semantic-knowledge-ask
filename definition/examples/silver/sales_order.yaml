@@ -1,1305 +1,1443 @@
-# Generado automáticamente por OneConnect ASK Ingestor
----
-id: silver_ecc_sd_sales_order
-internal_id: ecc_100_30
+id: silver_s4h_sd_sales_order
+internal_id: s4h_100_6
 db_table_name: SILVER_SD_SALES_ORDER
 layer: silver
 version: '1'
-source_system: ecc
+source_system: s4h
 source_system_no: 100
 business_process: ORDER TO CASH
 module: SD
+tag1: ''
+tag2: SD-SLS
 name: sales_order
-classification: D
-description: Sales Order transactional document in SAP ECC SD. Contains order header (VBAK), line items (VBAP), document flow (VBFA), and business data (VBKD). Grain, one row per order item. Used for revenue and pipeline analysis, open-orders tracking, fulfillment status, pick/pack/ship readiness, backlog measurement, and price-vs-quantity analysis.
+classification: T
+description: Sales order items with customer, pricing, plant, and delivery context.
 entity_role: fact
 grain:
   entity_grain:
-  - VBELN
-  - POSNR
-  - VBELV
-  - POSNV
-  - POSNN
-  - VBTYP_N
-  - PARVW
+    - vbeln_vbak
+    - posnr_vbap
+    - posnr_vbpa
+    - parvw_vbpa
+    - ruuid_vbfa
+    - posnr_vbkd
   business_grain: sales_order_item
 composed_of:
-- bronze_ecc_vbak_order_header
-- bronze_ecc_vbap_order_item
-- bronze_ecc_vbfa_sales_doc_flow
-- bronze_ecc_vbkd_salesdoc_busn
-- bronze_ecc_vbpa_salesdoc_part
-- bronze_ecc_vbuk_salesdoc_status
+  - bronze_s4h_vbak_order_header
+  - bronze_s4h_vbap_order_item
+  - bronze_s4h_vbpa_salesdoc_part
+  - bronze_s4h_vbfa_sales_doc_flow
+  - bronze_s4h_vbkd_salesdoc_busn
 join_graph:
-- left_table: VBAK
-  right_table: VBAP
-  join_type: INNER
-  condition: VBAK.VBELN = VBAP.VBELN
-  sequence: 2
-- left_table: VBAK
-  right_table: VBFA
-  join_type: INNER
-  condition: VBAK.VBELV = VBFA.VBELN
-  sequence: 4
-- left_table: VBAK
-  right_table: VBKD
-  join_type: LEFT OUTER
-  condition: VBAK.VBELN = VBKD.VBELN
-  sequence: 5
-- left_table: VBAK
-  right_table: VBPA
-  join_type: LEFT OUTER
-  condition: VBAK.VBELN = VBPA.VBELN
-  sequence: 3
-- left_table: VBAK
-  right_table: VBUK
-  join_type: LEFT OUTER
-  condition: VBAK.VBELN = VBUK.VBELN
-  sequence: 6
+  - left_table: VBAK
+    right_table: VBAP
+    join_type: INNER
+    condition: VBAK.VBELN = VBAP.VBELN
+    sequence: 2
+  - left_table: VBAK
+    right_table: VBPA
+    join_type: LEFT OUTER
+    condition: VBAK.VBELN = VBPA.VBELN
+    sequence: 3
+  - left_table: VBAK
+    right_table: VBFA
+    join_type: LEFT OUTER
+    condition: VBAK.VBELN = VBFA.VBELV
+    sequence: 4
+  - left_table: VBAK
+    right_table: VBKD
+    join_type: LEFT OUTER
+    condition: VBAK.VBELN = VBKD.VBELN
+    sequence: 5
 fields:
-- name: mandt_vbak
-  source: VBAK.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbeln_vbak
-  source: VBAK.VBELN
-  field_role: identifier
-  type: C10
-  description: Sales document
-- name: erdat_vbak
-  source: VBAK.ERDAT
-  field_role: timestamp
-  type: D8
-  description: Created on
-- name: ernam_vbak
-  source: VBAK.ERNAM
-  field_role: dimension
-  type: C12
-  description: Created by
-- name: angdt_vbak
-  source: VBAK.ANGDT
-  field_role: timestamp
-  type: D8
-  description: Valid from
-- name: bnddt_vbak
-  source: VBAK.BNDDT
-  field_role: timestamp
-  type: D8
-  description: Valid to
-- name: audat_vbak
-  source: VBAK.AUDAT
-  field_role: timestamp
-  type: D8
-  description: Document Date
-- name: auart_vbak
-  source: VBAK.AUART
-  field_role: dimension
-  type: C4
-  description: Sales Document Type
-- name: augru_vbak
-  source: VBAK.AUGRU
-  field_role: dimension
-  type: C3
-  description: Order Reason
-- name: gwldt_vbak
-  source: VBAK.GWLDT
-  field_role: timestamp
-  type: D8
-  description: Warranty Start
-- name: lifsk_vbak
-  source: VBAK.LIFSK
-  field_role: dimension
-  type: C2
-  description: Delivery Block
-- name: faksk_vbak
-  source: VBAK.FAKSK
-  field_role: dimension
-  type: C2
-  description: Billing Block
-- name: netwr_vbak
-  source: VBAK.NETWR
-  field_role: measure
-  type: P15
-  description: Net Value
-- name: waerk_vbak
-  source: VBAK.WAERK
-  field_role: dimension
-  type: C5
-  description: Currency
-- name: vkorg_vbak
-  source: VBAK.VKORG
-  field_role: dimension
-  type: C4
-  description: Sales Organization
-- name: vtweg_vbak
-  source: VBAK.VTWEG
-  field_role: dimension
-  type: C2
-  description: Distribution Channel
-- name: spart_vbak
-  source: VBAK.SPART
-  field_role: dimension
-  type: C2
-  description: Division
-- name: vkgrp_vbak
-  source: VBAK.VKGRP
-  field_role: dimension
-  type: C3
-  description: Sales Group
-- name: vkbur_vbak
-  source: VBAK.VKBUR
-  field_role: dimension
-  type: C4
-  description: Sales Office
-- name: knumv_vbak
-  source: VBAK.KNUMV
-  field_role: dimension
-  type: C10
-  description: Document Condition
-- name: vdatu_vbak
-  source: VBAK.VDATU
-  field_role: timestamp
-  type: D8
-  description: Requested Delivery Date
-- name: autlf_vbak
-  source: VBAK.AUTLF
-  field_role: dimension
-  type: C1
-  description: Complete Delivery
-- name: kalsm_vbak
-  source: VBAK.KALSM
-  field_role: dimension
-  type: C6
-  description: Pricing Procedure
-- name: vsbed_vbak
-  source: VBAK.VSBED
-  field_role: dimension
-  type: C2
-  description: Shipping Conditions
-- name: fkara_vbak
-  source: VBAK.FKARA
-  field_role: dimension
-  type: C4
-  description: Order-related Billing Type
-- name: awahr_vbak
-  source: VBAK.AWAHR
-  field_role: dimension
-  type: N3
-  description: Probability
-- name: ktext_vbak
-  source: VBAK.KTEXT
-  field_role: dimension
-  type: C40
-  description: Description
-- name: bstnk_vbak
-  source: VBAK.BSTNK
-  field_role: dimension
-  type: C20
-  description: Purchase Order Number
-- name: bsark_vbak
-  source: VBAK.BSARK
-  field_role: dimension
-  type: C4
-  description: Purchase Order Type
-- name: bstdk_vbak
-  source: VBAK.BSTDK
-  field_role: timestamp
-  type: D8
-  description: Purchase Order Date
-- name: ihrez_vbak
-  source: VBAK.IHREZ
-  field_role: dimension
-  type: C12
-  description: Your Reference
-- name: bname_vbak
-  source: VBAK.BNAME
-  field_role: dimension
-  type: C35
-  description: Name
-- name: kunnr_vbak
-  source: VBAK.KUNNR
-  field_role: dimension
-  type: C10
-  description: Sold-to Party
-- name: kostl_vbak
-  source: VBAK.KOSTL
-  field_role: dimension
-  type: C10
-  description: Cost Center
-- name: aedat_vbak
-  source: VBAK.AEDAT
-  field_role: timestamp
-  type: D8
-  description: Changed on
-- name: kvgr1_vbak
-  source: VBAK.KVGR1
-  field_role: dimension
-  type: C3
-  description: Customer Group 1
-- name: kvgr2_vbak
-  source: VBAK.KVGR2
-  field_role: dimension
-  type: C3
-  description: Customer Group 2
-- name: kvgr3_vbak
-  source: VBAK.KVGR3
-  field_role: dimension
-  type: C3
-  description: Customer Group 3
-- name: kvgr4_vbak
-  source: VBAK.KVGR4
-  field_role: dimension
-  type: C3
-  description: Customer Group 4
-- name: kvgr5_vbak
-  source: VBAK.KVGR5
-  field_role: dimension
-  type: C3
-  description: Customer Group 5
-- name: knuma_vbak
-  source: VBAK.KNUMA
-  field_role: dimension
-  type: C10
-  description: Agreement
-- name: kkber_vbak
-  source: VBAK.KKBER
-  field_role: dimension
-  type: C4
-  description: Credit Control Area
-- name: knkli_vbak
-  source: VBAK.KNKLI
-  field_role: dimension
-  type: C10
-  description: Credit Account
-- name: grupp_vbak
-  source: VBAK.GRUPP
-  field_role: dimension
-  type: C4
-  description: Customer Credit Group
-- name: cmwae_vbak
-  source: VBAK.CMWAE
-  field_role: dimension
-  type: C5
-  description: Currency
-- name: cmfre_vbak
-  source: VBAK.CMFRE
-  field_role: timestamp
-  type: D8
-  description: Release Date
-- name: amtbl_vbak
-  source: VBAK.AMTBL
-  field_role: measure
-  type: P15
-  description: Credit Value
-- name: hityp_pr_vbak
-  source: VBAK.HITYP_PR
-  field_role: dimension
-  type: C1
-  description: Hierarchy Type Pricing
-- name: abrvw_vbak
-  source: VBAK.ABRVW
-  field_role: dimension
-  type: C3
-  description: Usage
-- name: abdis_vbak
-  source: VBAK.ABDIS
-  field_role: dimension
-  type: C1
-  description: MRP for DS Type
-- name: bukrs_vf_vbak
-  source: VBAK.BUKRS_VF
-  field_role: dimension
-  type: C4
-  description: Company Code to be Billed
-- name: agrzr_vbak
-  source: VBAK.AGRZR
-  field_role: dimension
-  type: N2
-  description: Accrual Period
-- name: aufnr_vbak
-  source: VBAK.AUFNR
-  field_role: dimension
-  type: C12
-  description: Order
-- name: abruf_part_vbak
-  source: VBAK.ABRUF_PART
-  field_role: dimension
-  type: C1
-  description: Check Partner
-- name: abhod_vbak
-  source: VBAK.ABHOD
-  field_role: timestamp
-  type: D8
-  description: Pick-up Date
-- name: abhob_vbak
-  source: VBAK.ABHOB
-  field_role: dimension
-  type: T6
-  description: Pick-up Time
-- name: fmbdat_vbak
-  source: VBAK.FMBDAT
-  field_role: timestamp
-  type: D8
-  description: Material Availability Date
-- name: cont_dg_vbak
-  source: VBAK.CONT_DG
-  field_role: dimension
-  type: C1
-  description: Contains Dangerous Goods
-- name: mandt_vbap
-  source: VBAP.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbeln_vbap
-  source: VBAP.VBELN
-  field_role: identifier
-  type: C10
-  description: Sales document
-- name: posnr_vbap
-  source: VBAP.POSNR
-  field_role: identifier
-  type: N6
-  description: Sales Document Item
-- name: matnr_vbap
-  source: VBAP.MATNR
-  field_role: dimension
-  type: C18
-  description: Material
-- name: pmatn_vbap
-  source: VBAP.PMATN
-  field_role: dimension
-  type: C18
-  description: Pr.RefMatl
-- name: charg_vbap
-  source: VBAP.CHARG
-  field_role: dimension
-  type: C10
-  description: Batch
-- name: matkl_vbap
-  source: VBAP.MATKL
-  field_role: dimension
-  type: C9
-  description: Material Group
-- name: arktx_vbap
-  source: VBAP.ARKTX
-  field_role: dimension
-  type: C40
-  description: Item Descr.
-- name: posar_vbap
-  source: VBAP.POSAR
-  field_role: dimension
-  type: C1
-  description: Item Type
-- name: abgru_vbap
-  source: VBAP.ABGRU
-  field_role: dimension
-  type: C2
-  description: Rej.Reason
-- name: prodh_vbap
-  source: VBAP.PRODH
-  field_role: dimension
-  type: C18
-  description: Product Hierarchy
-- name: zwert_vbap
-  source: VBAP.ZWERT
-  field_role: measure
-  type: P13
-  description: Targ. Val.
-- name: zieme_vbap
-  source: VBAP.ZIEME
-  field_role: dimension
-  type: C3
-  description: Target UoM
-- name: meins_vbap
-  source: VBAP.MEINS
-  field_role: dimension
-  type: C3
-  description: Unit
-- name: ablfz_vbap
-  source: VBAP.ABLFZ
-  field_role: measure
-  type: P13
-  description: Round qty
-- name: kever_vbap
-  source: VBAP.KEVER
-  field_role: measure
-  type: P3
-  description: Dev. days
-- name: vkaus_vbap
-  source: VBAP.VKAUS
-  field_role: dimension
-  type: C3
-  description: Usage
-- name: grkor_vbap
-  source: VBAP.GRKOR
-  field_role: dimension
-  type: N3
-  description: DelivGroup
-- name: spart_vbap
-  source: VBAP.SPART
-  field_role: dimension
-  type: C2
-  description: Division
-- name: netwr_vbap
-  source: VBAP.NETWR
-  field_role: measure
-  type: P15
-  description: Net Val Doc. Item Doc. Cur.
-- name: waerk_vbap
-  source: VBAP.WAERK
-  field_role: dimension
-  type: C5
-  description: Currency
-- name: kztlf_vbap
-  source: VBAP.KZTLF
-  field_role: dimension
-  type: C1
-  description: Part.dlv.
-- name: kwmeng_vbap
-  source: VBAP.KWMENG
-  field_role: measure
-  type: P15
-  description: "Cumulative order quantity / customer demand quantity / sales demand. Total quantity requested by customer in sales order."
-  aggregation_behavior: SUM
-- name: vrkme_vbap
-  source: VBAP.VRKME
-  field_role: dimension
-  type: C3
-  description: Sales unit
-- name: brgew_vbap
-  source: VBAP.BRGEW
-  field_role: measure
-  type: P15
-  description: Gross
-- name: ntgew_vbap
-  source: VBAP.NTGEW
-  field_role: measure
-  type: P15
-  description: Net Weight
-- name: gewei_vbap
-  source: VBAP.GEWEI
-  field_role: dimension
-  type: C3
-  description: WeightUnit
-- name: volum_vbap
-  source: VBAP.VOLUM
-  field_role: measure
-  type: P15
-  description: Volume
-- name: voleh_vbap
-  source: VBAP.VOLEH
-  field_role: dimension
-  type: C3
-  description: VolumeUnit
-- name: posnv_vbap
-  source: VBAP.POSNV
-  field_role: dimension
-  type: N6
-  description: Originating Item
-- name: vgbel_vbap
-  source: VBAP.VGBEL
-  field_role: dimension
-  type: C10
-  description: Ref. Doc.
-- name: lprio_vbap
-  source: VBAP.LPRIO
-  field_role: dimension
-  type: N2
-  description: Dlv.Prior.
-- name: werks_vbap
-  source: VBAP.WERKS
-  field_role: dimension
-  type: C4
-  description: Plant
-- name: route_vbap
-  source: VBAP.ROUTE
-  field_role: dimension
-  type: C6
-  description: Route
-- name: ernam_vbap
-  source: VBAP.ERNAM
-  field_role: dimension
-  type: C12
-  description: Created
-- name: erzet_vbap
-  source: VBAP.ERZET
-  field_role: dimension
-  type: T6
-  description: Time
-- name: netpr_vbap
-  source: VBAP.NETPR
-  field_role: measure
-  type: P11
-  description: Net Price
-- name: kmein_vbap
-  source: VBAP.KMEIN
-  field_role: dimension
-  type: C3
-  description: Unit
-- name: shkzg_vbap
-  source: VBAP.SHKZG
-  field_role: dimension
-  type: C1
-  description: Returns Item
-- name: bwtar_vbap
-  source: VBAP.BWTAR
-  field_role: dimension
-  type: C10
-  description: Val. Type
-- name: bwtex_vbap
-  source: VBAP.BWTEX
-  field_role: dimension
-  type: C1
-  description: Sep.val.
-- name: wavwr_vbap
-  source: VBAP.WAVWR
-  field_role: measure
-  type: P13
-  description: Cost
-- name: prctr_vbap
-  source: VBAP.PRCTR
-  field_role: dimension
-  type: C10
-  description: Profit Ctr
-- name: kmpmg_vbap
-  source: VBAP.KMPMG
-  field_role: measure
-  type: P13
-  description: Quantity
-- name: sugrd_vbap
-  source: VBAP.SUGRD
-  field_role: dimension
-  type: C4
-  description: Reason
-- name: paobjnr_vbap
-  source: VBAP.PAOBJNR
-  field_role: dimension
-  type: N10
-  description: Prof.Segmt
-- name: aufnr_vbap
-  source: VBAP.AUFNR
-  field_role: dimension
-  type: C12
-  description: Order
-- name: prbme_vbap
-  source: VBAP.PRBME
-  field_role: dimension
-  type: C3
-  description: PG unit
-- name: vgtyp_vbap
-  source: VBAP.VGTYP
-  field_role: dimension
-  type: C1
-  description: SD DocCat.
-- name: kowrr_vbap
-  source: VBAP.KOWRR
-  field_role: dimension
-  type: C1
-  description: Stat.Value
-- name: kannr_vbap
-  source: VBAP.KANNR
-  field_role: dimension
-  type: C35
-  description: SequenceNo
-- name: abges_vbap
-  source: VBAP.ABGES
-  field_role: dimension
-  type: F16
-  description: Guaranteed
-- name: kzbws_vbap
-  source: VBAP.KZBWS
-  field_role: dimension
-  type: C1
-  description: Valuation
-- name: kzfme_vbap
-  source: VBAP.KZFME
-  field_role: dimension
-  type: C1
-  description: Lead. UoM
-- name: lstanr_vbap
-  source: VBAP.LSTANR
-  field_role: dimension
-  type: C1
-  description: FGDelyCont
-- name: nrab_knumh_vbap
-  source: VBAP.NRAB_KNUMH
-  field_role: dimension
-  type: C10
-  description: CondRecNo.
-- name: pargb_vbap
-  source: VBAP.PARGB
-  field_role: dimension
-  type: C4
-  description: Tr.Part.BA
-- name: mandt_vbfa
-  source: VBFA.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbelv_vbfa
-  source: VBFA.VBELV
-  field_role: identifier
-  type: C10
-  description: Preceding Document
-- name: posnv_vbfa
-  source: VBFA.POSNV
-  field_role: identifier
-  type: N6
-  description: Preceding item
-- name: vbeln_vbfa
-  source: VBFA.VBELN
-  field_role: identifier
-  type: C10
-  description: Subsequent document
-- name: posnn_vbfa
-  source: VBFA.POSNN
-  field_role: identifier
-  type: N6
-  description: Subsequent item
-- name: vbtyp_n_vbfa
-  source: VBFA.VBTYP_N
-  field_role: identifier
-  type: C1
-  description: Subsequent doc. cat.
-- name: rfmng_vbfa
-  source: VBFA.RFMNG
-  field_role: measure
-  type: P15
-  description: Quantity
-- name: meins_vbfa
-  source: VBFA.MEINS
-  field_role: dimension
-  type: C3
-  description: Unit
-- name: rfwrt_vbfa
-  source: VBFA.RFWRT
-  field_role: measure
-  type: P15
-  description: Ref. Value
-- name: waers_vbfa
-  source: VBFA.WAERS
-  field_role: dimension
-  type: C5
-  description: Currency
-- name: vbtyp_v_vbfa
-  source: VBFA.VBTYP_V
-  field_role: dimension
-  type: C1
-  description: SD DocCat.
-- name: plmin_vbfa
-  source: VBFA.PLMIN
-  field_role: dimension
-  type: C1
-  description: Pos./Neg.
-- name: taqui_vbfa
-  source: VBFA.TAQUI
-  field_role: dimension
-  type: C1
-  description: Confirm.ID
-- name: erdat_vbfa
-  source: VBFA.ERDAT
-  field_role: timestamp
-  type: D8
-  description: 'On'
-- name: erzet_vbfa
-  source: VBFA.ERZET
-  field_role: dimension
-  type: T6
-  description: Time
-- name: matnr_vbfa
-  source: VBFA.MATNR
-  field_role: dimension
-  type: C18
-  description: Material
-- name: bwart_vbfa
-  source: VBFA.BWART
-  field_role: dimension
-  type: C3
-  description: Movmt Type
-- name: bdart_vbfa
-  source: VBFA.BDART
-  field_role: dimension
-  type: C2
-  description: Req.type
-- name: plart_vbfa
-  source: VBFA.PLART
-  field_role: dimension
-  type: C1
-  description: Plan.type
-- name: stufe_vbfa
-  source: VBFA.STUFE
-  field_role: dimension
-  type: N2
-  description: Level
-- name: lgnum_vbfa
-  source: VBFA.LGNUM
-  field_role: dimension
-  type: C3
-  description: Whse No.
-- name: aedat_vbfa
-  source: VBFA.AEDAT
-  field_role: timestamp
-  type: D8
-  description: Chngd
-- name: fktyp_vbfa
-  source: VBFA.FKTYP
-  field_role: dimension
-  type: C1
-  description: BillCateg.
-- name: brgew_vbfa
-  source: VBFA.BRGEW
-  field_role: measure
-  type: P15
-  description: Gross
-- name: gewei_vbfa
-  source: VBFA.GEWEI
-  field_role: dimension
-  type: C3
-  description: WeightUnit
-- name: volum_vbfa
-  source: VBFA.VOLUM
-  field_role: measure
-  type: P15
-  description: Volume
-- name: voleh_vbfa
-  source: VBFA.VOLEH
-  field_role: dimension
-  type: C3
-  description: VolumeUnit
-- name: fplnr_vbfa
-  source: VBFA.FPLNR
-  field_role: dimension
-  type: C10
-  description: Bill. Plan
-- name: fpltr_vbfa
-  source: VBFA.FPLTR
-  field_role: dimension
-  type: N6
-  description: Item
-- name: rfmng_flo_vbfa
-  source: VBFA.RFMNG_FLO
-  field_role: dimension
-  type: F16
-  description: Quantity
-- name: rfmng_flt_vbfa
-  source: VBFA.RFMNG_FLT
-  field_role: dimension
-  type: F16
-  description: Quantity
-- name: vrkme_vbfa
-  source: VBFA.VRKME
-  field_role: dimension
-  type: C3
-  description: Sales unit
-- name: abges_vbfa
-  source: VBFA.ABGES
-  field_role: dimension
-  type: F16
-  description: Guaranteed
-- name: sobkz_vbfa
-  source: VBFA.SOBKZ
-  field_role: dimension
-  type: C1
-  description: Spec.Stock
-- name: sonum_vbfa
-  source: VBFA.SONUM
-  field_role: dimension
-  type: C16
-  description: Sp.Stck No
-- name: kzbef_vbfa
-  source: VBFA.KZBEF
-  field_role: dimension
-  type: C1
-  description: IM active
-- name: ntgew_vbfa
-  source: VBFA.NTGEW
-  field_role: measure
-  type: P13
-  description: Net
-- name: logsys_vbfa
-  source: VBFA.LOGSYS
-  field_role: dimension
-  type: C10
-  description: LogSystem
-- name: wbsta_vbfa
-  source: VBFA.WBSTA
-  field_role: dimension
-  type: C1
-  description: GoodsMvmnt
-- name: cmeth_vbfa
-  source: VBFA.CMETH
-  field_role: dimension
-  type: C1
-  description: Conv. Meth
-- name: mjahr_vbfa
-  source: VBFA.MJAHR
-  field_role: dimension
-  type: N4
-  description: Mat. Year
-- name: mandt_vbkd
-  source: VBKD.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbeln_vbkd
-  source: VBKD.VBELN
-  field_role: identifier
-  type: C10
-  description: Sales Document
-- name: posnr_vbkd
-  source: VBKD.POSNR
-  field_role: identifier
-  type: N6
-  description: Item (SD)
-- name: konda_vbkd
-  source: VBKD.KONDA
-  field_role: dimension
-  type: C2
-  description: Price Grp
-- name: kdgrp_vbkd
-  source: VBKD.KDGRP
-  field_role: dimension
-  type: C2
-  description: Cust.Group
-- name: pltyp_vbkd
-  source: VBKD.PLTYP
-  field_role: dimension
-  type: C2
-  description: Price List
-- name: inco1_vbkd
-  source: VBKD.INCO1
-  field_role: dimension
-  type: C3
-  description: Incoterms
-- name: kzazu_vbkd
-  source: VBKD.KZAZU
-  field_role: dimension
-  type: C1
-  description: OrderComb.
-- name: perrl_vbkd
-  source: VBKD.PERRL
-  field_role: dimension
-  type: C2
-  description: InvListSch
-- name: kurrf_vbkd
-  source: VBKD.KURRF
-  field_role: measure
-  type: P9
-  description: ExchRt.Act
-- name: valtg_vbkd
-  source: VBKD.VALTG
-  field_role: dimension
-  type: N2
-  description: AddValDays
-- name: valdt_vbkd
-  source: VBKD.VALDT
-  field_role: timestamp
-  type: D8
-  description: FixValDate
-- name: ktgrd_vbkd
-  source: VBKD.KTGRD
-  field_role: dimension
-  type: C2
-  description: AccAsmtGrC
-- name: kursk_vbkd
-  source: VBKD.KURSK
-  field_role: measure
-  type: P9
-  description: Exch. Rate
-- name: prsdt_vbkd
-  source: VBKD.PRSDT
-  field_role: timestamp
-  type: D8
-  description: Pricing Dt
-- name: fkdat_vbkd
-  source: VBKD.FKDAT
-  field_role: timestamp
-  type: D8
-  description: Bill. Date
-- name: fbuda_vbkd
-  source: VBKD.FBUDA
-  field_role: timestamp
-  type: D8
-  description: Serv.R.Dte
-- name: gjahr_vbkd
-  source: VBKD.GJAHR
-  field_role: dimension
-  type: N4
-  description: Fiscal Yr
-- name: poper_vbkd
-  source: VBKD.POPER
-  field_role: dimension
-  type: N3
-  description: Period
-- name: stcur_vbkd
-  source: VBKD.STCUR
-  field_role: measure
-  type: P9
-  description: ExRateStat
-- name: mansp_vbkd
-  source: VBKD.MANSP
-  field_role: dimension
-  type: C1
-  description: Dunn.Block
-- name: fplnr_vbkd
-  source: VBKD.FPLNR
-  field_role: dimension
-  type: C10
-  description: Bill. Plan
-- name: waktion_vbkd
-  source: VBKD.WAKTION
-  field_role: dimension
-  type: C10
-  description: Promotion
-- name: abssc_vbkd
-  source: VBKD.ABSSC
-  field_role: dimension
-  type: C6
-  description: PayGuaProc
-- name: lcnum_vbkd
-  source: VBKD.LCNUM
-  field_role: dimension
-  type: C10
-  description: FD No.
-- name: abtnr_vbkd
-  source: VBKD.ABTNR
-  field_role: dimension
-  type: C4
-  description: Department
-- name: bstkd_vbkd
-  source: VBKD.BSTKD
-  field_role: dimension
-  type: C35
-  description: Cust. Ref.
-- name: bstdk_vbkd
-  source: VBKD.BSTDK
-  field_role: timestamp
-  type: D8
-  description: CustRefDat
-- name: ihrez_vbkd
-  source: VBKD.IHREZ
-  field_role: dimension
-  type: C12
-  description: Ref. 1
-- name: bstdk_e_vbkd
-  source: VBKD.BSTDK_E
-  field_role: timestamp
-  type: D8
-  description: CustRefDat
-- name: bsark_e_vbkd
-  source: VBKD.BSARK_E
-  field_role: dimension
-  type: C4
-  description: Order Type
-- name: ihrez_e_vbkd
-  source: VBKD.IHREZ_E
-  field_role: dimension
-  type: C12
-  description: Characters
-- name: posex_e_vbkd
-  source: VBKD.POSEX_E
-  field_role: dimension
-  type: C6
-  description: PO Item
-- name: kursk_dat_vbkd
-  source: VBKD.KURSK_DAT
-  field_role: timestamp
-  type: D8
-  description: TranslDate
-- name: kurrf_dat_vbkd
-  source: VBKD.KURRF_DAT
-  field_role: timestamp
-  type: D8
-  description: TranslDate
-- name: kdkg1_vbkd
-  source: VBKD.KDKG1
-  field_role: dimension
-  type: C2
-  description: CondGrp 1
-- name: kdkg2_vbkd
-  source: VBKD.KDKG2
-  field_role: dimension
-  type: C2
-  description: CondGrp 2
-- name: kdkg3_vbkd
-  source: VBKD.KDKG3
-  field_role: dimension
-  type: C2
-  description: CondGrp 3
-- name: kdkg4_vbkd
-  source: VBKD.KDKG4
-  field_role: dimension
-  type: C2
-  description: CondGrp 4
-- name: kdkg5_vbkd
-  source: VBKD.KDKG5
-  field_role: dimension
-  type: C2
-  description: CondGrp 5
-- name: wkwae_vbkd
-  source: VBKD.WKWAE
-  field_role: dimension
-  type: C5
-  description: Currency
-- name: wkkur_vbkd
-  source: VBKD.WKKUR
-  field_role: measure
-  type: P9
-  description: Exch. rate
-- name: delco_vbkd
-  source: VBKD.DELCO
-  field_role: dimension
-  type: C3
-  description: Del. Time
-- name: ffprf_vbkd
-  source: VBKD.FFPRF
-  field_role: dimension
-  type: C8
-  description: Profile
-- name: vsart_vbkd
-  source: VBKD.VSART
-  field_role: dimension
-  type: C2
-  description: Ship.Type
-- name: traty_vbkd
-  source: VBKD.TRATY
-  field_role: dimension
-  type: C4
-  description: MnsTransTy
-- name: trmtyp_vbkd
-  source: VBKD.TRMTYP
-  field_role: dimension
-  type: C18
-  description: Mns of Tr.
-- name: fkber_vbkd
-  source: VBKD.FKBER
-  field_role: dimension
-  type: C16
-  description: Func. Area
-- name: podkz_vbkd
-  source: VBKD.PODKZ
-  field_role: dimension
-  type: C1
-  description: POD-rel.
-- name: vkont_vbkd
-  source: VBKD.VKONT
-  field_role: dimension
-  type: C12
-  description: Cont. Acct
-- name: farr_reltype_vbkd
-  source: VBKD.FARR_RELTYPE
-  field_role: dimension
-  type: C10
-  description: Type
-- name: vtref_vbkd
-  source: VBKD.VTREF
-  field_role: dimension
-  type: C20
-  description: Contract
-- name: perop_beg_vbkd
-  source: VBKD.PEROP_BEG
-  field_role: timestamp
-  type: D8
-  description: Start Date
-- name: perop_end_vbkd
-  source: VBKD.PEROP_END
-  field_role: timestamp
-  type: D8
-  description: End Date
-- name: steuc_vbkd
-  source: VBKD.STEUC
-  field_role: dimension
-  type: C16
-  description: Ctrl Code
-- name: compreas_vbkd
-  source: VBKD.COMPREAS
-  field_role: dimension
-  type: C4
-  description: Abb.
-- name: mndid_vbkd
-  source: VBKD.MNDID
-  field_role: dimension
-  type: C35
-  description: Mand.Ref.
-- name: mandt_vbpa
-  source: VBPA.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbeln_vbpa
-  source: VBPA.VBELN
-  field_role: identifier
-  type: C10
-  description: Sales Document
-- name: posnr_vbpa
-  source: VBPA.POSNR
-  field_role: identifier
-  type: N6
-  description: Item (SD)
-- name: parvw_vbpa
-  source: VBPA.PARVW
-  field_role: identifier
-  type: C2
-  description: Partner Function
-- name: kunnr_vbpa
-  source: VBPA.KUNNR
-  field_role: dimension
-  type: C10
-  description: Customer
-- name: lifnr_vbpa
-  source: VBPA.LIFNR
-  field_role: dimension
-  type: C10
-  description: Supplier
-- name: pernr_vbpa
-  source: VBPA.PERNR
-  field_role: dimension
-  type: N8
-  description: Pers.No.
-- name: parnr_vbpa
-  source: VBPA.PARNR
-  field_role: dimension
-  type: N10
-  description: Partner
-- name: adrnr_vbpa
-  source: VBPA.ADRNR
-  field_role: dimension
-  type: C10
-  description: Addr. No.
-- name: ablad_vbpa
-  source: VBPA.ABLAD
-  field_role: dimension
-  type: C25
-  description: Unload.pt.
-- name: land1_vbpa
-  source: VBPA.LAND1
-  field_role: dimension
-  type: C3
-  description: Ctry/Reg.
-- name: adrda_vbpa
-  source: VBPA.ADRDA
-  field_role: dimension
-  type: C1
-  description: Adress ID
-- name: xcpdk_vbpa
-  source: VBPA.XCPDK
-  field_role: dimension
-  type: C1
-  description: One-time
-- name: hityp_vbpa
-  source: VBPA.HITYP
-  field_role: dimension
-  type: C1
-  description: CustHType
-- name: prfre_vbpa
-  source: VBPA.PRFRE
-  field_role: dimension
-  type: C1
-  description: Price det.
-- name: bokre_vbpa
-  source: VBPA.BOKRE
-  field_role: dimension
-  type: C1
-  description: Rebate
-- name: histunr_vbpa
-  source: VBPA.HISTUNR
-  field_role: dimension
-  type: N2
-  description: Hier.level
-- name: knref_vbpa
-  source: VBPA.KNREF
-  field_role: dimension
-  type: C30
-  description: PartnDescr
-- name: lzone_vbpa
-  source: VBPA.LZONE
-  field_role: dimension
-  type: C10
-  description: Zone
-- name: hzuor_vbpa
-  source: VBPA.HZUOR
-  field_role: dimension
-  type: N2
-  description: HierAssign
-- name: stceg_vbpa
-  source: VBPA.STCEG
-  field_role: dimension
-  type: C20
-  description: VAT Reg.No
-- name: parvw_ff_vbpa
-  source: VBPA.PARVW_FF
-  field_role: dimension
-  type: C1
-  description: F.partners
-- name: adrnp_vbpa
-  source: VBPA.ADRNP
-  field_role: dimension
-  type: C10
-  description: Person
-- name: kale_vbpa
-  source: VBPA.KALE
-  field_role: dimension
-  type: C1
-  description: Appointm.
-- name: mandt_vbuk
-  source: VBUK.MANDT
-  field_role: dimension
-  type: C3
-  description: Client
-- name: vbeln_vbuk
-  source: VBUK.VBELN
-  field_role: identifier
-  type: C10
-  description: Sales Document
-- name: gbstk_vbuk
-  source: VBUK.GBSTK
-  field_role: status_flag
-  type: C1
-  description: "Overall Processing Status of sales order. A = not yet processed / open, B = partially processed, C = fully processed / completed. Use to filter open or pending sales orders."
+  - name: mandt_vbak
+    source: VBAK.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: vbeln_vbak
+    source: VBAK.VBELN
+    type: STRING(10)
+    description: Sales Document
+    field_role: identifier
+  - name: erdat_vbak
+    source: VBAK.ERDAT
+    type: DATE
+    description: Created on
+    field_role: timestamp
+  - name: ernam_vbak
+    source: VBAK.ERNAM
+    type: STRING(12)
+    description: Created by
+    field_role: dimension
+  - name: angdt_vbak
+    source: VBAK.ANGDT
+    type: DATE
+    description: Valid from
+    field_role: timestamp
+  - name: bnddt_vbak
+    source: VBAK.BNDDT
+    type: DATE
+    description: Valid to
+    field_role: timestamp
+  - name: audat_vbak
+    source: VBAK.AUDAT
+    type: DATE
+    description: Document Date
+    field_role: timestamp
+  - name: auart_vbak
+    source: VBAK.AUART
+    type: STRING(4)
+    description: Sales Document Type
+    field_role: dimension
+  - name: augru_vbak
+    source: VBAK.AUGRU
+    type: STRING(3)
+    description: Order Reason
+    field_role: dimension
+  - name: gwldt_vbak
+    source: VBAK.GWLDT
+    type: DATE
+    description: Warranty Start
+    field_role: timestamp
+  - name: lifsk_vbak
+    source: VBAK.LIFSK
+    type: STRING(2)
+    description: Delivery Block
+    field_role: dimension
+  - name: faksk_vbak
+    source: VBAK.FAKSK
+    type: STRING(2)
+    description: Billing Block
+    field_role: dimension
+  - name: netwr_vbak
+    source: VBAK.NETWR
+    type: DECIMAL(15)
+    description: Net Value
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: waerk_vbak
+    source: VBAK.WAERK
+    type: STRING(5)
+    description: Document Currency
+    field_role: dimension
+  - name: vkorg_vbak
+    source: VBAK.VKORG
+    type: STRING(4)
+    description: Sales Organization
+    field_role: dimension
+  - name: vtweg_vbak
+    source: VBAK.VTWEG
+    type: STRING(2)
+    description: Distribution Channel
+    field_role: dimension
+  - name: spart_vbak
+    source: VBAK.SPART
+    type: STRING(2)
+    description: Division
+    field_role: dimension
+  - name: vkgrp_vbak
+    source: VBAK.VKGRP
+    type: STRING(3)
+    description: Sales Group
+    field_role: dimension
+  - name: vkbur_vbak
+    source: VBAK.VKBUR
+    type: STRING(4)
+    description: Sales Office
+    field_role: dimension
+  - name: knumv_vbak
+    source: VBAK.KNUMV
+    type: STRING(10)
+    description: Document Condition
+    field_role: dimension
+  - name: vdatu_vbak
+    source: VBAK.VDATU
+    type: DATE
+    description: Requested Delivery Date
+    field_role: timestamp
+  - name: autlf_vbak
+    source: VBAK.AUTLF
+    type: STRING(1)
+    description: Complete Delivery
+    field_role: dimension
+  - name: kalsm_vbak
+    source: VBAK.KALSM
+    type: STRING(6)
+    description: Pricing Procedure
+    field_role: dimension
+  - name: vsbed_vbak
+    source: VBAK.VSBED
+    type: STRING(2)
+    description: Shipping Conditions
+    field_role: dimension
+  - name: fkara_vbak
+    source: VBAK.FKARA
+    type: STRING(4)
+    description: Order-related Billing Type
+    field_role: dimension
+  - name: awahr_vbak
+    source: VBAK.AWAHR
+    type: STRING(3)
+    description: Probability
+    field_role: dimension
+  - name: ktext_vbak
+    source: VBAK.KTEXT
+    type: STRING(40)
+    description: Description
+    field_role: dimension
+  - name: bstnk_vbak
+    source: VBAK.BSTNK
+    type: STRING(20)
+    description: Purchase Order Number
+    field_role: dimension
+  - name: bsark_vbak
+    source: VBAK.BSARK
+    type: STRING(4)
+    description: Purchase Order Type
+    field_role: dimension
+  - name: bstdk_vbak
+    source: VBAK.BSTDK
+    type: DATE
+    description: Purchase Order Date
+    field_role: timestamp
+  - name: ihrez_vbak
+    source: VBAK.IHREZ
+    type: STRING(12)
+    description: Your Reference
+    field_role: dimension
+  - name: bname_vbak
+    source: VBAK.BNAME
+    type: STRING(35)
+    description: Name
+    field_role: dimension
+  - name: kunnr_vbak
+    source: VBAK.KUNNR
+    type: STRING(10)
+    description: Sold-to Party
+    field_role: dimension
+  - name: kostl_vbak
+    source: VBAK.KOSTL
+    type: STRING(10)
+    description: Cost Center
+    field_role: dimension
+  - name: aedat_vbak
+    source: VBAK.AEDAT
+    type: DATE
+    description: Changed on
+    field_role: timestamp
+  - name: kvgr1_vbak
+    source: VBAK.KVGR1
+    type: STRING(3)
+    description: Customer Group 1
+    field_role: dimension
+  - name: kvgr2_vbak
+    source: VBAK.KVGR2
+    type: STRING(3)
+    description: Customer Group 2
+    field_role: dimension
+  - name: kvgr3_vbak
+    source: VBAK.KVGR3
+    type: STRING(3)
+    description: Customer Group 3
+    field_role: dimension
+  - name: kvgr4_vbak
+    source: VBAK.KVGR4
+    type: STRING(3)
+    description: Customer Group 4
+    field_role: dimension
+  - name: kvgr5_vbak
+    source: VBAK.KVGR5
+    type: STRING(3)
+    description: Customer Group 5
+    field_role: dimension
+  - name: knuma_vbak
+    source: VBAK.KNUMA
+    type: STRING(10)
+    description: Agreement
+    field_role: dimension
+  - name: kkber_vbak
+    source: VBAK.KKBER
+    type: STRING(4)
+    description: Credit Control Area
+    field_role: dimension
+  - name: knkli_vbak
+    source: VBAK.KNKLI
+    type: STRING(10)
+    description: Credit Account
+    field_role: dimension
+  - name: grupp_vbak
+    source: VBAK.GRUPP
+    type: STRING(4)
+    description: Customer Credit Group
+    field_role: dimension
+  - name: cmwae_vbak
+    source: VBAK.CMWAE
+    type: STRING(5)
+    description: Currency
+    field_role: dimension
+  - name: cmfre_vbak
+    source: VBAK.CMFRE
+    type: DATE
+    description: Release Date
+    field_role: timestamp
+  - name: amtbl_vbak
+    source: VBAK.AMTBL
+    type: DECIMAL(15)
+    description: Credit Value
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: hityp_pr_vbak
+    source: VBAK.HITYP_PR
+    type: STRING(1)
+    description: Hierarchy Type Pricing
+    field_role: dimension
+  - name: abrvw_vbak
+    source: VBAK.ABRVW
+    type: STRING(3)
+    description: Usage
+    field_role: dimension
+  - name: abdis_vbak
+    source: VBAK.ABDIS
+    type: STRING(1)
+    description: MRP for DS Type
+    field_role: dimension
+  - name: bukrs_vf_vbak
+    source: VBAK.BUKRS_VF
+    type: STRING(4)
+    description: Company Code to be Billed
+    field_role: dimension
+  - name: agrzr_vbak
+    source: VBAK.AGRZR
+    type: STRING(2)
+    description: Accrual Period
+    field_role: dimension
+  - name: aufnr_vbak
+    source: VBAK.AUFNR
+    type: STRING(12)
+    description: Order
+    field_role: dimension
+  - name: abruf_part_vbak
+    source: VBAK.ABRUF_PART
+    type: STRING(1)
+    description: Check Partner
+    field_role: dimension
+  - name: abhod_vbak
+    source: VBAK.ABHOD
+    type: DATE
+    description: Pick-up Date
+    field_role: timestamp
+  - name: abhob_vbak
+    source: VBAK.ABHOB
+    type: STRING(6)
+    description: Pick-up Time
+    field_role: dimension
+  - name: fmbdat_vbak
+    source: VBAK.FMBDAT
+    type: DATE
+    description: Material Availability Date
+    field_role: timestamp
+  - name: cont_dg_vbak
+    source: VBAK.CONT_DG
+    type: STRING(1)
+    description: Contains Dangerous Goods
+    field_role: dimension
+  - name: gbstk_vbak
+    source: VBAK.GBSTK
+    type: STRING(1)
+    description: Overall processing status of the sales order; A = not yet processed / open, B = partially processed, C = fully processed / completed
+    field_role: status_flag
+    synonyms:
+      - order status
+      - processing status
+      - status
+  - name: mandt_vbap
+    source: VBAP.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: vbeln_vbap
+    source: VBAP.VBELN
+    type: STRING(10)
+    description: Sales Doc.
+    field_role: identifier
+  - name: posnr_vbap
+    source: VBAP.POSNR
+    type: STRING(6)
+    description: Item
+    field_role: identifier
+  - name: matnr_vbap
+    source: VBAP.MATNR
+    type: STRING(40)
+    description: Material
+    field_role: dimension
+  - name: pmatn_vbap
+    source: VBAP.PMATN
+    type: STRING(40)
+    description: Pr.RefMatl
+    field_role: dimension
+  - name: charg_vbap
+    source: VBAP.CHARG
+    type: STRING(10)
+    description: Batch
+    field_role: dimension
+  - name: matkl_vbap
+    source: VBAP.MATKL
+    type: STRING(9)
+    description: Material Group
+    field_role: dimension
+  - name: arktx_vbap
+    source: VBAP.ARKTX
+    type: STRING(40)
+    description: Item Descr.
+    field_role: dimension
+  - name: posar_vbap
+    source: VBAP.POSAR
+    type: STRING(1)
+    description: Item Type
+    field_role: dimension
+  - name: abgru_vbap
+    source: VBAP.ABGRU
+    type: STRING(2)
+    description: Rej.Reason
+    field_role: dimension
+  - name: prodh_vbap
+    source: VBAP.PRODH
+    type: STRING(18)
+    description: Product Hierarchy
+    field_role: dimension
+  - name: zwert_vbap
+    source: VBAP.ZWERT
+    type: DECIMAL(13)
+    description: Targ. Val.
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: zieme_vbap
+    source: VBAP.ZIEME
+    type: STRING(3)
+    description: Target UoM
+    field_role: dimension
+  - name: meins_vbap
+    source: VBAP.MEINS
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: ablfz_vbap
+    source: VBAP.ABLFZ
+    type: DECIMAL(13)
+    description: Round qty
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: kever_vbap
+    source: VBAP.KEVER
+    type: DECIMAL(3)
+    description: Dev. days
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: vkaus_vbap
+    source: VBAP.VKAUS
+    type: STRING(3)
+    description: Usage
+    field_role: dimension
+  - name: grkor_vbap
+    source: VBAP.GRKOR
+    type: STRING(3)
+    description: DelivGroup
+    field_role: dimension
+  - name: spart_vbap
+    source: VBAP.SPART
+    type: STRING(2)
+    description: Division
+    field_role: dimension
+  - name: netwr_vbap
+    source: VBAP.NETWR
+    type: DECIMAL(15)
+    description: Net Val Doc. Item Doc. Cur.
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: waerk_vbap
+    source: VBAP.WAERK
+    type: STRING(5)
+    description: Currency
+    field_role: dimension
+  - name: kztlf_vbap
+    source: VBAP.KZTLF
+    type: STRING(1)
+    description: Part.dlv.
+    field_role: dimension
+  - name: kwmeng_vbap
+    source: VBAP.KWMENG
+    type: DECIMAL(15)
+    description: 'Order quantity requested on the line, in the sales unit'
+    field_role: measure
+    aggregation_behavior: SUM
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: vrkme_vbap
+    source: VBAP.VRKME
+    type: STRING(3)
+    description: Sales Unit
+    field_role: dimension
+  - name: brgew_vbap
+    source: VBAP.BRGEW
+    type: DECIMAL(15)
+    description: Gross
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: ntgew_vbap
+    source: VBAP.NTGEW
+    type: DECIMAL(15)
+    description: Net Weight
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: gewei_vbap
+    source: VBAP.GEWEI
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: volum_vbap
+    source: VBAP.VOLUM
+    type: DECIMAL(15)
+    description: Volume
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: voleh_vbap
+    source: VBAP.VOLEH
+    type: STRING(3)
+    description: Vol. Unit
+    field_role: dimension
+  - name: posnv_vbap
+    source: VBAP.POSNV
+    type: STRING(6)
+    description: Originating Item
+    field_role: dimension
+  - name: vgbel_vbap
+    source: VBAP.VGBEL
+    type: STRING(10)
+    description: Ref. Doc.
+    field_role: dimension
+  - name: lprio_vbap
+    source: VBAP.LPRIO
+    type: STRING(2)
+    description: Dlv.Prior.
+    field_role: dimension
+  - name: werks_vbap
+    source: VBAP.WERKS
+    type: STRING(4)
+    description: Plant
+    field_role: dimension
+  - name: route_vbap
+    source: VBAP.ROUTE
+    type: STRING(6)
+    description: Route
+    field_role: dimension
+  - name: erdat_vbap
+    source: VBAP.ERDAT
+    type: DATE
+    description: Record Creation Date
+    field_role: timestamp
+  - name: ernam_vbap
+    source: VBAP.ERNAM
+    type: STRING(12)
+    description: Created
+    field_role: dimension
+  - name: erzet_vbap
+    source: VBAP.ERZET
+    type: STRING(6)
+    description: Time
+    field_role: dimension
+  - name: netpr_vbap
+    source: VBAP.NETPR
+    type: DECIMAL(11)
+    description: Net Price
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: kmein_vbap
+    source: VBAP.KMEIN
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: shkzg_vbap
+    source: VBAP.SHKZG
+    type: STRING(1)
+    description: Returns Item
+    field_role: dimension
+  - name: bwtar_vbap
+    source: VBAP.BWTAR
+    type: STRING(10)
+    description: Val. Type
+    field_role: dimension
+  - name: bwtex_vbap
+    source: VBAP.BWTEX
+    type: STRING(1)
+    description: Sep.val.
+    field_role: dimension
+  - name: wavwr_vbap
+    source: VBAP.WAVWR
+    type: DECIMAL(13)
+    description: Cost
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: prctr_vbap
+    source: VBAP.PRCTR
+    type: STRING(10)
+    description: Profit Ctr
+    field_role: dimension
+  - name: kmpmg_vbap
+    source: VBAP.KMPMG
+    type: DECIMAL(13)
+    description: Quantity
+    field_role: measure
+    non_additive_over:
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: sugrd_vbap
+    source: VBAP.SUGRD
+    type: STRING(4)
+    description: Reason
+    field_role: dimension
+  - name: paobjnr_vbap
+    source: VBAP.PAOBJNR
+    type: STRING(10)
+    description: Prof.Segmt
+    field_role: dimension
+  - name: aufnr_vbap
+    source: VBAP.AUFNR
+    type: STRING(12)
+    description: Order
+    field_role: dimension
+  - name: prbme_vbap
+    source: VBAP.PRBME
+    type: STRING(3)
+    description: PG unit
+    field_role: dimension
+  - name: vgtyp_vbap
+    source: VBAP.VGTYP
+    type: STRING(4)
+    description: SD DocCat.
+    field_role: dimension
+  - name: kowrr_vbap
+    source: VBAP.KOWRR
+    type: STRING(1)
+    description: Stat.Value
+    field_role: dimension
+  - name: kannr_vbap
+    source: VBAP.KANNR
+    type: STRING(35)
+    description: SequenceNo
+    field_role: dimension
+  - name: abges_vbap
+    source: VBAP.ABGES
+    type: DECIMAL(16)
+    description: Guaranteed
+    field_role: dimension
+  - name: kzbws_vbap
+    source: VBAP.KZBWS
+    type: STRING(1)
+    description: Valuation
+    field_role: dimension
+  - name: kzfme_vbap
+    source: VBAP.KZFME
+    type: STRING(1)
+    description: Lead. UoM
+    field_role: dimension
+  - name: lstanr_vbap
+    source: VBAP.LSTANR
+    type: STRING(1)
+    description: FGDelyCont
+    field_role: dimension
+  - name: nrab_knumh_vbap
+    source: VBAP.NRAB_KNUMH
+    type: STRING(10)
+    description: CondRecNo.
+    field_role: dimension
+  - name: po_unit_vbap
+    source: VBAP.PO_UNIT
+    type: STRING(3)
+    description: Order Unit
+    field_role: dimension
+  - name: pargb_vbap
+    source: VBAP.PARGB
+    type: STRING(4)
+    description: Tr.Part.BA
+    field_role: dimension
+  - name: mandt_vbpa
+    source: VBPA.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: vbeln_vbpa
+    source: VBPA.VBELN
+    type: STRING(10)
+    description: SD Doc.
+    field_role: identifier
+  - name: posnr_vbpa
+    source: VBPA.POSNR
+    type: STRING(6)
+    description: Item
+    field_role: identifier
+  - name: parvw_vbpa
+    source: VBPA.PARVW
+    type: STRING(2)
+    description: Function
+    field_role: identifier
+  - name: kunnr_vbpa
+    source: VBPA.KUNNR
+    type: STRING(10)
+    description: Customer
+    field_role: dimension
+  - name: lifnr_vbpa
+    source: VBPA.LIFNR
+    type: STRING(10)
+    description: Supplier
+    field_role: dimension
+  - name: pernr_vbpa
+    source: VBPA.PERNR
+    type: STRING(8)
+    description: Pers.No.
+    field_role: dimension
+  - name: parnr_vbpa
+    source: VBPA.PARNR
+    type: STRING(10)
+    description: Partner
+    field_role: dimension
+  - name: adrnr_vbpa
+    source: VBPA.ADRNR
+    type: STRING(10)
+    description: Addr. No.
+    field_role: dimension
+  - name: ablad_vbpa
+    source: VBPA.ABLAD
+    type: STRING(25)
+    description: Unload.pt.
+    field_role: dimension
+  - name: land1_vbpa
+    source: VBPA.LAND1
+    type: STRING(3)
+    description: Ctry/Reg.
+    field_role: dimension
+  - name: adrda_vbpa
+    source: VBPA.ADRDA
+    type: STRING(1)
+    description: Adress ID
+    field_role: dimension
+  - name: xcpdk_vbpa
+    source: VBPA.XCPDK
+    type: STRING(1)
+    description: One-time
+    field_role: dimension
+  - name: hityp_vbpa
+    source: VBPA.HITYP
+    type: STRING(1)
+    description: CustHType
+    field_role: dimension
+  - name: prfre_vbpa
+    source: VBPA.PRFRE
+    type: STRING(1)
+    description: Price det.
+    field_role: dimension
+  - name: bokre_vbpa
+    source: VBPA.BOKRE
+    type: STRING(1)
+    description: Rebate
+    field_role: dimension
+  - name: histunr_vbpa
+    source: VBPA.HISTUNR
+    type: STRING(2)
+    description: Hier.level
+    field_role: dimension
+  - name: knref_vbpa
+    source: VBPA.KNREF
+    type: STRING(30)
+    description: PartnDescr
+    field_role: dimension
+  - name: lzone_vbpa
+    source: VBPA.LZONE
+    type: STRING(10)
+    description: Zone
+    field_role: dimension
+  - name: hzuor_vbpa
+    source: VBPA.HZUOR
+    type: STRING(2)
+    description: HierAssign
+    field_role: dimension
+  - name: stceg_vbpa
+    source: VBPA.STCEG
+    type: STRING(20)
+    description: VAT Reg.No
+    field_role: dimension
+  - name: parvw_ff_vbpa
+    source: VBPA.PARVW_FF
+    type: STRING(1)
+    description: F.partners
+    field_role: dimension
+  - name: adrnp_vbpa
+    source: VBPA.ADRNP
+    type: STRING(10)
+    description: Person
+    field_role: dimension
+  - name: kale_vbpa
+    source: VBPA.KALE
+    type: STRING(1)
+    description: Appointm.
+    field_role: dimension
+  - name: mandt_vbfa
+    source: VBFA.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: ruuid_vbfa
+    source: VBFA.RUUID
+    type: STRING(16)
+    description: DocRelationshipUUID
+    field_role: identifier
+  - name: vbelv_vbfa
+    source: VBFA.VBELV
+    type: STRING(10)
+    description: Predecessr
+    field_role: dimension
+  - name: posnv_vbfa
+    source: VBFA.POSNV
+    type: STRING(6)
+    description: PrecItem
+    field_role: dimension
+  - name: vbeln_vbfa
+    source: VBFA.VBELN
+    type: STRING(10)
+    description: FollOn Doc
+    field_role: dimension
+  - name: posnn_vbfa
+    source: VBFA.POSNN
+    type: STRING(6)
+    description: SubseqItem
+    field_role: dimension
+  - name: vbtyp_n_vbfa
+    source: VBFA.VBTYP_N
+    type: STRING(4)
+    description: SubsDocCat
+    field_role: dimension
+  - name: rfmng_vbfa
+    source: VBFA.RFMNG
+    type: DECIMAL(15)
+    description: Quantity
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: meins_vbfa
+    source: VBFA.MEINS
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: rfwrt_vbfa
+    source: VBFA.RFWRT
+    type: DECIMAL(15)
+    description: Ref. Value
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: waers_vbfa
+    source: VBFA.WAERS
+    type: STRING(5)
+    description: Currency
+    field_role: dimension
+  - name: vbtyp_v_vbfa
+    source: VBFA.VBTYP_V
+    type: STRING(4)
+    description: SD DocCat.
+    field_role: dimension
+  - name: plmin_vbfa
+    source: VBFA.PLMIN
+    type: STRING(1)
+    description: Pos./Neg.
+    field_role: dimension
+  - name: taqui_vbfa
+    source: VBFA.TAQUI
+    type: STRING(1)
+    description: Confirm.ID
+    field_role: dimension
+  - name: erdat_vbfa
+    source: VBFA.ERDAT
+    type: DATE
+    description: On
+    field_role: timestamp
+  - name: erzet_vbfa
+    source: VBFA.ERZET
+    type: STRING(6)
+    description: Time
+    field_role: dimension
+  - name: matnr_vbfa
+    source: VBFA.MATNR
+    type: STRING(40)
+    description: Material
+    field_role: dimension
+  - name: bwart_vbfa
+    source: VBFA.BWART
+    type: STRING(3)
+    description: Movmt Type
+    field_role: dimension
+  - name: bdart_vbfa
+    source: VBFA.BDART
+    type: STRING(2)
+    description: Req.type
+    field_role: dimension
+  - name: plart_vbfa
+    source: VBFA.PLART
+    type: STRING(1)
+    description: Plan.type
+    field_role: dimension
+  - name: lgnum_vbfa
+    source: VBFA.LGNUM
+    type: STRING(3)
+    description: Whse No.
+    field_role: dimension
+  - name: aedat_vbfa
+    source: VBFA.AEDAT
+    type: DATE
+    description: Chngd
+    field_role: timestamp
+  - name: fktyp_vbfa
+    source: VBFA.FKTYP
+    type: STRING(1)
+    description: BillCateg.
+    field_role: dimension
+  - name: brgew_vbfa
+    source: VBFA.BRGEW
+    type: DECIMAL(15)
+    description: Gross
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: gewei_vbfa
+    source: VBFA.GEWEI
+    type: STRING(3)
+    description: Unit
+    field_role: dimension
+  - name: volum_vbfa
+    source: VBFA.VOLUM
+    type: DECIMAL(15)
+    description: Volume
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: voleh_vbfa
+    source: VBFA.VOLEH
+    type: STRING(3)
+    description: Vol. Unit
+    field_role: dimension
+  - name: fplnr_vbfa
+    source: VBFA.FPLNR
+    type: STRING(10)
+    description: Bill. Plan
+    field_role: dimension
+  - name: fpltr_vbfa
+    source: VBFA.FPLTR
+    type: STRING(6)
+    description: Item
+    field_role: dimension
+  - name: rfmng_flo_vbfa
+    source: VBFA.RFMNG_FLO
+    type: DECIMAL(16)
+    description: Quantity
+    field_role: dimension
+  - name: rfmng_flt_vbfa
+    source: VBFA.RFMNG_FLT
+    type: DECIMAL(16)
+    description: Quantity
+    field_role: dimension
+  - name: vrkme_vbfa
+    source: VBFA.VRKME
+    type: STRING(3)
+    description: Sales Unit
+    field_role: dimension
+  - name: abges_vbfa
+    source: VBFA.ABGES
+    type: DECIMAL(16)
+    description: Guaranteed
+    field_role: dimension
+  - name: sobkz_vbfa
+    source: VBFA.SOBKZ
+    type: STRING(1)
+    description: Spec.Stock
+    field_role: dimension
+  - name: sonum_vbfa
+    source: VBFA.SONUM
+    type: STRING(16)
+    description: Sp.Stck No
+    field_role: dimension
+  - name: kzbef_vbfa
+    source: VBFA.KZBEF
+    type: STRING(1)
+    description: IM active
+    field_role: dimension
+  - name: ntgew_vbfa
+    source: VBFA.NTGEW
+    type: DECIMAL(13)
+    description: Net
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - posnr_vbkd
+    additivity: semi_additive
+  - name: logsys_vbfa
+    source: VBFA.LOGSYS
+    type: STRING(10)
+    description: LogSystem
+    field_role: dimension
+  - name: wbsta_vbfa
+    source: VBFA.WBSTA
+    type: STRING(1)
+    description: GoodsMvmnt
+    field_role: dimension
+  - name: cmeth_vbfa
+    source: VBFA.CMETH
+    type: STRING(1)
+    description: Conv. Meth
+    field_role: dimension
+  - name: mjahr_vbfa
+    source: VBFA.MJAHR
+    type: STRING(4)
+    description: Mat. Year
+    field_role: dimension
+  - name: stufe_vbfa
+    source: VBFA.STUFE
+    type: STRING(2)
+    description: Level
+    field_role: dimension
+  - name: mandt_vbkd
+    source: VBKD.MANDT
+    type: STRING(3)
+    description: Client
+    field_role: dimension
+  - name: vbeln_vbkd
+    source: VBKD.VBELN
+    type: STRING(10)
+    description: SD Doc.
+    field_role: identifier
+  - name: posnr_vbkd
+    source: VBKD.POSNR
+    type: STRING(6)
+    description: Item
+    field_role: identifier
+  - name: konda_vbkd
+    source: VBKD.KONDA
+    type: STRING(2)
+    description: Price Grp
+    field_role: dimension
+  - name: kdgrp_vbkd
+    source: VBKD.KDGRP
+    type: STRING(2)
+    description: Cust.Group
+    field_role: dimension
+  - name: pltyp_vbkd
+    source: VBKD.PLTYP
+    type: STRING(2)
+    description: Price List
+    field_role: dimension
+  - name: inco1_vbkd
+    source: VBKD.INCO1
+    type: STRING(3)
+    description: Incoterms
+    field_role: dimension
+  - name: kzazu_vbkd
+    source: VBKD.KZAZU
+    type: STRING(1)
+    description: OrderComb.
+    field_role: dimension
+  - name: perrl_vbkd
+    source: VBKD.PERRL
+    type: STRING(2)
+    description: InvListSch
+    field_role: dimension
+  - name: kurrf_vbkd
+    source: VBKD.KURRF
+    type: DECIMAL(9)
+    description: ExchRt.Act
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+    additivity: semi_additive
+  - name: valtg_vbkd
+    source: VBKD.VALTG
+    type: STRING(2)
+    description: AddValDays
+    field_role: dimension
+  - name: valdt_vbkd
+    source: VBKD.VALDT
+    type: DATE
+    description: FixValDate
+    field_role: timestamp
+  - name: ktgrd_vbkd
+    source: VBKD.KTGRD
+    type: STRING(2)
+    description: AccAsmtGrC
+    field_role: dimension
+  - name: kursk_vbkd
+    source: VBKD.KURSK
+    type: DECIMAL(9)
+    description: Exch. Rate
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+    additivity: semi_additive
+  - name: prsdt_vbkd
+    source: VBKD.PRSDT
+    type: DATE
+    description: Pricing Dt
+    field_role: timestamp
+  - name: fkdat_vbkd
+    source: VBKD.FKDAT
+    type: DATE
+    description: Bill. Date
+    field_role: timestamp
+  - name: fbuda_vbkd
+    source: VBKD.FBUDA
+    type: DATE
+    description: Serv.R.Dte
+    field_role: timestamp
+  - name: gjahr_vbkd
+    source: VBKD.GJAHR
+    type: STRING(4)
+    description: Fiscal Yr
+    field_role: dimension
+  - name: poper_vbkd
+    source: VBKD.POPER
+    type: STRING(3)
+    description: Period
+    field_role: dimension
+  - name: stcur_vbkd
+    source: VBKD.STCUR
+    type: DECIMAL(9)
+    description: ExRateStat
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+    additivity: semi_additive
+  - name: mansp_vbkd
+    source: VBKD.MANSP
+    type: STRING(1)
+    description: Dunn.Block
+    field_role: dimension
+  - name: fplnr_vbkd
+    source: VBKD.FPLNR
+    type: STRING(10)
+    description: Bill. Plan
+    field_role: dimension
+  - name: waktion_vbkd
+    source: VBKD.WAKTION
+    type: STRING(10)
+    description: Promotion
+    field_role: dimension
+  - name: abssc_vbkd
+    source: VBKD.ABSSC
+    type: STRING(6)
+    description: PayGuaProc
+    field_role: dimension
+  - name: lcnum_vbkd
+    source: VBKD.LCNUM
+    type: STRING(10)
+    description: FD No.
+    field_role: dimension
+  - name: abtnr_vbkd
+    source: VBKD.ABTNR
+    type: STRING(4)
+    description: Department
+    field_role: dimension
+  - name: bstkd_vbkd
+    source: VBKD.BSTKD
+    type: STRING(35)
+    description: Cust. Ref.
+    field_role: dimension
+  - name: bstdk_vbkd
+    source: VBKD.BSTDK
+    type: DATE
+    description: CustRefDat
+    field_role: timestamp
+  - name: ihrez_vbkd
+    source: VBKD.IHREZ
+    type: STRING(12)
+    description: Ref. 1
+    field_role: dimension
+  - name: bstdk_e_vbkd
+    source: VBKD.BSTDK_E
+    type: DATE
+    description: CustRefDat
+    field_role: timestamp
+  - name: bsark_e_vbkd
+    source: VBKD.BSARK_E
+    type: STRING(4)
+    description: Order Type
+    field_role: dimension
+  - name: ihrez_e_vbkd
+    source: VBKD.IHREZ_E
+    type: STRING(12)
+    description: Characters
+    field_role: dimension
+  - name: posex_e_vbkd
+    source: VBKD.POSEX_E
+    type: STRING(6)
+    description: PO Item
+    field_role: dimension
+  - name: kursk_dat_vbkd
+    source: VBKD.KURSK_DAT
+    type: DATE
+    description: TranslDate
+    field_role: timestamp
+  - name: kurrf_dat_vbkd
+    source: VBKD.KURRF_DAT
+    type: DATE
+    description: TranslDate
+    field_role: timestamp
+  - name: kdkg1_vbkd
+    source: VBKD.KDKG1
+    type: STRING(2)
+    description: CondGrp 1
+    field_role: dimension
+  - name: kdkg2_vbkd
+    source: VBKD.KDKG2
+    type: STRING(2)
+    description: CondGrp 2
+    field_role: dimension
+  - name: kdkg3_vbkd
+    source: VBKD.KDKG3
+    type: STRING(2)
+    description: CondGrp 3
+    field_role: dimension
+  - name: kdkg4_vbkd
+    source: VBKD.KDKG4
+    type: STRING(2)
+    description: CondGrp 4
+    field_role: dimension
+  - name: kdkg5_vbkd
+    source: VBKD.KDKG5
+    type: STRING(2)
+    description: CondGrp 5
+    field_role: dimension
+  - name: wkwae_vbkd
+    source: VBKD.WKWAE
+    type: STRING(5)
+    description: Currency
+    field_role: dimension
+  - name: wkkur_vbkd
+    source: VBKD.WKKUR
+    type: DECIMAL(9)
+    description: Exch. rate
+    field_role: measure
+    non_additive_over:
+      - posnr_vbap
+      - posnr_vbpa
+      - parvw_vbpa
+      - ruuid_vbfa
+    additivity: semi_additive
+  - name: delco_vbkd
+    source: VBKD.DELCO
+    type: STRING(3)
+    description: Del. Time
+    field_role: dimension
+  - name: ffprf_vbkd
+    source: VBKD.FFPRF
+    type: STRING(8)
+    description: Profile
+    field_role: dimension
+  - name: vsart_vbkd
+    source: VBKD.VSART
+    type: STRING(2)
+    description: Ship.Type
+    field_role: dimension
+  - name: traty_vbkd
+    source: VBKD.TRATY
+    type: STRING(4)
+    description: MnsTransTy
+    field_role: dimension
+  - name: trmtyp_vbkd
+    source: VBKD.TRMTYP
+    type: STRING(40)
+    description: Mns of Tr.
+    field_role: dimension
+  - name: fkber_vbkd
+    source: VBKD.FKBER
+    type: STRING(16)
+    description: Func. Area
+    field_role: dimension
+  - name: podkz_vbkd
+    source: VBKD.PODKZ
+    type: STRING(1)
+    description: POD-rel.
+    field_role: dimension
+  - name: vkont_vbkd
+    source: VBKD.VKONT
+    type: STRING(12)
+    description: Cont. Acct
+    field_role: dimension
+  - name: farr_reltype_vbkd
+    source: VBKD.FARR_RELTYPE
+    type: STRING(10)
+    description: Type
+    field_role: dimension
+  - name: vtref_vbkd
+    source: VBKD.VTREF
+    type: STRING(20)
+    description: Contract
+    field_role: dimension
+  - name: perop_beg_vbkd
+    source: VBKD.PEROP_BEG
+    type: DATE
+    description: Start Date
+    field_role: timestamp
+  - name: perop_end_vbkd
+    source: VBKD.PEROP_END
+    type: DATE
+    description: End Date
+    field_role: timestamp
+  - name: steuc_vbkd
+    source: VBKD.STEUC
+    type: STRING(16)
+    description: Ctrl Code
+    field_role: dimension
+  - name: compreas_vbkd
+    source: VBKD.COMPREAS
+    type: STRING(4)
+    description: Abb.
+    field_role: dimension
+  - name: mndid_vbkd
+    source: VBKD.MNDID
+    type: STRING(35)
+    description: Mand.Ref.
+    field_role: dimension
 relationships:
-  - target_entity: "silver_ecc_sd_trading_goods"
+  - target_entity: silver_s4h_mm_inv_mov_stock
+    relationship_type: many_to_many
+    join_condition: SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_MM_INVENTORY_MOVEMENT.matnr_marc AND SILVER_SD_SALES_ORDER.werks_vbap = SILVER_MM_INVENTORY_MOVEMENT.werks_marc
+    semantic_label: demands_stock_from
+    traversal_cost: 3.0
+    aggregation_safety: requires_dedup
+    cross_module: true
+    description: 'Links sales-order demand to the stock position of the same material and plant, for coverage analysis. Many-to-many on (material, plant): reduce before summing anything from either side.'
+  - target_entity: "silver_s4h_sd_trading_goods"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.matnr_vbap = SILVER_TRADING_GOODS.matnr_mara"
+    join_condition: "SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_TRADING_GOODS.matnr_mara"
     semantic_label: "material_of"
     traversal_cost: 2
     aggregation_safety: "safe"
     cross_module: true
     description: "Join to Material Master for material attributes"
 
-  - target_entity: "silver_ecc_sd_plant"
+  - target_entity: "silver_s4h_sd_plant"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.werks_vbap = SILVER_PLANTS.werks_t001w"
+    join_condition: "SILVER_SD_SALES_ORDER.werks_vbap = SILVER_PLANTS.werks_t001w"
     semantic_label: "fulfilled_from"
     traversal_cost: 1.5
     aggregation_safety: "safe"
     cross_module: true
     description: "Plant responsible for shipping the items"
 
-  - target_entity: "silver_ecc_sd_sales_organization"
+  - target_entity: "silver_s4h_sd_sales_organization"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.vkorg_vbak = SILVER_SALES_ORGANIZATION.vkorg_tvkot"
+    join_condition: "SILVER_SD_SALES_ORDER.vkorg_vbak = SILVER_SALES_ORGANIZATION.vkorg_tvkot"
     semantic_label: "sold_by_org"
     traversal_cost: 1
     aggregation_safety: "safe"
     cross_module: false
     description: "Sales organization that owns the order"
 
-  - target_entity: "silver_ecc_sd_customer_master"
+  - target_entity: "silver_s4h_sd_customer_master"
     relationship_type: "many_to_one"
-    join_condition: "SILVER_ECC_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
+    join_condition: "SILVER_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "sold_to_customer"
     traversal_cost: 1
     aggregation_safety: "safe"
     cross_module: false
     description: "Customer/ sold to party / Customer detail"
 
-  - target_entity: "silver_ecc_mm_inv_mov_stock"
-    relationship_type: "many_to_many"
-    join_condition: "SILVER_SD_SALES_ORDER.matnr_vbap = SILVER_MM_INVENTORY_MOVEMENT.matnr_marc AND SILVER_SD_SALES_ORDER.werks_vbap = SILVER_MM_INVENTORY_MOVEMENT.werks_marc"
-    semantic_label: "demands_stock_from"
-    traversal_cost: 3
-    aggregation_safety: "requires_dedup"
-    cross_module: true
-    description: "Links sales order demand to inventory stock position by material and plant. Enables demand vs supply coverage analysis."
+alias: Sales Order Item

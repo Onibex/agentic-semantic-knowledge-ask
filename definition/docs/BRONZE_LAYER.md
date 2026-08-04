@@ -85,7 +85,7 @@ Exactly these ten keys, in this order. Anything else is dropped by catalog valid
 | `name` | ✅ | string | Source-system table or node name, **uppercase as it appears in the source** (e.g. `MARA`, `VBAK`, `EKKO`). |
 | `alias` | ✅ | string | Human-readable alias, UPPER_SNAKE (e.g. `MASTER_MATERIAL`, `ORDER_HEADER`). **Load-bearing:** it is the last segment of the `id` and it is indexed on the entity document, so changing it changes the id. Tooling defaults it to `name` when omitted. |
 | `description` | ✅ | string | Description of the table. Brief is correct here — Bronze descriptions are usually the source-system table label. See [§6.2](#62-keep-descriptions-short). Tooling defaults it to an empty string, which is a placeholder to fill, not an acceptable end state: `description` is one of the few fields indexed for a Bronze and the only text by which one is findable. |
-| `primary_key` | ✅ | string[] | Ordered list of source-system column names that form the primary key. **Non-empty** and **duplicate-free**; every member must exist in `fields`. Excludes the client/tenant column — see [§6.7](#67-clienttenant-columns-are-excluded-from-the-key). |
+| `primary_key` | ✅ | string[] | Ordered list of source-system column names that form the primary key, **as declared by the data-product author** — ASK consumes that declaration as authority and never reconstructs a key. **Duplicate-free**; every member must exist in `fields`. May be empty: that is a keyless Bronze, warned and ingested — see [§6.3](#63-primary_key-and-key_field-must-agree). Excludes the client/tenant column — see [§6.7](#67-clienttenant-columns-are-excluded-from-the-key). |
 | `fields` | ✅ | object | Dictionary of fields keyed by source-system column name. See [§3.2](#32-field-dictionary). |
 
 ### 3.2 Field dictionary
@@ -121,11 +121,9 @@ Silver and Gold use a list of field objects because their fields are **derived**
 
 ## 4. Type system
 
-Bronze `type` carries the **canonical, source-agnostic type** — `STRING(10)`, not `C10`; `DECIMAL(15)`, not `P15`; `DATE`, not `D8`. Silver uses the same vocabulary, so a column's type reads identically from the raw table through to the curated entity and no consumer has to know which source produced it.
+Bronze `type` carries the **canonical, source-agnostic type** — `STRING(10)`, not `C10`; `DECIMAL(15)`, not `P15`; `DATE`, not `D8`.
 
-Gold is the exception, and deliberately so: it is a **published physical table**, so its `type` describes the real database column in SQL terms (`TEXT`, `NUMERIC`) — see [Gold Layer §3.3](GOLD_LAYER.md#33-fields). The two vocabularies map 1:1 (`TEXT` ↔ `STRING`, `NUMERIC` ↔ `DECIMAL`), so nothing misreads at the boundary.
-
-> **Changed from earlier drafts of this spec.** Bronze once stored source-system types verbatim. That rule is **withdrawn**. Fidelity to the source is preserved by the field *key* (the column name, unchanged) and by `description` — not by re-encoding the type. Files written before this rule may still carry raw source codes (`C18`) or legacy SQL words (`TEXT`); both parse to the same canonical type, so they still read correctly, but they are not canonical until regenerated or re-saved.
+**One vocabulary, all three layers.** Bronze, Silver and Gold all store the canonical type, so a column reads identically from the raw table through the curated entity to the published surface and no consumer has to know which source produced it. There is no per-layer type dialect. Fidelity to the source is preserved by the field *key* (the column name, unchanged) and by `description` — not by re-encoding the type.
 
 ### 4.1 The canonical vocabulary
 
@@ -150,6 +148,7 @@ Rules:
 2. **Unknown or absent → `STRING`.** The mapper never raises. Convenient, and a trap: a typo'd type does not fail, it silently becomes `STRING`. A canonical `STRING` on an obviously numeric column means the source metadata was missing — not that the column is text.
 3. **Idempotent.** Re-encoding an already-canonical file is a no-op, so re-ingestion causes no type churn.
 4. **The type is logical, not physical.** `DATE` on a SAP `D8` column does **not** assert that the stored column is a native date — SAP stores it as 8-character text. Consumers that compare it to a real date must cast.
+5. **Mapped, not invented.** Bronze and Silver resolve each field's `type` from the source-system type that arrives in the export, through the table above. Gold publishes the same types: the same vocabulary and the same values as the Bronze and Silver columns behind it.
 
 ### 4.2 How SAP resolves
 

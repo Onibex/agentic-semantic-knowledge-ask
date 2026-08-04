@@ -1,0 +1,169 @@
+id: "gold_s4h_mm_inventory_position"
+internal_id: "gold_s4h_mm_inventory_position"
+db_table_name: GOLD_MM_INVENTORY_POSITION
+layer: "gold"
+version: "1"
+source_system: "s4h"
+source_system_no: 100
+business_process: "INVENTORY SITUATION"
+module: ["MM"]
+tag1: "SCM"
+tag2: "MM"
+name: "inventory_position"
+classification: "T"
+description: "Current stock position per material and plant. Point-in-time only — there is no date column, so it cannot answer \"stock as of last month\"; for a forward projection use gold_inventory_situation. Common uses: stock health, ATP rough cut."
+entity_role: "fact"
+grain:
+  entity_grain: ["client", "plant_id", "material_id"]
+  business_grain: "current_inventory_snapshot_by_material_and_plant"
+
+fields:
+  - name: "client"
+    field_role: "identifier"
+    type: "STRING(6)"
+    description: "SAP Client (MANDT)"
+  - name: "plant_id"
+    field_role: "dimension"
+    type: "STRING(8)"
+    description: "Plant that holds the stock. For its name select `plant`."
+    synonyms:
+      - site
+      - plant code
+      - werks
+  - name: "material_id"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material number (MARA.MATNR). For its description select `material`."
+    synonyms:
+      - SKU
+      - part number
+      - material number
+  - name: "on_hand"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Unrestricted-use stock on hand, summed from MARD.LABST across the plant's storage locations."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - unrestricted stock
+      - available stock
+      - free stock
+      - stock on hand
+  - name: "in_transit"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock moving between locations on a transport order (MARD.UMLME)."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - stock in transfer
+      - goods in transit
+  - name: "on_order"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Ordered but not yet received (MARD.EINME)."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - open purchase order quantity
+      - incoming stock
+  - name: "in_quality_control"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock held in inspection, not yet released (MARD.INSME)."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - QC stock
+      - inspection stock
+  - name: "allocated"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Stock reserved for sales orders or production, so not freely available (MARD.SPEME)."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - reserved stock
+      - committed stock
+  - name: "damaged"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Unusable stock — damaged goods, vendor returns and scrap candidates (MARD.RETME)."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - blocked stock
+      - unusable stock
+      - scrap
+  - name: "max_level"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Maximum stock level configured per plant-material (MARC.MABST). A planning target, not a quantity held."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - maximum stock level
+      - overstock threshold
+  - name: "safety_stk"
+    field_role: "measure"
+    type: "DECIMAL(38,6)"
+    description: "Buffer stock to keep on hand, configured per plant-material (MARC.EISBE). A planning target, not a quantity held."
+    aggregation_behavior: "SUM"
+    synonyms:
+      - safety stock
+      - minimum stock level
+      - reorder buffer
+  - name: "plant"
+    field_role: "dimension"
+    type: "STRING(60)"
+    description: "Plant name, denormalized from T001W.NAME1 — no join needed. For the code use `plant_id`."
+    synonyms:
+      - plant name
+      - plant description
+  - name: "material"
+    field_role: "dimension"
+    type: "STRING(80)"
+    description: "Material description, denormalized from MAKT.MAKTG under language key 'E' — which is why exactly one description row surfaces per material. For the number use `material_id`."
+    synonyms:
+      - material description
+      - material name
+      - SKU description
+  - name: "postal_code"
+    field_role: "dimension"
+    type: "STRING(20)"
+    description: "Postal code of the plant location. Useful for geographic stock distribution."
+  - name: "stock_status"
+    field_role: "status_flag"
+    type: "STRING(14)"
+    description: "Calculated stock health: 'Out of Stock' (on_hand is NULL or 0), 'Low Stock' (below safety_stk), 'Excess Stock' (above max_level), 'Balanced Stock' (within thresholds)."
+    synonyms:
+      - stock health
+      - inventory status
+  - name: "event_ts"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "Latest source-system event behind this row. Use to judge freshness."
+  - name: "loaded_at"
+    field_role: "timestamp"
+    type: "TIMESTAMP"
+    description: "ETL load timestamp. Not a business date."
+relationships:
+  - target_entity: "silver_s4h_sd_trading_goods"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
+    semantic_label: "material_of"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Material Master (MARA/MAKT) for global material attributes (base UoM, weight, volume, MRP type, etc.) when not already pre-denormalized in this gold's 'material' field. This is also the ONLY route to material category: material group (T023/T023T) and material hierarchy (T179/T179T) hang off trading_goods' own relationships, so reach them as a second hop from here — this gold carries no group or hierarchy code column of its own."
+
+  - target_entity: "silver_s4h_sd_plant"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_MM_INVENTORY_POSITION.plant_id = SILVER_PLANTS.werks_t001w"
+    semantic_label: "stocked_at_plant"
+    traversal_cost: 2
+    aggregation_safety: "safe"
+    cross_module: true
+    description: "Join to Plant Master (T001W) for additional plant attributes (region, country, factory calendar). Plant name and postal_code are already denormalized in this gold — only traverse if other attributes are needed."
+
+  - target_entity: "silver_s4h_mm_inv_mov_stock"
+    relationship_type: "one_to_many"
+    join_condition: "GOLD_MM_INVENTORY_POSITION.client = SILVER_MM_INVENTORY_MOVEMENT.mandt_mseg AND GOLD_MM_INVENTORY_POSITION.plant_id = SILVER_MM_INVENTORY_MOVEMENT.werks_mseg AND GOLD_MM_INVENTORY_POSITION.material_id = SILVER_MM_INVENTORY_MOVEMENT.matnr_mseg"
+    semantic_label: "aggregates_inventory_movements"
+    traversal_cost: 3
+    aggregation_safety: "requires_dedup"
+    cross_module: false
+    description: "Source lineage: this snapshot is built by aggregating MARD/MARC/MSEG records from the inventory movement silver. Drill down for storage-location detail, individual movement events (MSEG documents) or per-MARD/MSEG attributes. Grain changes (plant+material -> plant+material+lgort+document+item) — never SUM measures from this gold after this join without grain-aware dedup."
