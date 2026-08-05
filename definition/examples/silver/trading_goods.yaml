@@ -1136,7 +1136,7 @@ relationships:
     join_condition: "SILVER_TRADING_GOODS.matkl_mara = SILVER_MATERIAL_GROUP.matkl_t023"
     semantic_label: "belongs_to_group"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: true
     description: "Material Group classification for purchasing and reporting"
 
@@ -1145,6 +1145,6 @@ relationships:
     join_condition: "SILVER_TRADING_GOODS.prdha_mara = SILVER_MATERIAL_HIERARCHY.prodh_t179"
     semantic_label: "classified_in_hierarchy"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: true
     description: "Product Hierarchy classification for sales analysis"

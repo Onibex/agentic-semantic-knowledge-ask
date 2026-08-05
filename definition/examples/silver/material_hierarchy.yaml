@@ -1,0 +1,73 @@
+id: silver_s4h_mm_material_hierarchy
+internal_id: s4h_100_33
+db_table_name: SILVER_MATERIAL_HIERARCHY
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: PROCURE TO PAY
+module: MM
+tag1: ''
+tag2: MM-DM
+name: material_hierarchy
+classification: C
+description: 'Product hierarchy configuration built from T179 + T179T (language-dependent texts): one row per hierarchy node per language. Use for product-line sales roll-ups, hierarchical revenue reporting and category-level filtering — pin `spras_t179t` to one language when selecting names.'
+entity_role: reference
+grain:
+  entity_grain:
+    - prodh_t179
+    - spras_t179t
+  business_grain: material_hierarchy_item
+composed_of:
+  - bronze_s4h_t179_prod_hier
+  - bronze_s4h_t179t_prod_hier_txt
+join_graph:
+  - left_table: T179
+    right_table: T179T
+    join_type: INNER
+    condition: T179.PRODH = T179T.PRODH
+    sequence: 2
+fields:
+  - name: mandt_t179
+    source: T179.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: prodh_t179
+    source: T179.PRODH
+    field_role: identifier
+    type: STRING(18)
+    description: Product hierarchy code (grain member). For the name select `vtext_t179t`, pinning `spras_t179t` to one language.
+    synonyms: []
+  - name: stufe_t179
+    source: T179.STUFE
+    field_role: dimension
+    type: STRING(1)
+    description: Level Number
+    synonyms: []
+  - name: mandt_t179t
+    source: T179T.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_t179t
+    source: T179T.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: prodh_t179t
+    source: T179T.PRODH
+    field_role: identifier
+    type: STRING(18)
+    description: Product Hierarchy
+    synonyms: []
+  - name: vtext_t179t
+    source: T179T.VTEXT
+    field_role: dimension
+    type: STRING(40)
+    description: "Product hierarchy name, language-dependent: filter `spras_t179t` (e.g. 'E') to get one row per node. For the code use `prodh_t179`."
+    synonyms: []
+relationships: []

@@ -1,0 +1,211 @@
+id: silver_s4h_sd_sales_organization
+internal_id: s4h_100_21
+db_table_name: SILVER_SALES_ORGANIZATION
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORGANIZATIONAL STRUCTURE
+module: SD
+tag1: ''
+tag2: SD-MD
+name: sales_organization
+classification: C
+description: 'Sales organization master built from TVKO + TVKOT (language-dependent texts): one row per sales organization per language. Use to resolve sales-organization names — pin `spras_tvkot` to one language when selecting texts — or to group revenue by selling organization.'
+entity_role: reference
+grain:
+  entity_grain:
+    - vkorg_tvko
+    - spras_tvkot
+  business_grain: sales_organization_item
+composed_of:
+  - bronze_s4h_tvko_sales_org
+  - bronze_s4h_tvkot_sales_org_txt
+join_graph:
+  - left_table: TVKO
+    right_table: TVKOT
+    join_type: INNER
+    condition: TVKO.VKORG = TVKOT.VKORG
+    sequence: 2
+fields:
+  - name: mandt_tvko
+    source: TVKO.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: vkorg_tvko
+    source: TVKO.VKORG
+    field_role: identifier
+    type: STRING(4)
+    description: Sales organization code (grain member; equal to `vkorg_tvkot` by the join — the published corpus edges join on that copy). For the name select `vtext_tvkot`, pinning `spras_tvkot` to one language.
+    synonyms: []
+  - name: waers_tvko
+    source: TVKO.WAERS
+    field_role: dimension
+    type: STRING(5)
+    description: Statistics Currency
+    synonyms: []
+  - name: bukrs_tvko
+    source: TVKO.BUKRS
+    field_role: dimension
+    type: STRING(4)
+    description: Company Code
+    synonyms: []
+  - name: adrnr_tvko
+    source: TVKO.ADRNR
+    field_role: dimension
+    type: STRING(10)
+    description: Address
+    synonyms: []
+  - name: txnam_adr_tvko
+    source: TVKO.TXNAM_ADR
+    field_role: dimension
+    type: STRING(16)
+    description: Address text name
+    synonyms: []
+  - name: txnam_kop_tvko
+    source: TVKO.TXNAM_KOP
+    field_role: dimension
+    type: STRING(16)
+    description: Letter header text
+    synonyms: []
+  - name: txnam_fus_tvko
+    source: TVKO.TXNAM_FUS
+    field_role: dimension
+    type: STRING(16)
+    description: Footer lines text
+    synonyms: []
+  - name: txnam_gru_tvko
+    source: TVKO.TXNAM_GRU
+    field_role: dimension
+    type: STRING(16)
+    description: Greeting text name
+    synonyms: []
+  - name: vkoau_tvko
+    source: TVKO.VKOAU
+    field_role: dimension
+    type: STRING(4)
+    description: RefSorg.SalesDocType
+    synonyms: []
+  - name: kunnr_tvko
+    source: TVKO.KUNNR
+    field_role: dimension
+    type: STRING(10)
+    description: Customer Interc. Bl.
+    synonyms: []
+  - name: boavo_tvko
+    source: TVKO.BOAVO
+    field_role: dimension
+    type: STRING(1)
+    description: Rebate proc.active
+    synonyms: []
+  - name: vkokl_tvko
+    source: TVKO.VKOKL
+    field_role: dimension
+    type: STRING(2)
+    description: Sales Org.Calendar
+    synonyms: []
+  - name: ekorg_tvko
+    source: TVKO.EKORG
+    field_role: dimension
+    type: STRING(4)
+    description: Purch. Organization
+    synonyms: []
+  - name: ekgrp_tvko
+    source: TVKO.EKGRP
+    field_role: dimension
+    type: STRING(3)
+    description: Purchasing Group
+    synonyms: []
+  - name: lifnr_tvko
+    source: TVKO.LIFNR
+    field_role: dimension
+    type: STRING(10)
+    description: Supplier
+    synonyms: []
+  - name: werks_tvko
+    source: TVKO.WERKS
+    field_role: dimension
+    type: STRING(4)
+    description: Plant
+    synonyms: []
+  - name: bsart_tvko
+    source: TVKO.BSART
+    field_role: dimension
+    type: STRING(4)
+    description: Order Type
+    synonyms: []
+  - name: bstyp_tvko
+    source: TVKO.BSTYP
+    field_role: dimension
+    type: STRING(1)
+    description: Purch. Doc. Category
+    synonyms: []
+  - name: bwart_tvko
+    source: TVKO.BWART
+    field_role: dimension
+    type: STRING(3)
+    description: Movement Type
+    synonyms: []
+  - name: lgort_tvko
+    source: TVKO.LGORT
+    field_role: dimension
+    type: STRING(4)
+    description: Storage Location
+    synonyms: []
+  - name: txnam_sdb_tvko
+    source: TVKO.TXNAM_SDB
+    field_role: dimension
+    type: STRING(16)
+    description: Text SDS sender
+    synonyms: []
+  - name: mwskz_tvko
+    source: TVKO.MWSKZ
+    field_role: dimension
+    type: STRING(2)
+    description: Tax code for SD doc.
+    synonyms: []
+  - name: xstceg_tvko
+    source: TVKO.XSTCEG
+    field_role: dimension
+    type: STRING(1)
+    description: VAT ID Determination
+    synonyms: []
+  - name: j_1anutime_tvko
+    source: TVKO.J_1ANUTIME
+    field_role: dimension
+    type: STRING(1)
+    description: Numbering time
+    synonyms: []
+  - name: maxbi_tvko
+    source: TVKO.MAXBI
+    field_role: dimension
+    type: STRING(3)
+    description: Max. no. bill. items
+    synonyms: []
+  - name: mandt_tvkot
+    source: TVKOT.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_tvkot
+    source: TVKOT.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: vkorg_tvkot
+    source: TVKOT.VKORG
+    field_role: identifier
+    type: STRING(4)
+    description: Sales Organization
+    synonyms: []
+  - name: vtext_tvkot
+    source: TVKOT.VTEXT
+    field_role: dimension
+    type: STRING(20)
+    description: "Sales organization name, language-dependent: filter `spras_tvkot` (e.g. 'E') to get one row per organization. For the code use `vkorg_tvko`."
+    synonyms: []
+relationships: []

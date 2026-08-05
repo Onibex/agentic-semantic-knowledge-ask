@@ -1,0 +1,151 @@
+id: silver_s4h_mm_material_group
+internal_id: s4h_100_34
+db_table_name: SILVER_MATERIAL_GROUP
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: PROCURE TO PAY
+module: MM
+tag1: ''
+tag2: MM-DM
+name: material_group
+classification: C
+description: 'Material group configuration built from T023 + T023T (language-dependent texts): one row per material group per language. Use to resolve material-group names — pin `spras_t023t` to one language when selecting texts — or to group spend, stock or sales figures by category.'
+entity_role: reference
+grain:
+  entity_grain:
+    - matkl_t023
+    - spras_t023t
+  business_grain: material_group_item
+composed_of:
+  - bronze_s4h_t023_mat_group
+  - bronze_s4h_t023t_mat_group_desc
+join_graph:
+  - left_table: T023
+    right_table: T023T
+    join_type: INNER
+    condition: T023.MATKL = T023T.MATKL
+    sequence: 2
+fields:
+  - name: mandt_t023
+    source: T023.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: matkl_t023
+    source: T023.MATKL
+    field_role: identifier
+    type: STRING(9)
+    description: Material group code (grain member). For the name select `wgbez_t023t`, pinning `spras_t023t` to one language.
+    synonyms: []
+  - name: spart_t023
+    source: T023.SPART
+    field_role: dimension
+    type: STRING(2)
+    description: Division
+    synonyms: []
+  - name: lref3_t023
+    source: T023.LREF3
+    field_role: dimension
+    type: STRING(3)
+    description: Logist.reference
+    synonyms: []
+  - name: wwgda_t023
+    source: T023.WWGDA
+    field_role: dimension
+    type: STRING(18)
+    description: MG Ref. Material
+    synonyms: []
+  - name: wwgpa_t023
+    source: T023.WWGPA
+    field_role: dimension
+    type: STRING(18)
+    description: MG Material
+    synonyms: []
+  - name: abtnr_t023
+    source: T023.ABTNR
+    field_role: dimension
+    type: STRING(4)
+    description: Department
+    synonyms: []
+  - name: begru_t023
+    source: T023.BEGRU
+    field_role: dimension
+    type: STRING(4)
+    description: Authorization Group
+    synonyms: []
+  - name: gewei_t023
+    source: T023.GEWEI
+    field_role: dimension
+    type: STRING(3)
+    description: Default unit of wt
+    synonyms: []
+  - name: j_1bnbm_t023
+    source: T023.J_1BNBM
+    field_role: dimension
+    type: STRING(16)
+    description: NCM Code
+    synonyms: []
+  - name: bklas_t023
+    source: T023.BKLAS
+    field_role: dimension
+    type: STRING(4)
+    description: Valuation Class
+    synonyms: []
+  - name: ekwsl_t023
+    source: T023.EKWSL
+    field_role: dimension
+    type: STRING(4)
+    description: Purchasing value key
+    synonyms: []
+  - name: anlkl_t023
+    source: T023.ANLKL
+    field_role: dimension
+    type: STRING(8)
+    description: Asset Class
+    synonyms: []
+  - name: def_schdsc_t023
+    source: T023.DEF_SCHDSC
+    field_role: dimension
+    type: STRING(6)
+    description: Scenario
+    synonyms: []
+  - name: price_group_t023
+    source: T023.PRICE_GROUP
+    field_role: dimension
+    type: STRING(6)
+    description: Price Level Group
+    synonyms: []
+  - name: mandt_t023t
+    source: T023T.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_t023t
+    source: T023T.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: matkl_t023t
+    source: T023T.MATKL
+    field_role: identifier
+    type: STRING(9)
+    description: Material Group
+    synonyms: []
+  - name: wgbez_t023t
+    source: T023T.WGBEZ
+    field_role: dimension
+    type: STRING(20)
+    description: "Material group name, language-dependent: filter `spras_t023t` (e.g. 'E') to get one row per group. For the code use `matkl_t023`."
+    synonyms: []
+  - name: wgbez60_t023t
+    source: T023T.WGBEZ60
+    field_role: dimension
+    type: STRING(60)
+    description: "Material group long name (60 chars), language-dependent: filter `spras_t023t` (e.g. 'E') to get one row per group. For the code use `matkl_t023`."
+    synonyms: []
+relationships: []

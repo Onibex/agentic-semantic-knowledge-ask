@@ -1,0 +1,1579 @@
+id: silver_s4h_sd_customer_master
+internal_id: s4h_100_31
+db_table_name: SILVER_SD_CUSTOMER_MASTER
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORDER TO CASH
+module: SD
+tag1: ''
+tag2: SD-MD
+name: customer_master
+classification: M
+description: 'Customer master built from KNA1 + KNB1 (company codes) + KNVK (contacts) + KNVV (sales areas) + KNVP (partner functions): one row per customer per company code, contact, sales area and partner-function occurrence. Use to resolve customer names and attributes for customer 360, credit limits, territory assignment and sales-area analytics; a join on `kunnr_kna1` alone matches several rows per customer, so deduplicate before aggregating.'
+entity_role: dimension
+grain:
+  entity_grain:
+    - kunnr_kna1
+    - bukrs_knb1
+    - parnr_knvk
+    - vkorg_knvv
+    - vtweg_knvv
+    - spart_knvv
+    - parvw_knvp
+    - parza_knvp
+  business_grain: customer_master_item
+composed_of:
+  - bronze_s4h_kna1_customer_master_data
+  - bronze_s4h_knb1_customer_society
+  - bronze_s4h_knvk_customer_contact
+  - bronze_s4h_knvp_customer_function_data
+  - bronze_s4h_knvv_customer_master_sales_data
+join_graph:
+  - left_table: KNA1
+    right_table: KNB1
+    join_type: INNER
+    condition: KNA1.KUNNR = KNB1.KUNNR
+    sequence: 2
+  - left_table: KNA1
+    right_table: KNVK
+    join_type: LEFT OUTER
+    condition: KNA1.KUNNR = KNVK.KUNNR
+    sequence: 3
+  - left_table: KNA1
+    right_table: KNVV
+    join_type: LEFT OUTER
+    condition: KNA1.KUNNR = KNVV.KUNNR
+    sequence: 4
+  - left_table: KNVV
+    right_table: KNVP
+    join_type: INNER
+    condition: KNVV.KUNNR = KNVP.KUNNR AND KNVV.SPART = KNVP.SPART AND KNVV.VKORG = KNVP.VKORG AND KNVV.VTWEG = KNVP.VTWEG
+    sequence: 5
+fields:
+  - name: mandt_kna1
+    source: KNA1.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: kunnr_kna1
+    source: KNA1.KUNNR
+    field_role: identifier
+    type: STRING(10)
+    description: Customer code. The entity carries several rows per customer (see grain), so a join on this key alone fans out — deduplicate before aggregating. For the name select `name1_kna1`.
+    synonyms: []
+  - name: land1_kna1
+    source: KNA1.LAND1
+    field_role: dimension
+    type: STRING(3)
+    description: Country
+    synonyms: []
+  - name: name1_kna1
+    source: KNA1.NAME1
+    field_role: dimension
+    type: STRING(35)
+    description: Customer name. Already resolved — for the code use `kunnr_kna1`.
+    synonyms: []
+  - name: name2_kna1
+    source: KNA1.NAME2
+    field_role: dimension
+    type: STRING(35)
+    description: Name 2
+    synonyms: []
+  - name: ort01_kna1
+    source: KNA1.ORT01
+    field_role: dimension
+    type: STRING(35)
+    description: City
+    synonyms: []
+  - name: pstlz_kna1
+    source: KNA1.PSTLZ
+    field_role: dimension
+    type: STRING(10)
+    description: Postal Code
+    synonyms: []
+  - name: regio_kna1
+    source: KNA1.REGIO
+    field_role: dimension
+    type: STRING(3)
+    description: Region
+    synonyms: []
+  - name: sortl_kna1
+    source: KNA1.SORTL
+    field_role: dimension
+    type: STRING(10)
+    description: Search term
+    synonyms: []
+  - name: stras_kna1
+    source: KNA1.STRAS
+    field_role: dimension
+    type: STRING(35)
+    description: Street
+    synonyms: []
+  - name: telf1_kna1
+    source: KNA1.TELF1
+    field_role: dimension
+    type: STRING(16)
+    description: Telephone 1
+    synonyms: []
+  - name: telfx_kna1
+    source: KNA1.TELFX
+    field_role: dimension
+    type: STRING(31)
+    description: Fax Number
+    synonyms: []
+  - name: xcpdk_kna1
+    source: KNA1.XCPDK
+    field_role: dimension
+    type: STRING(1)
+    description: One-time account
+    synonyms: []
+  - name: brsch_kna1
+    source: KNA1.BRSCH
+    field_role: dimension
+    type: STRING(4)
+    description: Industry
+    synonyms: []
+  - name: erdat_kna1
+    source: KNA1.ERDAT
+    field_role: timestamp
+    type: DATE
+    description: Created on
+    synonyms: []
+  - name: ernam_kna1
+    source: KNA1.ERNAM
+    field_role: dimension
+    type: STRING(12)
+    description: Created by
+    synonyms: []
+  - name: faksd_kna1
+    source: KNA1.FAKSD
+    field_role: dimension
+    type: STRING(2)
+    description: Billing block
+    synonyms: []
+  - name: konzs_kna1
+    source: KNA1.KONZS
+    field_role: dimension
+    type: STRING(10)
+    description: Corporate Group
+    synonyms: []
+  - name: ktokd_kna1
+    source: KNA1.KTOKD
+    field_role: dimension
+    type: STRING(4)
+    description: Account group
+    synonyms: []
+  - name: kukla_kna1
+    source: KNA1.KUKLA
+    field_role: dimension
+    type: STRING(2)
+    description: Customer class.
+    synonyms: []
+  - name: lifnr_kna1
+    source: KNA1.LIFNR
+    field_role: dimension
+    type: STRING(10)
+    description: Vendor
+    synonyms: []
+  - name: lifsd_kna1
+    source: KNA1.LIFSD
+    field_role: dimension
+    type: STRING(2)
+    description: Delivery block
+    synonyms: []
+  - name: loevm_kna1
+    source: KNA1.LOEVM
+    field_role: dimension
+    type: STRING(1)
+    description: Deletion flag
+    synonyms: []
+  - name: niels_kna1
+    source: KNA1.NIELS
+    field_role: dimension
+    type: STRING(2)
+    description: Nielsen ID
+    synonyms: []
+  - name: pfach_kna1
+    source: KNA1.PFACH
+    field_role: dimension
+    type: STRING(10)
+    description: PO Box
+    synonyms: []
+  - name: pstl2_kna1
+    source: KNA1.PSTL2
+    field_role: dimension
+    type: STRING(10)
+    description: PO Box PCode
+    synonyms: []
+  - name: counc_kna1
+    source: KNA1.COUNC
+    field_role: dimension
+    type: STRING(3)
+    description: County Code
+    synonyms: []
+  - name: sperr_kna1
+    source: KNA1.SPERR
+    field_role: dimension
+    type: STRING(1)
+    description: Posting Block
+    synonyms: []
+  - name: stcd1_kna1
+    source: KNA1.STCD1
+    field_role: dimension
+    type: STRING(16)
+    description: Tax Number 1
+    synonyms: []
+  - name: stcd2_kna1
+    source: KNA1.STCD2
+    field_role: dimension
+    type: STRING(11)
+    description: Tax Number 2
+    synonyms: []
+  - name: telbx_kna1
+    source: KNA1.TELBX
+    field_role: dimension
+    type: STRING(15)
+    description: Telebox
+    synonyms: []
+  - name: teltx_kna1
+    source: KNA1.TELTX
+    field_role: dimension
+    type: STRING(30)
+    description: Teletex
+    synonyms: []
+  - name: telx1_kna1
+    source: KNA1.TELX1
+    field_role: dimension
+    type: STRING(30)
+    description: Telex
+    synonyms: []
+  - name: vbund_kna1
+    source: KNA1.VBUND
+    field_role: dimension
+    type: STRING(6)
+    description: Trading Partner
+    synonyms: []
+  - name: stceg_kna1
+    source: KNA1.STCEG
+    field_role: dimension
+    type: STRING(20)
+    description: VAT Reg. No.
+    synonyms: []
+  - name: uwaer_kna1
+    source: KNA1.UWAER
+    field_role: dimension
+    type: STRING(5)
+    description: Currency
+    synonyms: []
+  - name: werks_kna1
+    source: KNA1.WERKS
+    field_role: dimension
+    type: STRING(4)
+    description: Plant
+    synonyms: []
+  - name: duefl_kna1
+    source: KNA1.DUEFL
+    field_role: dimension
+    type: STRING(1)
+    description: Data Transfer Status
+    synonyms: []
+  - name: sperz_kna1
+    source: KNA1.SPERZ
+    field_role: dimension
+    type: STRING(1)
+    description: Payment block
+    synonyms: []
+  - name: milve_kna1
+    source: KNA1.MILVE
+    field_role: dimension
+    type: STRING(1)
+    description: Military use
+    synonyms: []
+  - name: stcd3_kna1
+    source: KNA1.STCD3
+    field_role: dimension
+    type: STRING(18)
+    description: Tax Number 3
+    synonyms: []
+  - name: stcd4_kna1
+    source: KNA1.STCD4
+    field_role: dimension
+    type: STRING(18)
+    description: Tax Number 4
+    synonyms: []
+  - name: confs_kna1
+    source: KNA1.CONFS
+    field_role: dimension
+    type: STRING(1)
+    description: Confirm.status
+    synonyms: []
+  - name: rg_kna1
+    source: KNA1.RG
+    field_role: dimension
+    type: STRING(11)
+    description: RG Number
+    synonyms: []
+  - name: uf_kna1
+    source: KNA1.UF
+    field_role: dimension
+    type: STRING(2)
+    description: State
+    synonyms: []
+  - name: rgdate_kna1
+    source: KNA1.RGDATE
+    field_role: timestamp
+    type: DATE
+    description: RG Issuing Date
+    synonyms: []
+  - name: rne_kna1
+    source: KNA1.RNE
+    field_role: dimension
+    type: STRING(10)
+    description: Foreign National Reg
+    synonyms: []
+  - name: rnedate_kna1
+    source: KNA1.RNEDATE
+    field_role: timestamp
+    type: DATE
+    description: RNE Issuing Date
+    synonyms: []
+  - name: legalnat_kna1
+    source: KNA1.LEGALNAT
+    field_role: dimension
+    type: STRING(4)
+    description: Legal Nature
+    synonyms: []
+  - name: icmstaxpay_kna1
+    source: KNA1.ICMSTAXPAY
+    field_role: dimension
+    type: STRING(2)
+    description: ICMS Taxpayer
+    synonyms: []
+  - name: tdt_kna1
+    source: KNA1.TDT
+    field_role: dimension
+    type: STRING(2)
+    description: Tax Declaration Type
+    synonyms: []
+  - name: /vso/r_pal_ul_kna1
+    source: KNA1./VSO/R_PAL_UL
+    field_role: dimension
+    type: STRING(3)
+    description: LengthUnit
+    synonyms: []
+  - name: pson1_kna1
+    source: KNA1.PSON1
+    field_role: dimension
+    type: STRING(35)
+    description: Name
+    synonyms: []
+  - name: pson2_kna1
+    source: KNA1.PSON2
+    field_role: dimension
+    type: STRING(35)
+    description: Name 2
+    synonyms: []
+  - name: pson3_kna1
+    source: KNA1.PSON3
+    field_role: dimension
+    type: STRING(35)
+    description: Name 3
+    synonyms: []
+  - name: psovn_kna1
+    source: KNA1.PSOVN
+    field_role: dimension
+    type: STRING(35)
+    description: First Name
+    synonyms: []
+  - name: psotl_kna1
+    source: KNA1.PSOTL
+    field_role: dimension
+    type: STRING(20)
+    description: Title
+    synonyms: []
+  - name: psoo1_kna1
+    source: KNA1.PSOO1
+    field_role: dimension
+    type: STRING(50)
+    description: Description
+    synonyms: []
+  - name: mandt_knb1
+    source: KNB1.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: kunnr_knb1
+    source: KNB1.KUNNR
+    field_role: identifier
+    type: STRING(10)
+    description: Customer
+    synonyms: []
+  - name: bukrs_knb1
+    source: KNB1.BUKRS
+    field_role: identifier
+    type: STRING(4)
+    description: Company Code
+    synonyms: []
+  - name: pernr_knb1
+    source: KNB1.PERNR
+    field_role: dimension
+    type: STRING(8)
+    description: Personnel No.
+    synonyms: []
+  - name: erdat_knb1
+    source: KNB1.ERDAT
+    field_role: timestamp
+    type: DATE
+    description: Created on
+    synonyms: []
+  - name: ernam_knb1
+    source: KNB1.ERNAM
+    field_role: dimension
+    type: STRING(12)
+    description: Created by
+    synonyms: []
+  - name: sperr_knb1
+    source: KNB1.SPERR
+    field_role: dimension
+    type: STRING(1)
+    description: Co. code posting block
+    synonyms: []
+  - name: loevm_knb1
+    source: KNB1.LOEVM
+    field_role: dimension
+    type: STRING(1)
+    description: Co. code deletion flag
+    synonyms: []
+  - name: busab_knb1
+    source: KNB1.BUSAB
+    field_role: dimension
+    type: STRING(2)
+    description: Clerk Abbrev.
+    synonyms: []
+  - name: akont_knb1
+    source: KNB1.AKONT
+    field_role: dimension
+    type: STRING(10)
+    description: Recon. account
+    synonyms: []
+  - name: begru_knb1
+    source: KNB1.BEGRU
+    field_role: dimension
+    type: STRING(4)
+    description: Authorization
+    synonyms: []
+  - name: knrze_knb1
+    source: KNB1.KNRZE
+    field_role: dimension
+    type: STRING(10)
+    description: Head office
+    synonyms: []
+  - name: knrzb_knb1
+    source: KNB1.KNRZB
+    field_role: dimension
+    type: STRING(10)
+    description: Alternate payer
+    synonyms: []
+  - name: wakon_knb1
+    source: KNB1.WAKON
+    field_role: dimension
+    type: STRING(4)
+    description: B/E charge terms
+    synonyms: []
+  - name: vzskz_knb1
+    source: KNB1.VZSKZ
+    field_role: dimension
+    type: STRING(2)
+    description: Interest indic.
+    synonyms: []
+  - name: eikto_knb1
+    source: KNB1.EIKTO
+    field_role: dimension
+    type: STRING(12)
+    description: Acct at cust.
+    synonyms: []
+  - name: kverm_knb1
+    source: KNB1.KVERM
+    field_role: dimension
+    type: STRING(30)
+    description: Account memo
+    synonyms: []
+  - name: fdgrv_knb1
+    source: KNB1.FDGRV
+    field_role: dimension
+    type: STRING(10)
+    description: Planning group
+    synonyms: []
+  - name: vrbkz_knb1
+    source: KNB1.VRBKZ
+    field_role: dimension
+    type: STRING(2)
+    description: Institution no.
+    synonyms: []
+  - name: vlibb_knb1
+    source: KNB1.VLIBB
+    field_role: measure
+    type: DECIMAL(13)
+    description: Amount insured
+    synonyms: []
+  - name: vrszl_knb1
+    source: KNB1.VRSZL
+    field_role: measure
+    type: DECIMAL(3)
+    description: Lead months
+    synonyms: []
+  - name: vrspr_knb1
+    source: KNB1.VRSPR
+    field_role: measure
+    type: DECIMAL(3)
+    description: Deductible
+    synonyms: []
+  - name: vrsnr_knb1
+    source: KNB1.VRSNR
+    field_role: dimension
+    type: STRING(10)
+    description: Policy no.
+    synonyms: []
+  - name: verdt_knb1
+    source: KNB1.VERDT
+    field_role: timestamp
+    type: DATE
+    description: Valid To
+    synonyms: []
+  - name: perkz_knb1
+    source: KNB1.PERKZ
+    field_role: dimension
+    type: STRING(1)
+    description: Coll. invce. var.
+    synonyms: []
+  - name: xdezv_knb1
+    source: KNB1.XDEZV
+    field_role: dimension
+    type: STRING(1)
+    description: Local process
+    synonyms: []
+  - name: xausz_knb1
+    source: KNB1.XAUSZ
+    field_role: dimension
+    type: STRING(1)
+    description: Account statement
+    synonyms: []
+  - name: webtr_knb1
+    source: KNB1.WEBTR
+    field_role: measure
+    type: DECIMAL(13)
+    description: B/exch. limit
+    synonyms: []
+  - name: remit_knb1
+    source: KNB1.REMIT
+    field_role: dimension
+    type: STRING(10)
+    description: Next payee
+    synonyms: []
+  - name: datlz_knb1
+    source: KNB1.DATLZ
+    field_role: timestamp
+    type: DATE
+    description: Last int. calc.
+    synonyms: []
+  - name: togru_knb1
+    source: KNB1.TOGRU
+    field_role: dimension
+    type: STRING(4)
+    description: Tolerance group
+    synonyms: []
+  - name: kultg_knb1
+    source: KNB1.KULTG
+    field_role: measure
+    type: DECIMAL(3)
+    description: Chk cashng time
+    synonyms: []
+  - name: hbkid_knb1
+    source: KNB1.HBKID
+    field_role: dimension
+    type: STRING(5)
+    description: House Bank
+    synonyms: []
+  - name: blnkz_knb1
+    source: KNB1.BLNKZ
+    field_role: dimension
+    type: STRING(2)
+    description: Subs. Ind.
+    synonyms: []
+  - name: altkn_knb1
+    source: KNB1.ALTKN
+    field_role: dimension
+    type: STRING(10)
+    description: Prev. acct no.
+    synonyms: []
+  - name: urlid_knb1
+    source: KNB1.URLID
+    field_role: dimension
+    type: STRING(4)
+    description: Known/neg. leave
+    synonyms: []
+  - name: mgrup_knb1
+    source: KNB1.MGRUP
+    field_role: dimension
+    type: STRING(2)
+    description: Grouping key
+    synonyms: []
+  - name: lockb_knb1
+    source: KNB1.LOCKB
+    field_role: dimension
+    type: STRING(7)
+    description: Lockbox
+    synonyms: []
+  - name: uzawe_knb1
+    source: KNB1.UZAWE
+    field_role: dimension
+    type: STRING(2)
+    description: Pmt method suppl.
+    synonyms: []
+  - name: ekvbd_knb1
+    source: KNB1.EKVBD
+    field_role: dimension
+    type: STRING(10)
+    description: Buying Group
+    synonyms: []
+  - name: sregl_knb1
+    source: KNB1.SREGL
+    field_role: dimension
+    type: STRING(3)
+    description: Selection rule
+    synonyms: []
+  - name: xedip_knb1
+    source: KNB1.XEDIP
+    field_role: dimension
+    type: STRING(1)
+    description: Pmt adv. by EDI
+    synonyms: []
+  - name: frgrp_knb1
+    source: KNB1.FRGRP
+    field_role: dimension
+    type: STRING(4)
+    description: Release group
+    synonyms: []
+  - name: vrsdg_knb1
+    source: KNB1.VRSDG
+    field_role: dimension
+    type: STRING(3)
+    description: Rsn code conv.
+    synonyms: []
+  - name: tlfxs_knb1
+    source: KNB1.TLFXS
+    field_role: dimension
+    type: STRING(31)
+    description: Clerk's fax
+    synonyms: []
+  - name: intad_knb1
+    source: KNB1.INTAD
+    field_role: dimension
+    type: STRING(130)
+    description: Clrk's internet
+    synonyms: []
+  - name: xknzb_knb1
+    source: KNB1.XKNZB
+    field_role: dimension
+    type: STRING(1)
+    description: Alt. payer (doc.)
+    synonyms: []
+  - name: guzte_knb1
+    source: KNB1.GUZTE
+    field_role: dimension
+    type: STRING(4)
+    description: Cr memo terms
+    synonyms: []
+  - name: gricd_knb1
+    source: KNB1.GRICD
+    field_role: dimension
+    type: STRING(2)
+    description: Activity Code
+    synonyms: []
+  - name: gridt_knb1
+    source: KNB1.GRIDT
+    field_role: dimension
+    type: STRING(2)
+    description: Distr. Type
+    synonyms: []
+  - name: wbrsl_knb1
+    source: KNB1.WBRSL
+    field_role: dimension
+    type: STRING(2)
+    description: Value adjust.
+    synonyms: []
+  - name: confs_knb1
+    source: KNB1.CONFS
+    field_role: dimension
+    type: STRING(1)
+    description: ConfirmSt (CCd)
+    synonyms: []
+  - name: updat_knb1
+    source: KNB1.UPDAT
+    field_role: timestamp
+    type: DATE
+    description: Confirm. date
+    synonyms: []
+  - name: uptim_knb1
+    source: KNB1.UPTIM
+    field_role: dimension
+    type: STRING(6)
+    description: Confirm. time
+    synonyms: []
+  - name: nodel_knb1
+    source: KNB1.NODEL
+    field_role: dimension
+    type: STRING(1)
+    description: CoCd del. block
+    synonyms: []
+  - name: tlfns_knb1
+    source: KNB1.TLFNS
+    field_role: dimension
+    type: STRING(30)
+    description: Act. Clk tel. no.
+    synonyms: []
+  - name: cession_kz_knb1
+    source: KNB1.CESSION_KZ
+    field_role: dimension
+    type: STRING(2)
+    description: AR Pledging Ind.
+    synonyms: []
+  - name: avsnd_knb1
+    source: KNB1.AVSND
+    field_role: dimension
+    type: STRING(1)
+    description: PmtAdv. XML
+    synonyms: []
+  - name: ad_hash_knb1
+    source: KNB1.AD_HASH
+    field_role: dimension
+    type: STRING(10)
+    description: E-Mail for Avis
+    synonyms: []
+  - name: qland_knb1
+    source: KNB1.QLAND
+    field_role: dimension
+    type: STRING(3)
+    description: Country
+    synonyms: []
+  - name: ciiucode_knb1
+    source: KNB1.CIIUCODE
+    field_role: dimension
+    type: STRING(4)
+    description: Main economic act.
+    synonyms: []
+  - name: gmvkzd_knb1
+    source: KNB1.GMVKZD
+    field_role: dimension
+    type: STRING(1)
+    description: Execution
+    synonyms: []
+  - name: mandt_knvk
+    source: KNVK.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: parnr_knvk
+    source: KNVK.PARNR
+    field_role: identifier
+    type: STRING(10)
+    description: Contact Person
+    synonyms: []
+  - name: kunnr_knvk
+    source: KNVK.KUNNR
+    field_role: dimension
+    type: STRING(10)
+    description: Customer
+    synonyms: []
+  - name: namev_knvk
+    source: KNVK.NAMEV
+    field_role: dimension
+    type: STRING(35)
+    description: First name
+    synonyms: []
+  - name: name1_knvk
+    source: KNVK.NAME1
+    field_role: dimension
+    type: STRING(35)
+    description: Name
+    synonyms: []
+  - name: ort01_knvk
+    source: KNVK.ORT01
+    field_role: dimension
+    type: STRING(35)
+    description: City
+    synonyms: []
+  - name: adrnd_knvk
+    source: KNVK.ADRND
+    field_role: dimension
+    type: STRING(10)
+    description: Business Address
+    synonyms: []
+  - name: adrnp_knvk
+    source: KNVK.ADRNP
+    field_role: dimension
+    type: STRING(10)
+    description: Home address
+    synonyms: []
+  - name: abtpa_knvk
+    source: KNVK.ABTPA
+    field_role: dimension
+    type: STRING(12)
+    description: Customer dept.
+    synonyms: []
+  - name: abtnr_knvk
+    source: KNVK.ABTNR
+    field_role: dimension
+    type: STRING(4)
+    description: Department
+    synonyms: []
+  - name: anred_knvk
+    source: KNVK.ANRED
+    field_role: dimension
+    type: STRING(30)
+    description: Form of address
+    synonyms: []
+  - name: pafkt_knvk
+    source: KNVK.PAFKT
+    field_role: dimension
+    type: STRING(2)
+    description: Function
+    synonyms: []
+  - name: parvo_knvk
+    source: KNVK.PARVO
+    field_role: dimension
+    type: STRING(1)
+    description: Authority
+    synonyms: []
+  - name: pavip_knvk
+    source: KNVK.PAVIP
+    field_role: dimension
+    type: STRING(1)
+    description: VIP
+    synonyms: []
+  - name: parge_knvk
+    source: KNVK.PARGE
+    field_role: dimension
+    type: STRING(1)
+    description: Gender
+    synonyms: []
+  - name: parla_knvk
+    source: KNVK.PARLA
+    field_role: dimension
+    type: STRING(1)
+    description: Language
+    synonyms: []
+  - name: gbdat_knvk
+    source: KNVK.GBDAT
+    field_role: timestamp
+    type: DATE
+    description: Birth date
+    synonyms: []
+  - name: bryth_knvk
+    source: KNVK.BRYTH
+    field_role: dimension
+    type: STRING(4)
+    description: Call frequency
+    synonyms: []
+  - name: akver_knvk
+    source: KNVK.AKVER
+    field_role: dimension
+    type: STRING(2)
+    description: Buying habits
+    synonyms: []
+  - name: nmail_knvk
+    source: KNVK.NMAIL
+    field_role: dimension
+    type: STRING(1)
+    description: Advertising material
+    synonyms: []
+  - name: parau_knvk
+    source: KNVK.PARAU
+    field_role: dimension
+    type: STRING(40)
+    description: Notes
+    synonyms: []
+  - name: parh1_knvk
+    source: KNVK.PARH1
+    field_role: dimension
+    type: STRING(2)
+    description: Attribute 1
+    synonyms: []
+  - name: parh2_knvk
+    source: KNVK.PARH2
+    field_role: dimension
+    type: STRING(2)
+    description: Attribute 2
+    synonyms: []
+  - name: parh3_knvk
+    source: KNVK.PARH3
+    field_role: dimension
+    type: STRING(2)
+    description: Attribute 3
+    synonyms: []
+  - name: parh4_knvk
+    source: KNVK.PARH4
+    field_role: dimension
+    type: STRING(2)
+    description: Attribute 4
+    synonyms: []
+  - name: parh5_knvk
+    source: KNVK.PARH5
+    field_role: dimension
+    type: STRING(2)
+    description: Attribute 5
+    synonyms: []
+  - name: moab1_knvk
+    source: KNVK.MOAB1
+    field_role: dimension
+    type: STRING(6)
+    description: Monday
+    synonyms: []
+  - name: mobi1_knvk
+    source: KNVK.MOBI1
+    field_role: dimension
+    type: STRING(6)
+    description: Monday
+    synonyms: []
+  - name: moab2_knvk
+    source: KNVK.MOAB2
+    field_role: dimension
+    type: STRING(6)
+    description: Monday
+    synonyms: []
+  - name: mobi2_knvk
+    source: KNVK.MOBI2
+    field_role: dimension
+    type: STRING(6)
+    description: Monday
+    synonyms: []
+  - name: diab1_knvk
+    source: KNVK.DIAB1
+    field_role: dimension
+    type: STRING(6)
+    description: Tuesday
+    synonyms: []
+  - name: dibi1_knvk
+    source: KNVK.DIBI1
+    field_role: dimension
+    type: STRING(6)
+    description: Tuesday
+    synonyms: []
+  - name: diab2_knvk
+    source: KNVK.DIAB2
+    field_role: dimension
+    type: STRING(6)
+    description: Tuesday
+    synonyms: []
+  - name: dibi2_knvk
+    source: KNVK.DIBI2
+    field_role: dimension
+    type: STRING(6)
+    description: Tuesday
+    synonyms: []
+  - name: miab1_knvk
+    source: KNVK.MIAB1
+    field_role: dimension
+    type: STRING(6)
+    description: Wednesday
+    synonyms: []
+  - name: mibi1_knvk
+    source: KNVK.MIBI1
+    field_role: dimension
+    type: STRING(6)
+    description: Wednesday
+    synonyms: []
+  - name: miab2_knvk
+    source: KNVK.MIAB2
+    field_role: dimension
+    type: STRING(6)
+    description: Wednesday
+    synonyms: []
+  - name: mibi2_knvk
+    source: KNVK.MIBI2
+    field_role: dimension
+    type: STRING(6)
+    description: Wednesday
+    synonyms: []
+  - name: doab1_knvk
+    source: KNVK.DOAB1
+    field_role: dimension
+    type: STRING(6)
+    description: Thursday
+    synonyms: []
+  - name: dobi1_knvk
+    source: KNVK.DOBI1
+    field_role: dimension
+    type: STRING(6)
+    description: Thursday
+    synonyms: []
+  - name: doab2_knvk
+    source: KNVK.DOAB2
+    field_role: dimension
+    type: STRING(6)
+    description: Thursday
+    synonyms: []
+  - name: dobi2_knvk
+    source: KNVK.DOBI2
+    field_role: dimension
+    type: STRING(6)
+    description: Thursday
+    synonyms: []
+  - name: frab1_knvk
+    source: KNVK.FRAB1
+    field_role: dimension
+    type: STRING(6)
+    description: Friday
+    synonyms: []
+  - name: frbi1_knvk
+    source: KNVK.FRBI1
+    field_role: dimension
+    type: STRING(6)
+    description: Friday
+    synonyms: []
+  - name: frab2_knvk
+    source: KNVK.FRAB2
+    field_role: dimension
+    type: STRING(6)
+    description: Friday
+    synonyms: []
+  - name: frbi2_knvk
+    source: KNVK.FRBI2
+    field_role: dimension
+    type: STRING(6)
+    description: Friday
+    synonyms: []
+  - name: pakn1_knvk
+    source: KNVK.PAKN1
+    field_role: dimension
+    type: STRING(3)
+    description: Attribute 6
+    synonyms: []
+  - name: pakn2_knvk
+    source: KNVK.PAKN2
+    field_role: dimension
+    type: STRING(3)
+    description: Attribute 7
+    synonyms: []
+  - name: pakn3_knvk
+    source: KNVK.PAKN3
+    field_role: dimension
+    type: STRING(3)
+    description: Attribute 8
+    synonyms: []
+  - name: pakn4_knvk
+    source: KNVK.PAKN4
+    field_role: dimension
+    type: STRING(3)
+    description: Attribute 9
+    synonyms: []
+  - name: pakn5_knvk
+    source: KNVK.PAKN5
+    field_role: dimension
+    type: STRING(3)
+    description: Attribute 10
+    synonyms: []
+  - name: famst_knvk
+    source: KNVK.FAMST
+    field_role: dimension
+    type: STRING(1)
+    description: Marital Status
+    synonyms: []
+  - name: erdat_knvk
+    source: KNVK.ERDAT
+    field_role: timestamp
+    type: DATE
+    description: Created on
+    synonyms: []
+  - name: ernam_knvk
+    source: KNVK.ERNAM
+    field_role: dimension
+    type: STRING(12)
+    description: Created by
+    synonyms: []
+  - name: duefl_knvk
+    source: KNVK.DUEFL
+    field_role: dimension
+    type: STRING(1)
+    description: Data Transfer Status
+    synonyms: []
+  - name: lifnr_knvk
+    source: KNVK.LIFNR
+    field_role: dimension
+    type: STRING(10)
+    description: Vendor
+    synonyms: []
+  - name: loevm_knvk
+    source: KNVK.LOEVM
+    field_role: dimension
+    type: STRING(1)
+    description: Deletion flag
+    synonyms: []
+  - name: kzherk_knvk
+    source: KNVK.KZHERK
+    field_role: dimension
+    type: STRING(1)
+    description: Origin
+    synonyms: []
+  - name: adrnp_2_knvk
+    source: KNVK.ADRNP_2
+    field_role: dimension
+    type: STRING(10)
+    description: Address Number
+    synonyms: []
+  - name: prsnr_knvk
+    source: KNVK.PRSNR
+    field_role: dimension
+    type: STRING(10)
+    description: Person number
+    synonyms: []
+  - name: mandt_knvp
+    source: KNVP.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: kunnr_knvp
+    source: KNVP.KUNNR
+    field_role: identifier
+    type: STRING(10)
+    description: Customer
+    synonyms: []
+  - name: vkorg_knvp
+    source: KNVP.VKORG
+    field_role: identifier
+    type: STRING(4)
+    description: Sales Organization
+    synonyms: []
+  - name: vtweg_knvp
+    source: KNVP.VTWEG
+    field_role: identifier
+    type: STRING(2)
+    description: Distribution Channel
+    synonyms: []
+  - name: spart_knvp
+    source: KNVP.SPART
+    field_role: identifier
+    type: STRING(2)
+    description: Division
+    synonyms: []
+  - name: parvw_knvp
+    source: KNVP.PARVW
+    field_role: identifier
+    type: STRING(2)
+    description: Partner Function
+    synonyms: []
+  - name: parza_knvp
+    source: KNVP.PARZA
+    field_role: identifier
+    type: STRING(3)
+    description: Partner counter
+    synonyms: []
+  - name: kunn2_knvp
+    source: KNVP.KUNN2
+    field_role: dimension
+    type: STRING(10)
+    description: Customer
+    synonyms: []
+  - name: lifnr_knvp
+    source: KNVP.LIFNR
+    field_role: dimension
+    type: STRING(10)
+    description: Vendor
+    synonyms: []
+  - name: pernr_knvp
+    source: KNVP.PERNR
+    field_role: dimension
+    type: STRING(8)
+    description: Personnel No.
+    synonyms: []
+  - name: parnr_knvp
+    source: KNVP.PARNR
+    field_role: dimension
+    type: STRING(10)
+    description: Contact Person
+    synonyms: []
+  - name: knref_knvp
+    source: KNVP.KNREF
+    field_role: dimension
+    type: STRING(30)
+    description: Partner Desc.
+    synonyms: []
+  - name: defpa_knvp
+    source: KNVP.DEFPA
+    field_role: dimension
+    type: STRING(1)
+    description: Default Partner
+    synonyms: []
+  - name: mandt_knvv
+    source: KNVV.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: kunnr_knvv
+    source: KNVV.KUNNR
+    field_role: identifier
+    type: STRING(10)
+    description: Customer
+    synonyms: []
+  - name: vkorg_knvv
+    source: KNVV.VKORG
+    field_role: identifier
+    type: STRING(4)
+    description: Sales Organization
+    synonyms: []
+  - name: vtweg_knvv
+    source: KNVV.VTWEG
+    field_role: identifier
+    type: STRING(2)
+    description: Distribution Channel
+    synonyms: []
+  - name: spart_knvv
+    source: KNVV.SPART
+    field_role: identifier
+    type: STRING(2)
+    description: Division
+    synonyms: []
+  - name: ernam_knvv
+    source: KNVV.ERNAM
+    field_role: dimension
+    type: STRING(12)
+    description: Created by
+    synonyms: []
+  - name: erdat_knvv
+    source: KNVV.ERDAT
+    field_role: timestamp
+    type: DATE
+    description: Created on
+    synonyms: []
+  - name: begru_knvv
+    source: KNVV.BEGRU
+    field_role: dimension
+    type: STRING(4)
+    description: Authoriz. Group
+    synonyms: []
+  - name: loevm_knvv
+    source: KNVV.LOEVM
+    field_role: dimension
+    type: STRING(1)
+    description: Del. ID Sls Area
+    synonyms: []
+  - name: aufsd_knvv
+    source: KNVV.AUFSD
+    field_role: dimension
+    type: STRING(2)
+    description: 'Ord. blk: sls ar.'
+    synonyms: []
+  - name: kalks_knvv
+    source: KNVV.KALKS
+    field_role: dimension
+    type: STRING(1)
+    description: Cust. pric. proc.
+    synonyms: []
+  - name: kdgrp_knvv
+    source: KNVV.KDGRP
+    field_role: dimension
+    type: STRING(2)
+    description: Customer group
+    synonyms: []
+  - name: bzirk_knvv
+    source: KNVV.BZIRK
+    field_role: dimension
+    type: STRING(6)
+    description: Sales district
+    synonyms: []
+  - name: konda_knvv
+    source: KNVV.KONDA
+    field_role: dimension
+    type: STRING(2)
+    description: Price group
+    synonyms: []
+  - name: pltyp_knvv
+    source: KNVV.PLTYP
+    field_role: dimension
+    type: STRING(2)
+    description: Price List
+    synonyms: []
+  - name: awahr_knvv
+    source: KNVV.AWAHR
+    field_role: dimension
+    type: STRING(3)
+    description: Order probab.
+    synonyms: []
+  - name: inco1_knvv
+    source: KNVV.INCO1
+    field_role: dimension
+    type: STRING(3)
+    description: Incoterms
+    synonyms: []
+  - name: inco2_knvv
+    source: KNVV.INCO2
+    field_role: dimension
+    type: STRING(28)
+    description: Incoterms 2
+    synonyms: []
+  - name: lifsd_knvv
+    source: KNVV.LIFSD
+    field_role: dimension
+    type: STRING(2)
+    description: Del. Blck Sales Ar.
+    synonyms: []
+  - name: autlf_knvv
+    source: KNVV.AUTLF
+    field_role: dimension
+    type: STRING(1)
+    description: Complete dlv.
+    synonyms: []
+  - name: antlf_knvv
+    source: KNVV.ANTLF
+    field_role: measure
+    type: DECIMAL(1)
+    description: Max. Part. Deliv.
+    synonyms: []
+  - name: kztlf_knvv
+    source: KNVV.KZTLF
+    field_role: dimension
+    type: STRING(1)
+    description: Part dlv./item
+    synonyms: []
+  - name: kzazu_knvv
+    source: KNVV.KZAZU
+    field_role: dimension
+    type: STRING(1)
+    description: Order Combination
+    synonyms: []
+  - name: chspl_knvv
+    source: KNVV.CHSPL
+    field_role: dimension
+    type: STRING(1)
+    description: Batch split
+    synonyms: []
+  - name: lprio_knvv
+    source: KNVV.LPRIO
+    field_role: dimension
+    type: STRING(2)
+    description: Delivery Prior.
+    synonyms: []
+  - name: eikto_knvv
+    source: KNVV.EIKTO
+    field_role: dimension
+    type: STRING(12)
+    description: Acct at cust.
+    synonyms: []
+  - name: faksd_knvv
+    source: KNVV.FAKSD
+    field_role: dimension
+    type: STRING(2)
+    description: BBlock for SlsA
+    synonyms: []
+  - name: mrnkz_knvv
+    source: KNVV.MRNKZ
+    field_role: dimension
+    type: STRING(1)
+    description: Subs. Inv. Process
+    synonyms: []
+  - name: perfk_knvv
+    source: KNVV.PERFK
+    field_role: dimension
+    type: STRING(2)
+    description: Invoicing dates
+    synonyms: []
+  - name: perrl_knvv
+    source: KNVV.PERRL
+    field_role: dimension
+    type: STRING(2)
+    description: Inv. list sched.
+    synonyms: []
+  - name: kvakz_knvv
+    source: KNVV.KVAKZ
+    field_role: dimension
+    type: STRING(1)
+    description: Cost estimate
+    synonyms: []
+  - name: kvawt_knvv
+    source: KNVV.KVAWT
+    field_role: measure
+    type: DECIMAL(13)
+    description: Max. cost estim.
+    synonyms: []
+  - name: waers_knvv
+    source: KNVV.WAERS
+    field_role: dimension
+    type: STRING(5)
+    description: Currency
+    synonyms: []
+  - name: klabc_knvv
+    source: KNVV.KLABC
+    field_role: dimension
+    type: STRING(2)
+    description: ABC class
+    synonyms: []
+  - name: ktgrd_knvv
+    source: KNVV.KTGRD
+    field_role: dimension
+    type: STRING(2)
+    description: Acc. Assmt Grp Cust
+    synonyms: []
+  - name: vkgrp_knvv
+    source: KNVV.VKGRP
+    field_role: dimension
+    type: STRING(3)
+    description: Sales Group
+    synonyms: []
+  - name: kvgr1_knvv
+    source: KNVV.KVGR1
+    field_role: dimension
+    type: STRING(3)
+    description: Customer grp 1
+    synonyms: []
+  - name: kvgr2_knvv
+    source: KNVV.KVGR2
+    field_role: dimension
+    type: STRING(3)
+    description: Customer grp 2
+    synonyms: []
+  - name: kvgr3_knvv
+    source: KNVV.KVGR3
+    field_role: dimension
+    type: STRING(3)
+    description: Customer grp 3
+    synonyms: []
+  - name: kvgr4_knvv
+    source: KNVV.KVGR4
+    field_role: dimension
+    type: STRING(3)
+    description: Customer grp 4
+    synonyms: []
+  - name: kvgr5_knvv
+    source: KNVV.KVGR5
+    field_role: dimension
+    type: STRING(3)
+    description: Customer grp 5
+    synonyms: []
+  - name: bokre_knvv
+    source: KNVV.BOKRE
+    field_role: dimension
+    type: STRING(1)
+    description: Rebate
+    synonyms: []
+  - name: boidt_knvv
+    source: KNVV.BOIDT
+    field_role: timestamp
+    type: DATE
+    description: Rebate index
+    synonyms: []
+  - name: kurst_knvv
+    source: KNVV.KURST
+    field_role: dimension
+    type: STRING(4)
+    description: Exch. Rate Type
+    synonyms: []
+  - name: prat1_knvv
+    source: KNVV.PRAT1
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 1
+    synonyms: []
+  - name: prat2_knvv
+    source: KNVV.PRAT2
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 2
+    synonyms: []
+  - name: prat3_knvv
+    source: KNVV.PRAT3
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 3
+    synonyms: []
+  - name: prat4_knvv
+    source: KNVV.PRAT4
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 4
+    synonyms: []
+  - name: prat5_knvv
+    source: KNVV.PRAT5
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 5
+    synonyms: []
+  - name: prat6_knvv
+    source: KNVV.PRAT6
+    field_role: dimension
+    type: STRING(1)
+    description: Prod. attribute 6
+    synonyms: []
+  - name: prat7_knvv
+    source: KNVV.PRAT7
+    field_role: dimension
+    type: STRING(1)
+    description: Product attr. 7
+    synonyms: []
+  - name: prat8_knvv
+    source: KNVV.PRAT8
+    field_role: dimension
+    type: STRING(1)
+    description: Prod. attribute 8
+    synonyms: []
+  - name: kabss_knvv
+    source: KNVV.KABSS
+    field_role: dimension
+    type: STRING(4)
+    description: Paym. guar. proc.
+    synonyms: []
+  - name: kkber_knvv
+    source: KNVV.KKBER
+    field_role: dimension
+    type: STRING(4)
+    description: Cred. Contr. Area
+    synonyms: []
+  - name: cassd_knvv
+    source: KNVV.CASSD
+    field_role: dimension
+    type: STRING(2)
+    description: Sales block
+    synonyms: []
+  - name: agrel_knvv
+    source: KNVV.AGREL
+    field_role: dimension
+    type: STRING(1)
+    description: Agency business
+    synonyms: []
+  - name: megru_knvv
+    source: KNVV.MEGRU
+    field_role: dimension
+    type: STRING(4)
+    description: UoM Group
+    synonyms: []
+  - name: podkz_knvv
+    source: KNVV.PODKZ
+    field_role: dimension
+    type: STRING(1)
+    description: POD-relevant
+    synonyms: []
+  - name: podtg_knvv
+    source: KNVV.PODTG
+    field_role: measure
+    type: DECIMAL(11)
+    description: POD timeframe
+    synonyms: []
+  - name: blind_knvv
+    source: KNVV.BLIND
+    field_role: dimension
+    type: STRING(1)
+    description: Document Index
+    synonyms: []
+  - name: carrier_notif_knvv
+    source: KNVV.CARRIER_NOTIF
+    field_role: dimension
+    type: STRING(1)
+    description: Carrier Notification
+    synonyms: []
+relationships: []

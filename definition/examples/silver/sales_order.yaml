@@ -1427,7 +1427,7 @@ relationships:
     join_condition: "SILVER_SD_SALES_ORDER.vkorg_vbak = SILVER_SALES_ORGANIZATION.vkorg_tvkot"
     semantic_label: "sold_by_org"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Sales organization that owns the order"
 
@@ -1436,7 +1436,7 @@ relationships:
     join_condition: "SILVER_SD_SALES_ORDER.kunnr_vbak = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "sold_to_customer"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Customer/ sold to party / Customer detail"
 

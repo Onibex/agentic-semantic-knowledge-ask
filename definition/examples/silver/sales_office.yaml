@@ -1,0 +1,109 @@
+id: silver_s4h_sd_sales_office
+internal_id: s4h_100_23
+db_table_name: SILVER_SALES_OFFICE
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORGANIZATIONAL STRUCTURE
+module: SD
+tag1: ''
+tag2: SD-MD
+name: sales_office
+classification: C
+description: 'Sales office configuration built from TVBUR + TVKBT (language-dependent texts): one row per office per language. Use to resolve office names — pin `spras_tvkbt` to one language when selecting texts — or to group sales performance by office.'
+entity_role: reference
+grain:
+  entity_grain:
+    - vkbur_tvbur
+    - spras_tvkbt
+  business_grain: sales_office_item
+composed_of:
+  - bronze_s4h_tvbur_sales_off
+  - bronze_s4h_tvkbt_sales_off_txt
+join_graph:
+  - left_table: TVBUR
+    right_table: TVKBT
+    join_type: INNER
+    condition: TVBUR.VKBUR = TVKBT.VKBUR
+    sequence: 2
+fields:
+  - name: mandt_tvbur
+    source: TVBUR.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: vkbur_tvbur
+    source: TVBUR.VKBUR
+    field_role: identifier
+    type: STRING(4)
+    description: Sales office code (grain member). For the name select `bezei_tvkbt`, pinning `spras_tvkbt` to one language.
+    synonyms: []
+  - name: adrnr_tvbur
+    source: TVBUR.ADRNR
+    field_role: dimension
+    type: STRING(10)
+    description: Address
+    synonyms: []
+  - name: ernam_tvbur
+    source: TVBUR.ERNAM
+    field_role: dimension
+    type: STRING(12)
+    description: Created by
+    synonyms: []
+  - name: txnam_adr_tvbur
+    source: TVBUR.TXNAM_ADR
+    field_role: dimension
+    type: STRING(16)
+    description: Address text name
+    synonyms: []
+  - name: txnam_kop_tvbur
+    source: TVBUR.TXNAM_KOP
+    field_role: dimension
+    type: STRING(16)
+    description: Letter header text
+    synonyms: []
+  - name: txnam_fus_tvbur
+    source: TVBUR.TXNAM_FUS
+    field_role: dimension
+    type: STRING(16)
+    description: Footer lines text
+    synonyms: []
+  - name: txnam_gru_tvbur
+    source: TVBUR.TXNAM_GRU
+    field_role: dimension
+    type: STRING(16)
+    description: Greeting text name
+    synonyms: []
+  - name: txnam_sdb_tvbur
+    source: TVBUR.TXNAM_SDB
+    field_role: dimension
+    type: STRING(16)
+    description: Text SDS sender
+    synonyms: []
+  - name: mandt_tvkbt
+    source: TVKBT.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_tvkbt
+    source: TVKBT.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: vkbur_tvkbt
+    source: TVKBT.VKBUR
+    field_role: identifier
+    type: STRING(4)
+    description: Sales Office
+    synonyms: []
+  - name: bezei_tvkbt
+    source: TVKBT.BEZEI
+    field_role: dimension
+    type: STRING(20)
+    description: "Sales office name, language-dependent: filter `spras_tvkbt` (e.g. 'E') to get one row per office. For the code use `vkbur_tvbur`."
+    synonyms: []
+relationships: []

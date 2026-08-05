@@ -221,7 +221,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_org_id = SILVER_SALES_ORGANIZATION.vkorg_tvkot"
     semantic_label: "sold_by_org"
     traversal_cost: 4
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Sales org owning the order. The org NAME is already denormalized as `sales_org` — only traverse for other org attributes."
 
@@ -230,7 +230,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.distr_chl_id = SILVER_DISTRIBUTION_CHANNEL.vtweg_tvtw"
     semantic_label: "sold_through_channel"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Distribution channel through which the order was placed"
 
@@ -239,7 +239,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.division_id = SILVER_SALES_DIVISION.spart_tspa"
     semantic_label: "belongs_to_division"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Sales division responsible for the product line"
 
@@ -248,7 +248,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_office_id = SILVER_SALES_OFFICE.vkbur_tvbur"
     semantic_label: "managed_by_office"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Sales office managing this order"
 
@@ -257,7 +257,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.shipping_conditions_id = SILVER_SHIPPING_CONDITION.vsbed_tvsbt"
     semantic_label: "shipped_under"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Shipping conditions applied to this order"
 
@@ -266,7 +266,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
     semantic_label: "ordered_by"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: false
     description: "Customer who placed the sales order"
 
@@ -275,7 +275,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.matl_group_vbap = SILVER_MATERIAL_GROUP.matkl_t023"
     semantic_label: "belongs_to_material_group"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: true
     description: "Material group classification for this order item"
 
@@ -284,7 +284,7 @@ relationships:
     join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.prodh_id = SILVER_MATERIAL_HIERARCHY.prodh_t179"
     semantic_label: "classified_in_hierarchy"
     traversal_cost: 1
-    aggregation_safety: "safe"
+    aggregation_safety: "requires_dedup"
     cross_module: true
     description: "Product hierarchy classification for this order item"
 

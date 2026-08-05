@@ -165,8 +165,8 @@ definition/               # (this folder inside agentic-semantic-knowledge-ask)
 │   └── BRONZE_LAYER.md                ← Bronze layer specification
 ├── examples/                          ← organised by LAYER, never by module
 │   ├── gold/                          ← 4 Business Logic Data Products
-│   ├── silver/                        ← 4 Foundational Data Products
-│   └── bronze/                        ← 15 raw nodes (the lineage of the four Silvers)
+│   ├── silver/                        ← 12 Foundational Data Products
+│   └── bronze/                        ← 15 raw nodes (the lineage of sales_order, trading_goods, inv_mov_stock and plant)
 └── LICENSE
 ```
 

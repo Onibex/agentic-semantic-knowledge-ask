@@ -1,0 +1,67 @@
+id: silver_s4h_sd_sales_division
+internal_id: s4h_100_22
+db_table_name: SILVER_SALES_DIVISION
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORGANIZATIONAL STRUCTURE
+module: SD
+tag1: ''
+tag2: SD-MD
+name: sales_division
+classification: C
+description: 'Sales division configuration built from TSPA + TSPAT (language-dependent texts): one row per division per language. Use to resolve division names — pin `spras_tspat` to one language when selecting texts — or to group revenue by division.'
+entity_role: reference
+grain:
+  entity_grain:
+    - spart_tspa
+    - spras_tspat
+  business_grain: sales_division_item
+composed_of:
+  - bronze_s4h_tspa_sales_div
+  - bronze_s4h_tspat_sales_div_txt
+join_graph:
+  - left_table: TSPA
+    right_table: TSPAT
+    join_type: INNER
+    condition: TSPA.SPART = TSPAT.SPART
+    sequence: 2
+fields:
+  - name: mandt_tspa
+    source: TSPA.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spart_tspa
+    source: TSPA.SPART
+    field_role: identifier
+    type: STRING(2)
+    description: Sales division code (grain member). For the name select `vtext_tspat`, pinning `spras_tspat` to one language.
+    synonyms: []
+  - name: mandt_tspat
+    source: TSPAT.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_tspat
+    source: TSPAT.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: spart_tspat
+    source: TSPAT.SPART
+    field_role: identifier
+    type: STRING(2)
+    description: Division
+    synonyms: []
+  - name: vtext_tspat
+    source: TSPAT.VTEXT
+    field_role: dimension
+    type: STRING(20)
+    description: "Sales division name, language-dependent: filter `spras_tspat` (e.g. 'E') to get one row per division. For the code use `spart_tspa`."
+    synonyms: []
+relationships: []

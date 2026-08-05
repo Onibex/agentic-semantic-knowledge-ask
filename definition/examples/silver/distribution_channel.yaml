@@ -1,0 +1,67 @@
+id: silver_s4h_sd_distribution_channel
+internal_id: s4h_100_25
+db_table_name: SILVER_DISTRIBUTION_CHANNEL
+layer: silver
+version: '1'
+source_system: s4h
+source_system_no: 100
+business_process: ORGANIZATIONAL STRUCTURE
+module: SD
+tag1: ''
+tag2: SD-MD
+name: distribution_channel
+classification: C
+description: 'Distribution channel configuration built from TVTW + TVTWT (language-dependent texts): one row per channel per language. Use to resolve channel names — pin `spras_tvtwt` to one language when selecting texts — or to compare revenue across channels (e.g. wholesale vs retail).'
+entity_role: reference
+grain:
+  entity_grain:
+    - vtweg_tvtw
+    - spras_tvtwt
+  business_grain: distribution_channel_item
+composed_of:
+  - bronze_s4h_tvtw_distr_chann
+  - bronze_s4h_tvtwt_distr_chann_txt
+join_graph:
+  - left_table: TVTW
+    right_table: TVTWT
+    join_type: INNER
+    condition: TVTW.VTWEG = TVTWT.VTWEG
+    sequence: 2
+fields:
+  - name: mandt_tvtw
+    source: TVTW.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: vtweg_tvtw
+    source: TVTW.VTWEG
+    field_role: identifier
+    type: STRING(2)
+    description: Distribution channel code (grain member). For the name select `vtext_tvtwt`, pinning `spras_tvtwt` to one language.
+    synonyms: []
+  - name: mandt_tvtwt
+    source: TVTWT.MANDT
+    field_role: dimension
+    type: STRING(3)
+    description: Client
+    synonyms: []
+  - name: spras_tvtwt
+    source: TVTWT.SPRAS
+    field_role: identifier
+    type: STRING(1)
+    description: Language key (grain member) — pin to one language (e.g. 'E') when selecting texts.
+    synonyms: []
+  - name: vtweg_tvtwt
+    source: TVTWT.VTWEG
+    field_role: identifier
+    type: STRING(2)
+    description: Distribution Channel
+    synonyms: []
+  - name: vtext_tvtwt
+    source: TVTWT.VTEXT
+    field_role: dimension
+    type: STRING(20)
+    description: "Distribution channel name, language-dependent: filter `spras_tvtwt` (e.g. 'E') to get one row per channel. For the code use `vtweg_tvtw`."
+    synonyms: []
+relationships: []
