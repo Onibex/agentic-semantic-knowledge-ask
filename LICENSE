@@ -7,7 +7,9 @@ Each directory carries its own full license text; this file is the authoritative
 |---|---|---|
 | `definition/**` | GNU Affero General Public License v3.0 (AGPL-3.0) | [`definition/LICENSE`](definition/LICENSE) |
 | `platform/**` | PolyForm Strict License 1.0.0 | [`platform/LICENSE.md`](platform/LICENSE.md) |
-| Root files (`README.md`, this file) | CC BY 4.0 | <https://creativecommons.org/licenses/by/4.0/> |
+
+Files outside those two directories (this file, `README.md`) are
+© Onibex, Inc., all rights reserved.
 
 In short:
 
