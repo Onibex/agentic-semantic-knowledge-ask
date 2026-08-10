@@ -90,10 +90,19 @@ agentic-semantic-knowledge-ask/
 
 ## License
 
-The entire repository — both the open ASK specification under `definition/` and the
-Onibex ASK Platform manual under `platform/` — is licensed under **AGPL-3.0**. See
-[`LICENSE`](LICENSE). Onibex publishes ASK so any vendor, customer, or community member
-can adopt, extend, or implement it without proprietary lock-in.
+The two tracks of this repository are licensed independently — see the
+[`LICENSE`](LICENSE) map for the authoritative table:
+
+- **`definition/`** — the open ASK specification, under **AGPL-3.0**
+  ([`definition/LICENSE`](definition/LICENSE)). Any vendor, customer, or community
+  member can adopt, extend, or implement it without proprietary lock-in.
+- **`platform/`** — the Onibex ASK Platform, under **PolyForm Strict 1.0.0**
+  ([`platform/LICENSE.md`](platform/LICENSE.md)). Source-available for noncommercial
+  use, research, and evaluation; commercial or production use requires a commercial
+  license from [Onibex](https://onibex.com).
+
+"Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
+from both licenses.
 
 ---
 

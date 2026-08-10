@@ -260,3 +260,10 @@ If ASK is useful in your research or product, please cite it:
   url    = {https://github.com/Onibex/agentic-semantic-knowledge-ask/tree/main/definition}
 }
 ```
+
+---
+
+## License
+
+The ASK specification is licensed under **AGPL-3.0** — see [`LICENSE`](LICENSE).
+Adopt it, extend it, or implement it: no proprietary lock-in.
