@@ -1,0 +1,57 @@
+name: platform-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ['platform/**']
+  pull_request:
+    paths: ['platform/**']
+
+concurrency:
+  group: platform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-hygiene:
+    name: Python lint + boundary tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tooling
+        run: pip install ruff pytest
+      - name: Ruff
+        working-directory: platform
+        run: ruff check .
+      - name: Boundary tests
+        working-directory: platform
+        run: pytest tests/boundary/ -q
+
+  spa:
+    name: ${{ matrix.spa }} typecheck + build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        spa: [ask-admin-spa, ask-chat-spa, ask-setup-spa]
+    defaults:
+      run:
+        working-directory: platform/${{ matrix.spa }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: platform/${{ matrix.spa }}/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
