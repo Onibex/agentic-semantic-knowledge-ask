@@ -1,0 +1,20 @@
+{
+  "schema_mode": "yaml",
+  "hybrid_pipeline": {
+    "anchor_top_k": 3,
+    "expand_max_hops": 1,
+    "expand_max_total": 5,
+    "use_two_pass_flow": true,
+    "max_expansion_rounds": 1
+  },
+  "sap_ai_core": {
+    "config_path": "config/aicore_config.json"
+  },
+  "sap_s4hana": {
+    "host": "https://<SAP_S4HANA_HOST>:44300",
+    "odata_path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV",
+    "username": "<SAP_USERNAME>",
+    "mcp_url": "http://agenticai-mcp:4004",
+    "port": 4004
+  }
+}

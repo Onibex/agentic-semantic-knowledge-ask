@@ -1,0 +1,140 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Orchestrator — FastAPI deployment
+# Wiring shared with the rest of the namespace:
+#   - Namespace onibex-agenticai
+#   - XSUAA credentials from the xsuaa-agenticai-secret
+#   - config/settings.json from the shared agenticai-config-pvc
+# ─────────────────────────────────────────────────────────────────────────────
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ask-orchestrator
+  namespace: onibex-agenticai
+  labels:
+    app: ask-orchestrator
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # PVC is RWO — one writer at a time
+  selector:
+    matchLabels:
+      app: ask-orchestrator
+  template:
+    metadata:
+      labels:
+        app: ask-orchestrator
+    spec:
+      # Co-locate with the pod that owns the RWO config PVC so both can mount it
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: agenticai-config
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: ask-orchestrator
+          # NOTE: tag the image during CI; replace `latest` with a SHA
+          image: <your-registry>/onibex-ask-orchestrator:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            # ── Production posture (NEVER override DEV_BYPASS_AUTH=true here) ─
+            - name: ENVIRONMENT
+              value: "production"
+            - name: DEV_BYPASS_AUTH
+              value: "false"
+            - name: LOG_LEVEL
+              value: "INFO"
+            # ── XSUAA credentials from the existing secret ───────────────────
+            - name: XSUAA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: url
+            - name: XSUAA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: clientid
+            - name: XSUAA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: clientsecret
+            - name: XSUAA_UAA_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: uaadomain
+            - name: XSUAA_VERIFICATION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: verificationkey
+            - name: XSUAA_XSAPPNAME
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: xsappname
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "3Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+      volumes:
+        - name: config-volume
+          persistentVolumeClaim:
+            claimName: agenticai-config-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ask-orchestrator-service
+  namespace: onibex-agenticai
+spec:
+  selector:
+    app: ask-orchestrator
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Exposed through an APIRule with noAuth: true — the orchestrator does its own
+# XSUAA validation in-process. Replace the host with your cluster's domain.
+apiVersion: gateway.kyma-project.io/v2
+kind: APIRule
+metadata:
+  name: ask-orchestrator-apirule
+  namespace: onibex-agenticai
+spec:
+  hosts:
+    - ask-orchestrator.<YOUR_CLUSTER_DOMAIN>
+  service:
+    name: ask-orchestrator-service
+    port: 80
+  gateway: kyma-system/kyma-gateway
+  rules:
+    - path: /*
+      methods: ["GET", "POST", "OPTIONS"]
+      noAuth: true

@@ -1,0 +1,282 @@
+{
+  "realm": "ask-platform",
+  "enabled": true,
+  "displayName": "Agentic Semantic Knowledge Platform",
+  "loginTheme": "onibex",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "ask-admin",
+        "description": "Full administrative access to the ASK Platform admin API",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ask-user",
+        "description": "Standard ASK Platform user — query and read access. Default role granted to every user of the realm.",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ask-admin-spa",
+      "name": "ASK Studio",
+      "description": "Browser-based Single Page Application for the ASK Platform admin console",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "https://*.kyma.*.cloud.sap/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${clientId}.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "ask-admin-spa"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ask-chat-spa",
+      "name": "ASK Chat SPA",
+      "description": "Browser SPA for the ASK Platform chat UI",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:5174/*",
+        "https://*.kyma.*.cloud.sap/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${clientId}.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "ask-chat-spa"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ask-setup-spa",
+      "name": "ASK Setup SPA",
+      "description": "Browser SPA for the ASK Platform system-configuration UI",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:5175/*",
+        "https://*.kyma.*.cloud.sap/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${clientId}.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "ask-setup-spa"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "oauth2-proxy",
+      "name": "oauth2-proxy (hosted UIs)",
+      "description": "Confidential OIDC client for the oauth2-proxy fronting locally hosted UIs (local demo). Rotate the secret for any non-local use.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "oauth2-proxy-local-demo-secret-change-me",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:8500/oauth2/callback"],
+      "webOrigins": ["+"]
+    },
+    {
+      "clientId": "kafka-ingest",
+      "name": "kafka-ingest (M2M / HTTP Sink)",
+      "description": "Confidential OIDC client for machine-to-machine ingestion (Kafka Connect HTTP Sink / Postman) via the OAuth2 client_credentials grant. Service accounts enabled; no browser flow. Rotate the secret for any non-local use.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "kafka-ingest-local-demo-secret-change-me",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "external-api",
+      "name": "external-api (B2B external API)",
+      "description": "Confidential client_credentials client for external B2B integrations (watsonx, n8n, Zapier) calling the orchestrator /external/* endpoints. Service accounts on; no browser flow. Rotate the secret for any non-local use.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "external-api-local-demo-secret-change-me",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "demo",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "demo@onibex.com",
+      "firstName": "Demo",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "ChangeMe123", "temporary": false }
+      ],
+      "realmRoles": ["ask-admin"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "user@onibex.com",
+      "firstName": "Standard",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "ChangeMe123", "temporary": false }
+      ],
+      "realmRoles": ["ask-user"]
+    },
+    {
+      "username": "service-account-kafka-ingest",
+      "enabled": true,
+      "serviceAccountClientId": "kafka-ingest",
+      "realmRoles": ["ask-admin"]
+    }
+  ],
+  "defaultRoles": ["offline_access", "uma_authorization", "ask-user"],
+  "requiredCredentials": ["password"],
+  "passwordPolicy": "length(8) and digits(1) and upperCase(1)",
+  "otpPolicyType": "totp",
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+  },
+  "smtpServer": {},
+  "eventsEnabled": false,
+  "adminEventsEnabled": false,
+  "adminEventsDetailsEnabled": false,
+  "internationalizationEnabled": false,
+  "supportedLocales": ["en", "es"],
+  "defaultLocale": "en",
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000
+}

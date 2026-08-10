@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-action-execution"
+version = "0.1.0"
+description = "ASK Platform — Action execution service (handles ACTION_EXECUTION macro intent via MCP)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

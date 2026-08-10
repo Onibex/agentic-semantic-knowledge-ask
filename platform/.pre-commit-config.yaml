@@ -1,0 +1,42 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Pre-commit hooks for agentic-ai.
+# Install once:   pre-commit install
+# Run on demand:  pre-commit run --all-files
+# Hooks run on staged files only by default — fast, lint-on-commit.
+# ──────────────────────────────────────────────────────────────────────────
+
+repos:
+  # Ruff — Python lint + format (replaces black, isort, flake8, pyupgrade).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Generic hygiene — only on text files.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(workspace[^/]*/|docs/|venv/|.*/node_modules/)
+      - id: end-of-file-fixer
+        exclude: ^(workspace[^/]*/|docs/|venv/|.*/node_modules/)
+      - id: check-yaml
+        # Semantic-layer YAMLs are validated by Pydantic on ingest; the deploy
+        # manifests are multi-document, which this hook rejects by default.
+        exclude: ^(workspace[^/]*/|deploy/|\.pre-commit-config\.yaml$)
+      - id: check-toml
+      - id: check-json
+        # tsconfig*.json uses JSON5 (comments, trailing commas) by convention.
+        # config/aicore_config.json + settings.json are kept out: they carry comments.
+        exclude: ^(config/aicore_config\.json|config/settings\.json|.*/tsconfig.*\.json)
+      - id: check-added-large-files
+        args: [--maxkb=2000]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+# Frontend lint is not wired into pre-commit — run it per SPA:
+#   cd ask-admin-spa && npm run lint

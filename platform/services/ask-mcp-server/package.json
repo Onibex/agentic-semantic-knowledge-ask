@@ -1,0 +1,11 @@
+{
+  "name": "sap-salesorder-mcp-server",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node patch.js",
+    "start": "node node_modules/odata-mcp-proxy/dist/index.js"
+  },
+  "dependencies": {
+    "odata-mcp-proxy": "latest"
+  }
+}

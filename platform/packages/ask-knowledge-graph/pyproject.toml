@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-knowledge-graph"
+version = "0.1.0"
+description = "ASK Platform — Knowledge Graph read + write API over OpenSearch (4 ask-* indices)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "opensearch-py>=2.0",
+    "ruamel.yaml>=0.18",  # the one YAML library — round-trip parse + serialize (YAML 1.2)
+    # rag_indexing_service / rag_vectorstore_client import langchain_core.documents.
+    # Pin the 0.3 line (see ask-llm-gateway pyproject for the 1.x footgun) + make
+    # the previously-transitive dep explicit so KG resolves standalone too.
+    "langchain-core>=0.3,<0.4",
+]
+
+[project.scripts]
+ask-kg = "ask_knowledge_graph.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

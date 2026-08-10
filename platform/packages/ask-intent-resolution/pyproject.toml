@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-intent-resolution"
+version = "0.1.0"
+description = "ASK Platform — Intent Resolution capability (3 strategies behind a single IntentResolver Protocol)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    # Strategies wrap legacy graphs that depend on langgraph/langchain.
+    "langgraph>=0.2",
+    "langchain-core>=0.3,<0.4",  # 0.3 line only — see ask-llm-gateway pyproject for the 1.x footgun
+    "ask-knowledge-graph",   # Iter 4 — SmartStrategy uses the typed reader for mget
+    # NOTE: Flash reuses ask-sql-generation's dialect-prompt registry via a LAZY,
+    # optional import (try/except fallback) — same pattern as the optional
+    # ask-llm-gateway import in ask-sql-generation. It is deliberately NOT a
+    # declared dependency: declaring it would force the orchestrator Dockerfile to
+    # install ask-sql-generation BEFORE ask-intent-resolution, which it does not.
+    # sql-generation is always present in the orchestrator image (the only place
+    # Flash runs), so the lazy import resolves at runtime.
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

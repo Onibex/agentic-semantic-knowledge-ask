@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies and apply Basic Auth patch (via postinstall)
+COPY services/ask-mcp-server/package.json .
+COPY services/ask-mcp-server/patch.js .
+RUN npm install
+
+# Copy default MCP config (used as seed if PVC has no config yet)
+COPY services/ask-mcp-server/api-config.json .
+
+# Startup script: reads api-config.json from PVC if available
+COPY services/ask-mcp-server/start.sh .
+RUN sed -i 's/\r//' start.sh && chmod +x start.sh
+
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ENV PORT=4004
+
+EXPOSE 4004
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+  CMD wget -qO- http://localhost:4004/health || exit 1
+
+CMD ["sh", "/app/start.sh"]

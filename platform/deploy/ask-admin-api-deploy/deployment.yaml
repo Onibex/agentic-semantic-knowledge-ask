@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Admin API — FastAPI admin backend (port 8081)
+# Namespace: onibex-agenticai
+#
+# Shares the agenticai-config-pvc (RWO) with the pod that owns it — must be
+# co-located on the same node as agenticai-config.
+#
+# Auth: validate_token accepts both XSUAA (BTP) and Keycloak tokens
+# depending on AUTH_MODE.  Client secret supplied via xsuaa-agenticai-secret.
+#
+# The SPA nginx proxies /api/admin/* and /api/* here — no external APIRule
+# needed for the API itself (in-cluster only, reached through the SPA).
+# If you need direct external access (e.g. for testing), uncomment the APIRule.
+# ─────────────────────────────────────────────────────────────────────────────
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ask-admin-api
+  namespace: onibex-agenticai
+  labels:
+    app: ask-admin-api
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # PVC is RWO — one writer at a time
+  selector:
+    matchLabels:
+      app: ask-admin-api
+  template:
+    metadata:
+      labels:
+        app: ask-admin-api
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: agenticai-config
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: ask-admin-api
+          image: <your-registry>/onibex-ask-admin-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: AUTH_MODE
+              value: "both"       # accepts XSUAA and Keycloak tokens
+            - name: LOG_LEVEL
+              value: "INFO"
+            # ── XSUAA credentials ────────────────────────────────────────────
+            - name: XSUAA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: url
+            - name: XSUAA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: clientid
+            - name: XSUAA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: clientsecret
+            - name: XSUAA_UAA_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: uaadomain
+            - name: XSUAA_VERIFICATION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: verificationkey
+            - name: XSUAA_XSAPPNAME
+              valueFrom:
+                secretKeyRef:
+                  name: xsuaa-agenticai-secret
+                  key: xsappname
+            # ── Keycloak (optional — set when AUTH_MODE includes keycloak) ───
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-agenticai-secret
+                  key: issuer
+                  optional: true
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+      volumes:
+        - name: config-volume
+          persistentVolumeClaim:
+            claimName: agenticai-config-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ask-admin-api           # nginx.conf resolves this hostname in-cluster
+  namespace: onibex-agenticai
+spec:
+  selector:
+    app: ask-admin-api
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: ClusterIP

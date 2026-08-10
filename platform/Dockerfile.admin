@@ -1,0 +1,117 @@
+# syntax=docker/dockerfile:1.6
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Admin API — FastAPI service backing the admin + setup React SPAs.
+#
+# Physically separate from ask-orchestrator: different pod, different port,
+# different audience. Each SPA is an nginx image that proxies /api/* to this
+# service over HTTP; other REST clients call it directly.
+#
+# Bundled typed packages:
+#   - ask-admin-api          The FastAPI app itself.
+#   - ask-knowledge-graph    DictionaryWriter + IngestionService + Reader +
+#                            RagIndexingService + rag_vectorstore_client.
+#   - ask-llm-gateway        SAPAICoreEmbedder + aicore_env helper.
+#   - ask-sql-executor       Pulled transitively by knowledge-graph factories.
+#
+# Intentionally NOT bundled:
+#   - the React SPAs         Static nginx images of their own.
+#   - ask-orchestrator       Different service.
+#   - ask-action-execution   Different service.
+# ─────────────────────────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+# Bring uv from the official image — 10-100x faster than pip, no venv shenanigans
+# with --system. Cache strategy: requirements.txt (heavy 3rd-party) is cached via
+# the mount (NO --no-cache). Local ask-* packages are installed WITH --no-cache —
+# they share version 0.1.0, so uv would otherwise serve a stale cached wheel and
+# source edits would NOT land on `docker compose up -d --build`.
+COPY --from=ghcr.io/astral-sh/uv:0.5.13 /uv /uvx /usr/local/bin/
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc \
+        libpq-dev \
+        && rm -rf /var/lib/apt/lists/*
+
+ENV UV_LINK_MODE=copy
+
+# Third-party deps (fastapi, uvicorn, pydantic, langchain, gen_ai_hub, etc.).
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -r requirements.txt
+
+# Typed packages — install in dependency order.
+COPY packages/ask-llm-gateway/pyproject.toml      packages/ask-llm-gateway/
+COPY packages/ask-llm-gateway/src                 packages/ask-llm-gateway/src
+# litellm + langchain-litellm are BASE deps of ask-llm-gateway (LiteLLM serves
+# every non-sap_aicore provider). The local offline embedder (huggingface +
+# sentence-transformers) is HEAVY (torch + CUDA, several GB) and off by default.
+# To test the `huggingface` embedder, rebuild with:
+#   docker compose build --build-arg GATEWAY_EXTRAS="[huggingface]" ask-admin-api
+ARG GATEWAY_EXTRAS=
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache "packages/ask-llm-gateway${GATEWAY_EXTRAS}"
+
+COPY packages/ask-sql-executor/pyproject.toml     packages/ask-sql-executor/
+COPY packages/ask-sql-executor/src                packages/ask-sql-executor/src
+# Multi-DB drivers are OPTIONAL extras. The admin-api needs them for the
+# /db/connections/{id}/test probe (mirrors the orchestrator, which needs them to
+# run chat queries). Default build is slim (HANA + PostgreSQL from requirements
+# .txt); pass extras to enable more, e.g.:
+#   EXECUTOR_EXTRAS="[snowflake,databricks,clickhouse,bigquery]" docker compose up -d --build
+# Those four are pure-pip. sqlserver/fabric additionally need the system "ODBC
+# Driver 18 for SQL Server"; db2 needs the IBM clidriver — add those apt packages
+# before enabling those extras.
+ARG EXECUTOR_EXTRAS=
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache "packages/ask-sql-executor${EXECUTOR_EXTRAS}"
+
+COPY packages/ask-knowledge-graph/pyproject.toml  packages/ask-knowledge-graph/
+COPY packages/ask-knowledge-graph/src             packages/ask-knowledge-graph/src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache packages/ask-knowledge-graph
+
+COPY packages/ask-admin-api/pyproject.toml        packages/ask-admin-api/
+COPY packages/ask-admin-api/src                   packages/ask-admin-api/src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache packages/ask-admin-api
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+        curl \
+        git \
+        && rm -rf /var/lib/apt/lists/*
+
+# The semantic-layer repo is a bind mount owned by the host user, while git
+# inside the container runs as a different uid → git's CVE-2022-24765 check
+# aborts publish with "detected dubious ownership". Trust any repo path; this
+# is a single-purpose backend container that only ever touches /app/semantic-layer.
+RUN git config --system --add safe.directory '*'
+
+WORKDIR /app
+
+# Bring across the installed Python packages (third-party + ask-* typed).
+# pip install (non-editable) writes each package into site-packages so the
+# runtime stage doesn't need /app/packages copies — kept just the
+# site-packages tree + entrypoints.
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin                          /usr/local/bin
+
+# Shared config dir; the runtime PVC mount overrides this. The admin service
+# reads config/settings.json (same PVC as ask-orchestrator).
+RUN mkdir -p /app/config
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8081
+
+# uvicorn straight to the FastAPI app — no extra process supervisor.
+CMD ["uvicorn", "ask_admin_api.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8081", \
+     "--proxy-headers"]

@@ -1,0 +1,90 @@
+#  ──────────────────────────────────────────────────────────────────────────
+#  Workspace-level tooling config (ruff + coverage).
+#  Individual packages keep their own pyproject.toml for build + deps.
+#  This file is NOT a buildable project — it only carries shared dev tooling
+#  so we don't duplicate config across 11 packages.
+#  ──────────────────────────────────────────────────────────────────────────
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    "venv",
+    ".venv",
+    "node_modules",
+    "ask-admin-spa",
+    "config",
+    "workspace",
+    "deploy",
+    "scratch",
+    "docs",
+    "**/_legacy_*.py",
+]
+
+[tool.ruff.lint]
+# Conservative starter set: real bugs + import hygiene + obvious smells.
+# We can expand once the baseline is green.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (unused imports, undefined names, ...)
+    "I",   # isort (import order)
+    "B",   # flake8-bugbear (real bugs)
+    "UP",  # pyupgrade (modernize syntax for py311+)
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "E501",  # line too long — formatter handles it; long strings still fine
+    "B008",  # do not perform function call in argument defaults — FastAPI uses Depends(...)
+    "E741",  # ambiguous variable name (l, I, O) — too noisy on legacy code
+    # Tightening backlog — re-enable individually as we touch the surrounding code:
+    "B904",  # raise X from exc — 53 sites, mostly internal helpers
+    "B905",  # zip(..., strict=...) — 5 sites
+    "UP042", # StrEnum migration — 5 enums, behavior-equivalent but semantically distinct
+    "E402",  # module-import-not-at-top — circular-import workarounds, intentional
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["B"]            # tests can use assert + magic vars
+"**/__init__.py" = ["F401"]      # re-export pattern
+"**/_legacy_*.py" = ["F", "B", "E", "UP", "W"]  # frozen legacy modules
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "ask_orchestrator",
+    "ask_admin_api",
+    "ask_intent_resolution",
+    "ask_sql_generation",
+    "ask_sql_executor",
+    "ask_knowledge_graph",
+    "ask_schema_service",
+    "ask_docs_service",
+    "ask_llm_gateway",
+    "ask_action_execution",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+#  ─── Coverage ─────────────────────────────────────────────────────────────
+[tool.coverage.run]
+branch = true
+source = ["packages"]
+omit = [
+    "*/tests/*",
+    "*/_legacy_*.py",
+    "*/__init__.py",
+    "*/cli.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@overload",
+]

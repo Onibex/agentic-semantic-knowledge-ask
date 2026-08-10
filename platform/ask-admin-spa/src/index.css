@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./theme.css";
+
+/* Design tokens live in ./tokens.css and are mapped to Tailwind utilities in
+   ./theme.css (both synced from design/*.css). Do not hardcode colors. */
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    font-family: var(--font-sans);
+  }
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* React Flow overrides */
+.react-flow__node { cursor: pointer; }

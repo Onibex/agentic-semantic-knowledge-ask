@@ -1,0 +1,96 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Studio (admin SPA) — nginx static bundle + reverse proxy
+# Namespace: onibex-agenticai (same as orchestrator + admin-api)
+#
+# The SPA authenticates via browser-side PKCE (Keycloak or XSUAA) — no
+# server-side JWT validation is needed here.  The APIRule is noAuth: true;
+# all API traffic is forwarded to ask-admin-api-service:8081 through nginx.
+#
+# nginx routing (nginx.conf baked into the image):
+#   /api/admin/*  →  ask-admin-api:8081/v1/admin/*
+#   /api/*        →  ask-admin-api:8081/v1/viz/*
+#
+# Auth env-vars (VITE_*) are baked at image build time via Dockerfile ARGs.
+# To use a different IDP, rebuild the image with:
+#   docker build --build-arg VITE_AUTH_MODE=xsuaa \
+#                --build-arg VITE_XSUAA_URL=https://... \
+#                --build-arg VITE_XSUAA_CLIENT_ID=... \
+#                -t <your-registry>/onibex-ask-admin-spa:latest .
+# ─────────────────────────────────────────────────────────────────────────────
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ask-admin-spa
+  namespace: onibex-agenticai
+  labels:
+    app: ask-admin-spa
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: ask-admin-spa
+  template:
+    metadata:
+      labels:
+        app: ask-admin-spa
+    spec:
+      containers:
+        - name: ask-admin-spa
+          image: <your-registry>/onibex-ask-admin-spa:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ask-admin-spa-service
+  namespace: onibex-agenticai
+spec:
+  selector:
+    app: ask-admin-spa
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+# The SPA does its own PKCE auth in-browser — noAuth: true on the APIRule.
+# All API calls are proxied through nginx to ask-admin-api (in-cluster).
+apiVersion: gateway.kyma-project.io/v2
+kind: APIRule
+metadata:
+  name: ask-admin-spa-apirule
+  namespace: onibex-agenticai
+spec:
+  hosts:
+    - ask-admin-spa.<YOUR_CLUSTER_DOMAIN>
+  service:
+    name: ask-admin-spa-service
+    port: 80
+  gateway: kyma-system/kyma-gateway
+  rules:
+    - path: /*
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+      noAuth: true

@@ -1,0 +1,450 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Platform — Local deploy (docker-compose).
+#
+# Services (port map = <container>:<host>). Only the HOST port is what you open
+# in a browser / firewall; the container port is fixed and internal.
+#   - opensearch          (vector + KG store)         9200 → 9200
+#   - keycloak            (identity provider)         8080 → 8180
+#   - ask-orchestrator    (FastAPI chat backend)      8080 → ${ORCH_HOST_PORT:-8083}
+#   - ask-admin-api       (FastAPI admin backend)     8081 → ${ADMIN_API_HOST_PORT:-8081}
+#   - ask-admin-spa       (React admin UI + Nginx)      80 → 5173
+#   - ask-chat-spa        (React chat  UI + Nginx)      80 → 5174
+#   - ask-setup-spa       (React setup UI + Nginx)      80 → 5175
+#   - teams-bot           (Teams middleware, opt-in)  8085 → ${TEAM_BOT_HOST_PORT:-8085}
+#   - mcp-server          (SAP write ops,    opt-in)  4004 → ${MCP_HOST_PORT:-4004}
+#
+# Browser → SPA → backend: each SPA's Nginx proxies /api/* to the backend by
+# CONTAINER name (ask-admin-api:8081, ask-orchestrator:8080), NOT by host port.
+# So remapping ORCH_HOST_PORT / ADMIN_API_HOST_PORT does NOT affect the SPA flow —
+# those host ports only matter for EXTERNAL/M2M callers (watsonx, Kafka Connect
+# ingest) and direct health probes. Remap them (in .env) to coexist with a
+# co-located Confluent stack, which grabs 8083 (Connect) + 8081 (Schema Registry).
+#
+# Auth modes (controlled by AUTH_MODE env var):
+#   DEV_BYPASS_AUTH=true          → sin autenticación (default local, igual que antes)
+#   AUTH_MODE=keycloak + DEV_BYPASS_AUTH=false → autentica contra Keycloak local
+#   AUTH_MODE=xsuaa   + DEV_BYPASS_AUTH=false → autentica contra SAP XSUAA (prod)
+#
+# Para probar con Keycloak local:
+#   AUTH_MODE=keycloak DEV_BYPASS_AUTH=false docker-compose up
+#   Admin console: http://localhost:8180  (admin / admin o KC_ADMIN_PASSWORD)
+#   SPA login:     apunta VITE_AUTH_MODE=keycloak VITE_KEYCLOAK_URL=http://localhost:8180
+#                  VITE_KEYCLOAK_REALM=ask-platform en ask-admin-spa/.env.local
+#
+# Shared state:
+#   - ./config                 → /app/config (settings.json, aicore_config.json)
+#   - ./logs                   → /app/logs   (token_usage.jsonl)
+#   - $SEMANTIC_LAYER_HOST_PATH → /app/semantic-layer (external semantic-layer repo
+#                                with its OWN .git — see "Semantic layer" below)
+#   - .env                     → AICORE_* credentials + REPO_ROOT/WORKSPACE_PATH
+#
+# Semantic layer: the YAMLs live in a SEPARATE git repo from the code, with its
+# own .git, so YAML commits never mix with code commits. Set
+# SEMANTIC_LAYER_HOST_PATH in your .env (or shell) to that repo's absolute path
+# on the host; the admin-api container reads it via REPO_ROOT=/app/semantic-layer.
+#
+# Browser-facing host (local vs remote / EC2):
+#   Every browser-facing URL (Keycloak issuer + the 3 SPAs' baked VITE_KEYCLOAK_URL)
+#   is driven by ONE var, EXTERNAL_HOST (default: localhost). On a remote box set
+#   EXTERNAL_HOST=<public-DNS-or-IP> in .env and REBUILD the SPAs (VITE_* are baked
+#   at BUILD time). There is NO separate remote overlay: a remote deploy is THIS
+#   file plus a filled-in .env (see .env.ec2.example).
+#   CHAT_AUTH_MODE lets the chat SPA run dev-auth independently of AUTH_MODE
+#   (used on plain-HTTP EC2, where PKCE's crypto.subtle needs a secure context).
+#
+# Off by default via `profiles: [extras]` — a bare `docker compose up -d` (and
+# ./redeploy.sh) skips them, so the box only runs the 7 core services. Start them
+# with `docker compose --profile extras up -d` once you have their creds:
+#   - teams-bot    (needs BOT_APP_ID/PASSWORD)
+#   - mcp-server   (needs SAP S/4HANA creds)
+# Not defined here:
+#   - postgresql   (settings.json / DB registry points elsewhere by default)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: agentic-ai
+
+services:
+
+  # ─── OpenSearch (KG + vectorstore) ──────────────────────────────────────
+  opensearch:
+    image: opensearchproject/opensearch:3.3.0
+    container_name: agenticai-opensearch
+    # Memory sizing (root cause of the 2026-07-22 OOM crash-loop): capped at 700m
+    # with a 512m heap, heap + off-heap (256m direct) + JVM overhead (~150-250m)
+    # blew past the cgroup limit and the kernel OOM-killed the JVM in a loop
+    # (dmesg: CONSTRAINT_MEMCG, task=java, anon-rss ~690MB at the 700m limit).
+    # Golden rule: heap <= 50% of the container. NOTE: 1g proved too tight in
+    # practice — the 512m heap plus off-heap (256m direct) + metaspace/stacks/Lucene
+    # crept to ~1g under load and OOM-killed the JVM again (2026-07-28, anon-rss
+    # ~1032MB pegged at the 1g limit). 1.5g gives the 512m heap real off-heap +
+    # FS-cache headroom. Xms=Xmx lets mlockall lock the whole heap; the dropped
+    # ExitOnOutOfMemoryError means a transient spike no longer kills the node.
+    mem_limit: 1536m
+    mem_reservation: 768m
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true   # matches settings.json (use_ssl=false)
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m -XX:+UseG1GC
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile:  { soft: 65536, hard: 65536 }
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks: [ agenticai-net ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -q '\"status\":\"\\(green\\|yellow\\)\"'" ]
+      interval: 15s
+      timeout:  10s
+      retries:  10
+      start_period: 30s
+
+  # ─── Keycloak (identity provider — modo independiente de BTP) ──────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: agenticai-keycloak
+    mem_limit: 500m
+    mem_reservation: 200m
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN:          ${KC_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT:            "8080"
+      KC_HOSTNAME_STRICT:      "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      # Stable frontend URL so issued tokens always carry iss matching EXTERNAL_HOST.
+      # Set EXTERNAL_HOST=<EC2-IP> in .env for production; defaults to localhost.
+      # Lets oauth2-proxy validate the issuer while redeeming tokens over the
+      # internal keycloak:8080 URL. (Keycloak two-URL fix.)
+      KC_HOSTNAME_URL:         "http://${EXTERNAL_HOST:-localhost}:8180"
+      KC_LOG_LEVEL:            WARN
+      # Cap the JVM heap. By default Keycloak sizes the heap as a % of HOST RAM
+      # (MaxRAMPercentage), so on a big box it grabs ~2GB it doesn't need. A dev
+      # realm runs fine in 512MB. (OpenSearch is likewise capped to 512m above.)
+      JAVA_OPTS_KC_HEAP:       "-Xms128m -Xmx384m"   # low Xms: a dev IdP doesn't need pretouch/mlockall; keeps RSS ~390MB inside the 500m cap (Xms=Xmx pushed it to 91%)
+      # En KC 24 los endpoints /health se sirven en el PUERTO PRINCIPAL 8080
+      # (el management port dedicado :9000 recién existe desde KC 25). El
+      # healthcheck de abajo hace un probe TCP sobre 8080 sin curl/wget.
+      KC_HEALTH_ENABLED:       "true"
+    ports:
+      - "8180:8080"   # Admin console: http://localhost:8180
+    volumes:
+      # Realm config generado en T02 — se importa automáticamente al primer arranque
+      - ./packages/ask-admin-api/keycloak-realm-config.json:/opt/keycloak/data/import/ask-platform-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+      # Onibex-branded login theme (realm loginTheme=onibex). start-dev disables
+      # theme caching, so CSS edits show on browser refresh without a restart.
+      - ./keycloak/themes/onibex:/opt/keycloak/themes/onibex:ro
+    networks: [ agenticai-net ]
+    restart: unless-stopped
+    # La imagen oficial de Keycloak (UBI minimal) NO trae curl ni wget. Usamos
+    # TCP sockets (/dev/tcp) — solo verifica que el puerto HTTP 8080 esté
+    # escuchando, que es lo mínimo para considerar Keycloak listo. Usamos
+    # 127.0.0.1 (no "localhost") para forzar IPv4: localhost resuelve a ::1
+    # dentro del contenedor y da "Cannot assign requested address".
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && exec 3>&- || exit 1" ]
+      interval: 20s
+      timeout:  10s
+      retries:  15
+      start_period: 60s
+
+  # ─── ASK Orchestrator (chat backend) ────────────────────────────────────
+  ask-orchestrator:
+    build:
+      context: .
+      dockerfile: deploy/ask-orchestrator-deploy/Dockerfile
+      args:
+        # Local sentence-transformers embedder (HEAVY: torch) is OFF by default.
+        # To test it: GATEWAY_EXTRAS="[huggingface]" docker compose up -d --build
+        GATEWAY_EXTRAS: ${GATEWAY_EXTRAS:-}
+        # Optional SQL backend drivers (lite multi-DB). This multi-DB testing
+        # branch enables the pure-pip engines by default so chat can query them;
+        # override with EXECUTOR_EXTRAS= (empty) to slim, or add sqlserver/db2
+        # (need system ODBC/CLI libs). Must match ask-admin-api's value so the
+        # /db/connections/{id}/test probe has the same drivers as chat.
+        EXECUTOR_EXTRAS: "${EXECUTOR_EXTRAS:-[snowflake,databricks,clickhouse,bigquery]}"
+    image: agenticai-orchestrator:${APP_VERSION:-latest}
+    container_name: agenticai-orchestrator
+    mem_limit: 600m
+    mem_reservation: 250m
+    ports:
+      - "${ORCH_HOST_PORT:-8083}:8080"
+    env_file: [ .env ]
+    environment:
+      ENVIRONMENT:        local
+      DEV_BYPASS_AUTH:    ${DEV_BYPASS_AUTH:-true}
+      AUTH_MODE:          ${AUTH_MODE:-keycloak}
+      KEYCLOAK_JWKS_URL:  http://keycloak:8080/realms/ask-platform/protocol/openid-connect/certs
+      LOG_LEVEL:          INFO
+      PYTHONUNBUFFERED:   "1"
+      # OpenSearch is env-first (bootstrap store — its own creds can't live in
+      # the encrypted secret store that lives inside it). Inside the compose
+      # network the cluster is reachable as ``opensearch:9200``; no settings.json
+      # edit needed. Override any of these in .env.
+      OPENSEARCH_HOST:     ${OPENSEARCH_HOST:-opensearch}
+      OPENSEARCH_PORT:     ${OPENSEARCH_PORT:-9200}
+      OPENSEARCH_USE_SSL:  ${OPENSEARCH_USE_SSL:-false}
+      OPENSEARCH_USER:     ${OPENSEARCH_USER:-}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-}
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./workspace:/app/workspace
+    networks: [ agenticai-net ]
+    depends_on:
+      opensearch: { condition: service_healthy }
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1" ]
+      interval: 20s
+      timeout:  5s
+      retries:  6
+      start_period: 30s
+
+  # ─── ASK Admin API (admin backend) ──────────────────────────────────────
+  ask-admin-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+      args:
+        # Local sentence-transformers embedder (HEAVY: torch) is OFF by default.
+        # To test it: GATEWAY_EXTRAS="[huggingface]" docker compose up -d --build
+        GATEWAY_EXTRAS: ${GATEWAY_EXTRAS:-}
+        # SQL backend drivers for the /db/connections/{id}/test probe. Keep this
+        # in sync with ask-orchestrator's EXECUTOR_EXTRAS so a green Test means
+        # chat can actually connect.
+        EXECUTOR_EXTRAS: "${EXECUTOR_EXTRAS:-[snowflake,databricks,clickhouse,bigquery]}"
+    image: agenticai-admin-api:${APP_VERSION:-latest}
+    container_name: agenticai-admin-api
+    # Carries litellm+boto3 (LLM test/enrichment) AND the heavy EXECUTOR_EXTRAS
+    # SQL drivers (bigquery/snowflake/databricks/clickhouse). 300m OOM-killed the
+    # LLM test (SIGKILL, exitCode 137). 640m gives the invoke + enrich headroom.
+    mem_limit: 640m
+    mem_reservation: 320m
+    ports:
+      - "${ADMIN_API_HOST_PORT:-8081}:8081"
+    env_file: [ .env ]
+    environment:
+      ENVIRONMENT:        local
+      DEV_BYPASS_AUTH:    ${DEV_BYPASS_AUTH:-true}
+      AUTH_MODE:          ${AUTH_MODE:-keycloak}
+      KEYCLOAK_JWKS_URL:  http://keycloak:8080/realms/ask-platform/protocol/openid-connect/certs
+      LOG_LEVEL:          INFO
+      PYTHONUNBUFFERED:   "1"
+      # Semantic-layer repo paths INSIDE the container. The host path is set
+      # via SEMANTIC_LAYER_HOST_PATH (see volumes block below); inside the
+      # container both env vars point at the same mount.
+      REPO_ROOT:          /app/semantic-layer
+      WORKSPACE_PATH:     /app/semantic-layer
+      # From-zero self-serve: initialise the semantic-layer git repo when the
+      # mount has no .git (seed commit + dev/prod branches follow at boot).
+      # Container-only default; host-side runs must opt in explicitly.
+      SEMANTIC_LAYER_AUTO_INIT: ${SEMANTIC_LAYER_AUTO_INIT:-true}
+      # OpenSearch is env-first (bootstrap store). Reachable as ``opensearch:9200``
+      # inside the compose network; override in .env.
+      OPENSEARCH_HOST:     ${OPENSEARCH_HOST:-opensearch}
+      OPENSEARCH_PORT:     ${OPENSEARCH_PORT:-9200}
+      OPENSEARCH_USE_SSL:  ${OPENSEARCH_USE_SSL:-false}
+      OPENSEARCH_USER:     ${OPENSEARCH_USER:-}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-}
+      # API key para /v1/ingest/* (machine-to-machine — Kafka Connect, webhooks).
+      # En producción usar Kyma Secret. Generar con: openssl rand -hex 32
+      ASK_INGEST_API_KEY: ${ASK_INGEST_API_KEY:-dev-local-key-change-me}
+      # Cross-container cache invalidation: al cambiar el LLM activo, admin-api
+      # hace POST a {ASK_ORCHESTRATOR_URL}/v1/internal/reload para que el
+      # orquestador reconstruya sus singletons YA (en vez de esperar el TTL de
+      # 60 s del SecretsProvider). Por red Docker se resuelve por NOMBRE de
+      # contenedor, no por puerto de host. Sin esta variable el default de
+      # config.py es http://localhost:8080 → dentro de admin-api eso es su
+      # propio uvicorn en :8081 → connection refused (silenciado). El fallback
+      # real sigue siendo el fingerprint de factory.llm_revision().
+      ASK_ORCHESTRATOR_URL: ${ASK_ORCHESTRATOR_URL:-http://ask-orchestrator:8080}
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      # Semantic-layer repo is mounted from the host path declared in .env
+      # (e.g. SEMANTIC_LAYER_HOST_PATH=/path/to/semantic-layer-s4h).
+      # A missing .git is auto-initialised at boot (SEMANTIC_LAYER_AUTO_INIT,
+      # default true in compose).
+      - ${SEMANTIC_LAYER_HOST_PATH:?set SEMANTIC_LAYER_HOST_PATH in .env to the absolute path of your semantic-layer repo}:/app/semantic-layer
+      # Docker socket: lets the admin API restart agenticai-mcp after SAP credentials change.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [ agenticai-net ]
+    depends_on:
+      opensearch: { condition: service_healthy }
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8081/v1/health || exit 1" ]
+      interval: 20s
+      timeout:  5s
+      retries:  6
+      start_period: 30s
+
+  # ─── ASK Studio — admin SPA (React + Nginx) ────────────────────────────
+  ask-admin-spa:
+    build:
+      context: ./ask-admin-spa
+      dockerfile: Dockerfile
+      args:
+        # VITE_* se hornean en el bundle en build time (NO en runtime): cambiar
+        # AUTH_MODE en .env NO afecta al SPA hasta que se REBUILDEA la imagen
+        # (`docker compose build ask-admin-spa` o `up --build`).
+        # VITE_KEYCLOAK_URL debe ser la URL que alcanza el BROWSER (no la red
+        # Docker interna) — por eso apunta a localhost:8180 y no a keycloak:8080.
+        VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
+        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
+        VITE_KEYCLOAK_REALM: ask-platform
+        # Cross-app link: ASK Setup owns LLM config; admin-spa shows it read-only.
+        VITE_SETUP_SPA_URL:  "http://${EXTERNAL_HOST:-localhost}:5175"
+    mem_limit: 64m
+    mem_reservation: 20m
+    image: agenticai-admin-spa:${APP_VERSION:-latest}
+    container_name: agenticai-admin-spa
+    ports:
+      - "5173:80"   # browser: http://localhost:5173
+    networks: [ agenticai-net ]
+    # La SPA es nginx sirviendo bundles estáticos. NO habla con Keycloak desde
+    # el contenedor — el browser hace la dance OAuth directamente contra
+    # localhost:8180. Bloquearla detrás del healthcheck de Keycloak solo
+    # introduce dependencias falsas (y en KC 24 ese healthcheck falla porque
+    # la imagen no trae curl). Sigue dependiendo del admin-api porque sí lo
+    # consume el browser bajo /api/* a través del proxy de nginx.
+    depends_on:
+      ask-admin-api: { condition: service_healthy }
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost/ || exit 1" ]
+      interval: 15s
+      timeout:  5s
+      retries:  3
+      start_period: 10s
+
+  # ─── ASK Chat SPA (React + Nginx) ─────────────────────────────────────
+  ask-chat-spa:
+    build:
+      context: ./ask-chat-spa
+      dockerfile: Dockerfile
+      args:
+        # Chat SPA auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
+        # can run dev-auth on plain-HTTP EC2 (PKCE's crypto.subtle needs a secure
+        # context) while admin/setup stay on keycloak. Falls back to AUTH_MODE,
+        # then keycloak. Set CHAT_AUTH_MODE=dev in .env on a plain-HTTP box.
+        VITE_AUTH_MODE:      ${CHAT_AUTH_MODE:-${AUTH_MODE:-keycloak}}
+        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
+        VITE_KEYCLOAK_REALM: ask-platform
+    mem_limit: 64m
+    mem_reservation: 20m
+    image: agenticai-chat-spa:${APP_VERSION:-latest}
+    container_name: agenticai-chat-spa
+    ports:
+      - "5174:80"   # browser: http://<host>:5174
+    networks: [ agenticai-net ]
+    depends_on:
+      ask-orchestrator: { condition: service_healthy }
+      ask-admin-api:    { condition: service_healthy }
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost/ || exit 1" ]
+      interval: 15s
+      timeout:  5s
+      retries:  3
+      start_period: 10s
+
+  # -- ASK Setup/Config SPA (React + Nginx) --------------------------------
+  # Client-side Keycloak auth (VITE_AUTH_MODE) like the admin SPA;
+  # nginx proxies /api/admin -> admin-api.
+  ask-setup-spa:
+    build:
+      context: ./ask-setup-spa
+      dockerfile: Dockerfile
+      args:
+        VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
+        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
+        VITE_KEYCLOAK_REALM: ask-platform
+    mem_limit: 64m
+    mem_reservation: 20m
+    image: agenticai-setup-spa:${APP_VERSION:-latest}
+    container_name: agenticai-setup-spa
+    ports:
+      - "5175:80"   # browser: http://<host>:5175
+    networks: [ agenticai-net ]
+    depends_on:
+      ask-admin-api: { condition: service_healthy }
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost/ || exit 1" ]
+      interval: 15s
+      timeout:  5s
+      retries:  3
+      start_period: 10s
+
+  # -- Teams Bot Middleware (opt-in) ---------------------------------------
+  # Opt-in. NOTE: ORCHESTRATOR_URL targets the container_name; under this
+  # compose the orchestrator SERVICE is `ask-orchestrator` — adjust if enabling.
+  teams-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.teams-bot
+    image: agenticai-teams-bot:${APP_VERSION:-latest}
+    container_name: agenticai-teams-bot
+    profiles: [ "extras" ]   # off by default; start with: docker compose --profile extras up -d
+    mem_limit: 150m
+    mem_reservation: 80m
+    ports:
+      - "${TEAM_BOT_HOST_PORT:-8085}:8085"
+    environment:
+      # Internal Docker-network call → orchestrator CONTAINER port 8080 (NOT the
+      # host-mapped ORCH_HOST_PORT).
+      - ORCHESTRATOR_URL=http://ask-orchestrator:8080/external/ask
+      - BOT_APP_ID=${BOT_APP_ID}
+      - BOT_APP_PASSWORD=${BOT_APP_PASSWORD}
+      - ORCHESTRATOR_TIMEOUT=180
+      - ORCHESTRATOR_MODE=smart
+    networks: [ agenticai-net ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8085/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ─── MCP Server (opt-in) ────────────────────────────────────────────────
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    image: agenticai-mcp:${APP_VERSION:-latest}
+    container_name: agenticai-mcp
+    profiles: [ "extras" ]   # off by default; start with: docker compose --profile extras up -d
+    mem_limit: 200m
+    mem_reservation: 80m
+    ports:
+      - "${MCP_HOST_PORT:-4004}:4004"
+    env_file: [ .env ]
+    volumes:
+      - ./config:/app/config
+    networks: [ agenticai-net ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:4004/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+
+volumes:
+  opensearch-data:
+    driver: local
+  keycloak-data:
+    driver: local
+
+
+networks:
+  agenticai-net:
+    driver: bridge

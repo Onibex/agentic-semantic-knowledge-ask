@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./theme.css";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background-color: #f8fafc;
+  color: #0f172a;
+}

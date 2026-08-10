@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-sql-generation"
+version = "0.1.0"
+description = "ASK Platform — SQL Generation capability (freeform LLM SQL generator with scope validation + retry)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "langchain-core>=0.3,<0.4",  # 0.3 line only (see ask-llm-gateway pyproject for the 1.x footgun)
+    "ruamel.yaml>=0.18",  # scope validator parses entity YAML (single YAML 1.2 parser across the repo)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

@@ -1,0 +1,206 @@
+[importlinter]
+root_packages =
+    ask_orchestrator
+    ask_intent_resolution
+    ask_sql_generation
+    ask_sql_executor
+    ask_knowledge_graph
+    ask_schema_service
+    ask_docs_service
+    ask_llm_gateway
+    ask_action_execution
+include_external_packages = True
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter 5-8.7 — `no-legacy-imports-outside-bridge` contract retired in Iter 8.8.
+# `legacy/` no longer exists — there is no `src.*` to import. The boundary
+# the contract once enforced is now physically guaranteed by the absence of
+# the source tree.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter 5 Q6 peer isolation — ask_docs_service MUST NOT import ask_knowledge_graph.
+# The two packages are PEERS that happen to share the OpenSearch backend; their
+# retrieval code paths are deliberately distinct so each can evolve independently.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:docs-service-isolated-from-kg]
+name = ask_docs_service is a peer of ask_knowledge_graph (no import allowed)
+type = forbidden
+source_modules =
+    ask_docs_service
+forbidden_modules =
+    ask_knowledge_graph
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hexagonal layering — orchestrator: routers / main are the outermost layer.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:orchestrator-internal-layers]
+name = Routers are the outermost layer
+type = forbidden
+source_modules =
+    ask_orchestrator.orchestration
+    ask_orchestrator.models
+    ask_orchestrator.auth
+    ask_orchestrator.config
+    ask_orchestrator.classification
+forbidden_modules =
+    ask_orchestrator.routers
+    ask_orchestrator.main
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Domain isolation across all packages.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:intent-resolution-domain-isolated]
+name = ask_intent_resolution.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_intent_resolution.domain
+forbidden_modules =
+    ask_intent_resolution.application
+    ask_intent_resolution.infrastructure
+    ask_intent_resolution.flash
+    ask_intent_resolution.precise
+    ask_intent_resolution.smart
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter 8.10 — Mode isolation. The 3 strategy modes (flash/precise/smart) live
+# in their own sub-packages and MUST NOT import from each other. Shared
+# infrastructure (helpers, domain ports, result types) goes through
+# `ask_intent_resolution.{application._helpers, domain.*}` which is a peer
+# both modes can consume.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:flash-mode-isolated]
+name = ask_intent_resolution.flash must not import precise / smart
+type = forbidden
+source_modules =
+    ask_intent_resolution.flash
+forbidden_modules =
+    ask_intent_resolution.precise
+    ask_intent_resolution.smart
+
+[importlinter:contract:precise-mode-isolated]
+name = ask_intent_resolution.precise must not import flash / smart
+type = forbidden
+source_modules =
+    ask_intent_resolution.precise
+forbidden_modules =
+    ask_intent_resolution.flash
+    ask_intent_resolution.smart
+
+[importlinter:contract:smart-mode-isolated]
+name = ask_intent_resolution.smart must not import flash / precise
+type = forbidden
+source_modules =
+    ask_intent_resolution.smart
+forbidden_modules =
+    ask_intent_resolution.flash
+    ask_intent_resolution.precise
+
+[importlinter:contract:sql-generation-domain-isolated]
+name = ask_sql_generation.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_sql_generation.domain
+forbidden_modules =
+    ask_sql_generation.application
+    ask_sql_generation.infrastructure
+
+[importlinter:contract:sql-executor-domain-isolated]
+name = ask_sql_executor.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_sql_executor.domain
+forbidden_modules =
+    ask_sql_executor.application
+    ask_sql_executor.infrastructure
+
+[importlinter:contract:knowledge-graph-domain-isolated]
+name = ask_knowledge_graph.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_knowledge_graph.domain
+forbidden_modules =
+    ask_knowledge_graph.infrastructure
+    ask_knowledge_graph.application
+    ask_knowledge_graph.cli
+
+[importlinter:contract:schema-service-domain-isolated]
+name = ask_schema_service.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_schema_service.domain
+forbidden_modules =
+    ask_schema_service.application
+
+[importlinter:contract:docs-service-domain-isolated]
+name = ask_docs_service.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_docs_service.domain
+forbidden_modules =
+    ask_docs_service.application
+    ask_docs_service.infrastructure
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter 8.5 — ask-llm-gateway becomes the single home for SAP AI Core access
+# (LLM + embeddings + token tracking). Domain isolation matches the other
+# packages.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:llm-gateway-domain-isolated]
+name = ask_llm_gateway.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_llm_gateway.domain
+forbidden_modules =
+    ask_llm_gateway.application
+    ask_llm_gateway.infrastructure
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter N — ask-flash-rag was absorbed into ask_intent_resolution.flash.
+# The flash backend (chunk-RAG vectorstores + SQL generator) now lives in
+# ask_intent_resolution/flash/infrastructure/ alongside the other modes
+# (precise/, smart/), each self-contained inside the same package.
+# Execution + result formatting consolidated into ask-sql-executor.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter Knowledge — KG owns the RAG vectorstore + indexing service. The Flash
+# strategy consumes it. To keep the dependency arrow one-way (consumer →
+# owner), KG must not reach back into intent-resolution.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:knowledge-graph-isolated-from-intent-resolution]
+name = ask_knowledge_graph must not import ask_intent_resolution
+type = forbidden
+source_modules =
+    ask_knowledge_graph
+forbidden_modules =
+    ask_intent_resolution
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Iter D-revised — ask-action-execution handles ACTION_EXECUTION (SAP write
+# operations via MCP). It is a peer of the other handler packages
+# (schema-service, docs-service, sql-execution) and consumes ask-llm-gateway
+# only. Domain isolation matches the rest.
+# ─────────────────────────────────────────────────────────────────────────────
+[importlinter:contract:action-execution-domain-isolated]
+name = ask_action_execution.domain depends on nothing else in the package
+type = forbidden
+source_modules =
+    ask_action_execution.domain
+forbidden_modules =
+    ask_action_execution.application
+    ask_action_execution.infrastructure
+
+[importlinter:contract:action-execution-bounded-deps]
+name = ask_action_execution may consume ask_llm_gateway only (no upstream / peer deps)
+type = forbidden
+source_modules =
+    ask_action_execution
+forbidden_modules =
+    ask_orchestrator
+    ask_intent_resolution
+    ask_sql_generation
+    ask_sql_executor
+    ask_knowledge_graph
+    ask_schema_service
+    ask_docs_service

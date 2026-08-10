@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-sql-executor"
+version = "0.1.0"
+description = "ASK Platform — SQL execution + result formatting (HANA + PostgreSQL adapters)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+hana = ["hdbcli>=2.18"]
+postgresql = ["psycopg2-binary>=2.9"]
+# Lite multi-DB backends (2026-07). Install only what a deployment targets.
+# sqlserver + fabric additionally need the system "ODBC Driver 18 for SQL Server".
+snowflake = ["snowflake-connector-python>=3.6"]
+databricks = ["databricks-sql-connector>=3.4"]
+clickhouse = ["clickhouse-connect>=0.7"]
+sqlserver = ["pyodbc>=5.0"]
+fabric = ["pyodbc>=5.0"]
+db2 = ["ibm-db>=3.2"]
+bigquery = ["google-cloud-bigquery>=3.0"]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

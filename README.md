@@ -9,7 +9,7 @@ work — an **open standard** and the **product** that implements it. Pick your 
 | If you want to… | Go to | What it is |
 |---|---|---|
 | **Adopt the open standard** — describe your own AI-ready data products in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The open **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. |
-| **Use the Onibex ASK Platform** — install it, author a semantic layer, publish it, and query it from chat | **[`platform/`](platform/README.md)** | The complete, screenshot-driven **product manual**: ASK Admin, the Configuration app, and the Chat. |
+| **Use the Onibex ASK Platform** — install it, author a semantic layer, publish it, and query it from chat | **[`platform/`](platform/README.md)** | The **platform itself** — source code, Docker Compose stack, and the complete manual under [`platform/docs/`](platform/docs/README.md): ASK Studio, ASK Chat, ASK Setup. |
 
 ---
 
@@ -32,8 +32,8 @@ This repository expresses that idea at two levels:
   vendor or team can adopt it.
 - **The platform** — [`platform/`](platform/README.md) — **Onibex ASK Platform**, the
   product that implements the standard end to end: author the semantic layer in **ASK
-  Admin**, wire up databases and models in the **Configuration app**, publish
-  dev → prod, and let business users query it in plain language through the **Chat**.
+  Studio**, wire up databases and models in **ASK Setup**, publish dev → prod, and let
+  business users query it in plain language through **ASK Chat**.
 
 ---
 
@@ -50,8 +50,8 @@ preferring the most business-ready layer first:
 | **Bronze** | A raw source table, mostly uninterpreted. | **Avoided** — lineage only, not agent context |
 
 The [`definition/`](definition/README.md) folder gives the **normative rules** for each
-layer; the [`platform/`](platform/README.md) manual shows how to **author them** in the
-product.
+layer; the [`platform/docs/`](platform/docs/README.md) manual shows how to **author
+them** in the product.
 
 ---
 
@@ -65,15 +65,21 @@ agentic-semantic-knowledge-ask/
 │   ├── docs/                 ← Bronze / Silver / Gold layer specifications
 │   ├── examples/             ← reference YAML data products
 │   └── LICENSE               ← AGPL-3.0
-└── platform/                 ← Onibex ASK Platform user manual (the product)
-    ├── README.md             ← manual index (read in order / by area)
-    ├── 01-installation.md
-    ├── 02-concepts.md
-    ├── ask-admin/            ← semantic-layer authoring flows
-    ├── config/               ← technical configuration (DB, LLM, OpenSearch, SAP, MCP…)
-    ├── chat/                 ← using the chat (end users)
-    ├── reference/            ← glossary + troubleshooting
-    └── images/               ← manual screenshots
+└── platform/                 ← Onibex ASK Platform (the product) — PolyForm Strict 1.0.0
+    ├── README.md             ← product front door + quick start
+    ├── LICENSE.md            ← PolyForm Strict 1.0.0
+    ├── docker-compose.yml    ← the whole stack (OpenSearch, Keycloak, APIs, 3 SPAs)
+    ├── packages/             ← typed Python packages (orchestrator, admin-api, …)
+    ├── ask-admin-spa/        ← ASK Studio (React)
+    ├── ask-chat-spa/         ← ASK Chat (React)
+    ├── ask-setup-spa/        ← ASK Setup (React)
+    └── docs/                 ← product manual + engine docs
+        ├── README.md         ← manual index (read in order / by area)
+        ├── 01-installation.md
+        ├── 02-concepts.md
+        ├── ask-admin/        ← semantic-layer authoring flows
+        ├── ask-chat/         ← using the chat (end users)
+        └── reference/        ← glossary + troubleshooting
 ```
 
 ---
@@ -82,9 +88,9 @@ agentic-semantic-knowledge-ask/
 
 - **New to the concepts?** Read the standard overview → [`definition/README.md`](definition/README.md).
 - **Deploying or using the product?** Start with
-  [Installation](platform/01-installation.md), then
-  [Concepts & Architecture](platform/02-concepts.md), then the
-  [ASK Admin flows](platform/ask-admin/00-overview.md).
+  [Installation](platform/docs/01-installation.md), then
+  [Concepts & Architecture](platform/docs/02-concepts.md), then the
+  [ASK Studio flows](platform/docs/ask-admin/00-overview.md).
 
 ---
 

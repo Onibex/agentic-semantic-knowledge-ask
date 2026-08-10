@@ -1,0 +1,13 @@
+# Line-ending policy.
+#
+# Shell scripts and Dockerfiles are executed INSIDE Linux containers. On a
+# Windows checkout with core.autocrlf=true, git would otherwise rewrite their
+# LF endings to CRLF; the `\r` then breaks /bin/sh ("syntax error: unexpected
+# end of file") and any RUN step. Force these to LF in the working tree so the
+# Docker build context is always correct, regardless of the host OS.
+#
+# (Root cause of the mcp-server `start.sh` crash — June 2026.)
+*.sh         text eol=lf
+Dockerfile*  text eol=lf
+*.bash       text eol=lf
+entrypoint*  text eol=lf

@@ -1,0 +1,103 @@
+/* ────────────────────────────────────────────────────────────────────────
+   Onibex brand overrides for the Keycloak login page.
+   Layered on top of the stock `keycloak` login theme (see theme.properties).
+   Palette mirrors the SPA / chat: navy #0A1535→#1A2E6B, accent blue #1E90FF.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Page background — replace the default polygon image with the brand gradient. */
+.login-pf body,
+body.login-pf {
+  background: linear-gradient(135deg, #0A1535 0%, #0D1B4B 55%, #1A2E6B 100%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Hide the realm displayName the base theme floats ABOVE the card — it looks
+   stranded over the background. The brand title now lives INSIDE the card,
+   right under the logo (see #kc-page-title::before below). */
+#kc-header {
+  display: none !important;
+}
+
+/* Center the card in the viewport (the base theme anchors it near the top). */
+.login-pf-page {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  padding: 24px 16px !important;
+}
+
+/* The white credential card: brand-blue top accent, softer corners + shadow.
+   Pin the width so flex-centering (below) can't shrink it to content width. */
+.login-pf-page .card-pf {
+  width: 100% !important;
+  max-width: 440px !important;
+  border-top: 4px solid #1E90FF !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.38) !important;
+}
+
+/* Onibex logo inside the card, above the form (logo is blue → sits on white). */
+.login-pf-page .card-pf::before {
+  content: "";
+  display: block;
+  height: 52px;
+  margin: 4px auto 14px;
+  background: url(../img/logo.png) center / contain no-repeat;
+}
+
+/* Brand title under the logo (replaces the odd heading that floated above the
+   card). Rendered as a block pseudo-element on the stable #kc-page-title h1, so
+   it sits right above the per-page title text on every login-flow page. */
+#kc-page-title::before {
+  content: "Agentic Semantic Knowledge Platform";
+  display: block;
+  color: #0A1535;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+/* The per-page title ("Sign in to your account", "Update password", …) becomes
+   a smaller, muted sub-title beneath the brand title. */
+#kc-page-title {
+  color: #5b6472 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+/* Primary action button — brand blue. */
+.login-pf-page .btn-primary,
+#kc-form-buttons .btn-primary,
+input[type="submit"].btn-primary {
+  background-color: #1E90FF !important;
+  border-color: #1E90FF !important;
+  color: #ffffff !important;
+}
+.login-pf-page .btn-primary:hover,
+#kc-form-buttons .btn-primary:hover,
+input[type="submit"].btn-primary:hover {
+  background-color: #1877D6 !important;
+  border-color: #1877D6 !important;
+}
+
+/* Links (Forgot password?, etc.) in the brand accent. */
+#kc-content a,
+.login-pf-page a {
+  color: #1E90FF !important;
+}
+#kc-content a:hover,
+.login-pf-page a:hover {
+  color: #1877D6 !important;
+}
+
+/* Input focus ring in the brand accent. */
+.login-pf-page input[type="text"]:focus,
+.login-pf-page input[type="email"]:focus,
+.login-pf-page input[type="password"]:focus {
+  border-color: #1E90FF !important;
+  box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.22) !important;
+}

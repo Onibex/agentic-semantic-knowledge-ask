@@ -1,0 +1,73 @@
+/* ===========================================================================
+ * Onibex ASK — Tailwind v4 @theme mapping (SINGLE SOURCE OF TRUTH).
+ *
+ * Exposes the raw custom properties from design/tokens.css as Tailwind
+ * utilities (bg-brand, bg-background, bg-bronze, rounded-lg, ...) so the SAME
+ * utility names resolve identically in all three SPAs. Copied verbatim into
+ * each app's src/theme.css by scripts/sync-design-tokens.mjs; CI asserts the
+ * copies are byte-identical. NEVER edit the copies — edit THIS file and run
+ * `node scripts/sync-design-tokens.mjs`.
+ *
+ * Each app's index.css does:  @import "tailwindcss";
+ *                             @import "./tokens.css";   (values)
+ *                             @import "./theme.css";    (this mapping)
+ *
+ * `inline` keeps the utilities referencing the CSS vars at runtime, so a
+ * future .dark override just works. The dark VARIANT (dark: utilities) is
+ * intentionally NOT wired in v1 (light-only); add
+ * `@custom-variant dark (&:where(.dark, .dark *));` here when dark mode lands.
+ * ===========================================================================*/
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-content: hsl(var(--content));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-brand: hsl(var(--brand));
+  --color-brand-foreground: hsl(var(--brand-foreground));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-active: hsl(var(--sidebar-active));
+  --color-sidebar-active-foreground: hsl(var(--sidebar-active-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-error: hsl(var(--error));
+  --color-error-foreground: hsl(var(--error-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
+  --color-bronze: var(--bronze);
+  --color-bronze-light: var(--bronze-light);
+  --color-bronze-border: var(--bronze-border);
+  --color-silver: var(--silver);
+  --color-silver-light: var(--silver-light);
+  --color-silver-border: var(--silver-border);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-border: var(--gold-border);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}

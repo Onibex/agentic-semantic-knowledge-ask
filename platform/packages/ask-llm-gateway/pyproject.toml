@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-llm-gateway"
+version = "0.1.0"
+description = "ASK Platform — Backbone: SAP AI Core adapter (LLM + embeddings + token tracking)"
+requires-python = ">=3.11"
+dependencies = [
+    # Pin the 0.3 line: langchain-core 1.x removed langchain_core.memory, which
+    # langchain 0.3.x still imports eagerly → ModuleNotFoundError. Unbounded
+    # ">=0.3" let `uv pip install` re-resolve to 1.x in some images (admin-api)
+    # but not others → non-reproducible builds.
+    "langchain-core>=0.3,<0.4",
+    "generative-ai-hub-sdk>=1.0",   # gen_ai_hub — SAP AI Core SDK (managed path)
+    "cryptography>=42",             # Fernet symmetric encryption for encrypted secrets
+    "opensearch-py>=2.4",           # SecretsRepository backend (ask-system-settings-v1)
+    # LiteLLM is the backend for EVERY provider that is not sap_aicore (Bedrock,
+    # Azure, OpenAI, Anthropic, Vertex/Gemini, Mistral, Cohere, … — adding one is
+    # config, not code). The factory selects it by `provider`, NOT by a flag, so
+    # it's a BASE dependency (always installed), not an opt-in extra. The old
+    # `[direct]` extra (and the "direct" stack-mode it was named after) is gone.
+    # langchain-litellm exposes it as a LangChain BaseChatModel (ChatLiteLLM) so
+    # chains + with_structured_output keep working unchanged.
+    "litellm>=1.50",
+    "langchain-litellm>=0.2",
+]
+
+[project.optional-dependencies]
+# Local embeddings via sentence-transformers — distinct from LiteLLM (runs
+# offline, no API provider to proxy) and HEAVY (pulls torch + CUDA wheels).
+# Opt-in ONLY: install this extra in an image that actually serves the
+# `huggingface` embedder provider — otherwise it's dead weight that dominates
+# the Docker build.
+huggingface = [
+    "langchain-huggingface>=0.1",
+    "sentence-transformers>=3.0",
+]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

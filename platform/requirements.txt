@@ -1,0 +1,86 @@
+# =========================
+# SAP AI Core / Generative AI Hub
+# =========================
+ai-core-sdk>=2.5.7
+generative-ai-hub-sdk
+
+# =========================
+# Core dependencies
+# =========================
+pydantic>=2.0.0,<3.0.0
+python-dotenv>=1.0.0
+pgvector
+psycopg2-binary  # PostgreSQL driver
+
+# =========================
+# LLM Providers
+# =========================
+openai>=1.30.0
+google-cloud-aiplatform>=1.40.0
+
+# =========================
+# LangChain ecosystem
+# =========================
+langchain>=0.3.0,<0.4.0
+# Pin langchain-core to the 0.3 line. langchain 0.3.x does an EAGER
+# `from langchain_core.memory import BaseMemory` (langchain/schema/__init__.py),
+# but langchain-core 1.x REMOVED that module → ModuleNotFoundError at import.
+# Unpinned, uv resolved it to 1.4.7 in one image and 0.3.86 in another (same
+# requirements.txt, different build moment) → non-reproducible + broke RAG.
+langchain-core>=0.3.0,<0.4.0
+langgraph>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-openai>=0.2.0
+langchain-google-vertexai>=2.0.0
+langchain-google-community>=2.0.0
+langchain-aws>=0.2.0
+langchain-anthropic>=0.3.0
+
+# =========================
+# LiteLLM — the LLM/embedding backend for EVERY provider that is not sap_aicore
+# (Bedrock / OpenAI / Anthropic / Azure / Vertex / Databricks / …). The
+# ask-llm-gateway factory selects it by `provider`, so it's a hard runtime dep
+# (a BASE dependency of ask-llm-gateway, not an optional extra). Pinned here too
+# so local dev / any requirements.txt-based backend env has it.
+# =========================
+litellm>=1.50
+langchain-litellm>=0.2
+
+# =========================
+# Document parsing
+# =========================
+python-docx
+pypdf
+
+# =========================
+# AWS
+# =========================
+boto3>=1.39.0       # 1.39+ supports AWS_BEARER_TOKEN_BEDROCK env var (Bedrock API Keys)
+botocore>=1.39.0
+aioboto3>=13.0.0
+# =========================
+# SAP HANA Cloud (optional - for HANA SQL queries)
+# =========================
+hdbcli>=2.19.0
+requests>=2.31.0
+
+# =========================
+# OpenSearch (vector search / embeddings)
+# =========================
+opensearch-py>=2.4.0
+
+# =========================
+# OpenAPI contract parsing
+# =========================
+pyyaml>=6.0.0
+
+networkx>=3.0.0
+
+# =========================
+# Local HuggingFace embeddings (sentence-transformers → torch, several GB) are
+# NOT installed here on purpose — only the `huggingface` embedder provider needs
+# them, and the gateway imports them lazily. They live in the ask-llm-gateway
+# `[huggingface]` optional extra. To use the local embedder:
+#   pip install "packages/ask-llm-gateway[huggingface]"          (local dev)
+#   GATEWAY_EXTRAS="[huggingface]" docker compose up -d --build  (docker)
+# =========================

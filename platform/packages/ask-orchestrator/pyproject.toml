@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-orchestrator"
+version = "0.1.0"
+description = "ASK Platform — FastAPI orchestrator: single entry point for all user requests, routes by macro intent"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+    "python-multipart>=0.0.9",
+    "sap-xssec>=4.1",
+    "python-jose[cryptography]>=3.3",  # validator: JWT decode + signature verification (keycloak/xsuaa JWKS path)
+    "langchain-core>=0.3,<0.4",  # macro classifier prompt parser; 0.3 line only (see ask-llm-gateway pyproject)
+    "structlog>=24.1",      # JSON-structured logging (queryable in prod)
+    "ask-llm-gateway",         # local workspace dep — RuntimeSettings model (transitive too, made explicit)
+    "ask-intent-resolution",   # local workspace dep — installed via `uv pip install -e packages/ask-intent-resolution`
+    "ask-sql-generation",      # local workspace dep — installed via `uv pip install -e packages/ask-sql-generation`
+    "ask-sql-executor",        # local workspace dep — installed via `uv pip install -e packages/ask-sql-executor`
+    "ask-schema-service",      # local workspace dep — installed via `uv pip install -e packages/ask-schema-service`
+    "ask-docs-service",        # local workspace dep — installed via `uv pip install -e packages/ask-docs-service`
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]

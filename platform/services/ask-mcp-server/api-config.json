@@ -1,0 +1,122 @@
+{
+  "server": {
+    "name": "sap-salesorder-mcp-server",
+    "version": "1.0.0"
+  },
+  "apis": [
+    {
+      "name": "salesorder",
+      "destination": "SAP_S4_SALESORDER",
+      "pathPrefix": "/sap/opu/odata/sap/API_SALES_ORDER_SRV",
+      "csrfProtected": true,
+      "entitySets": [
+        {
+          "entitySet": "A_SalesOrder",
+          "urlPath": "A_SalesOrder",
+          "description": "SAP Sales Order header",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": true, "update": true, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderItem",
+          "urlPath": "A_SalesOrderItem",
+          "description": "SAP Sales Order line item",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "SalesOrderItem", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": true, "update": true, "delete": true }
+        },
+        {
+          "entitySet": "A_SalesOrderPartner",
+          "urlPath": "A_SalesOrderPartner",
+          "description": "SAP Sales Order header partner (sold-to, ship-to, bill-to, etc.)",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "PartnerFunction", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderText",
+          "urlPath": "A_SalesOrderText",
+          "description": "SAP Sales Order header text",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "Language", "type": "string" },
+            { "name": "LongTextID", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderHeaderPrElement",
+          "urlPath": "A_SalesOrderHeaderPrElement",
+          "description": "SAP Sales Order header pricing conditions",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "PricingProcedureStep", "type": "string" },
+            { "name": "PricingProcedureCounter", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderItemPartner",
+          "urlPath": "A_SalesOrderItemPartner",
+          "description": "SAP Sales Order item partner",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "SalesOrderItem", "type": "string" },
+            { "name": "PartnerFunction", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderItemText",
+          "urlPath": "A_SalesOrderItemText",
+          "description": "SAP Sales Order item text",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "SalesOrderItem", "type": "string" },
+            { "name": "Language", "type": "string" },
+            { "name": "LongTextID", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderItemPrElement",
+          "urlPath": "A_SalesOrderItemPrElement",
+          "description": "SAP Sales Order item pricing conditions",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "SalesOrderItem", "type": "string" },
+            { "name": "PricingProcedureStep", "type": "string" },
+            { "name": "PricingProcedureCounter", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        },
+        {
+          "entitySet": "A_SalesOrderScheduleLine",
+          "urlPath": "A_SalesOrderScheduleLine",
+          "description": "SAP Sales Order item schedule lines",
+          "category": "sales-order",
+          "keys": [
+            { "name": "SalesOrder", "type": "string" },
+            { "name": "SalesOrderItem", "type": "string" },
+            { "name": "ScheduleLine", "type": "string" }
+          ],
+          "operations": { "list": true, "get": true, "create": false, "update": false, "delete": false }
+        }
+      ]
+    }
+  ]
+}

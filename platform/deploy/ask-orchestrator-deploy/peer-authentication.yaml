@@ -1,0 +1,11 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: ask-orchestrator-permissive
+  namespace: workforce
+spec:
+  selector:
+    matchLabels:
+      app: ask-orchestrator
+  mtls:
+    mode: PERMISSIVE
