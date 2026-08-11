@@ -7,3 +7,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# Claude Code — personal permissions stay local; skills + shared config are tracked
+.claude/settings.local.json
