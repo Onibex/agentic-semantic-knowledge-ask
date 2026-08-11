@@ -4,11 +4,11 @@
 > data — grounded in a business-vocabulary semantic layer instead of raw schema.
 
 This repository is the single home for **ASK**. It holds two complementary bodies of
-work — an **open standard** and the **product** that implements it. Pick your path:
+work — the **ASK specification** and the **product** that implements it. Pick your path:
 
 | If you want to… | Go to | What it is |
 |---|---|---|
-| **Adopt the open standard** — describe your own AI-ready data products in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The open **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. |
+| **Learn the ASK specification** — how AI-ready data products are described in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. |
 | **Use the Onibex ASK Platform** — install it, author a semantic layer, publish it, and query it from chat | **[`platform/`](platform/README.md)** | The **platform itself** — source code, Docker Compose stack, and the complete manual under [`platform/docs/`](platform/docs/README.md): ASK Studio, ASK Chat, ASK Setup. |
 
 ---
@@ -27,7 +27,7 @@ consume.
 
 This repository expresses that idea at two levels:
 
-- **The standard** — [`definition/`](definition/README.md) — the open, runtime-neutral
+- **The specification** — [`definition/`](definition/README.md) — the runtime-neutral
   YAML contract. It describes *what a data product means*, not how it is built. Any
   vendor or team can adopt it.
 - **The platform** — [`platform/`](platform/README.md) — **Onibex ASK Platform**, the
@@ -60,11 +60,11 @@ them** in the product.
 ```
 agentic-semantic-knowledge-ask/
 ├── README.md                 ← you are here
-├── definition/               ← the open ASK specification (the standard) — AGPL-3.0
+├── definition/               ← the ASK specification — PolyForm Strict 1.0.0
 │   ├── README.md             ← spec overview + quick example
 │   ├── docs/                 ← Bronze / Silver / Gold layer specifications
 │   ├── examples/             ← reference YAML data products
-│   └── LICENSE               ← AGPL-3.0
+│   └── LICENSE               ← PolyForm Strict 1.0.0
 └── platform/                 ← Onibex ASK Platform (the product) — PolyForm Strict 1.0.0
     ├── README.md             ← product front door + quick start
     ├── LICENSE.md            ← PolyForm Strict 1.0.0
@@ -96,16 +96,17 @@ agentic-semantic-knowledge-ask/
 
 ## License
 
-The two tracks of this repository are licensed independently — see the
+The two tracks of this repository are licensed individually — see the
 [`LICENSE`](LICENSE) map for the authoritative table:
 
-- **`definition/`** — the open ASK specification, under **AGPL-3.0**
-  ([`definition/LICENSE`](definition/LICENSE)). Any vendor, customer, or community
-  member can adopt, extend, or implement it without proprietary lock-in.
+- **`definition/`** — the ASK specification, under **PolyForm Strict 1.0.0**
+  ([`definition/LICENSE`](definition/LICENSE)).
 - **`platform/`** — the Onibex ASK Platform, under **PolyForm Strict 1.0.0**
-  ([`platform/LICENSE.md`](platform/LICENSE.md)). Source-available for noncommercial
-  use, research, and evaluation; commercial or production use requires a commercial
-  license from [Onibex](https://onibex.com).
+  ([`platform/LICENSE.md`](platform/LICENSE.md)).
+
+Both are **source-available**: noncommercial use, research, evaluation, and personal
+study are permitted; commercial or production use requires a commercial license from
+[Onibex](https://onibex.com).
 
 "Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
 from both licenses.

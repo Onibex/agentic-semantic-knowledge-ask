@@ -1,24 +1,21 @@
 # Onibex ASK — License Structure
 
-This repository contains two complementary bodies of work under different licenses.
-Each directory carries its own full license text; this file is the authoritative map.
+This repository contains two complementary bodies of work. Each directory carries
+its own full license text; this file is the authoritative map.
 
 | Path | License | Full text |
 |---|---|---|
-| `definition/**` | GNU Affero General Public License v3.0 (AGPL-3.0) | [`definition/LICENSE`](definition/LICENSE) |
+| `definition/**` | PolyForm Strict License 1.0.0 | [`definition/LICENSE`](definition/LICENSE) |
 | `platform/**` | PolyForm Strict License 1.0.0 | [`platform/LICENSE.md`](platform/LICENSE.md) |
 
 Files outside those two directories (this file, `README.md`) are
 © Onibex, Inc., all rights reserved.
 
-In short:
-
-- **`definition/`** — the open ASK specification. Free to adopt, extend, and implement
-  under AGPL-3.0.
-- **`platform/`** — the Onibex ASK Platform. Source-available for noncommercial use,
-  research, evaluation, and personal study under PolyForm Strict 1.0.0. Any commercial
-  or production use requires a commercial license from Onibex, Inc. — contact
-  <https://onibex.com>.
+In short: both tracks are **source-available** under PolyForm Strict 1.0.0 —
+noncommercial use, research, evaluation, and personal study are permitted. Any
+commercial or production use requires a commercial license from Onibex, Inc. —
+contact <https://onibex.com>. Each directory is licensed individually, so the
+tracks can evolve independently.
 
 ## Trademarks
 
