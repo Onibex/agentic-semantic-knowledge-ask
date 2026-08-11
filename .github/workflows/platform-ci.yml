@@ -1,11 +1,13 @@
 name: platform-ci
 
+# pull_request runs unfiltered on purpose: these jobs are required status
+# checks on main, and a path-filtered required check would deadlock any PR
+# that does not touch platform/** (the check never reports).
 on:
   push:
     branches: [main]
     paths: ['platform/**']
   pull_request:
-    paths: ['platform/**']
 
 concurrency:
   group: platform-ci-${{ github.ref }}
