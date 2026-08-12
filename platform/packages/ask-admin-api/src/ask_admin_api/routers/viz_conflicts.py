@@ -22,10 +22,16 @@ from ask_knowledge_graph.infrastructure.yaml_serializer import (
 from ..application.conflict_store import ConflictStore
 from ..application.enrichments_store import EnrichmentsStore
 from ..application.git_service import GitService
+from ..application.merge_engine import _remove_field
+from ..application.sap_merge_service import (
+    _rederive_grain_and_fanout,
+    _resync_bronze_primary_key,
+)
 from ..application.yaml_file_service import YAMLFileService, YAMLNotFoundError
 from ..auth.validator import TokenClaims, validate_token
 from ..config import get_settings
 from ..models.viz_models import (
+    BulkConflictResolutionRequest,
     ConflictBlock,
     ConflictResolutionRequest,
     VizYAMLNode,
@@ -303,6 +309,15 @@ async def resolve_conflict(
                 if prop in sap_value:
                     raw[prop] = sap_value[prop]
             sc_entity_enr = sorted(set(sc_entity_enr) - set(enriched_props))
+        elif conflict_type == "field_removed":
+            # Accepting SAP on a removal conflict means DELETE the field —
+            # sap_value is empty here (SAP no longer sends it), so overlaying
+            # it would be a silent no-op that leaves the field alive.
+            _remove_field(raw, field_name, is_bronze)
+            if is_bronze:
+                _resync_bronze_primary_key(raw)
+            sc_field_enr = _drop_field_props(sc_field_enr, field_name, [])
+            enriched_props = []  # scrub the whole field from legacy _meta too
         else:
             _apply_sap_value_to_field(raw, field_name, sap_value, is_bronze)
             sc_field_enr = _drop_field_props(sc_field_enr, field_name, enriched_props)
@@ -314,6 +329,10 @@ async def resolve_conflict(
         _scrub_legacy_meta(raw, field_name, enriched_props, is_entity_level)
         yaml_was_mutated = True
         enrichments_mutated = True
+        # A removed Silver field can be a grain member / fan-out input — the
+        # derived surface must follow (same derivation every write path runs).
+        if conflict_type == "field_removed" and not is_bronze:
+            _rederive_grain_and_fanout(raw, sc_field_enr)
 
     # Mark the conflict resolved in the sidecar store.
     now_iso = datetime.now(tz=UTC).isoformat()
@@ -331,6 +350,9 @@ async def resolve_conflict(
     paths_to_commit: list[str] = []
     if yaml_was_mutated:
         abs_path.write_text(AskYamlSerializer().to_yaml(raw), encoding="utf-8")
+        # Direct write — the service cache must not serve the pre-resolve file
+        # for the rest of the signature TTL window.
+        yaml_svc.invalidate_cache()
         paths_to_commit.append(node.file_path)
     # Sidecar path is also committed so the resolution is in git history.
     sidecar_abs = store._path(yaml_id)  # noqa: SLF001 — same package
@@ -357,6 +379,163 @@ async def resolve_conflict(
     )
 
     # After this resolution, are there any pending conflicts left?
+    remaining = store.list_for(yaml_id, include_resolved=False)
+    if not remaining:
+        _handle_all_conflicts_resolved(
+            yaml_id=yaml_id,
+            node=yaml_svc.get_yaml(yaml_id),
+            raw=raw,
+            abs_path=abs_path,
+            repo_root=repo_root,
+            settings=settings,
+            store=store,
+            yaml_svc=yaml_svc,
+            git_svc=git_svc,
+            author_email=_user.email,
+        )
+
+    return yaml_svc.get_yaml(yaml_id)
+
+
+@router.post("/yamls/{yaml_id}/conflicts/resolve-bulk", response_model=VizYAMLNode)
+async def resolve_conflicts_bulk(
+    yaml_id: str,
+    req: BulkConflictResolutionRequest,
+    _user: TokenClaims = Depends(validate_token),
+) -> VizYAMLNode:
+    """Resolve many conflicts of one entity in a single pass.
+
+    Same semantics per item as the single endpoint (keep_enriched preserves,
+    accept_sap applies + relinquishes provenance), but ONE YAML write, ONE
+    enrichments-sidecar write and ONE commit — the fast path the upload-first
+    flow needs when a whole export's differences land at once.
+    """
+    if not req.resolutions:
+        raise HTTPException(status_code=422, detail="resolutions must be non-empty")
+    for item in req.resolutions:
+        if item.decision not in ("keep_enriched", "accept_sap"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"decision must be 'keep_enriched' or 'accept_sap' "
+                f"(conflict '{item.conflict_id}')",
+            )
+
+    yaml_svc = _get_yaml_service()
+    git_svc = _get_git_service()
+    settings = get_settings()
+    repo_root = Path(settings.repo_root).resolve()
+    store = _get_conflict_store()
+    enrich_store = _get_enrichments_store()
+
+    try:
+        node = yaml_svc.get_yaml(yaml_id)
+    except YAMLNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    all_for_entity = store.list_for(yaml_id, include_resolved=True)
+    by_id = {c.get("id"): c for c in all_for_entity}
+    # Validate the whole batch BEFORE mutating anything — a partial bulk apply
+    # would leave the admin unsure which half landed.
+    for item in req.resolutions:
+        conflict = by_id.get(item.conflict_id)
+        if conflict is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conflict '{item.conflict_id}' not found in YAML '{yaml_id}'",
+            )
+        if conflict.get("resolved"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Conflict '{item.conflict_id}' is already resolved",
+            )
+
+    abs_path = repo_root / node.file_path
+    raw = load_yaml_text(abs_path.read_text(encoding="utf-8")) or {}
+    is_bronze = node.layer.value == "bronze"
+
+    sc_entity_enr, sc_field_enr = enrich_store.read(yaml_id)
+    yaml_was_mutated = False
+    enrichments_mutated = False
+    removed_silver_field = False
+    now_iso = datetime.now(tz=UTC).isoformat()
+
+    for item in req.resolutions:
+        conflict_raw = by_id[item.conflict_id]
+        field_name = conflict_raw["field_name"]
+        conflict_type = conflict_raw.get("conflict_type") or ""
+        is_entity_level = conflict_type == "entity_modified" or field_name == "__entity__"
+
+        if item.decision == "accept_sap":
+            sap_value = conflict_raw.get("sap_value") or {}
+            enriched_props = conflict_raw.get("enriched_properties") or []
+            if is_entity_level:
+                for prop in enriched_props:
+                    if prop in sap_value:
+                        raw[prop] = sap_value[prop]
+                sc_entity_enr = sorted(set(sc_entity_enr) - set(enriched_props))
+            elif conflict_type == "field_removed":
+                # Accept SAP on a removal = DELETE the field (sap_value is
+                # empty; overlaying it would silently keep the field alive).
+                _remove_field(raw, field_name, is_bronze)
+                if is_bronze:
+                    _resync_bronze_primary_key(raw)
+                sc_field_enr = _drop_field_props(sc_field_enr, field_name, [])
+                enriched_props = []
+                removed_silver_field = removed_silver_field or not is_bronze
+            else:
+                _apply_sap_value_to_field(raw, field_name, sap_value, is_bronze)
+                sc_field_enr = _drop_field_props(sc_field_enr, field_name, enriched_props)
+            _scrub_legacy_meta(raw, field_name, enriched_props, is_entity_level)
+            yaml_was_mutated = True
+            enrichments_mutated = True
+
+        store.update_conflict(
+            yaml_id,
+            item.conflict_id,
+            {
+                "resolved": True,
+                "resolution": item.decision,
+                "resolved_by": _user.email,
+                "resolved_at": now_iso,
+            },
+        )
+
+    if enrichments_mutated:
+        enrich_store.write(
+            yaml_id, entity_enrichments=sc_entity_enr, field_enrichments=sc_field_enr
+        )
+    # Removed Silver fields can be grain members / fan-out inputs — re-derive
+    # ONCE for the whole batch (same derivation every write path runs).
+    if removed_silver_field:
+        _rederive_grain_and_fanout(raw, sc_field_enr)
+
+    paths_to_commit: list[str] = []
+    if yaml_was_mutated:
+        abs_path.write_text(AskYamlSerializer().to_yaml(raw), encoding="utf-8")
+        yaml_svc.invalidate_cache()
+        paths_to_commit.append(node.file_path)
+    sidecar_abs = store._path(yaml_id)  # noqa: SLF001 — same package
+    try:
+        paths_to_commit.append(sidecar_abs.relative_to(repo_root).as_posix())
+    except ValueError:
+        pass
+    if enrichments_mutated:
+        enr_abs = enrich_store._path(yaml_id)  # noqa: SLF001 — same package
+        try:
+            paths_to_commit.append(enr_abs.relative_to(repo_root).as_posix())
+        except ValueError:
+            pass
+
+    accepted = sum(1 for i in req.resolutions if i.decision == "accept_sap")
+    kept = len(req.resolutions) - accepted
+    git_svc.commit(
+        paths_to_commit,
+        f"merge({yaml_id}): bulk-resolve {len(req.resolutions)} conflicts "
+        f"[{accepted} accept_sap, {kept} keep_enriched]",
+        _user.email.split("@")[0],
+        _user.email,
+    )
+
     remaining = store.list_for(yaml_id, include_resolved=False)
     if not remaining:
         _handle_all_conflicts_resolved(

@@ -107,6 +107,7 @@ def _do_merge_sap_json(req: IngestSapJsonRequest, user: TokenClaims) -> MergeRes
         auto_applied=[AutoAppliedChange(**a) for a in outcome.auto_applied],
         conflicts=[ConflictBlock(**c) for c in outcome.conflicts],
         baseline_updated=outcome.baseline_updated,
+        naming_warnings=outcome.naming_warnings,
     )
 
 

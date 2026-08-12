@@ -95,6 +95,122 @@ def test_accept_sap_clears_enrichment_in_sidecar(viz_client, viz_repo):
     assert "net_value" not in node["meta"]["field_enrichments"]
 
 
+def test_accept_sap_on_field_removed_deletes_the_field(viz_client, viz_repo):
+    """A `field_removed` conflict carries an EMPTY sap_value (SAP no longer
+    sends the field) — accepting SAP must DELETE the field, not overlay the
+    empty payload as a silent no-op (the ABDIS regression)."""
+    seed_silver_conflict(viz_repo, conflict_id="conf-1", conflict_type="field_removed")
+    resp = viz_client.post(
+        f"/v1/viz/yamls/{SILVER_ID}/conflicts/conf-1/resolve",
+        json={"decision": "accept_sap", "author_email": "admin@example.com"},
+    )
+    assert resp.status_code == 200, resp.text
+    node = resp.json()
+    assert "net_value" not in {f["name"] for f in node["fields"]}
+    assert "net_value" not in node["meta"]["field_enrichments"]
+    assert node["meta"]["conflicts"] == []
+
+
+def test_keep_enriched_on_field_removed_keeps_the_field(viz_client, viz_repo):
+    seed_silver_conflict(viz_repo, conflict_id="conf-1", conflict_type="field_removed")
+    resp = viz_client.post(
+        f"/v1/viz/yamls/{SILVER_ID}/conflicts/conf-1/resolve",
+        json={"decision": "keep_enriched", "author_email": "admin@example.com"},
+    )
+    assert resp.status_code == 200, resp.text
+    node = resp.json()
+    assert "net_value" in {f["name"] for f in node["fields"]}
+
+
+def test_bulk_accept_sap_on_field_removed_deletes_the_field(viz_client, viz_repo):
+    seed_silver_conflict(viz_repo, conflict_id="conf-1", conflict_type="field_removed")
+    resp = viz_client.post(
+        f"/v1/viz/yamls/{SILVER_ID}/conflicts/resolve-bulk",
+        json={
+            "resolutions": [{"conflict_id": "conf-1", "decision": "accept_sap"}],
+            "author_email": "admin@example.com",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    node = resp.json()
+    assert "net_value" not in {f["name"] for f in node["fields"]}
+
+
+def test_bulk_resolve_mixed_decisions_one_write(viz_client, viz_repo):
+    """resolve-bulk applies N decisions in one pass: accept_sap lands SAP's
+    value + relinquishes provenance; keep_enriched preserves; all conflicts
+    end resolved and the sidecar is cleared (all-resolved transition)."""
+    import json as _json
+
+    # Two pending conflicts on different fields, seeded the way production
+    # writes them (conflicts sidecar + enrichments sidecar).
+    c1 = seed_silver_conflict(viz_repo, conflict_id="conf-1")  # net_value, type P15→P31
+    c2 = dict(c1)
+    c2.update(
+        {
+            "id": "conf-2",
+            "field_name": "sales_doc",
+            "conflict_type": "field_modified",
+            "sap_value": {"name": "sales_doc", "source": "VBAK.VBELN", "type": "C10",
+                          "description": "SAP terse text"},
+            "current_value": {"name": "sales_doc", "source": "VBAK.VBELN", "type": "C10",
+                              "description": "Sales document ID"},
+            "enriched_properties": ["description"],
+        }
+    )
+    sidecar_dir = viz_repo / ".sap_baseline"
+    (sidecar_dir / f"{SILVER_ID}.conflicts.json").write_text(
+        _json.dumps([c1, c2], indent=2), encoding="utf-8"
+    )
+    (sidecar_dir / f"{SILVER_ID}.enrichments.json").write_text(
+        _json.dumps(
+            {"field_enrichments": {"net_value": ["field_role"], "sales_doc": ["description"]}}
+        ),
+        encoding="utf-8",
+    )
+
+    resp = viz_client.post(
+        f"/v1/viz/yamls/{SILVER_ID}/conflicts/resolve-bulk",
+        json={
+            "resolutions": [
+                {"conflict_id": "conf-1", "decision": "accept_sap"},
+                {"conflict_id": "conf-2", "decision": "keep_enriched"},
+            ],
+            "author_email": "admin@example.com",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    node = resp.json()
+    by_name = {f["name"]: f for f in node["fields"]}
+    # accept_sap landed SAP's type; keep_enriched preserved the curated text.
+    assert by_name["net_value"]["type"] == "P31"
+    assert by_name["sales_doc"]["description"] == "Sales document ID"
+    # Provenance: relinquished for the accepted field, kept for the kept one.
+    assert "net_value" not in node["meta"]["field_enrichments"]
+    assert "description" in node["meta"]["field_enrichments"].get("sales_doc", [])
+    # Everything resolved in ONE call → pending inbox is empty.
+    assert node["meta"]["conflicts"] == []
+
+
+def test_bulk_resolve_validates_before_mutating(viz_client, viz_repo):
+    """An unknown conflict id fails the WHOLE batch with 404 — no partial apply."""
+    seed_silver_conflict(viz_repo, conflict_id="conf-1")
+    resp = viz_client.post(
+        f"/v1/viz/yamls/{SILVER_ID}/conflicts/resolve-bulk",
+        json={
+            "resolutions": [
+                {"conflict_id": "conf-1", "decision": "accept_sap"},
+                {"conflict_id": "ghost", "decision": "accept_sap"},
+            ],
+            "author_email": "admin@example.com",
+        },
+    )
+    assert resp.status_code == 404
+    # Nothing was applied: the conflict is still pending, the type unchanged.
+    listed = viz_client.get(f"/v1/viz/yamls/{SILVER_ID}/conflicts").json()
+    assert [c["id"] for c in listed] == ["conf-1"]
+
+
 def test_keep_enriched_retains_enrichment_in_sidecar(viz_client, viz_repo):
     """The inverse of accept_sap: keep_enriched means the admin keeps
     ownership, so the enrichment stays in the sidecar and a future SAP change
