@@ -17,7 +17,6 @@ from ask_knowledge_graph.domain.naming import (
 )
 from ask_knowledge_graph.infrastructure.naming_config import resolve_column_naming_mode
 
-
 # ── normalize_identifier ─────────────────────────────────────────────────────
 
 

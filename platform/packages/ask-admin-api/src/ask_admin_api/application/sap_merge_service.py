@@ -24,13 +24,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ask_knowledge_graph.domain.entity_deriver import EntityDeriver
 from ask_knowledge_graph.infrastructure.sap_json_parser import SapJsonParser
 from ask_knowledge_graph.infrastructure.yaml_serializer import (
     AskYamlSerializer,
     load_yaml_text,
 )
-
-from ask_knowledge_graph.domain.entity_deriver import EntityDeriver
 
 from ..models.viz_models import VizLayer
 from .conflict_store import ConflictStore
