@@ -177,6 +177,15 @@ _DB_PROVIDER_FIELDS: dict[str, list[tuple[str, bool, str]]] = {
         ("client_secret", True, "str"),
         ("driver", False, "str"),
     ],
+    "presto": [
+        ("host", False, "str"),
+        ("port", False, "int"),
+        ("catalog", False, "str"),
+        ("schema", False, "str"),
+        ("user", False, "str"),
+        ("password", True, "str"),
+        ("http_scheme", False, "str"),
+    ],
 }
 
 

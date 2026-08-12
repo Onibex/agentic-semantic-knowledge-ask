@@ -51,6 +51,7 @@ def _autoload() -> None:
         fabric_adapter,
         hana_adapter,
         postgresql_adapter,
+        presto_adapter,
         snowflake_adapter,
         sqlserver_adapter,
     )
@@ -64,6 +65,7 @@ def _autoload() -> None:
     _ADAPTERS.setdefault("db2", db2_adapter.execute_db2)
     _ADAPTERS.setdefault("bigquery", bigquery_adapter.execute_bigquery)
     _ADAPTERS.setdefault("fabric", fabric_adapter.execute_fabric)
+    _ADAPTERS.setdefault("presto", presto_adapter.execute_presto)
 
 
 def get_adapter(db_type: str) -> AdapterFn | None:

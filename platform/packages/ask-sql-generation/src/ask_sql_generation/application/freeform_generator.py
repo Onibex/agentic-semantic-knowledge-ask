@@ -47,6 +47,7 @@ from .scope_validator import (
     build_allowed_tables,
     build_entity_table_map,
     format_scope_feedback,
+    lowercase_physical_tables,
 )
 
 # The token tracker lives in `ask-llm-gateway`. Make the import optional so this
@@ -875,6 +876,13 @@ class FreeformSQLGeneratorService:
                     f"SQL references tables outside the curated scope: "
                     f"{audit['out_of_scope']}. Review before executing."
                 )
+
+        # ── Presto/Iceberg physical-table casing fix-up ────────────────────
+        # `db_table_name` is registered uppercase (SAP HANA folding), but
+        # Iceberg-backed catalogs conventionally create tables lowercase — see
+        # `lowercase_physical_tables`. Deterministic, not an LLM instruction.
+        if self.db_type == "presto" and result.get("sql") and yamls:
+            result["sql"] = lowercase_physical_tables(result["sql"], build_allowed_tables(yamls))
 
         return result
 
