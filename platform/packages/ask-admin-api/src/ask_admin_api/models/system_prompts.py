@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-PromptKey = Literal["enrichment"]
+PromptKey = Literal["enrichment", "relationship_suggest", "ddl_mapping", "ddl_annotation"]
 
 
 class SystemPromptResponse(BaseModel):

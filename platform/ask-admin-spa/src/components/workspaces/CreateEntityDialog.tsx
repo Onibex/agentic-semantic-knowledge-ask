@@ -81,6 +81,9 @@ export function CreateEntityDialog({ open, onClose, onCreated }: Props) {
   const [sourceFromOrg, setSourceFromOrg] = useState(true) // default: derive from Organization
   const [overrideSource, setOverrideSource] = useState(false) // reveal the manual picker
   const [forceOverwrite, setForceOverwrite] = useState(false)
+  // Module for silver/gold entities (workspace path + grouping). A deterministic
+  // user input — the model never guesses it; `gen` = generic / cross-module.
+  const [ddlModule, setDdlModule] = useState('gen')
   const [ddlContext, setDdlContext] = useState('') // general context for the whole batch
   // Per-file: auto-detected layer (overridable), optional per-file note.
   const [ddlFileItems, setDdlFileItems] = useState<
@@ -127,6 +130,7 @@ export function CreateEntityDialog({ open, onClose, onCreated }: Props) {
     setDdlText('')
     setPasteLayer('')
     setDdlContext('')
+    setDdlModule('gen')
     setDdlFileItems([])
     if (fileInputRef.current) fileInputRef.current.value = ''
     setDdlProgress([])
@@ -195,7 +199,7 @@ export function CreateEntityDialog({ open, onClose, onCreated }: Props) {
         const ctx = [ddlContext.trim(), s.note.trim()].filter(Boolean).join('\n\n')
         let result: DdlImportResult
         try {
-          result = await importDdl(s.text, s.layer as Layer, src, forceOverwrite, ctx)
+          result = await importDdl(s.text, s.layer as Layer, src, forceOverwrite, ctx, ddlModule)
           created += result.items.filter((it) => it.outcome !== 'error').length
           failed += result.items.filter((it) => it.outcome === 'error').length
         } catch (err: unknown) {
@@ -346,6 +350,28 @@ export function CreateEntityDialog({ open, onClose, onCreated }: Props) {
                     : sourceFromOrg
                       ? t('ced_ddl_from_org')
                       : t('ced_ddl_set_in_org')}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label>Module</Label>
+                <select
+                  value={ddlModule}
+                  onChange={(e) => setDdlModule(e.target.value)}
+                  className="block w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                >
+                  <option value="gen">gen — generic</option>
+                  <option value="sd">sd — Sales</option>
+                  <option value="mm">mm — Materials</option>
+                  <option value="pp">pp — Production</option>
+                  <option value="fi">fi — Finance</option>
+                  <option value="co">co — Controlling</option>
+                  <option value="le">le — Logistics</option>
+                  <option value="qm">qm — Quality</option>
+                  <option value="pm">pm — Maintenance</option>
+                  <option value="hr">hr — HR</option>
+                </select>
+                <p className="text-[10px] text-gray-400">
+                  Silver/Gold workspace path — pick the business module (or keep gen).
                 </p>
               </div>
             </div>

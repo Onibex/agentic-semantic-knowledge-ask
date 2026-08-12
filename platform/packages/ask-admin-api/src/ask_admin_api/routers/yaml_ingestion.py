@@ -458,9 +458,26 @@ async def import_ddl(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+    # Wire the editable prompt registry in — without it the service always ran
+    # the hardcoded defaults and the admin's `ddl_mapping` override was ignored.
+    from ..application.system_prompts_service import SystemPromptsService
+
     try:
-        yaml_docs, tokens, warnings = DdlImportService().generate_yaml(
-            req.ddl, layer=req.layer, source_system=req.source_system, context=req.context
+        prompts_service = SystemPromptsService()
+    except Exception:  # noqa: BLE001 — degraded OpenSearch must not block imports
+        logger.exception("prompts registry unavailable — DDL import uses default prompts")
+        prompts_service = None
+
+    module = (req.module or "").strip().lower() or "gen"
+    try:
+        yaml_docs, tokens, warnings = DdlImportService(
+            prompts_service=prompts_service
+        ).generate_yaml(
+            req.ddl,
+            layer=req.layer,
+            source_system=req.source_system,
+            context=req.context,
+            module=module,
         )
     except Exception as exc:  # noqa: BLE001 — LLM boundary
         logger.exception("DDL mapping LLM call failed")

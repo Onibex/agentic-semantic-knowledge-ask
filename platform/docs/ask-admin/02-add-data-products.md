@@ -73,7 +73,7 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 
 ## Mode C — DDL + AI
 
-**Use when:** you have SQL DDL and want the AI to map it into ASK YAML for you.
+**Use when:** you have SQL DDL and want it mapped into ASK YAML for you.
 
 The importer is **dialect-tolerant across all nine supported engines** (PostgreSQL, SAP HANA,
 ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
@@ -82,11 +82,27 @@ as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver
 entities too — not just Bronze — with guardrails: it will not fabricate joins from a bare
 `CREATE TABLE`, and it never guesses a layer (see the note below).
 
+**How the mapping works.** A `CREATE TABLE` with a typed column list is parsed
+**deterministically**: every column name, its canonical type, the physical table name
+(unqualified) and the declared key (`PRIMARY KEY`, or the ClickHouse `ORDER BY` sorting key)
+come straight from the DDL, byte-exact — the AI never transcribes or renames columns. The AI
+contributes only the **semantics** the DDL cannot express (business name, descriptions, field
+roles, Silver classification) through a schema-enforced structured call. When the AI is
+unavailable or its annotation fails, the entity still imports with mechanical defaults and
+surfaces **In Review** for enrichment. Views, `CREATE TABLE … AS SELECT`, and statements
+without a typed column list are mapped by the full AI path (their columns live in a query
+body). A grain proposed from a ClickHouse `ORDER BY` carries a warning: a sorting key is not
+guaranteed unique — verify it against the physical table before publishing.
+
 Pick **DDL + AI**, then:
 
 1. **Source system** — defaults from your [Organization](08-organization.md) profile (e.g.
    `s4h`). Click **change** to override with another profile; this tunes the AI prompt.
-2. **Provide the DDL** — either:
+2. **Module** — the business module for Silver/Gold entities (`sd`, `mm`, `fi`, … or `gen`
+   for generic / cross-module). It drives the workspace path and grouping. This is your
+   input, never an AI guess — every generated Silver/Gold carries it, so an import can no
+   longer fail on a missing `module`.
+3. **Provide the DDL** — either:
    - **Upload `.sql` / `.ddl` / `.txt` files** (multiple allowed). The **layer is
      auto-detected per file** from the `CREATE TABLE` name (the `SILVER_` / `GOLD_` naming
      convention). Files that can't be detected show **pick layer** and you must choose
@@ -95,10 +111,10 @@ Pick **DDL + AI**, then:
      falls to a manual **pick layer**.
    - **…or paste a single DDL script** in the text box. If the layer can't be detected from
      the name, a **Layer** selector appears and is **required**.
-3. **Context for all files (optional)** — a sentence about what these tables are for; it
-   enriches the AI mapping. Per-file notes can be added too.
-4. Optionally tick **Overwrite if it exists**.
-5. Click **Map + import**.
+4. **Context for all files (optional)** — a sentence about what these tables are for; it
+   enriches the AI annotation. Per-file notes can be added too.
+5. Optionally tick **Overwrite if it exists**.
+6. Click **Map + import**.
 
 ![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/admin-dp-ddl.png)
 

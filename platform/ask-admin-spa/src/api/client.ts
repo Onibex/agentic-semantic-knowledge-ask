@@ -401,19 +401,21 @@ export async function getIngestConfig(): Promise<IngestConfig> {
   return data;
 }
 
-// Iter 6 (CH-6) — DDL → YAML via the AI. Maps SQL DDL to ASK YAML at `layer`
-// and lands each entity in the workspace (In Review). Returns the generated
-// YAML + per-entity outcomes.
+// Iter 6 (CH-6) — DDL → YAML: deterministic skeleton for typed tables, AI for
+// semantics/views. Lands each entity in the workspace (In Review). `module`
+// drives the silver/gold workspace path — a user-chosen value the backend
+// backstops deterministically, so imports never fail on a missing module.
 export async function importDdl(
   ddl: string,
   layer: 'bronze' | 'silver' | 'gold',
   sourceSystem = 's4h',
   force = false,
   context = '',
+  module = 'gen',
 ): Promise<DdlImportResult> {
   const { data } = await http.post<DdlImportResult>(
     '/admin/yaml/import/ddl',
-    { ddl, layer, source_system: sourceSystem, force, context },
+    { ddl, layer, source_system: sourceSystem, force, context, module },
     { timeout: 300_000 },
   );
   return data;

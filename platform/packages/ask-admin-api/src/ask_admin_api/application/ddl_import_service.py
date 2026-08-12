@@ -1,11 +1,23 @@
-"""DDL → ASK YAML mapping via the LLM (UX_CHANGES audit CH-6, Iter 6).
+"""DDL → ASK YAML mapping — deterministic skeleton first, LLM as annotator.
 
-Maps SQL DDL (one or more ``CREATE TABLE`` statements) into ASK semantic-layer
-YAML at a chosen layer, using the editable ``ddl_mapping`` system prompt. Returns
-one YAML document per table (the router imports each into the workspace).
+For every ``CREATE TABLE`` with a typed column list the pipeline is:
 
-Mirrors the enrichment service's LLM-call pattern (build_llm → invoke → parse);
-kept separate so the prompt + parsing live in one testable place.
+1. ``ddl_parser.parse_relations`` extracts the MECHANICAL facts in code —
+   byte-exact column names, raw types, the declared key, the physical table
+   name. Nothing here depends on a model transcribing 76 column names.
+2. One schema-forced LLM call per relation (``ask_llm_gateway.application
+   .structured``) fills the SEMANTIC annotation only: business name,
+   descriptions, field roles, classification. The Pydantic schema makes the
+   required keys impossible to omit.
+3. ``ddl_skeleton.build_skeleton`` assembles the entity per the layer
+   standards. An unavailable/unparsed annotation degrades to mechanical
+   defaults (empty descriptions, type-derived roles) — the import still lands,
+   In Review.
+
+Views / CTAS / column-less statements fall back to the legacy full-LLM YAML
+path (the editable ``ddl_mapping`` prompt), and EVERY silver/gold doc — from
+either path — passes the deterministic ``module`` backstop before import: a
+missing ``module`` can no longer 422 the batch.
 """
 
 from __future__ import annotations
@@ -14,30 +26,15 @@ import logging
 import re
 from typing import Any
 
+from .ddl_parser import CREATE_RELATION_RE as _CREATE_RELATION_RE
+from .ddl_parser import ParsedRelation, parse_relations
+from .ddl_skeleton import EntityAnnotation, annotation_user_payload, build_skeleton
+
 logger = logging.getLogger(__name__)
 
 # Largest DDL we'll forward to the LLM. Guards against an accidental paste of a
 # whole schema dump (cost + context blow-up). ~50k chars ≈ a few thousand lines.
 DDL_MAX_CHARS = 50_000
-
-# Matches a CREATE for any queryable relation we can turn into an entity:
-#   CREATE [OR REPLACE] [<qualifier>...] TABLE|VIEW
-# where <qualifier> is any of the vendor keywords that can sit between CREATE
-# and TABLE/VIEW (Snowflake dynamic/transient/iceberg tables, materialized
-# views, temp/global/local, external, secure/recursive views, …). A Gold entity
-# is a physical queryable relation, so all of these are valid inputs — e.g.
-# Databricks `SHOW CREATE TABLE` on a materialized view returns
-# `CREATE MATERIALIZED VIEW ... AS <select>`, and Snowflake `GET_DDL` on a
-# dynamic table returns `CREATE OR REPLACE DYNAMIC TABLE ... TARGET_LAG=... AS
-# <select>`. (+ optional IF NOT EXISTS handled by the \bTABLE\b / \bVIEW\b
-# anchor.) Used both for the input shape guard and the multi-relation count.
-_CREATE_RELATION_RE = re.compile(
-    r"\bCREATE\s+(?:OR\s+REPLACE\s+)?"
-    r"(?:(?:GLOBAL|LOCAL|TEMP(?:ORARY)?|VOLATILE|TRANSIENT|MATERIALIZED|DYNAMIC|"
-    r"EXTERNAL|ICEBERG|HYBRID|SECURE|RECURSIVE)\s+)*"
-    r"(?:TABLE|VIEW)\b",
-    re.IGNORECASE,
-)
 
 # A fenced code block anywhere in the text (```yaml … ``` or bare ``` … ```),
 # tolerant of prose before/after it.
@@ -184,6 +181,46 @@ def _normalize_flat_entity(docs: list[str], ddl: str, layer: str) -> tuple[list[
     return out, warnings
 
 
+def _ensure_module(docs: list[str], *, layer: str, module: str) -> tuple[list[str], list[str]]:
+    """Deterministic backstop: a silver/gold doc without a non-empty ``module``
+    gets the batch's module. The 2026-08-12 ClickHouse import failed exactly
+    here — the model omitted the key and the import 422'd; the guarantee that
+    ``module`` is present must not depend on the model obeying the prompt.
+    Unparseable docs pass through untouched (the import surfaces those)."""
+    if layer not in ("silver", "gold"):
+        return docs, []
+    from ask_knowledge_graph.infrastructure.yaml_serializer import dump_yaml, load_yaml_text
+
+    out: list[str] = []
+    warnings: list[str] = []
+    for doc in docs:
+        try:
+            parsed = load_yaml_text(doc)
+        except Exception:  # noqa: BLE001 — the per-doc import reports these
+            out.append(doc)
+            continue
+        if not isinstance(parsed, dict) or parsed.get("layer") != layer:
+            out.append(doc)
+            continue
+        current = parsed.get("module")
+        present = (
+            any(str(m).strip() for m in current)
+            if isinstance(current, list)
+            else bool(str(current or "").strip())
+        )
+        if present:
+            out.append(doc)
+            continue
+        parsed["module"] = module
+        warnings.append(
+            f"'{parsed.get('id') or parsed.get('name') or '(no id)'}': `module` was missing — "
+            f"defaulted to '{module}' (it drives the workspace path); adjust it in the editor "
+            f"if the entity belongs to a specific module."
+        )
+        out.append(dump_yaml(parsed))
+    return out, warnings
+
+
 def validate_ddl_input(ddl: str, *, max_chars: int = DDL_MAX_CHARS) -> None:
     """Fail-fast shape/size guard run BEFORE the LLM call (§7.1).
 
@@ -315,14 +352,17 @@ class DdlImportService:
         self._llm = llm
 
     def _system_prompt(self) -> str:
+        return self._prompt_body("ddl_mapping")
+
+    def _prompt_body(self, key: str) -> str:
         if self._prompts is not None:
             try:
-                return self._prompts.get_prompt("ddl_mapping")
+                return self._prompts.get_prompt(key)
             except Exception:  # noqa: BLE001
                 pass
         from .system_prompts_service import _DEFAULT_PROMPTS
 
-        return _DEFAULT_PROMPTS["ddl_mapping"]
+        return _DEFAULT_PROMPTS[key]
 
     def _get_llm(self) -> Any:
         if self._llm is not None:
@@ -338,25 +378,129 @@ class DdlImportService:
         layer: str,
         source_system: str,
         context: str = "",
+        module: str = "gen",
         max_attempts: int = 3,
     ) -> tuple[list[str], int, list[str]]:
         """Return ``(yaml_docs, tokens_used, warnings)`` — one YAML doc per table.
 
-        ``context`` is optional free-text business purpose injected into the prompt
-        so the model writes accurate descriptions instead of guessing from column
-        names. ``warnings`` flags non-fatal robustness issues (e.g. the model
-        emitted fewer documents than the input had ``CREATE TABLE`` statements).
+        Deterministic split: every relation with a typed column list is built by
+        ``build_skeleton`` (code owns names/types/keys; one schema-forced LLM
+        call annotates semantics, degrading to mechanical defaults when the
+        provider can't honor the schema). Views/CTAS/unparseable statements go
+        through the legacy full-LLM YAML path with its retry loop. Both paths
+        end at the ``module`` backstop — a silver/gold doc can no longer reach
+        the importer without one.
+        """
+        total_tokens = 0
+        warnings: list[str] = []
+        docs: list[str] = []
 
-        Regenerates up to ``max_attempts`` times when the model produces YAML that
-        fails to parse — a smaller model drifts indentation on long field lists and
-        a fresh pass is usually clean. Tokens accumulate across attempts. A
-        *persistent* failure on a wide table is usually output truncation (the YAML
-        hit the token ceiling), which retries cannot fix — the warning says so.
+        relations = parse_relations(ddl)
+        skeleton_rels = [r for r in relations if r.skeleton_eligible]
+        fallback_rels = [r for r in relations if not r.skeleton_eligible]
+
+        if skeleton_rels:
+            from ask_knowledge_graph.infrastructure.yaml_serializer import dump_yaml
+
+            for rel in skeleton_rels:
+                annotation, tokens, ann_error = self._annotate(rel, layer=layer, context=context)
+                total_tokens += tokens
+                if ann_error:
+                    warnings.append(
+                        f"'{rel.name}': semantic annotation degraded ({ann_error}) — "
+                        f"the entity imports with mechanical defaults; enrich it In Review."
+                    )
+                doc, skel_warnings = build_skeleton(
+                    rel,
+                    layer=layer,
+                    source_system=source_system,
+                    module=module,
+                    annotation=annotation,
+                    context=context,
+                )
+                warnings.extend(skel_warnings)
+                docs.append(dump_yaml(doc))
+
+        if fallback_rels or not relations:
+            # Statements the parser can't own (views, CTAS, column-less) — or a
+            # paste the slicer didn't recognize at all — take the legacy path.
+            legacy_ddl = (
+                "\n\n".join(r.statement for r in fallback_rels) if relations else (ddl or "")
+            )
+            # Views/CTAS take the AI path BY DESIGN (their columns live in a query
+            # body) — only an unparseable TABLE is worth flagging.
+            unparsed_tables = [r for r in fallback_rels if not r.is_view]
+            if unparsed_tables:
+                names = ", ".join(r.name or "(unnamed)" for r in unparsed_tables)
+                warnings.append(
+                    f"Mapped via the full-AI path (no typed column list to parse): {names}."
+                )
+            legacy_docs, tokens, legacy_warnings = self._generate_legacy(
+                legacy_ddl,
+                layer=layer,
+                source_system=source_system,
+                context=context,
+                module=module,
+                max_attempts=max_attempts,
+            )
+            total_tokens += tokens
+            warnings.extend(legacy_warnings)
+            docs.extend(legacy_docs)
+
+        docs, module_warnings = _ensure_module(docs, layer=layer, module=module)
+        warnings.extend(module_warnings)
+        return docs, total_tokens, warnings
+
+    # ── Structured annotation (skeleton path) ────────────────────────────────
+
+    def _annotate(
+        self, rel: ParsedRelation, *, layer: str, context: str
+    ) -> tuple[EntityAnnotation | None, int, str | None]:
+        """One schema-forced call for the semantic annotation of ``rel``.
+        Returns ``(annotation | None, tokens, error | None)`` — never raises;
+        a second attempt covers transient parse misses."""
+        from ask_llm_gateway.application.structured import invoke_structured
+
+        system = self._prompt_body("ddl_annotation")
+        user = annotation_user_payload(rel, layer=layer, context=context)
+        try:
+            llm = self._get_llm()
+        except Exception as exc:  # noqa: BLE001 — no provider configured
+            return None, 0, f"LLM unavailable: {exc}"
+
+        tokens = 0
+        error: str | None = None
+        for _ in range(2):
+            result = invoke_structured(llm, schema=EntityAnnotation, system=system, user=user)
+            tokens += result.tokens
+            if result.parsed is not None:
+                return result.parsed, tokens, None
+            error = result.error
+        return None, tokens, error
+
+    # ── Legacy full-LLM path (views / CTAS / unparseable statements) ─────────
+
+    def _generate_legacy(
+        self,
+        ddl: str,
+        *,
+        layer: str,
+        source_system: str,
+        context: str,
+        module: str,
+        max_attempts: int = 3,
+    ) -> tuple[list[str], int, list[str]]:
+        """The original prompt-then-parse loop. Regenerates up to
+        ``max_attempts`` times when the model produces YAML that fails to parse
+        — a smaller model drifts indentation on long field lists and a fresh
+        pass is usually clean. Tokens accumulate across attempts. A *persistent*
+        failure on a wide table is usually output truncation (the YAML hit the
+        token ceiling), which retries cannot fix — the warning says so.
         """
         total_tokens = 0
         last: tuple[list[str], list[str]] = ([], [])
         for _ in range(max(1, max_attempts)):
-            docs, tokens, warnings = self._generate_once(ddl, layer, source_system, context)
+            docs, tokens, warnings = self._generate_once(ddl, layer, source_system, context, module)
             total_tokens += tokens
             last = (docs, warnings)
             if not _any_unparseable(docs):
@@ -382,7 +526,7 @@ class DdlImportService:
         return docs, total_tokens, warnings
 
     def _generate_once(
-        self, ddl: str, layer: str, source_system: str, context: str = ""
+        self, ddl: str, layer: str, source_system: str, context: str = "", module: str = "gen"
     ) -> tuple[list[str], int, list[str]]:
         system = self._system_prompt()
         # Wire the resolved source-system profile's guidance into the system
@@ -402,7 +546,8 @@ class DdlImportService:
             else ""
         )
         user = (
-            f"LAYER: {layer}\nSOURCE_SYSTEM: {source_system}\n\n{context_block}DDL:\n{ddl.strip()}"
+            f"LAYER: {layer}\nSOURCE_SYSTEM: {source_system}\nMODULE: {module}\n\n"
+            f"{context_block}DDL:\n{ddl.strip()}"
         )
         text, tokens = _invoke_llm_chat(self._get_llm(), system, user)
         cleaned = extract_yaml_payload(text)

@@ -567,6 +567,77 @@ def test_ddl_import_rejects_bad_layer_400(client):
     assert resp.status_code == 400
 
 
+_CLICKHOUSE_GOLD_DDL = """\
+CREATE TABLE dbt_qas_bi.gold_md_final
+(
+    `docventas` String,
+    `mandante` String,
+    `posicion` Int64,
+    `valor_neto` Decimal(76,
+ 7),
+    `hora` Nullable(DateTime('UTC'))
+)
+ENGINE = MergeTree
+ORDER BY (mandante, docventas, posicion)
+SETTINGS index_granularity = 8192;
+"""
+
+
+def test_ddl_import_happy_path_lands_gold_with_module(import_client, monkeypatch):
+    """End-to-end through the route: the 2026-08-12 ClickHouse DDL + a user
+    module lands a valid Gold in the workspace — the exact scenario that used
+    to 422 on the missing `module`. Pins the DdlImportResult shape the SPA
+    consumes (items/warnings/generated_yaml)."""
+    cli, _, ws = import_client
+    from ask_admin_api.application import ddl_import_service as ddl_mod
+    from ask_admin_api.application.ddl_skeleton import EntityAnnotation, FieldAnnotation
+
+    class _Runnable:
+        def invoke(self, _messages):
+            ann = EntityAnnotation(
+                entity_name="ventas_detalle",
+                description="Detalle de ventas por documento",
+                fields=[
+                    FieldAnnotation(
+                        column="valor_neto", field_role="measure", description="Valor neto"
+                    )
+                ],
+            )
+            raw = type("M", (), {"usage_metadata": {"total_tokens": 99}})()
+            return {"raw": raw, "parsed": ann, "parsing_error": None}
+
+    class _Llm:
+        def with_structured_output(self, schema, include_raw=False):
+            return _Runnable()
+
+    monkeypatch.setattr(ddl_mod.DdlImportService, "_get_llm", lambda self: _Llm())
+
+    resp = cli.post(
+        "/v1/admin/yaml/import/ddl",
+        json={
+            "ddl": _CLICKHOUSE_GOLD_DDL,
+            "layer": "gold",
+            "source_system": "s4h",
+            "module": "sd",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["tokens_used"] == 99
+    assert len(body["items"]) == 1
+    item = body["items"][0]
+    assert item["outcome"] == "created", item
+    assert item["entity_id"] == "gold_s4h_ventas_detalle"
+    assert "module: sd" in body["generated_yaml"]
+    assert any("ORDER BY" in w for w in body["warnings"])  # verify-grain advisory
+
+    target = ws / "s4h" / "gold" / "sd" / "ventas_detalle.yaml"
+    assert target.exists()
+    text = target.read_text(encoding="utf-8")
+    assert "db_table_name: gold_md_final" in text  # unqualified physical table
+    assert "aggregation_behavior" not in text  # absent = not curated (§4.1)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Publish workspace → index (bulk + per-entity, state-gated)
 # ─────────────────────────────────────────────────────────────────────────────

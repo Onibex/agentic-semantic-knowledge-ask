@@ -86,6 +86,11 @@ class DdlImportRequest(BaseModel):
     # into the mapping prompt so the model writes accurate business descriptions
     # / aliases instead of guessing from column names alone.
     context: str = ""
+    # Module for silver/gold entities (drives the workspace path + grouping).
+    # A user-chosen value from the import dialog; `gen` marks a generic /
+    # cross-module entity. Deterministic input beats a model guess — the code
+    # backstops every generated doc with this value when the model omits the key.
+    module: str = "gen"
 
 
 class DdlImportItem(BaseModel):

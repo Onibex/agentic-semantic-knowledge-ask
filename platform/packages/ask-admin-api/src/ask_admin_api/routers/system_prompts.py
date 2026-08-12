@@ -55,9 +55,11 @@ def reset_singletons() -> list[str]:
 
 def _validate_key(key: str) -> PromptKey:
     if not is_known_key(key):
+        from ..application.system_prompts_service import known_prompt_keys
+
         raise HTTPException(
             status_code=404,
-            detail=f"Unknown prompt key '{key}'. Valid keys: enrichment.",
+            detail=f"Unknown prompt key '{key}'. Valid keys: {', '.join(known_prompt_keys())}.",
         )
     return key  # type: ignore[return-value]
 
