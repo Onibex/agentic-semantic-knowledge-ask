@@ -423,6 +423,7 @@ _DB_LABELS: dict[str, str] = {
     "sqlserver": "SQL Server",
     "db2": "IBM Db2",
     "fabric": "Microsoft Fabric",
+    "presto": "Presto",
 }
 
 

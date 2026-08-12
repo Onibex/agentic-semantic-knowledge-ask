@@ -149,6 +149,41 @@ _SQL_NOISE = {
 }
 
 
+def lowercase_physical_tables(sql: str, allowed_tables: set[str]) -> str:
+    """Lowercase FROM/JOIN/INTO/UPDATE table identifiers that match a known
+    physical table, leaving everything else (columns, aliases, the schema
+    prefix segment) untouched.
+
+    ``db_table_name`` is registered uppercase in the semantic layer (SAP HANA
+    identifier folding convention — see :func:`build_allowed_tables`), and the
+    LLM faithfully reproduces whatever casing the SCHEMA section shows it. On
+    an Iceberg-backed catalog (e.g. Presto/Trino against watsonx.data) the
+    physical tables are conventionally created lowercase, so the generated
+    SQL never resolves without this fix-up. Deterministic post-generation
+    correction rather than an LLM instruction — the "LLM as compiler"
+    principle: don't rely on the model remembering to fold casing on its own.
+
+    Reuses :data:`_TABLE_REF` (same conservative FROM/JOIN/INTO/UPDATE match as
+    :func:`extract_referenced_tables`) so a table is only ever touched where it
+    is unambiguously a table reference, never inside a column list or alias.
+    """
+    if not sql or not allowed_tables:
+        return sql
+
+    def _fix(m: re.Match[str]) -> str:
+        quoted, bare = m.group(1), m.group(2)
+        name = quoted if quoted is not None else bare
+        if name.upper() not in allowed_tables:
+            return m.group(0)
+        group_idx = 1 if quoted is not None else 2
+        full = m.group(0)
+        start = m.start(group_idx) - m.start(0)
+        end = m.end(group_idx) - m.start(0)
+        return full[:start] + name.lower() + full[end:]
+
+    return _TABLE_REF.sub(_fix, sql)
+
+
 def extract_referenced_tables(sql: str) -> set[str]:
     """
     Extract the set of physical tables referenced in FROM/JOIN/INTO/UPDATE

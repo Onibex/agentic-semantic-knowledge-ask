@@ -70,6 +70,7 @@ def _autoload() -> None:
         fabric,
         hana,
         postgresql,
+        presto,
         snowflake,
         sqlserver,
     )
@@ -83,6 +84,7 @@ def _autoload() -> None:
     _reg_module("db2", db2)
     _reg_module("bigquery", bigquery)
     _reg_module("fabric", fabric)
+    _reg_module("presto", presto)
 
 
 def get_dialect(db_type: str) -> DialectPrompt | None:

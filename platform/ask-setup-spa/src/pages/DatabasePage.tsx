@@ -38,6 +38,7 @@ const ENGINE_META: Record<string, { mono: string; color: string }> = {
   sqlserver: { mono: 'MS', color: '#b7413a' },
   db2: { mono: 'D2', color: '#3557c7' },
   fabric: { mono: 'FB', color: '#12a37f' },
+  presto: { mono: 'PR', color: '#5890ff' },
 }
 function meta(dbType: string) {
   return ENGINE_META[dbType] ?? { mono: dbType.slice(0, 2).toUpperCase(), color: '#64748b' }
@@ -49,6 +50,7 @@ const SELECT_OPTIONS: Record<string, string[]> = {
   encrypt: ['yes', 'no'],
   trust_server_certificate: ['no', 'yes'],
   security: ['', 'SSL'],
+  http_scheme: ['https', 'http'],
 }
 const FILE_FIELDS = new Set(['credentials_json'])
 const FIELD_HINTS: Record<string, string> = {
@@ -94,6 +96,7 @@ function labelFor(name: string): string {
     tenant_id: 'Tenant ID',
     client_id: 'Client ID',
     client_secret: 'Client secret',
+    http_scheme: 'HTTP scheme',
   }
   return map[name] ?? name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
@@ -111,6 +114,8 @@ function summarize(conn: DbConnectionView): string {
       return `${f.project || '—'} · ${f.dataset || '?'}`
     case 'fabric':
       return `${f.server || '—'} · ${f.database || '?'}`
+    case 'presto':
+      return `${f.host || '—'} · ${f.catalog || '?'}.${f.schema || '?'}`
     default: {
       const loc = f.database || f.schema || ''
       return `${f.host || '—'}:${f.port || '?'}${loc ? ' / ' + loc : ''}`

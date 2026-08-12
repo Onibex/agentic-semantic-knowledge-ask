@@ -18,6 +18,7 @@ DbType = Literal[
     "db2",
     "bigquery",
     "fabric",
+    "presto",
 ]
 
 
