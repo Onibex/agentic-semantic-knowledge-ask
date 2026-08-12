@@ -252,6 +252,56 @@ def test_recompute_entity_grain_keeps_only_published_fields():
     assert _D.recompute_entity_grain(fields, join_graph=_INV_JOINS) == ["doc_number"]
 
 
+def test_structural_grain_resolves_through_name_map():
+    """Under ColumnNamingMode.ALIAS the published name is not reconstructable
+    from `table.column`; the name map (built by the parser while minting
+    fields) is what keeps grain members equal to `fields[].name`. Join-equal
+    collapse must keep working across differently-aliased copies."""
+    name_map = {
+        ("MKPF", "MBLNR"): "documento_mkpf",
+        ("MKPF", "MJAHR"): "ejercicio_mkpf",
+        ("MSEG", "MBLNR"): "documento_mseg",
+        ("MSEG", "MJAHR"): "ejercicio_mseg",
+        ("MSEG", "ZEILE"): "posicion_mseg",
+        ("MARC", "MATNR"): "material_marc",
+        ("MARC", "WERKS"): "centro_marc",
+        ("MARD", "MATNR"): "material_mard",
+        ("MARD", "WERKS"): "centro_mard",
+        ("MARD", "LGORT"): "almacen_mard",
+    }
+    grain = _D.structural_grain(
+        table_keys=_INV_KEYS, join_graph=_INV_JOINS, name_map=name_map
+    )
+    assert grain == ["documento_mkpf", "ejercicio_mkpf", "posicion_mseg"]
+    # No map → byte-identical historical behavior (the technical convention).
+    assert _D.structural_grain(table_keys=_INV_KEYS, join_graph=_INV_JOINS) == [
+        "mblnr_mkpf",
+        "mjahr_mkpf",
+        "zeile_mseg",
+    ]
+
+
+def test_recompute_entity_grain_resolves_off_convention_names_via_source():
+    """The admin save path rebuilds the name map from each field's `source`, so
+    an entity whose EVERY name is off-convention (alias mode, or hand renames)
+    still derives the structural grain instead of silently degrading to the
+    10-member superkey fallback."""
+    fields = [
+        {"name": "documento_mkpf", "source": "MKPF.MBLNR", "field_role": "identifier"},
+        {"name": "ejercicio_mkpf", "source": "MKPF.MJAHR", "field_role": "identifier"},
+        {"name": "documento_mseg", "source": "MSEG.MBLNR", "field_role": "identifier"},
+        {"name": "ejercicio_mseg", "source": "MSEG.MJAHR", "field_role": "identifier"},
+        {"name": "posicion_mseg", "source": "MSEG.ZEILE", "field_role": "identifier"},
+        {"name": "material_marc", "source": "MARC.MATNR", "field_role": "identifier"},
+        {"name": "centro_marc", "source": "MARC.WERKS", "field_role": "identifier"},
+        {"name": "material_mard", "source": "MARD.MATNR", "field_role": "identifier"},
+        {"name": "centro_mard", "source": "MARD.WERKS", "field_role": "identifier"},
+        {"name": "almacen_mard", "source": "MARD.LGORT", "field_role": "identifier"},
+    ]
+    grain = _D.recompute_entity_grain(fields, join_graph=_INV_JOINS)
+    assert grain == ["documento_mkpf", "ejercicio_mkpf", "posicion_mseg"]
+
+
 def test_derive_join_graph_skips_root():
     rels = [
         SimpleNamespace(

@@ -278,10 +278,16 @@ The rules:
   the first occurrence keeps the bare alias. Digits that belong to the *source column name*
   (`STCD1`…`STCD4` → `tax_no_1`…`tax_no_4`) are part of the name, not dedup suffixes, and
   are preserved.
-- **Silver field names are NOT built from the Bronze alias.** A Silver field is named
-  `<column>_<table>`, lowercased — `VBAK.NETWR` → `netwr_vbak` (`sap_json_parser.py`). Two
-  consequences: an ugly Bronze alias never leaks into a Silver field name, and improving a
-  Bronze alias never renames a Silver field or invalidates a `join_graph`.
+- **Whether Silver field names are built from the Bronze alias is the deployment's
+  column-naming mode** (`ASK_COLUMN_NAMING`, fixed before the first ingest — see
+  `REQ_CURATED_COLUMN_NAMING.md`). Under `technical` (the default) a Silver field is named
+  `<column>_<table>`, lowercased — `VBAK.NETWR` → `netwr_vbak` (`sap_json_parser.py`); an
+  ugly Bronze alias never leaks into a Silver field name, and improving a Bronze alias never
+  renames a Silver field or invalidates a `join_graph`. Under `alias` the Silver field is
+  `<alias>_<table>` — `VBAK.NETWR` with alias `net_value` → `net_value_vbak` — byte-identical
+  to the persisted Bronze alias, which is why the alias is minted once at ingest and editing
+  it afterwards does NOT rename the Silver field (minted names are persisted, never
+  re-derived). The suffix is the SAP table name in both modes.
 
 ### 3.8 Bronze isolation
 

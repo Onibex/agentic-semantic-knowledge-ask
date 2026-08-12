@@ -254,6 +254,9 @@ services:
       # API key para /v1/ingest/* (machine-to-machine — Kafka Connect, webhooks).
       # En producción usar Kyma Secret. Generar con: openssl rand -hex 32
       ASK_INGEST_API_KEY: ${ASK_INGEST_API_KEY:-dev-local-key-change-me}
+      # Curated column naming: technical (vbeln_vbak) | alias (documento_ventas_vbak).
+      # Fixed BEFORE the first ingest; see REQ_CURATED_COLUMN_NAMING.md.
+      ASK_COLUMN_NAMING: ${ASK_COLUMN_NAMING:-technical}
       # Cross-container cache invalidation: al cambiar el LLM activo, admin-api
       # hace POST a {ASK_ORCHESTRATOR_URL}/v1/internal/reload para que el
       # orquestador reconstruya sus singletons YA (en vez de esperar el TTL de

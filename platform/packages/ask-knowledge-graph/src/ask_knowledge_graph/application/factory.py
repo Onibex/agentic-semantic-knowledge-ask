@@ -150,6 +150,7 @@ def build_default_ingestion_service(
     disk under `config["workspace_dir"]` (default `./workspace`). The
     CLI does not need this; the admin API Ingestor endpoints do.
     """
+    from ..infrastructure.naming_config import resolve_column_naming_mode
     from ..infrastructure.opensearch_writer import OpenSearchKnowledgeGraphWriter
     from ..infrastructure.sap_json_parser import SapJsonParser
     from ._legacy_ingestion import MetadataIngestionService
@@ -157,7 +158,9 @@ def build_default_ingestion_service(
 
     repo = _build_repo(env)
     embedder = _build_embedder(config)
-    parser = SapJsonParser()
+    # Explicit because this caller holds the parsed config; every other
+    # construction site self-resolves (env / settings.json).
+    parser = SapJsonParser(naming_mode=resolve_column_naming_mode(config))
 
     file_repo = None
     if with_file_storage:
