@@ -30,6 +30,7 @@ import { useDataProductCatalog } from '@/hooks/queries/catalogQueries'
 import { useYamlList } from '@/hooks/queries/yamlQueries'
 import { useEditorStore } from '@/store/editorStore'
 import { useGraphStore } from '@/store/graphStore'
+import { useWorkspaceStore } from '@/store/workspaceStore'
 import { PageHeader } from '@/components/PageHeader'
 import { EntityHeaderDetail } from '@/components/catalog/EntityHeaderDetail'
 import { EditPanel } from '@/components/editor/EditPanel'
@@ -177,8 +178,12 @@ export default function SemanticKnowledgePage() {
     try {
       // The EditPanel's relationship editor reads the full catalog from the
       // graph store for its target field pickers — make sure it's loaded
-      // (idempotent; no-op if already populated).
-      await useGraphStore.getState().ensureLoaded()
+      // (idempotent; no-op if already populated). SCOPED to the active
+      // workspace: the scoped branch is ONE request (listScopedYamls), while
+      // the unscoped legacy branch is listYamls + N x getYaml — a 35-request
+      // storm that took minutes on a bind-mounted workspace (Windows Docker).
+      const activeWorkspaceId = useWorkspaceStore.getState().activeWorkspaceId
+      await useGraphStore.getState().ensureLoaded(activeWorkspaceId)
       const node = await getYaml(entityId)
       startEdit(node)
     } catch (e: unknown) {

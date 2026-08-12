@@ -252,6 +252,20 @@ export async function resolveConflict(
   return data;
 }
 
+// Bulk resolution — one request, one YAML write, one commit. The fast path
+// for upload-first ingests where a whole export's differences land at once.
+export async function resolveConflictsBulk(
+  yamlId: string,
+  resolutions: { conflict_id: string; decision: ConflictDecision }[],
+  authorEmail: string,
+): Promise<YAMLNode> {
+  const { data } = await http.post<YAMLNode>(
+    `/yamls/${encodeURIComponent(yamlId)}/conflicts/resolve-bulk`,
+    { resolutions, author_email: authorEmail },
+  );
+  return data;
+}
+
 // Iter 6 — Additional history API
 export async function getYamlAtCommit(id: string, sha: string): Promise<YAMLNode> {
   const { data } = await http.get<YAMLNode>(
@@ -372,6 +386,18 @@ export async function deleteKgEntity(id: string): Promise<DeletionResult> {
 // Phase C2 — code-defined source-system profiles for the DDL form selector.
 export async function getSourceProfiles(): Promise<SourceProfile[]> {
   const { data } = await http.get<SourceProfile[]>('/admin/source-profiles');
+  return data;
+}
+
+// Effective (env-resolved) deployment ingestion config. `column_naming`
+// decides how the Manual-entity form derives Silver/Gold field names from a
+// composed Bronze: 'technical' -> <fldname>_<tabname>, 'alias' -> <alias>_<tabname>.
+export interface IngestConfig {
+  column_naming: 'technical' | 'alias';
+}
+
+export async function getIngestConfig(): Promise<IngestConfig> {
+  const { data } = await http.get<IngestConfig>('/admin/ingest-config');
   return data;
 }
 
