@@ -216,8 +216,8 @@ order is part of the surface. Bronze mirrors; Silver and Gold design.
 
 | Sub-field | Kind | Notes |
 |---|---|---|
-| `name` | R/S | Logical field name. |
-| `source` | R/S | `TABLE.COLUMN`. Physical binding. |
+| `name` | R/S | Logical field name — the **actual SQL column**, consumed verbatim by the SQL generator. Minted at ingest under the deployment's column-naming mode (`ASK_COLUMN_NAMING`): `technical` → `<column>_<table>` (`vbeln_vbak`), `alias` → `<alias>_<table>` (`documento_ventas_vbak`); the suffix is the SAP table name in both modes. See `REQ_CURATED_COLUMN_NAMING.md`. |
+| `source` | R/S | `TABLE.COLUMN`. Physical binding, always raw SAP codes — the stable spine heuristics resolve through, in every naming mode. |
 | `field_role` | R/S | See [§5 taxonomy](#5-field_role-taxonomy). |
 | `type` | R/S | Mapped SAP→ANSI type — the **canonical, source-agnostic** vocabulary (see the type note below). |
 | `description` | E | See [§8](#8-writing-descriptions). |

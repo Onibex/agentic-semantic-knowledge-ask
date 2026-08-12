@@ -183,6 +183,7 @@ async def ingest_sap_json_kafka(
         auto_applied=[AutoAppliedChange(**a) for a in outcome.auto_applied],
         conflicts=[ConflictBlock(**c) for c in outcome.conflicts],
         baseline_updated=outcome.baseline_updated,
+        naming_warnings=outcome.naming_warnings,
     )
 
     if idempotency_key:

@@ -290,11 +290,28 @@ class MergeResult(BaseModel):
     auto_applied: list[AutoAppliedChange] = []
     conflicts: list[ConflictBlock] = []
     baseline_updated: bool = False
+    # Identifier-hygiene warnings from the SAP parser (values the normalizer
+    # had to change). Non-blocking; a mismatch risk under alias column naming.
+    naming_warnings: list[str] = []
 
 
 class ConflictResolutionRequest(BaseModel):
     decision: str  # "keep_enriched" | "accept_sap"
     author_email: str = ""  # commit author derived server-side from JWT
+
+
+class BulkResolutionItem(BaseModel):
+    conflict_id: str
+    decision: str  # "keep_enriched" | "accept_sap"
+
+
+class BulkConflictResolutionRequest(BaseModel):
+    """Resolve many conflicts of ONE entity in a single pass — the fast path
+    for upload-first ingests where a whole export's worth of differences lands
+    at once. One YAML write + one commit instead of N."""
+
+    resolutions: list[BulkResolutionItem]
+    author_email: str = ""
 
 
 class IngestSapJsonRequest(BaseModel):

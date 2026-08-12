@@ -11,7 +11,9 @@ Field-level merge rules by layer:
 from __future__ import annotations
 
 import logging
+import os
 import threading
+import time
 from pathlib import Path
 
 from ask_knowledge_graph.infrastructure.yaml_serializer import (
@@ -85,6 +87,20 @@ class YAMLFileService:
         # workspace on every call.
         self._cache_lock = threading.RLock()
         self._cache: dict | None = None
+        # Monotonic time of the last signature walk. The signature exists to
+        # catch EXTERNAL changes (git publish/restore); local writes invalidate
+        # explicitly. Re-walking at most every _SIGNATURE_TTL_S turns a request
+        # burst (canvas load, edit-open) into ONE walk instead of one per call —
+        # decisive on bind-mounted filesystems where each stat costs ms.
+        self._sig_checked_at: float = 0.0
+
+    _SIGNATURE_TTL_S = 2.0
+    # Class-level invalidation stamp: the routers each hold their OWN service
+    # singleton (6 instances, 6 caches). A write through any of them must break
+    # every instance's TTL gate, or a resolve/merge on one router is followed by
+    # a ≤2s stale read on another. Any instance invalidating bumps this; the TTL
+    # gate only trusts a cache whose last signature walk is NEWER than it.
+    _global_invalidated_at: float = 0.0
 
     # ── Public API ───────────────────────────────────────────────────────────
 
@@ -93,9 +109,19 @@ class YAMLFileService:
 
         Gold data products in this workspace use the .yml extension; Bronze/Silver
         use .yaml. Both must be visible to the visualizer.
+
+        Walks with ``os.walk`` and PRUNES dot-directories instead of ``rglob``:
+        the workspace is the repo root, so an unpruned walk descends into
+        ``.git`` — measured 235 of 246 directories on a real corpus (loose git
+        objects), a ~24x tax on every signature check, which on a Windows
+        bind mount (ms per metadata op) turned each read call into seconds.
+        No YAML ever lives under a dot-directory (`.sap_baseline` holds JSON).
         """
-        yield from self.workspace.rglob("*.yaml")
-        yield from self.workspace.rglob("*.yml")
+        for dirpath, dirnames, filenames in os.walk(self.workspace):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in filenames:
+                if name.endswith((".yaml", ".yml")):
+                    yield Path(dirpath) / name
 
     # ── Catalog cache (parse-once) ─────────────────────────────────────────────
     # list_yamls / get_yaml(s) used to rglob + ruamel-parse the WHOLE workspace
@@ -128,8 +154,19 @@ class YAMLFileService:
         re-loads from disk via ``_load_raw`` and never mutates a cached dict.
         """
         with self._cache_lock:
-            sig = self._workspace_signature()
             cache = self._cache
+            # TTL gate: within the window, trust the cache without re-walking.
+            # Local writes call _invalidate_cache() so this can only defer the
+            # visibility of an EXTERNAL change (git publish/restore) by ~2s.
+            now = time.monotonic()
+            if (
+                cache is not None
+                and self._sig_checked_at > YAMLFileService._global_invalidated_at
+                and now - self._sig_checked_at < self._SIGNATURE_TTL_S
+            ):
+                return cache
+            sig = self._workspace_signature()
+            self._sig_checked_at = now
             if cache is not None and cache["sig"] == sig:
                 return cache
             raws: list[tuple[Path, dict]] = []
@@ -153,6 +190,15 @@ class YAMLFileService:
         local write (update / import / delete / create)."""
         with self._cache_lock:
             self._cache = None
+            self._sig_checked_at = 0.0  # the TTL gate must not outlive the cache
+            # Break every sibling instance's TTL gate too (see the class attr).
+            YAMLFileService._global_invalidated_at = time.monotonic()
+
+    def invalidate_cache(self) -> None:
+        """Public invalidation for callers that write YAML files DIRECTLY
+        (conflict resolution, SAP merge) instead of through this service.
+        Within the signature TTL such writes would otherwise be served stale."""
+        self._invalidate_cache()
 
     def list_yamls(self, layer: VizLayer | None = None) -> list[VizYAMLSummary]:
         """Catalog rows, including the §3.1 entity header.
@@ -548,6 +594,12 @@ class YAMLFileService:
         abs_path.parent.mkdir(parents=True, exist_ok=True)
         abs_path.write_text(self._serialize(raw), encoding="utf-8")
         self._invalidate_cache()
+        # An imported YAML is CURATED content with no edit history — seed its
+        # provenance so a later SAP JSON ingest can never silently overwrite it
+        # (pre-packed semantic layers are uploaded FIRST, the client's Data
+        # Modeler export arrives after). Value-based, same rule every SPA save
+        # runs: any non-empty enrichable prop = curated.
+        self._seed_enrichments_from_import(raw, layer, entity_id)
         rel_path = self._rel_posix(abs_path)
         logger.info("Imported YAML %s into workspace at %s", entity_id, abs_path)
 
@@ -561,6 +613,37 @@ class YAMLFileService:
             )
 
         return self.get_yaml(entity_id)
+
+    def _seed_enrichments_from_import(self, raw: dict, layer: str, entity_id: str) -> None:
+        """Write the provenance sidecar for a freshly imported YAML.
+
+        Rule (REQ_REINGEST_STRUCTURE_MERGE.md §no-baseline): a JSON must NEVER
+        overwrite a YAML without asking. The merge's per-prop gate is the
+        enrichments sidecar — an uploaded file has no edit history, so its
+        curated content would read as "not enriched" and be fair game. Seeding
+        marks every non-empty enrichable prop as curated; empty props stay
+        open for SAP to fill silently.
+        """
+        from .provenance_engine import (
+            ENRICHABLE_PROPS,
+            compute_enrichments_bronze,
+            compute_enrichments_silver,
+        )
+
+        fields = raw.get("fields")
+        if layer == "bronze" and isinstance(fields, dict):
+            field_enr = compute_enrichments_bronze(fields, {}, set(fields.keys()))
+        elif isinstance(fields, list):
+            names = {f.get("name") for f in fields if isinstance(f, dict) and f.get("name")}
+            field_enr = compute_enrichments_silver(fields, {}, names)
+        else:
+            field_enr = {}
+        entity_enr = [
+            p for p in ("description", "alias") if p in ENRICHABLE_PROPS and str(raw.get(p) or "").strip()
+        ]
+        self._enrichments_store.write(
+            entity_id, entity_enrichments=entity_enr, field_enrichments=field_enr
+        )
 
     def delete_yaml(
         self,

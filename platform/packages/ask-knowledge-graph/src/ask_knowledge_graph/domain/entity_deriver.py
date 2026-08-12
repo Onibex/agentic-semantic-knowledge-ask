@@ -20,6 +20,7 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+from .naming import normalize_identifier
 from .nodes import Grain, JoinCondition
 from .source_profiles import get_profile
 
@@ -33,15 +34,37 @@ _EQUALITY_TERM = re.compile(
 
 
 def silver_column_name(table: str, column: str) -> str:
-    """The published Silver column name for ``table.column``.
+    """The published Silver column name for ``table.column`` in TECHNICAL mode.
 
     Single home for the ``<column>_<table>`` convention. Both the field builder
     (``sap_json_parser``) and the grain derivation below resolve names through
     here, so a grain member can never drift from the field it names — which is
     exactly the drift that made every shipped Silver grain unresolvable (its
     members were raw SAP codes while the columns were these names).
+
+    Under ``ColumnNamingMode.ALIAS`` (``domain.naming``) the published name is
+    minted from the field alias instead; derivation then resolves through the
+    ``name_map`` built from the entity's own fields, with this function as the
+    fallback for columns the entity does not publish.
     """
     return f"{column.lower()}_{table.lower()}"
+
+
+def _published_name(
+    name_map: dict[tuple[str, str], str] | None, table: str, column: str
+) -> str:
+    """The published column name for ``table.column``, whatever the naming mode.
+
+    ``name_map`` keys are ``(TABLE, COLUMN)`` uppercase and carry the entity's
+    ACTUAL ``fields[].name`` values; a miss falls back to the technical
+    convention, which keeps every historical call site byte-identical when no
+    map is supplied.
+    """
+    if name_map:
+        hit = name_map.get((table.upper(), column.upper()))
+        if hit:
+            return hit
+    return silver_column_name(table, column)
 
 
 def _field_get(fdef: Any, key: str, default: Any = None) -> Any:
@@ -160,6 +183,7 @@ class EntityDeriver:
         table_keys: dict[str, list[str]],
         join_graph: list[Any] | None = None,
         published: set[str] | None = None,
+        name_map: dict[tuple[str, str], str] | None = None,
     ) -> list[str]:
         """The Silver ``entity_grain`` as PUBLISHED COLUMN NAMES, derived from the
         composed tables' primary keys and the join predicates that bind them.
@@ -205,8 +229,16 @@ class EntityDeriver:
         definition (the predicate says they are equal), so picking the selectable
         one costs nothing and avoids emitting a grain member that no query can
         reference. The ingestion path does not need it — there, every qualified
-        name is published by construction, both sides going through
-        :func:`silver_column_name`.
+        name is published by construction, both sides going through the same
+        resolver.
+
+        ``name_map`` — ``{(TABLE, COLUMN): published name}``, when the caller can
+        supply it (the parser builds it while minting fields; the admin path
+        rebuilds it from each field's ``source``). It is what keeps this
+        derivation correct under ``ColumnNamingMode.ALIAS``, where the published
+        name is not reconstructable from ``table.column`` alone; a miss falls
+        back to :func:`silver_column_name`, so passing no map preserves the
+        historical behavior exactly.
 
         Returns ``[]`` when there is nothing to derive from; the caller decides
         what an empty grain means.
@@ -249,7 +281,7 @@ class EntityDeriver:
             if table in n_ary_determined:
                 continue
             for col in keys[table]:
-                candidates.append((silver_column_name(table, col), table))
+                candidates.append((_published_name(name_map, table, col), table))
         if not candidates:
             return []
 
@@ -265,7 +297,10 @@ class EntityDeriver:
             return x
 
         for lt, lc, rt, rc in predicates:
-            a, b = find(silver_column_name(lt, lc)), find(silver_column_name(rt, rc))
+            a, b = (
+                find(_published_name(name_map, lt, lc)),
+                find(_published_name(name_map, rt, rc)),
+            )
             if a != b:
                 parent[b] = a
 
@@ -299,6 +334,25 @@ class EntityDeriver:
     # snapshot, or reduced on the wrong key, or ran the aggregate AT the reduce
     # grain. The fix is to state it structurally, and the fact is fully derivable
     # from data the parser already holds — no curation, no LLM, no Gold required.
+
+    @staticmethod
+    def name_map_from_fields(fields: Iterable[Any]) -> dict[tuple[str, str], str]:
+        """``{(TABLE, COLUMN): published name}`` rebuilt from each field's ``source``.
+
+        The inverse of name minting, and the reason the deriver never needs to
+        know the naming mode: whatever convention the parser (or an author)
+        used, the field itself carries both the SAP origin (``source``) and the
+        published name (``name``), so every derivation can resolve one from the
+        other. First occurrence wins, matching the row-dedup at ingest.
+        """
+        out: dict[tuple[str, str], str] = {}
+        for fdef in fields or []:
+            name = _field_get(fdef, "name")
+            table, _, column = str(_field_get(fdef, "source") or "").partition(".")
+            table, column = table.strip().upper(), column.strip().upper()
+            if name and table and column:
+                out.setdefault((table, column), str(name))
+        return out
 
     @staticmethod
     def _table_keys_from_identifiers(fields: Iterable[Any]) -> dict[str, list[str]]:
@@ -375,9 +429,10 @@ class EntityDeriver:
         if not grain:
             return {}
         table_keys = self._table_keys_from_identifiers(fields)
+        name_map = self.name_map_from_fields(fields)
 
         # Union-find over the join predicates — the same equivalence `structural_grain`
-        # builds, on the same `silver_column_name` keys, so the two derivations can
+        # builds, on the same published-name keys, so the two derivations can
         # never disagree about which columns are one column.
         parent: dict[str, str] = {}
 
@@ -390,7 +445,10 @@ class EntityDeriver:
 
         for jc in join_graph or []:
             for lt, lc, rt, rc in _parse_join_predicate(_join_attr(jc, "condition")):
-                a, b = find(silver_column_name(lt, lc)), find(silver_column_name(rt, rc))
+                a, b = (
+                    find(_published_name(name_map, lt, lc)),
+                    find(_published_name(name_map, rt, rc)),
+                )
                 if a != b:
                     parent[b] = a
 
@@ -412,7 +470,7 @@ class EntityDeriver:
             # until a grain named a column of another table, because until then each
             # table's key WAS its whole contribution to the grain. The seed is a
             # superset of the old one, so this can only ever REMOVE a fan-out claim.
-            determined = {find(silver_column_name(table, c)) for c in cols}
+            determined = {find(_published_name(name_map, table, c)) for c in cols}
             out[table] = [g for g in grain if find(g) not in determined]
         return out
 
@@ -476,6 +534,7 @@ class EntityDeriver:
         entity_name: str,
         *,
         join_graph: list[Any] | None = None,
+        name_map: dict[tuple[str, str], str] | None = None,
     ) -> Grain:
         """Grain for the SAP-export ingestion path (was ``_calculate_grain``).
 
@@ -485,9 +544,13 @@ class EntityDeriver:
         deduplicated by bare column name, which silently conflated
         ``VBAK.VBELN`` (the order) with ``VBFA.VBELN`` (the *subsequent* document)
         — two different values under one name. Delegates to
-        :meth:`structural_grain`; see it for the derivation rules.
+        :meth:`structural_grain`; see it for the derivation rules and for what
+        ``name_map`` does (the parser passes the map it built while minting the
+        fields, so grain members match ``fields[].name`` in every naming mode).
         """
-        keys = self.structural_grain(table_keys=table_keys, join_graph=join_graph)
+        keys = self.structural_grain(
+            table_keys=table_keys, join_graph=join_graph, name_map=name_map
+        )
         if not keys:
             keys = ["id_placeholder"]
         return Grain(entity_grain=keys, business_grain=f"{entity_name}_item")
@@ -530,8 +593,12 @@ class EntityDeriver:
             return names
 
         declared = set(names)
+        # The map covers ALL fields, not just identifiers: join predicates may
+        # equate through a non-key column, and a name minted off-convention
+        # (alias mode, or a hand-rename) is only resolvable through it.
+        name_map = self.name_map_from_fields(fields)
         structural = self.structural_grain(
-            table_keys=table_keys, join_graph=join_graph, published=declared
+            table_keys=table_keys, join_graph=join_graph, published=declared, name_map=name_map
         )
         # Belt and braces after the published-aware representative choice: a
         # hand-edited Silver may name a column off-convention with no equal
@@ -741,7 +808,11 @@ class EntityDeriver:
                 # the parser produced.
                 fd["type"] = mapper.canonical(fd["type"]) if fd.get("type") else "STRING"
                 if not fd.get("alias"):
-                    fd["alias"] = str(fname).lower()
+                    # Sanitized, not bare-lowercased: the alias is name-bearing
+                    # under ColumnNamingMode.ALIAS, so a hand-authored Bronze
+                    # with an accented field name must not persist a value the
+                    # published-column contract cannot reproduce.
+                    fd["alias"] = normalize_identifier(fname, fallback=str(fname))
                 if not fd.get("description"):
                     fd["description"] = ""
                 if "key_field" not in fd:

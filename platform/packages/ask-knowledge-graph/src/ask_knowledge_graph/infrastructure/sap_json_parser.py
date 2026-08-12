@@ -1,11 +1,10 @@
 import logging
-import re
-import unicodedata
 from typing import Any
 
 from pydantic import ValidationError
 
 from ..domain.entity_deriver import EntityDeriver, silver_column_name
+from ..domain.naming import ColumnNamingMode, normalize_identifier, published_column_name
 from ..domain.nodes import (
     AskIdGenerator,
     BronzeField,
@@ -17,6 +16,7 @@ from ..domain.nodes import (
     normalize_business_process,
 )
 from ..domain.source_profiles import get_profile
+from .naming_config import resolve_column_naming_mode
 from .sap_schemas import SapRootSchema
 
 logger = logging.getLogger(__name__)
@@ -37,52 +37,14 @@ _CONFIG_FLAGS = {"C", "G", "E", "S", "W"}
 _CLASSIFICATION_ALIASES = {"D": "M"}
 
 # ── Alias/identifier hygiene ─────────────────────────────────────────────────
-# The upstream OneConnect export is the origin of every alias defect we have
-# seen (a trailing U+FFFD in TSPAT's ``alias_tabname``, junk labels, two
-# dedup-suffix styles). ASK sanitizes defensively here; the export should not
-# emit them (tracked as an upstream requirement).
-#
-# Non-printable / non-ASCII characters are DROPPED, never replaced, so the
-# mojibake leaves no phantom underscore behind. Only the remaining illegal
-# ASCII (space, '-', '.', '/', '%', tab…) becomes '_'.
-#
-# Deliberately NOT done: no stripping of trailing digits (96 aliases in the
-# corpus mirror SAP's own column numbering — STCD1..4, KVGR1..5, PARH1..5) and
-# no stripping of leading/trailing underscores (7 real aliases end in one:
-# on_, tel_, from_, to_). Verified byte-identical on all 2,491 field aliases of
-# the shipped SAP payloads; the only value it changes is the TSPAT mojibake.
-_NON_PRINTABLE_RE = re.compile(r"[^\x20-\x7e]+")
-_BAD_LOWER_RE = re.compile(r"[^a-z0-9_]+")
-_BAD_UPPER_RE = re.compile(r"[^A-Z0-9_]+")
+# The normalizer body lives in ``domain.naming.normalize_identifier`` — it is
+# also the client-facing contract for ``ColumnNamingMode.ALIAS`` published
+# column names, so it has one home. This wrapper keeps the parser's historical
+# name (and its import sites/tests) alive with zero behavioral diff.
 
 
 def _sanitize_token(raw: Any, *, fallback: str, upper: bool = False) -> str:
-    """Coerce one SAP alias / table name into a printable-ASCII snake_case token.
-
-    NFKD-folds first so accented Latin text degrades to its base letters
-    ("año" → "ano") instead of losing the character outright, then drops what is
-    still non-printable / non-ASCII and maps the remaining illegal ASCII to "_".
-
-    ``upper=True`` (entity alias) forces UPPER_SNAKE — what 48/48 real
-    ``alias_tabname`` values already are; ``upper=False`` (field aliases, id
-    segments) forces lowercase. Falls back to ``fallback`` when sanitation
-    leaves nothing usable: ``BronzeField.alias`` / ``BronzeNode.alias`` are
-    both required and the alias is the last segment of the bronze id, so it can
-    never be blank.
-    """
-    bad_re = _BAD_UPPER_RE if upper else _BAD_LOWER_RE
-
-    def _clean(value: Any) -> str:
-        s = unicodedata.normalize("NFKD", str(value or ""))
-        s = _NON_PRINTABLE_RE.sub("", s)
-        s = s.upper() if upper else s.lower()
-        return bad_re.sub("_", s)
-
-    out = _clean(raw)
-    if out.strip("_"):
-        return out
-    out = _clean(fallback)
-    return out if out.strip("_") else ("TABLE" if upper else "field")
+    return normalize_identifier(raw, fallback=fallback, upper=upper)
 
 
 def _dedup_alias(alias: str, used: set[str]) -> str:
@@ -128,14 +90,44 @@ class SapJsonParser:
     Strictly typed: the payload is validated by Pydantic before anything is read.
     """
 
-    def __init__(self, deriver: EntityDeriver | None = None) -> None:
+    def __init__(
+        self,
+        deriver: EntityDeriver | None = None,
+        *,
+        naming_mode: ColumnNamingMode | None = None,
+    ) -> None:
         # Shared derivation heuristics — the SAME EntityDeriver the admin
         # Manual/DDL path runs at /import. Delegating keeps both ingestion
         # paths in lock-step (DIP); see ITERATION_ENTITY_CREATION_REDESIGN.md.
         self._deriver = deriver or EntityDeriver()
+        # Deployment-level column naming (REQ_CURATED_COLUMN_NAMING.md). Self-
+        # resolved when not injected so the flag is honored from EVERY
+        # construction site — the fail-safe that matters because a parser built
+        # under the wrong mode mints physical names that do not match the
+        # client's tables. Tests pass the kwarg for determinism.
+        self._naming_mode = naming_mode or resolve_column_naming_mode()
+        if self._naming_mode is not ColumnNamingMode.TECHNICAL:
+            logger.info("SapJsonParser: column naming mode = %s", self._naming_mode.value)
+        # Per-parse identifier-hygiene warnings (see `naming_warnings`).
+        self._naming_warnings: list[str] = []
+
+    @property
+    def naming_warnings(self) -> list[str]:
+        """Identifier-hygiene warnings from the LAST ``parse_to_domain`` call.
+
+        One entry per identifier-bearing value the normalizer had to change
+        (accents, spaces, case, in-table alias collisions). The contract says
+        those arrive clean; when they do not, ingestion proceeds with the
+        normalized value and the caller surfaces these — under
+        ``ColumnNamingMode.ALIAS`` a changed alias is a real mismatch risk
+        against the client's physical column names.
+        """
+        return list(self._naming_warnings)
 
     def parse_to_domain(self, raw_data: dict[str, Any]) -> tuple[list[BronzeNode], SilverNode]:
         """Main orchestrator — reads like a table of contents."""
+        self._naming_warnings = []
+
         # 1. Strict validation (the Pydantic shield)
         valid_data = self._validate_payload(raw_data)
 
@@ -150,8 +142,11 @@ class SapJsonParser:
             entity_name=meta["entity_name"],
         )
 
-        # 4. Build the Bronze nodes and extract the Silver fields
-        bronze_nodes, silver_fields, composed_of_ids = self._build_bronze_layer(
+        # 4. Build the Bronze nodes and extract the Silver fields. `name_map`
+        #    records the published name minted for every (table, column) so the
+        #    grain derivation below emits members that match `fields[].name`
+        #    whatever the naming mode.
+        bronze_nodes, silver_fields, composed_of_ids, name_map = self._build_bronze_layer(
             columns=valid_data.columns,
             relations=valid_data.relations,
             source_system=meta["source_system"],
@@ -163,7 +158,7 @@ class SapJsonParser:
 
         # 6. Compute the entity grain (needs the join graph from step 5 — the
         #    predicates decide which composed tables widen the grain at all)
-        grain_obj = self._calculate_grain(bronze_nodes, meta["entity_name"], join_graph)
+        grain_obj = self._calculate_grain(bronze_nodes, meta["entity_name"], join_graph, name_map)
 
         # 6b. Declare each measure's fan-out (needs the grain from step 6). A
         #     denormalised Silver restates a measure on every row its own table did
@@ -193,6 +188,9 @@ class SapJsonParser:
             join_graph=join_graph,
             silver_fields=silver_fields,
         )
+
+        for warning in self._naming_warnings:
+            logger.warning("identifier hygiene: %s", warning)
 
         return bronze_nodes, silver_node
 
@@ -297,9 +295,14 @@ class SapJsonParser:
             all_relations_config=all_relations_config,
         )
 
+    def _warn_if_normalized(self, context: str, raw: Any, normalized: str) -> None:
+        """Record a hygiene warning when normalization changed an identifier."""
+        if str(raw or "").strip() != normalized:
+            self._naming_warnings.append(f"{context}: {raw!r} normalized to '{normalized}'")
+
     def _build_bronze_layer(
         self, columns: list, relations: list, source_system: str, source_system_no: int
-    ) -> tuple[list[BronzeNode], list[SilverField], list[str]]:
+    ) -> tuple[list[BronzeNode], list[SilverField], list[str], dict[tuple[str, str], str]]:
         # `description_table` is now declared on SapRelationSchema, so the real
         # table label from the export reaches the YAML. Empty values still fall
         # back to the placeholder — `.strip() or` and not `getattr(..., default)`,
@@ -318,10 +321,14 @@ class SapJsonParser:
 
         grouped_tables = self._group_columns_by_table([col.model_dump() for col in columns])
         bronze_nodes, silver_fields, composed_of_ids = [], [], []
+        name_map: dict[tuple[str, str], str] = {}
 
         for tabname, table_data in grouped_tables.items():
             alias_tabname = _sanitize_token(
                 table_data["alias_tabname"], fallback=tabname, upper=True
+            )
+            self._warn_if_normalized(
+                f"{tabname}: alias_tabname", table_data["alias_tabname"], alias_tabname
             )
             description_table = table_descriptions.get(tabname, f"SAP Table {tabname}")
 
@@ -369,6 +376,33 @@ class SapJsonParser:
                 if is_key:
                     primary_keys.append(fldname)
 
+                # Alias hygiene + dedup run AFTER the row-level guard above, so a
+                # duplicated export row can never mint a phantom `_2`. Under
+                # ColumnNamingMode.ALIAS the deduped alias is name-bearing: it
+                # becomes the published column's prefix, byte-identical to the
+                # persisted Bronze alias (one normalization, applied once).
+                raw_alias = col.get("alias_fldname")
+                normalized_alias = _sanitize_token(raw_alias, fallback=fldname)
+                self._warn_if_normalized(
+                    f"{tabname}.{fldname}: alias_fldname", raw_alias, normalized_alias
+                )
+                field_alias = _dedup_alias(normalized_alias, used_aliases)
+                if (
+                    self._naming_mode is ColumnNamingMode.ALIAS
+                    and field_alias != normalized_alias
+                ):
+                    self._naming_warnings.append(
+                        f"{tabname}.{fldname}: alias '{normalized_alias}' collides in-table; "
+                        f"published as '{field_alias}' — the client table must use the same "
+                        f"ordinal suffix"
+                    )
+
+                if self._naming_mode is ColumnNamingMode.ALIAS:
+                    published = published_column_name(field_alias, tabname)
+                else:
+                    published = silver_column_name(tabname, fldname)
+                name_map[(tabname.upper(), fldname.upper())] = published
+
                 fields_dict[fldname] = BronzeField(
                     # Canonical ANSI type: STRING(10) / DECIMAL(15) / DATE.
                     # STRING(n) absorbs SAP CHAR, NUMC and TIMS — the CHAR-vs-NUMC
@@ -376,10 +410,7 @@ class SapJsonParser:
                     # recoverable from the stored type; see "What canonical drops"
                     # in docs/semantic-layer/BRONZE_LAYER.md.
                     type=canonical_type,
-                    alias=_dedup_alias(
-                        _sanitize_token(col.get("alias_fldname"), fallback=fldname),
-                        used_aliases,
-                    ),
+                    alias=field_alias,
                     key_field=is_key,
                     description=description_field,
                 )
@@ -391,9 +422,10 @@ class SapJsonParser:
 
                 silver_fields.append(
                     SilverField(
-                        # Same helper the grain derivation uses, so a grain member
-                        # and the field it names can never drift apart.
-                        name=silver_column_name(tabname, fldname),
+                        # Same name the grain derivation resolves through
+                        # `name_map`, so a grain member and the field it names
+                        # can never drift apart — in either naming mode.
+                        name=published,
                         source=f"{tabname}.{fldname}",
                         field_role=semantic_role,
                         # Same canonical encoding as Bronze. This closes a
@@ -443,7 +475,7 @@ class SapJsonParser:
                 )
             )
 
-        return bronze_nodes, silver_fields, composed_of_ids
+        return bronze_nodes, silver_fields, composed_of_ids, name_map
 
     def _build_join_graph(self, relations: list) -> list[JoinCondition]:
         return self._deriver.derive_join_graph(relations)
@@ -453,6 +485,7 @@ class SapJsonParser:
         bronze_nodes: list[BronzeNode],
         entity_name: str,
         join_graph: list[JoinCondition],
+        name_map: dict[tuple[str, str], str] | None = None,
     ) -> Grain:
         # Keys are passed KEYED BY TABLE (not flattened): the grain derivation needs
         # to know which table owns each key column, both to publish the
@@ -468,7 +501,9 @@ class SapJsonParser:
         # `primary_key` and the `primary_keys` field written verbatim to
         # OpenSearch (opensearch_repository.py:237).
         table_keys = {b_node.name: list(b_node.primary_key) for b_node in bronze_nodes}
-        return self._deriver.derive_grain(table_keys, entity_name, join_graph=join_graph)
+        return self._deriver.derive_grain(
+            table_keys, entity_name, join_graph=join_graph, name_map=name_map
+        )
 
     def _build_silver_node(
         self,

@@ -51,8 +51,11 @@ def test_reads_off_cache_and_rebuilds_on_add(tmp_path):
     assert {s.id for s in svc.list_yamls()} == {"silver_a"}
     assert svc.get_yaml("silver_a").id == "silver_a"
 
-    # A new file changes the workspace signature → next read rebuilds.
+    # A new file changes the workspace signature → next read rebuilds. External
+    # changes are only guaranteed visible after the signature TTL; expire the
+    # gate to model that window elapsing (local writes invalidate explicitly).
     _write_silver(ws, "silver_b", "b")
+    svc._sig_checked_at = 0.0
     assert {s.id for s in svc.list_yamls()} == {"silver_a", "silver_b"}
     assert {n.id for n in svc.get_yamls_by_ids({"silver_a", "silver_b"})} == {
         "silver_a",
@@ -67,7 +70,8 @@ def test_rebuilds_on_external_removal(tmp_path):
     _write_silver(ws, "silver_b", "b")
     assert len(svc.list_yamls()) == 2  # populate cache
 
-    pa.unlink()  # external removal
+    pa.unlink()  # external removal — visible once the signature TTL elapses
+    svc._sig_checked_at = 0.0
     assert {s.id for s in svc.list_yamls()} == {"silver_b"}
     with pytest.raises(YAMLNotFoundError):
         svc.get_yaml("silver_a")

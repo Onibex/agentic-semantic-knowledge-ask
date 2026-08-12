@@ -37,6 +37,7 @@ from .routers import (
     enrichment,
     health,
     ingest,
+    ingest_config,
     internal,
     lifecycle,
     llm_config,
@@ -295,3 +296,6 @@ app.include_router(organization.router, dependencies=_ADMIN_ONLY)  # Singleton o
 app.include_router(
     source_profiles.router, dependencies=_ADMIN_ONLY
 )  # Source-system profiles for the DDL form (Phase C2)
+app.include_router(
+    ingest_config.router, dependencies=_ADMIN_ONLY
+)  # Effective column-naming mode for the Manual-entity form

@@ -95,8 +95,18 @@ _FLAG_PREFIXES = ("is_", "has_", "kennz_", "stat_")
 _FLAG_SUFFIXES = ("_flag", "_status", "_indicator", "_ind", "_kennz")
 
 
-def is_technical_field(name: str) -> bool:
-    """Heuristic: skip audit / system fields by name. Excludes them entirely."""
+def is_technical_field(name: str, source: str | None = None) -> bool:
+    """Heuristic: skip audit / system fields. Excludes them entirely.
+
+    Keys on the SAP origin column first when the field carries ``source``
+    (``VBAK.MANDT``): under column naming mode ``alias`` the published name
+    prefix is a business word (``cliente_vbak``), so a name-only check would
+    silently stop excluding MANDT/ERDAT & co. The name checks still run —
+    suffix conventions (``_flag``, ``_status`` …) live on the name.
+    """
+    token = str(source or "").partition(".")[2].strip().lower()
+    if token and token in _TECHNICAL_FIELD_NAMES:
+        return True
     if not name:
         return False
     low = name.lower()
@@ -201,7 +211,7 @@ def compute_scope_defaults(
         name = str(field.get("name") or "")
         if not name:
             continue
-        if is_technical_field(name):
+        if is_technical_field(name, field.get("source")):
             technical.append(name)
             continue
         desc = str(field.get("description") or "")
@@ -399,7 +409,9 @@ def build_entity_prompt(
     other_field_names = [
         f.get("name")
         for f in all_fields
-        if f.get("name") and f.get("name") not in scope_set and not is_technical_field(f["name"])
+        if f.get("name")
+        and f.get("name") not in scope_set
+        and not is_technical_field(f["name"], f.get("source"))
     ]
 
     user_parts: list[str] = []
@@ -545,7 +557,7 @@ def diff_fields(
     for name, orig_field in orig_by_name.items():
         if scope_field_names is not None and name not in scope_field_names:
             continue
-        if is_technical_field(name):
+        if is_technical_field(name, orig_field.get("source")):
             continue
         new_field = enr_by_name.get(name)
         if not new_field:
@@ -762,7 +774,7 @@ def diff_from_json(
         if name not in orig_by_name:
             # Hallucinated field name — surfaced in the diagnostic, not applied.
             continue
-        if is_technical_field(name):
+        if is_technical_field(name, orig_by_name[name].get("source")):
             continue
 
         in_scope_seen.add(name)
@@ -895,7 +907,7 @@ class EnrichmentService:
         eligible = {
             f["name"]
             for f in _iter_fields(raw_yaml)
-            if f.get("name") and not is_technical_field(f["name"])
+            if f.get("name") and not is_technical_field(f["name"], f.get("source"))
         }
         return EnrichEntityScope(
             entity_level=bool(scope.entity_level),
@@ -1004,7 +1016,7 @@ class EnrichmentService:
                 fields_skipped_technical=sorted(
                     f["name"]
                     for f in _iter_fields(raw_yaml)
-                    if f.get("name") and is_technical_field(f["name"])
+                    if f.get("name") and is_technical_field(f["name"], f.get("source"))
                 ),
                 fields_unchanged=[],
                 tokens_used=tokens,
@@ -1039,7 +1051,7 @@ class EnrichmentService:
         technical = sorted(
             f["name"]
             for f in _iter_fields(raw_yaml)
-            if f.get("name") and is_technical_field(f["name"])
+            if f.get("name") and is_technical_field(f["name"], f.get("source"))
         )
 
         diagnostic = _build_json_diagnostic(
@@ -1090,15 +1102,14 @@ class EnrichmentService:
         raw_yaml: dict[str, Any],
         field_name: str,
     ) -> EnrichFieldResponse:
-        if is_technical_field(field_name):
-            raise ValueError(
-                f"Field '{field_name}' is excluded from AI enrichment (technical / audit)."
-            )
-
         fields = _iter_fields(raw_yaml)
         target = next((f for f in fields if f.get("name") == field_name), None)
         if target is None:
             raise ValueError(f"Field '{field_name}' not found in entity '{entity_id}'.")
+        if is_technical_field(field_name, target.get("source")):
+            raise ValueError(
+                f"Field '{field_name}' is excluded from AI enrichment (technical / audit)."
+            )
 
         system_prompt = self._prompt_provider.get_prompt("enrichment")
         entity_layer = str(raw_yaml.get("layer") or "").lower() or None
@@ -1381,15 +1392,24 @@ _NEVER_FK_PREFIXES = (
 )
 
 
-def _is_likely_fk(field_name: str) -> bool:
-    """Heuristic: a field is a FK candidate when its name PREFIX matches a
-    known SAP key column AND it is not a system/audit column.
+def _is_likely_fk(field_name: str, source: str | None = None) -> bool:
+    """Heuristic: a field is a FK candidate when its SAP key column matches a
+    known SAP key AND it is not a system/audit column.
 
-    Two-stage: exclude system fields first (mandt / ernam / etc.), then
-    test the prefix against the FK list. This way ``netwr_vbak`` (net
-    value, measure) and ``arktx_vbap`` (item text, attribute) are correctly
-    rejected even though their suffix indicates they come from VBAK / VBAP.
+    The SAP origin column is authoritative when the field carries ``source``
+    (``VBAP.MATNR``): the published NAME may be alias-based (column naming
+    mode ``alias``), where the prefix is a business word that matches nothing
+    in the SAP lists. Fields without ``source`` (Gold) fall back to the name
+    prefix — two-stage: exclude system fields first (mandt / ernam / etc.),
+    then test against the FK list, so ``netwr_vbak`` (net value, measure) and
+    ``arktx_vbap`` (item text) are correctly rejected even though their suffix
+    indicates they come from VBAK / VBAP.
     """
+    token = str(source or "").partition(".")[2].strip().lower()
+    if token:
+        if any(token.startswith(p) for p in _NEVER_FK_PREFIXES):
+            return False
+        return token in _SAP_FK_COLUMN_PREFIXES
     name = (field_name or "").strip().lower()
     if not name:
         return False
@@ -1410,9 +1430,13 @@ def _project_for_relationship(raw_yaml: dict[str, Any], *, side: str) -> dict[st
     Field selection:
       - ALL primary_key fields, regardless of name pattern (always relevant
         for cardinality detection).
-      - Fields matching SAP FK conventions (``_kna1``, ``_mara``, ``_vbap`` …).
+      - Fields whose SAP origin column (``source``) — or name prefix when no
+        ``source`` — matches the SAP FK conventions.
       - Drop everything else — descriptions, synonyms, dimensions of measures
         etc. don't affect the join inference.
+
+    Each kept field ships its ``source`` so the LLM sees the SAP key column
+    even when the published name is alias-based.
     """
     header = {
         k: raw_yaml.get(k)
@@ -1445,13 +1469,15 @@ def _project_for_relationship(raw_yaml: dict[str, Any], *, side: str) -> dict[st
         name = str(f.get("name") or "").strip()
         if not name:
             continue
-        if name.lower() in pk_names or _is_likely_fk(name):
-            relevant.append(
-                {
-                    "name": name,
-                    "type": f.get("type") or "",
-                }
-            )
+        source = str(f.get("source") or "").strip()
+        if name.lower() in pk_names or _is_likely_fk(name, source):
+            projected = {
+                "name": name,
+                "type": f.get("type") or "",
+            }
+            if source:
+                projected["source"] = source
+            relevant.append(projected)
 
     header["fields"] = relevant
     header["_side"] = side

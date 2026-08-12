@@ -43,9 +43,13 @@ function ValueTable({
 
 interface Props {
   conflict: ConflictBlock;
+  /** Bulk-selection support (ConflictDialog): checked state + toggle. Absent
+   *  when the caller has a single conflict and bulk makes no sense. */
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function ConflictResolver({ conflict }: Props) {
+export function ConflictResolver({ conflict, selected, onToggleSelect }: Props) {
   const { resolve, resolving, resolveError } = useMergeStore();
 
   const label = CONFLICT_LABEL[conflict.conflict_type] ?? conflict.conflict_type;
@@ -54,7 +58,15 @@ export function ConflictResolver({ conflict }: Props) {
     <div className="flex flex-col gap-4 p-4 h-full overflow-auto">
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <span className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={!!selected}
+              onChange={onToggleSelect}
+              aria-label={`Select conflict ${conflict.field_name}`}
+            />
+          )}
           Conflict — <span className="font-mono normal-case">{conflict.field_name}</span>
         </span>
         <p className="text-sm text-gray-700">{label}</p>

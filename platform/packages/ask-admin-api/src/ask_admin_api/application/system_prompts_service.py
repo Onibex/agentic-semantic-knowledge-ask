@@ -332,19 +332,24 @@ caveat noting which side's uniqueness is unverified.
 
 SAP MASTER-DATA CONVENTIONS
 ===========================
-Field-name suffixes encode the SAP origin table — use as primary signal:
-  kunnr_* → KNA1 (customer master)
-  matnr_* → MARA (material master)
-  lifnr_* → LFA1 (vendor master)
-  vbeln_* → VBAK / VBRK / VBPA  (SD documents)
-  ebeln_* → EKKO (purchase order header)
-  belnr_* → BKPF (accounting document)
-  bukrs_* → T001 (company code)
-  werks_* → T001W (plant)
-  posnr_* → line-item suffix on any SD/MM doc
+Each projected field may carry `source: TABLE.COLUMN` — the SAP origin in
+raw SAP codes, regardless of how the published field is named. Use the
+SOURCE COLUMN as the primary signal for what the field keys to:
+  KUNNR → KNA1 (customer master)
+  MATNR → MARA (material master)
+  LIFNR → LFA1 (vendor master)
+  VBELN → VBAK / VBRK / VBPA  (SD documents)
+  EBELN → EKKO (purchase order header)
+  BELNR → BKPF (accounting document)
+  BUKRS → T001 (company code)
+  WERKS → T001W (plant)
+  POSNR → line-item key on any SD/MM doc
+When a field has no `source`, fall back to its name prefix (`kunnr_*`,
+`matnr_*`, …) as the same signal.
 A field named `<x>_vbap` means "originates from SD line items table VBAP".
-A SOURCE `matnr_vbap` joining to TARGET `matnr_mara` is the canonical
-material lookup.
+A SOURCE field with `source: VBAP.MATNR` joining to a TARGET field with
+`source: MARA.MATNR` is the canonical material lookup — whatever the two
+fields are named.
 
 TYPE COMPATIBILITY
 ==================

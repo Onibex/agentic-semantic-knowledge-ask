@@ -1,5 +1,8 @@
 {
   "schema_mode": "yaml",
+  "ingestion": {
+    "column_naming": "technical"
+  },
   "hybrid_pipeline": {
     "anchor_top_k": 3,
     "expand_max_hops": 1,

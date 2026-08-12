@@ -4,6 +4,7 @@ import {
   getConflicts,
   getPendingConflictsWorkspace,
   resolveConflict,
+  resolveConflictsBulk,
 } from '../api/client';
 import { invalidateLifecycle } from '../hooks/queries/catalogQueries';
 import { useGraphStore } from './graphStore';
@@ -28,6 +29,10 @@ interface MergeStore {
   loadPendingConflicts(): Promise<void>;
   selectConflict(id: string | null): void;
   resolve(yamlId: string, conflictId: string, decision: ConflictDecision): Promise<void>;
+  resolveBulk(
+    yamlId: string,
+    resolutions: { conflict_id: string; decision: ConflictDecision }[],
+  ): Promise<void>;
 }
 
 export const useMergeStore = create<MergeStore>((set, get) => ({
@@ -111,6 +116,27 @@ export const useMergeStore = create<MergeStore>((set, get) => ({
       useGraphStore.getState().replaceNode(updated);
       // Resolving changes pending_conflicts (and maybe status) → refresh the
       // catalog badge/filter + every lifecycle view, even on partial resolution.
+      invalidateLifecycle();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      set({ resolving: false, resolveError: msg });
+    }
+  },
+
+  async resolveBulk(
+    yamlId: string,
+    resolutions: { conflict_id: string; decision: ConflictDecision }[],
+  ) {
+    if (resolutions.length === 0) return;
+    const authorEmail = useAuthStore.getState().user?.email ?? '';
+    set({ resolving: true, resolveError: null });
+    try {
+      const updated = await resolveConflictsBulk(yamlId, resolutions, authorEmail);
+      const freshConflicts = await getConflicts(yamlId);
+      const { conflicts } = get();
+      const merged = conflicts.filter((c) => c.yaml_id !== yamlId).concat(freshConflicts);
+      set({ conflicts: merged, resolving: false });
+      useGraphStore.getState().replaceNode(updated);
       invalidateLifecycle();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

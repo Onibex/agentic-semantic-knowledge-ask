@@ -5,6 +5,7 @@ import { stringify as stringifyYaml } from 'yaml'
 
 import {
   getCatalog,
+  getIngestConfig,
   getOrganization,
   getYaml,
   importYamlToWorkspace,
@@ -117,6 +118,10 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
   const [sgFields, setSgFields] = useState<SgFieldRow[]>([])
   const [rels, setRels] = useState<RelRow[]>([])
 
+  // Deployment column-naming mode (technical | alias) — decides how imported
+  // bronze fields are named ('vbeln_vbak' vs 'documento_ventas_vbak').
+  const [columnNaming, setColumnNaming] = useState<'technical' | 'alias'>('technical')
+
   // Catalog + caches
   const [catalog, setCatalog] = useState<LightweightEntity[]>([])
   const [bronzeCache, setBronzeCache] = useState<Record<string, YAMLNode>>({})
@@ -147,6 +152,11 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
         setCatalog(await getCatalog())
       } catch {
         /* non-fatal */
+      }
+      try {
+        setColumnNaming((await getIngestConfig()).column_naming)
+      } catch {
+        /* non-fatal — keep 'technical', the backend default */
       }
     })()
   }, [])
@@ -259,11 +269,15 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
       }
     }
     const table = (node.name || bid).toUpperCase()
-    // Auto-import this bronze's fields.
+    // Auto-import this bronze's fields. The published name follows the
+    // deployment column-naming mode: 'alias' prefixes with the persisted
+    // bronze alias (already sanitized + deduped server-side), 'technical'
+    // with the SAP field code — same rule the SAP JSON parser applies.
     const imported: SgFieldRow[] = node.fields.map((f) => {
       const col = (f.name || '').toUpperCase()
+      const prefix = columnNaming === 'alias' ? f.alias || f.name || '' : f.name || ''
       return {
-        name: `${(f.name || '').toLowerCase()}_${table.toLowerCase()}`,
+        name: `${prefix.toLowerCase()}_${table.toLowerCase()}`,
         source: `${table}.${col}`,
         type: toCanonicalType(f.type || 'STRING'),
         // A bronze key becomes a Silver identifier (the only key signal on s/g).

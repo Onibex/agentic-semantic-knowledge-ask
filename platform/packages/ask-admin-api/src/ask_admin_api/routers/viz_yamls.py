@@ -498,6 +498,9 @@ async def restore_yaml_at_commit(
     except Exception as exc:
         logger.exception("Failed to write restored content for %s", yaml_id)
         raise HTTPException(status_code=500, detail=f"File write failed: {exc}")
+    # Direct write — drop the read cache or the get_yaml below (and any read
+    # within the signature TTL) returns the pre-restore node.
+    yaml_svc.invalidate_cache()
 
     commit_message = f"restore({yaml_id}): revert to {sha[:7]}"
     if req.reason:

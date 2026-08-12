@@ -645,8 +645,11 @@ def test_preview_entity_does_not_leak_internal_flag_heuristic_to_prompt(patched_
         "layer": "silver",
         "fields": [
             {
+                # GBSTK — a genuine business status flag. Deliberately NOT a
+                # technical-list column (LVORM would now be excluded by the
+                # source-anchored is_technical_field, emptying the scope).
                 "name": "deletion_flag",
-                "source": "VBAK.LVORM",
+                "source": "VBAK.GBSTK",
                 "type": "C1",
                 "field_role": "indicator",
                 "description": "",
@@ -767,6 +770,31 @@ def test_is_likely_fk_recognises_sap_master_data_suffixes():
     assert _is_likely_fk("netwr_vbak") is False
 
 
+def test_is_likely_fk_is_source_anchored_for_alias_named_fields():
+    """Under column naming mode `alias` the published name prefix is a business
+    word ('material_pedido'), so the SAP key signal must come from `source` —
+    which stays raw SAP codes in every mode."""
+    from ask_admin_api.application.enrichment_service import _is_likely_fk
+
+    assert _is_likely_fk("material_pedido_vbap", "VBAP.MATNR") is True
+    assert _is_likely_fk("cliente_vbak", "VBAK.KUNNR") is True
+    # `source` also vetoes: an alias that happens to start with an FK word
+    # but originates from a system column is still excluded.
+    assert _is_likely_fk("kunnr_like_alias", "VBAK.MANDT") is False
+    # And a non-key origin is excluded even if the name would have matched.
+    assert _is_likely_fk("vbeln_texto", "VBAP.ARKTX") is False
+
+
+def test_is_technical_field_is_source_anchored_for_alias_named_fields():
+    """MANDT/ERDAT exclusion must survive alias-based names."""
+    from ask_admin_api.application.enrichment_service import is_technical_field
+
+    assert is_technical_field("cliente_sap", "VBAK.MANDT") is True
+    assert is_technical_field("fecha_creacion", "VBAK.ERDAT") is True
+    # A business origin stays enrichable whatever the name says.
+    assert is_technical_field("valor_neto_vbak", "VBAK.NETWR") is False
+
+
 def test_project_for_relationship_drops_non_FK_fields_and_descriptions():
     """The slim projection is what gates token spend on the prompt."""
     from ask_admin_api.application.enrichment_service import _project_for_relationship
@@ -784,11 +812,12 @@ def test_project_for_relationship_drops_non_FK_fields_and_descriptions():
     assert "mandt_vbak" not in names
     # Audit timestamps excluded
     assert "created_at" not in names
-    # Descriptions removed — only name + type travels
+    # Descriptions removed — only name + type (+ source, the SAP key signal
+    # that keeps FK detection working under alias-based names) travels.
     for f in view["fields"]:
         assert "description" not in f
         assert "synonyms" not in f
-        assert set(f.keys()) == {"name", "type"}
+        assert {"name", "type"} <= set(f.keys()) <= {"name", "type", "source"}
 
 
 def test_suggest_relationship_complete_happy_path(patched_llm):
