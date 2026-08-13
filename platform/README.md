@@ -65,13 +65,19 @@ See [`CLAUDE.md`](CLAUDE.md) for the authoritative architecture and package layo
 
 ## License
 
-The Onibex ASK Platform is source-available under the
-**PolyForm Strict License 1.0.0** — see [`LICENSE.md`](LICENSE.md). Noncommercial use,
-research, evaluation, and personal study are permitted; commercial or production use
-requires a commercial license from [Onibex](https://onibex.com).
+The Onibex ASK Platform is source-available and dual-licensed — see
+[`LICENSE.md`](LICENSE.md): **PolyForm Strict License 1.0.0** (noncommercial
+use, research, evaluation, and personal study, indefinitely) or **PolyForm
+Free Trial License 1.0.0** (evaluate for your business for up to 32
+consecutive calendar days — e.g. via `docker compose up`), at your option.
+Production or any other commercial use requires a commercial license from
+[Onibex](https://onibex.com) — see [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
 
 "Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
-from the license.
+from the license. This platform also references, without redistributing under this
+license, third-party software including SAP HANA, SAP BTP, and SAP AI Core (trademarks
+of SAP SE), OpenSearch (a registered trademark of Amazon Web Services), and Keycloak
+(a trademark of Red Hat, Inc.) — see [`../THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md).
 
 ## Support
 

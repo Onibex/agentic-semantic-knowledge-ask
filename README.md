@@ -60,14 +60,14 @@ them** in the product.
 ```
 agentic-semantic-knowledge-ask/
 ├── README.md                 ← you are here
-├── definition/               ← the ASK specification — PolyForm Strict 1.0.0
+├── definition/               ← the ASK specification — PolyForm Strict/Free Trial 1.0.0
 │   ├── README.md             ← spec overview + quick example
 │   ├── docs/                 ← Bronze / Silver / Gold layer specifications
 │   ├── examples/             ← reference YAML data products
-│   └── LICENSE               ← PolyForm Strict 1.0.0
-└── platform/                 ← Onibex ASK Platform (the product) — PolyForm Strict 1.0.0
+│   └── LICENSE               ← PolyForm Strict/Free Trial 1.0.0
+└── platform/                 ← Onibex ASK Platform (the product) — PolyForm Strict/Free Trial 1.0.0
     ├── README.md             ← product front door + quick start
-    ├── LICENSE.md            ← PolyForm Strict 1.0.0
+    ├── LICENSE.md            ← PolyForm Strict/Free Trial 1.0.0
     ├── docker-compose.yml    ← the whole stack (OpenSearch, Keycloak, APIs, 3 SPAs)
     ├── packages/             ← typed Python packages (orchestrator, admin-api, …)
     ├── ask-admin-spa/        ← ASK Studio (React)
@@ -99,17 +99,23 @@ agentic-semantic-knowledge-ask/
 The two tracks of this repository are licensed individually — see the
 [`LICENSE`](LICENSE) map for the authoritative table:
 
-- **`definition/`** — the ASK specification, under **PolyForm Strict 1.0.0**
-  ([`definition/LICENSE`](definition/LICENSE)).
-- **`platform/`** — the Onibex ASK Platform, under **PolyForm Strict 1.0.0**
-  ([`platform/LICENSE.md`](platform/LICENSE.md)).
+- **`definition/`** — the ASK specification, under **PolyForm Strict 1.0.0 OR
+  PolyForm Free Trial 1.0.0** ([`definition/LICENSE`](definition/LICENSE)).
+- **`platform/`** — the Onibex ASK Platform, under **PolyForm Strict 1.0.0 OR
+  PolyForm Free Trial 1.0.0** ([`platform/LICENSE.md`](platform/LICENSE.md)).
 
-Both are **source-available**: noncommercial use, research, evaluation, and personal
-study are permitted; commercial or production use requires a commercial license from
-[Onibex](https://onibex.com).
+Both are **source-available** and dual-licensed: noncommercial use, research,
+evaluation, and personal study are permitted indefinitely under PolyForm
+Strict, or you can evaluate the software for your business for up to **32
+days** under PolyForm Free Trial (e.g. via `docker compose up`). Production
+or any other commercial use requires a commercial license from
+[Onibex](https://onibex.com) — see [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).
 
 "Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
-from both licenses.
+from both licenses. This repository also references, without redistributing under
+this license, third-party software including SAP HANA, SAP BTP, and SAP AI Core
+(trademarks of SAP SE), OpenSearch (a registered trademark of Amazon Web Services),
+and Keycloak (a trademark of Red Hat, Inc.) — see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
 ---
 
