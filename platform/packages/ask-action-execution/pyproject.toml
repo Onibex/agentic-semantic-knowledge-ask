@@ -7,6 +7,8 @@ name = "ask-action-execution"
 version = "0.1.0"
 description = "ASK Platform — Action execution service (handles ACTION_EXECUTION macro intent via MCP)"
 requires-python = ">=3.11"
+license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
+classifiers = ["License :: Other/Proprietary License"]
 dependencies = [
     "pydantic>=2.7",
 ]

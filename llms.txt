@@ -1,0 +1,35 @@
+# Onibex ASK
+
+> A deterministic Text-to-SQL agent and the accompanying YAML specification
+> for AI-ready SAP data products. Resolves natural-language questions
+> against a curated semantic layer (Bronze/Silver/Gold) via OpenSearch hybrid
+> search and a deterministic entity-relationship graph, compiling SQL from
+> resolved fields — the LLM maps to the semantic layer, it never invents
+> tables or columns.
+
+Source-available (PolyForm Strict / Free Trial); a commercial license is
+required for production or other commercial use — see [Licensing](#licensing)
+below before integrating this project into a product or service.
+
+## Docs
+
+- [README](README.md): repository overview — platform + specification, how
+  they relate.
+- [Platform README](platform/README.md): the runtime — orchestrator,
+  admin/chat/setup SPAs, the three SQL-generation modes (flash/precise/smart).
+- [Getting Started](platform/docs/GETTING_STARTED.md): bring up the stack
+  locally or via `docker compose up`.
+- [ASK Specification](definition/README.md): the Bronze/Silver/Gold YAML
+  contract for the semantic layer.
+
+## Licensing
+
+- [LICENSE](LICENSE): PolyForm Strict License 1.0.0 / PolyForm Free Trial
+  License 1.0.0 (at your option).
+- [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md): production/commercial use.
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md): third-party components.
+
+## Contact
+
+- Commercial licensing and integration services: contact@onibex.com
+- https://www.onibex.com

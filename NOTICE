@@ -1,0 +1,18 @@
+Onibex ASK — Agentic Semantic Knowledge
+Copyright (c) 2026 Onibex, Inc. All rights reserved.
+
+This product is source-available under LICENSE (PolyForm Strict License
+1.0.0, with a 32-day evaluation under PolyForm Free Trial License 1.0.0). It
+is not open source. Commercial use requires a separate license — see
+COMMERCIAL-LICENSE.md (contact@onibex.com).
+
+This repository uses, but does not relicense, a number of third-party
+open-source components (FastAPI, LangChain, OpenSearch client libraries,
+boto3, React and the Radix UI ecosystem, among others), most under the MIT
+or Apache License 2.0. Full attribution and the Apache 2.0 text are in
+THIRD-PARTY-NOTICES.md.
+
+SAP, SAP HANA, and SAP BTP are trademarks of SAP SE. Apache and the Apache
+feather logo are trademarks of the Apache Software Foundation. OpenSearch is
+a registered trademark of Amazon Web Services. Keycloak is a trademark of
+Red Hat, Inc. Used for identification only; no endorsement is implied.

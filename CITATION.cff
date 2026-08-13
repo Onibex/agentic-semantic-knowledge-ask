@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you reference this project, please cite it as below."
+title: "Onibex ASK: Agentic Semantic Knowledge"
+abstract: >-
+  A deterministic Text-to-SQL agent and its accompanying YAML specification
+  for AI-ready SAP data products. The platform resolves natural-language
+  questions against a curated semantic layer (Bronze/Silver/Gold) via
+  OpenSearch hybrid search and a deterministic entity-relationship graph,
+  compiling SQL from resolved fields rather than letting the LLM invent
+  table or column names.
+type: software
+authors:
+  - name: "Onibex, Inc."
+    website: "https://onibex.com"
+license: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+version: "1.0.0"
+date-released: "2026-08-13"
+url: "https://onibex.com"
+repository-code: "https://github.com/Onibex/agentic-semantic-knowledge-ask"
+keywords:
+  - agentic-ai
+  - ai-agents
+  - text-to-sql
+  - natural-language-interface
+  - semantic-layer
+  - knowledge-graph
+  - medallion-architecture
+  - rag
+  - retrieval-augmented-generation
+  - sap
+  - sap-btp
+  - sap-integration
+  - llm
+  - langchain
+  - langgraph
