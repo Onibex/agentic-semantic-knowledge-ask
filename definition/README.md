@@ -265,7 +265,10 @@ If ASK is useful in your research or product, please cite it:
 
 ## License
 
-The ASK specification is source-available under the
-**PolyForm Strict License 1.0.0** — see [`LICENSE`](LICENSE). Noncommercial use,
-research, evaluation, and personal study are permitted; commercial or production
-use requires a commercial license from [Onibex](https://onibex.com).
+The ASK specification is source-available and dual-licensed — see
+[`LICENSE`](LICENSE): **PolyForm Strict License 1.0.0** (noncommercial use,
+research, evaluation, and personal study, indefinitely) or **PolyForm Free
+Trial License 1.0.0** (evaluate for your business for up to 32 consecutive
+calendar days), at your option. Production or any other commercial use
+requires a commercial license from [Onibex](https://onibex.com) — see
+[`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
