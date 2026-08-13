@@ -36,7 +36,7 @@ Your task is to take a list of 'Semantic Terms' requested by the user, and map e
 
 CRITICAL RULES:
 1. Provide exactly ONE physical column and its corresponding physical_node_id for each semantic term.
-2. Resolve synonyms (e.g. 'client' -> 'customer'), translations (Spanish to English), abbreviations ('req qty' -> 'requested quantity'), and semantic variations ('created on' -> 'order_date').
+2. Resolve synonyms, abbreviations and semantic variations against the schema's own wording ('req qty' -> 'requested quantity', 'created on' -> 'order_date'). The Available Schema is authoritative: when a term is worded in another language than the schema, translate it INTO the schema's language — never the other way round.
 3. Strict Role Matching:
    - A term expecting 'measure' MUST map to a field with role 'measure'.
    - A term expecting 'dimension' MUST map to a field with role 'dimension' or 'identifier'.

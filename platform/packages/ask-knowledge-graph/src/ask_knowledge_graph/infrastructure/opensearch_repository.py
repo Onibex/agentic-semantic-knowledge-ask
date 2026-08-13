@@ -267,6 +267,62 @@ def _opensearch_kwargs(os_cfg: dict) -> dict:
     return kwargs
 
 
+# ── Text analysis: one analyzer for every searched text field ────────────────
+#
+# WHY A CUSTOM ANALYZER (PLAN_SEMANTIC_LANGUAGE.md W3): every text field used to
+# declare `analyzer: "english"`, and no index declared an `analysis` block at
+# all. Two consequences, both silent:
+#
+#   1. NO ACCENT FOLDING anywhere. An indexed `crédito` and a queried `credito`
+#      are different terms, so BM25 returns nothing — and most people type
+#      without accents. At FIELD level that decides resolution outright, because
+#      field matching is BM25-only (`search_best_field` has no usable vector).
+#   2. Spanish text ran through the ENGLISH Porter stemmer + English stopwords.
+#
+# Built-in language analyzers cannot be extended with an extra filter, so the
+# chain is spelled out here. `asciifolding` sits BEFORE the stemmer: the stemmer
+# is fed the folded form, so `crédito` and `credito` reduce to the same stem
+# rather than to two. `preserve_original` is deliberately NOT set — keeping the
+# accented variant would re-split the term and defeat the point.
+#
+# The STORED value never changes: analysis only affects inverted-index terms, so
+# the UI, the prompts and the YAML keep their correct spelling. Normalize for
+# matching, preserve for reading.
+_ASK_TEXT_ANALYZER = "ask_text"
+
+# Per-language stopword + stemmer names (OpenSearch built-in filter names).
+_LANGUAGE_FILTERS: dict[str, tuple[str, str]] = {
+    "en": ("_english_", "english"),
+    "es": ("_spanish_", "light_spanish"),
+}
+
+
+def _text_analysis_settings(language: str) -> dict:
+    """The ``analysis`` block for a searched-text index in ``language``.
+
+    ``light_spanish`` over ``spanish``: the aggressive Snowball Spanish stemmer
+    conflates business terms that must stay distinct (it truncates hard), while
+    the light variant only strips inflection — the right trade-off for a semantic
+    layer whose terms are nouns, not prose.
+    """
+    stop_name, stemmer_name = _LANGUAGE_FILTERS.get(
+        (language or "en").lower(), _LANGUAGE_FILTERS["en"]
+    )
+    return {
+        "filter": {
+            "ask_stop": {"type": "stop", "stopwords": stop_name},
+            "ask_stemmer": {"type": "stemmer", "language": stemmer_name},
+        },
+        "analyzer": {
+            _ASK_TEXT_ANALYZER: {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["lowercase", "asciifolding", "ask_stop", "ask_stemmer"],
+            }
+        },
+    }
+
+
 class OpenSearchAskRepository:
     def __init__(self, env: str | None = None):
         """
@@ -279,7 +335,12 @@ class OpenSearchAskRepository:
         callers and the running read path are unaffected.
         """
         config_manager = ConfigManager()
-        config = config_manager.load_config()
+        # `load_config()` returns None when config/settings.json is absent (it is
+        # gitignored, so a fresh clone has none). Without `or {}` that None
+        # reached `.get()` below and surfaced as
+        # "'NoneType' object has no attribute 'get'" on unrelated endpoints —
+        # e.g. GET /v1/admin/yaml/published-ids (BACKLOG group 0, P1).
+        config = config_manager.load_config() or {}
 
         # Env-first (OPENSEARCH_*) with settings.json fallback.
         os_cfg = config.get("opensearch") or {}
@@ -310,13 +371,25 @@ class OpenSearchAskRepository:
             os.getenv("OPENSEARCH_EMBEDDING_DIM") or os_cfg.get("embedding_dim", 1024)
         )
 
+        # Language of the analyzer applied to every searched text field. Same
+        # deployment flag the authoring prompts read, so the corpus and its index
+        # agree by construction (PLAN_SEMANTIC_LANGUAGE.md). Changing it requires
+        # recreating the indices — mappings are immutable — and re-publishing.
+        from .language_config import resolve_semantic_language
+
+        self.semantic_language = resolve_semantic_language(config).value
+
     def _ensure_indices_exist(self):
         """
         Crea los índices con el mapping estricto para Agentic RAG.
         Habilita KNN (K-Nearest Neighbors) para búsqueda semántica.
         """
-        # Configuración base para habilitar vectores en OpenSearch
-        base_settings = {"index": {"knn": True, "knn.algo_param.ef_search": 100}}
+        # Configuración base: vectores + el analyzer de texto del deployment.
+        base_settings = {
+            "index": {"knn": True, "knn.algo_param.ef_search": 100},
+            "analysis": _text_analysis_settings(self.semantic_language),
+        }
+        text_prop = {"type": "text", "analyzer": _ASK_TEXT_ANALYZER}
 
         # Vector field definition (HNSW algorithm)
         vector_prop = {
@@ -335,8 +408,25 @@ class OpenSearchAskRepository:
                     "db_table_name": {"type": "keyword"},
                     "layer": {"type": "keyword"},
                     "entity_role": {"type": "keyword"},
-                    "name": {"type": "keyword"},
-                    "description": {"type": "text", "analyzer": "english"},
+                    # `text`, NOT `keyword`: this field is searched with
+                    # `multi_match` at the HIGHEST boost (`name^1.5`), and a
+                    # keyword only matches the whole string exactly — so the
+                    # most-weighted lexical clause could never fire on a real
+                    # question, in any language. The `.keyword` subfield keeps
+                    # exact matching available (nothing uses it today: no
+                    # term/terms query, aggregation or sort targets `name`).
+                    "name": {
+                        **text_prop,
+                        "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
+                    },
+                    "description": text_prop,
+                    # Declared explicitly. It was written by `save_silver_node` /
+                    # `save_gold_node` but ABSENT from this mapping, so OpenSearch
+                    # dynamic-mapped it to the `standard` analyzer — no stemming,
+                    # no folding — even though it carries most of the retrieval
+                    # signal (name + entity description + every field description
+                    # and synonym, see `_extract_business_terms`).
+                    "business_terms": text_prop,
                     "raw_yaml": {
                         "type": "text",
                         "index": False,
@@ -352,13 +442,20 @@ class OpenSearchAskRepository:
             "mappings": {
                 "properties": {
                     "node_id": {"type": "keyword"},
-                    "name": {"type": "keyword"},
+                    # Same reasoning as the entity `name`: `search_best_field`
+                    # runs `{"match": {"name": ...}}` on it. Field resolution is
+                    # BM25-ONLY in practice (no writer emits a field embedding),
+                    # so this is load-bearing.
+                    "name": {
+                        **text_prop,
+                        "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
+                    },
                     "field_role": {"type": "keyword"},
                     "type": {"type": "keyword"},
-                    "description": {"type": "text", "analyzer": "english"},
+                    "description": text_prop,
                     # Alternative business names — `text` so BM25 matches them the
                     # same way it matches the description.
-                    "synonyms": {"type": "text", "analyzer": "english"},
+                    "synonyms": text_prop,
                     "embedding": vector_prop,
                 }
             },
@@ -394,7 +491,7 @@ class OpenSearchAskRepository:
                     "cardinality": {"type": "keyword"},
                     "traversal_cost": {"type": "float"},
                     "aggregation_safety": {"type": "keyword"},
-                    "description": {"type": "text", "analyzer": "english"},
+                    "description": text_prop,
                     "is_reverse": {"type": "boolean"},
                     "semantic_label": {"type": "keyword"},
                     "cross_module": {"type": "boolean"},
@@ -709,15 +806,23 @@ class OpenSearchAskRepository:
         """
         Busca en el Field Registry la columna que mejor coincide con el término semántico.
         """
-        # Consulta híbrida simple (puedes ajustarla con RRF más adelante)
+        # LEXICAL ONLY, deliberately. There used to be a
+        # `{"knn": {"embedding": ...}}` clause here, but NOTHING writes an
+        # `embedding` into a field document (`save_silver_node` /
+        # `save_gold_node` index name/description/synonyms/role/type only), so it
+        # could never match — a dead clause that made this read like a hybrid
+        # search and hid the fact that field resolution is decided purely by
+        # BM25. Consequence to keep in mind: at field level, wording and
+        # diacritics are ALL the matching there is, which is why the analyzer +
+        # asciifolding work matters (PLAN_SEMANTIC_LANGUAGE.md W3). Restoring a
+        # vector leg means writing a per-field embedding at publish time and
+        # declaring the vector in the field mapping — a real feature, not a
+        # clause. ``vector_query`` is kept in the signature for that.
         body = {
             "size": 1,
             "query": {
                 "bool": {
                     "should": [
-                        # Búsqueda Vectorial (kNN) contra la descripción y sinónimos
-                        {"knn": {"embedding": {"vector": vector_query, "k": 5}}},
-                        # Búsqueda Textual (BM25) para coincidencias exactas
                         {"match": {"description": text_query}},
                         {"match": {"name": text_query}},
                         # Alternative business names. The comment above claimed

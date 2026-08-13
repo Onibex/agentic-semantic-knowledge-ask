@@ -402,20 +402,21 @@ export async function getIngestConfig(): Promise<IngestConfig> {
 }
 
 // Iter 6 (CH-6) — DDL → YAML: deterministic skeleton for typed tables, AI for
-// semantics/views. Lands each entity in the workspace (In Review). `module`
-// drives the silver/gold workspace path — a user-chosen value the backend
-// backstops deterministically, so imports never fail on a missing module.
+// semantics/views. Lands each entity in the workspace (In Review). The
+// silver/gold `module` is auto-detected server-side from the physical table name
+// (falling back to `gen`), so there is no module input here; `module` exists only
+// as an explicit override for API clients.
 export async function importDdl(
   ddl: string,
   layer: 'bronze' | 'silver' | 'gold',
   sourceSystem = 's4h',
   force = false,
   context = '',
-  module = 'gen',
+  module?: string,
 ): Promise<DdlImportResult> {
   const { data } = await http.post<DdlImportResult>(
     '/admin/yaml/import/ddl',
-    { ddl, layer, source_system: sourceSystem, force, context, module },
+    { ddl, layer, source_system: sourceSystem, force, context, ...(module ? { module } : {}) },
     { timeout: 300_000 },
   );
   return data;

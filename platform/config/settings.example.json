@@ -3,6 +3,16 @@
   "ingestion": {
     "column_naming": "technical"
   },
+  "semantic_layer": {
+    "language": "en"
+  },
+  "opensearch": {
+    "host": "opensearch",
+    "port": 9200,
+    "use_ssl": false,
+    "pool_maxsize": 20,
+    "embedding_dim": 1024
+  },
   "hybrid_pipeline": {
     "anchor_top_k": 3,
     "expand_max_hops": 1,

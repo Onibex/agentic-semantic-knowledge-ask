@@ -22,7 +22,6 @@ cutover + re-index land in Iter 4.
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 from dataclasses import dataclass, field
@@ -570,7 +569,13 @@ class PublishService:
 
 
 def _load_config() -> dict[str, Any]:
-    cfg_path = Path("config/settings.json")
-    if not cfg_path.exists():
-        raise RuntimeError("config/settings.json not found — service must run from project root")
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+    """Absent file degrades to ``{}`` — see ``application/runtime_config.py``.
+
+    This raiser was the second face of the same defect: a gitignored file
+    missing on a fresh clone made every business-domain publish 500 from the
+    PublishService constructor (BACKLOG group 0, P1). The indexer it feeds
+    reads OpenSearch through env-first settings, so ``{}`` is a working config.
+    """
+    from .runtime_config import load_runtime_config
+
+    return load_runtime_config()

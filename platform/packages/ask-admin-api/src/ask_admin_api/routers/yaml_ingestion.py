@@ -10,7 +10,6 @@ direct typed-package dependency.
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 import uuid
@@ -89,10 +88,12 @@ def reset_singletons() -> list[str]:
 
 
 def _load_config() -> dict[str, Any]:
-    cfg_path = Path("config/settings.json")
-    if not cfg_path.exists():
-        raise RuntimeError("config/settings.json not found — service must run from project root")
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+    # Absence degrades to {} (env vars carry every key that matters) — see
+    # application/runtime_config.py. Raising here turned a missing gitignored
+    # file into a 500 on unrelated endpoints (BACKLOG group 0, P1).
+    from ..application.runtime_config import load_runtime_config
+
+    return load_runtime_config()
 
 
 def _get_service() -> Any:
@@ -468,7 +469,8 @@ async def import_ddl(
         logger.exception("prompts registry unavailable — DDL import uses default prompts")
         prompts_service = None
 
-    module = (req.module or "").strip().lower() or "gen"
+    # None → auto-detected per relation from the table name (else `gen`).
+    module = (req.module or "").strip().lower() or None
     try:
         yaml_docs, tokens, warnings = DdlImportService(
             prompts_service=prompts_service

@@ -571,8 +571,9 @@ the structured output schema you are given.
 Guidance per field of the schema:
   * entity_name: a short snake_case business name for the table (e.g.
     sales_order, ventas_detalle). Lowercase ASCII letters/digits/underscores
-    only — no accents, no spaces. Prefer the dominant language of the column
-    names; a BUSINESS CONTEXT block, when present, is authoritative.
+    only — no accents, no spaces. Use the semantic layer's language as stated in
+    the LANGUAGE OF THE SEMANTIC LAYER block; a BUSINESS CONTEXT block, when
+    present, is authoritative over both.
   * description: one line saying what a ROW of this table represents.
   * entity_role: `fact` for transactional/analytical tables with measures,
     `dimension` for lookup/master tables, `reference` for pure config lookups.
@@ -589,8 +590,8 @@ Guidance per field of the schema:
         used for grouping/filtering (names, groups, statuses, units, flags).
         Numeric technical fields (versions, row counters) are `dimension`,
         not `measure`.
-      - description: short business meaning, in the same language as the
-        column names/context. A provided column comment is a strong hint.
+      - description: short business meaning, in the semantic layer's language
+        (see the LANGUAGE block). A provided column comment is a strong hint.
       - alias: snake_case business alias (relevant for Bronze; keep it short).
 Do not skip columns; do not add columns that were not given.
 """

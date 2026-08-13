@@ -344,6 +344,23 @@ def _describe_field_for_prompt(field: dict[str, Any]) -> dict[str, Any]:
     return projected
 
 
+def _language_block() -> str:
+    """The deployment's authoring-language directive, appended to both enrichment
+    prompts.
+
+    Injected at CALL time rather than written into the editable prompt body so
+    the flag stays authoritative: an admin editing the `enrichment` prompt cannot
+    accidentally drop it, and switching `ASK_SEMANTIC_LANGUAGE` needs no prompt
+    edit. Enrichment used to say nothing about language, so the output language
+    was emergent — a mixed-language corpus stayed mixed
+    (PLAN_SEMANTIC_LANGUAGE.md W1).
+    """
+    from ask_knowledge_graph.domain.language import authoring_directive
+    from ask_knowledge_graph.infrastructure.language_config import resolve_semantic_language
+
+    return "=" * 60 + "\n" + authoring_directive(resolve_semantic_language())
+
+
 def build_entity_prompt(
     *,
     system_prompt: str,
@@ -371,7 +388,7 @@ def build_entity_prompt(
 
     Output shape is a strict JSON object — see system prompt OUTPUT FORMAT.
     """
-    sys_parts = [system_prompt.strip()]
+    sys_parts = [system_prompt.strip(), _language_block()]
     if standards_excerpt.strip():
         sys_parts.append(
             "=" * 60
@@ -465,7 +482,7 @@ def build_field_prompt(
     the module, the business_process, etc. but the OUTPUT is a JSON object
     instead of the full YAML.
     """
-    sys_parts = [system_prompt.strip()]
+    sys_parts = [system_prompt.strip(), _language_block()]
     if standards_excerpt.strip():
         sys_parts.append(
             "=" * 60

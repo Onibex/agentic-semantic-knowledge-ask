@@ -11,6 +11,7 @@ from ask_admin_api.application.ddl_skeleton import (
     FieldAnnotation,
     annotation_user_payload,
     build_skeleton,
+    detect_module,
 )
 from tests.unit.test_ddl_parser import CLICKHOUSE_DDL
 
@@ -261,6 +262,53 @@ def test_bronze_field_alias_collisions_dedup():
     )
     aliases = [doc["fields"]["a"]["alias"], doc["fields"]["b"]["alias"]]
     assert aliases == ["same", "same_2"]  # in-file uniqueness invariant
+
+
+# ── module auto-detection (owner decision: no Module picker in the UI) ───────
+
+
+def test_module_detected_from_layer_prefixed_table_name():
+    assert detect_module("SILVER_SD_SALES_ORDER") == "sd"
+    assert detect_module("silver_sd_sales_order") == "sd"
+    assert detect_module("GOLD_FI_LEDGER_BALANCE") == "fi"
+    assert detect_module("gold_mm_stock") == "mm"
+
+
+def test_module_falls_back_to_gen_when_the_token_is_not_a_module():
+    # The live ClickHouse table: `md` follows the prefix but is NOT a module.
+    assert detect_module("gold_md_final") == "gen"
+    assert detect_module("SILVER_FOO_BAR") == "gen"
+
+
+def test_module_falls_back_to_gen_without_a_layer_prefix():
+    assert detect_module("gold_md_final".replace("gold_", "")) == "gen"
+    assert detect_module("VBAK") == "gen"
+    assert detect_module("") == "gen"
+    assert detect_module("dbt_qas_bi_orders") == "gen"
+
+
+def test_explicit_declared_module_always_wins():
+    assert detect_module("SILVER_SD_SALES_ORDER", declared="fi") == "fi"
+    assert detect_module("gold_md_final", declared="co") == "co"
+    assert detect_module("GOLD_FI_X", declared="  SD  ") == "sd"
+    # An unknown explicit value is the author's word, honoured as-is.
+    assert detect_module("gold_md_final", declared="zz") == "zz"
+    # Empty/whitespace override → detection still runs.
+    assert detect_module("SILVER_SD_X", declared="   ") == "sd"
+
+
+def test_skeleton_uses_the_detected_module_without_being_told():
+    rel = parse_relations("CREATE TABLE SILVER_SD_SALES_ORDER (VBELN NVARCHAR(10))")[0]
+    doc, _ = build_skeleton(rel, layer="silver", source_system="s4h", annotation=None)
+    assert doc["module"] == "sd"
+    assert doc["id"] == "silver_s4h_sd_silver_sd_sales_order"
+
+
+def test_skeleton_defaults_module_to_gen_on_the_clickhouse_table():
+    doc, _ = build_skeleton(
+        _clickhouse_rel(), layer="gold", source_system="s4h", annotation=_annotation()
+    )
+    assert doc["module"] == "gen"
 
 
 # ── Annotation payload ───────────────────────────────────────────────────────

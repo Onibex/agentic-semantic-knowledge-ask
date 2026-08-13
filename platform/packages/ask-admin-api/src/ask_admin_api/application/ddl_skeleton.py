@@ -112,6 +112,61 @@ def annotation_user_payload(rel: ParsedRelation, *, layer: str, context: str) ->
 # excluding by guessy name lists risks dropping a legitimate key column.
 _CLIENT_COLUMNS = {"mandt", "clnt", "client"}
 
+# Known module tokens. `module` is AUTO-DETECTED from the physical table name
+# (owner decision 2026-08-12: no Module picker in the UI), and only a WHITELIST
+# match counts: the segment after the layer prefix is very often not a module at
+# all — `gold_md_final` would otherwise adopt `md`. Anything unmatched falls back
+# to `gen` (generic / cross-module), which is a legitimate value, not an error.
+KNOWN_MODULES = frozenset(
+    {
+        "sd",  # Sales & Distribution
+        "mm",  # Materials Management
+        "pp",  # Production Planning
+        "fi",  # Financial Accounting
+        "co",  # Controlling
+        "le",  # Logistics Execution
+        "qm",  # Quality Management
+        "pm",  # Plant Maintenance
+        "ps",  # Project System
+        "hr",  # Human Resources
+        "wm",  # Warehouse Management
+        "ewm",  # Extended Warehouse Management
+        "tm",  # Transportation Management
+        "aa",  # Asset Accounting
+        "gen",  # generic / cross-module (explicit, not a fallback marker)
+    }
+)
+
+DEFAULT_MODULE = "gen"
+
+# `SILVER_SD_SALES_ORDER` / `gold_sd_open_orders` / `dbt.GOLD_FI_LEDGER` — the
+# module is the token that FOLLOWS the layer prefix. Matches the SILVER_/GOLD_
+# convention the layer auto-detection already keys on (SILVER/GOLD_LAYER.md §4
+# naming tables).
+_LAYER_PREFIXED_RE = re.compile(r"^(?:silver|gold)_([a-z0-9]+)_", re.IGNORECASE)
+
+
+def detect_module(table_name: str, *, declared: str | None = None) -> str:
+    """Resolve the module for one relation.
+
+    Precedence: an explicitly ``declared`` module (API override) wins, then the
+    token after a ``SILVER_``/``GOLD_`` prefix when it is a KNOWN module, else
+    :data:`DEFAULT_MODULE`. Never raises, never invents a module.
+    """
+    explicit = (declared or "").strip().lower()
+    if explicit and explicit in KNOWN_MODULES:
+        return explicit
+    if explicit:
+        # An unknown explicit value is still the author's word — honour it rather
+        # than silently substituting `gen`; the workspace path follows it.
+        return explicit
+    m = _LAYER_PREFIXED_RE.match((table_name or "").strip())
+    if m:
+        token = m.group(1).lower()
+        if token in KNOWN_MODULES:
+            return token
+    return DEFAULT_MODULE
+
 _ALNUM_RE = re.compile(r"[^a-z0-9]")
 
 
@@ -136,16 +191,21 @@ def build_skeleton(
     *,
     layer: str,
     source_system: str,
-    module: str,
-    annotation: EntityAnnotation | None,
+    module: str | None = None,
+    annotation: EntityAnnotation | None = None,
     context: str = "",
 ) -> tuple[dict, list[str]]:
     """Assemble the raw entity dict for ``import_yaml``. Returns
-    ``(doc, warnings)``. Never raises on annotation absence."""
+    ``(doc, warnings)``. Never raises on annotation absence.
+
+    ``module`` is normally ``None``: it is AUTO-DETECTED per relation from the
+    physical table name (see :func:`detect_module`), falling back to ``gen``.
+    Pass a value only as an explicit API override."""
     warnings: list[str] = []
     mapper = get_profile(source_system).type_mapper
     ann = annotation
     ann_fields = {a.column: a for a in (ann.fields if ann else [])}
+    module = detect_module(rel.name, declared=module)
 
     entity_name = _entity_token(
         (ann.entity_name if ann else "") or rel.name, fallback=rel.name or "entity"

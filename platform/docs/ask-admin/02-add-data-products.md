@@ -98,11 +98,7 @@ Pick **DDL + AI**, then:
 
 1. **Source system** — defaults from your [Organization](08-organization.md) profile (e.g.
    `s4h`). Click **change** to override with another profile; this tunes the AI prompt.
-2. **Module** — the business module for Silver/Gold entities (`sd`, `mm`, `fi`, … or `gen`
-   for generic / cross-module). It drives the workspace path and grouping. This is your
-   input, never an AI guess — every generated Silver/Gold carries it, so an import can no
-   longer fail on a missing `module`.
-3. **Provide the DDL** — either:
+2. **Provide the DDL** — either:
    - **Upload `.sql` / `.ddl` / `.txt` files** (multiple allowed). The **layer is
      auto-detected per file** from the `CREATE TABLE` name (the `SILVER_` / `GOLD_` naming
      convention). Files that can't be detected show **pick layer** and you must choose
@@ -111,10 +107,15 @@ Pick **DDL + AI**, then:
      falls to a manual **pick layer**.
    - **…or paste a single DDL script** in the text box. If the layer can't be detected from
      the name, a **Layer** selector appears and is **required**.
-4. **Context for all files (optional)** — a sentence about what these tables are for; it
+3. **Context for all files (optional)** — a sentence about what these tables are for; it
    enriches the AI annotation. Per-file notes can be added too.
-5. Optionally tick **Overwrite if it exists**.
-6. Click **Map + import**.
+4. Optionally tick **Overwrite if it exists**.
+5. Click **Map + import**.
+
+There is **no Module field**: for Silver and Gold the `module` is detected from the physical
+table name (`SILVER_SD_SALES_ORDER` → `sd`) against the list of known business modules, and
+falls back to **`gen`** (generic / cross-module) when the name carries no recognizable module.
+Adjust it in the editor if needed — every import lands **In Review** anyway.
 
 ![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/admin-dp-ddl.png)
 

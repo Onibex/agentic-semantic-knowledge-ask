@@ -28,7 +28,13 @@ from typing import Any
 
 from .ddl_parser import CREATE_RELATION_RE as _CREATE_RELATION_RE
 from .ddl_parser import ParsedRelation, parse_relations
-from .ddl_skeleton import EntityAnnotation, annotation_user_payload, build_skeleton
+from .ddl_skeleton import (
+    DEFAULT_MODULE,
+    EntityAnnotation,
+    annotation_user_payload,
+    build_skeleton,
+    detect_module,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -181,12 +187,15 @@ def _normalize_flat_entity(docs: list[str], ddl: str, layer: str) -> tuple[list[
     return out, warnings
 
 
-def _ensure_module(docs: list[str], *, layer: str, module: str) -> tuple[list[str], list[str]]:
+def _ensure_module(
+    docs: list[str], *, layer: str, module: str = DEFAULT_MODULE
+) -> tuple[list[str], list[str]]:
     """Deterministic backstop: a silver/gold doc without a non-empty ``module``
-    gets the batch's module. The 2026-08-12 ClickHouse import failed exactly
-    here — the model omitted the key and the import 422'd; the guarantee that
-    ``module`` is present must not depend on the model obeying the prompt.
-    Unparseable docs pass through untouched (the import surfaces those)."""
+    gets ``module`` (auto-detected upstream, else ``gen``). The 2026-08-12
+    ClickHouse import failed exactly here — the model omitted the key and the
+    import 422'd; the guarantee that ``module`` is present must not depend on
+    the model obeying the prompt. Unparseable docs pass through untouched (the
+    import surfaces those)."""
     if layer not in ("silver", "gold"):
         return docs, []
     from ask_knowledge_graph.infrastructure.yaml_serializer import dump_yaml, load_yaml_text
@@ -378,7 +387,7 @@ class DdlImportService:
         layer: str,
         source_system: str,
         context: str = "",
-        module: str = "gen",
+        module: str | None = None,
         max_attempts: int = 3,
     ) -> tuple[list[str], int, list[str]]:
         """Return ``(yaml_docs, tokens_used, warnings)`` — one YAML doc per table.
@@ -390,6 +399,11 @@ class DdlImportService:
         through the legacy full-LLM YAML path with its retry loop. Both paths
         end at the ``module`` backstop — a silver/gold doc can no longer reach
         the importer without one.
+
+        ``module`` is normally ``None``: it is auto-detected PER RELATION from
+        the physical table name (``SILVER_SD_*`` → ``sd``) against a whitelist,
+        falling back to ``gen``. Pass a value only as an explicit override — it
+        then applies to every relation in the batch.
         """
         total_tokens = 0
         warnings: list[str] = []
@@ -435,19 +449,28 @@ class DdlImportService:
                 warnings.append(
                     f"Mapped via the full-AI path (no typed column list to parse): {names}."
                 )
+            # The legacy path has no per-relation build step, so detect once off
+            # the first fallback relation's name (an explicit override wins).
+            legacy_module = detect_module(
+                fallback_rels[0].name if fallback_rels else "", declared=module
+            )
             legacy_docs, tokens, legacy_warnings = self._generate_legacy(
                 legacy_ddl,
                 layer=layer,
                 source_system=source_system,
                 context=context,
-                module=module,
+                module=legacy_module,
                 max_attempts=max_attempts,
             )
             total_tokens += tokens
             warnings.extend(legacy_warnings)
             docs.extend(legacy_docs)
 
-        docs, module_warnings = _ensure_module(docs, layer=layer, module=module)
+        # Backstop only fires on docs that still carry no module — skeleton docs
+        # always do, so in practice this covers the legacy path.
+        docs, module_warnings = _ensure_module(
+            docs, layer=layer, module=detect_module("", declared=module)
+        )
         warnings.extend(module_warnings)
         return docs, total_tokens, warnings
 
@@ -459,9 +482,21 @@ class DdlImportService:
         """One schema-forced call for the semantic annotation of ``rel``.
         Returns ``(annotation | None, tokens, error | None)`` — never raises;
         a second attempt covers transient parse misses."""
+        from ask_knowledge_graph.domain.language import authoring_directive
+        from ask_knowledge_graph.infrastructure.language_config import (
+            resolve_semantic_language,
+        )
         from ask_llm_gateway.application.structured import invoke_structured
 
-        system = self._prompt_body("ddl_annotation")
+        # The language block is appended at CALL time so the deployment flag stays
+        # authoritative over an edited `ddl_annotation` override, and so a Spanish
+        # deployment annotates an English DDL in Spanish (the layer's language is
+        # what retrieval matches against, not the DDL's).
+        system = (
+            self._prompt_body("ddl_annotation")
+            + "\n\n"
+            + authoring_directive(resolve_semantic_language())
+        )
         user = annotation_user_payload(rel, layer=layer, context=context)
         try:
             llm = self._get_llm()
@@ -487,7 +522,7 @@ class DdlImportService:
         layer: str,
         source_system: str,
         context: str,
-        module: str,
+        module: str = DEFAULT_MODULE,
         max_attempts: int = 3,
     ) -> tuple[list[str], int, list[str]]:
         """The original prompt-then-parse loop. Regenerates up to

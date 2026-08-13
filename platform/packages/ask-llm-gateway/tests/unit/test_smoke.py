@@ -136,7 +136,15 @@ def test_provider_env_never_clobbers_with_empty(monkeypatch):
 
 
 def test_litellm_model_string():
-    """provider/model assembly: alias mapping + already-qualified passthrough."""
+    """provider/model assembly: alias mapping + always route by the SELECTED
+    provider (only a redundant self-prefix is stripped).
+
+    The old contract was "a slash means already-qualified, pass through". That
+    broke the shape production actually uses: Bedrock ids carry their OWN slash
+    (`converse/...`, inference profiles), and passthrough routed them to a
+    provider named `converse`. The provider is chosen separately in the UI, so it
+    is authoritative — see the docstring on `_litellm_model_string`.
+    """
     from ask_llm_gateway.infrastructure.litellm_llm import _litellm_model_string
 
     assert (
@@ -144,8 +152,18 @@ def test_litellm_model_string():
         == "bedrock/anthropic.claude-3-5-sonnet-v1:0"
     )
     assert _litellm_model_string("google", "gemini-2.0-flash") == "gemini/gemini-2.0-flash"
-    # Already provider-qualified → used as-is.
-    assert _litellm_model_string("anything", "azure/my-deployment") == "azure/my-deployment"
+    # A model id that carries its own slash keeps it and is STILL prefixed with
+    # the selected provider (the live Bedrock Converse shape).
+    assert (
+        _litellm_model_string("bedrock", "converse/us.amazon.nova-pro-v1:0")
+        == "bedrock/converse/us.amazon.nova-pro-v1:0"
+    )
+    # A redundant self-prefix is stripped, never doubled.
+    assert _litellm_model_string("azure", "azure/my-deployment") == "azure/my-deployment"
+    # A prefix that is NOT the selected provider is data, not routing.
+    assert (
+        _litellm_model_string("bedrock", "azure/my-deployment") == "bedrock/azure/my-deployment"
+    )
 
     with pytest.raises(ValueError):
         _litellm_model_string("openai", "")

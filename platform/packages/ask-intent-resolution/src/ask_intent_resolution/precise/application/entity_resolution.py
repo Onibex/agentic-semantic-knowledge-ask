@@ -28,10 +28,14 @@ class EntityResolutionService:
         self.field_mapper = SemanticFieldMapperService(llm=llm)
         self.semantic_dictionary = semantic_dictionary
 
-        # Cargar esquema global para resolución de nombres físicos
-        config = ConfigManager().load_config()
-        self.global_schema = config.get("hana", {}).get("schema") or config.get(
-            "postgresql", {}
+        # Cargar esquema global para resolución de nombres físicos.
+        # `or {}`: load_config() returns None when config/settings.json is absent
+        # (gitignored — a fresh clone has none), and the bare `.get()` chain then
+        # crashed the whole PRECISE chat path with
+        # "'NoneType' object has no attribute 'get'" (BACKLOG group 0, P1).
+        config = ConfigManager().load_config() or {}
+        self.global_schema = (config.get("hana") or {}).get("schema") or (
+            config.get("postgresql") or {}
         ).get("schema")
 
     def _expand_phrases(self, dimensions: list[str]) -> list[str]:

@@ -190,6 +190,11 @@ services:
       OPENSEARCH_USE_SSL:  ${OPENSEARCH_USE_SSL:-false}
       OPENSEARCH_USER:     ${OPENSEARCH_USER:-}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-}
+      # Semantic-layer authoring language: en | es. Needed HERE (unlike
+      # ASK_COLUMN_NAMING, which is ingestion-only) because the IR generator
+      # extracts its retrieval terms in this language — it must match the
+      # language the corpus is authored in. See PLAN_SEMANTIC_LANGUAGE.md.
+      ASK_SEMANTIC_LANGUAGE: ${ASK_SEMANTIC_LANGUAGE:-en}
     volumes:
       - ./config:/app/config
       - ./logs:/app/logs
@@ -257,6 +262,11 @@ services:
       # Curated column naming: technical (vbeln_vbak) | alias (documento_ventas_vbak).
       # Fixed BEFORE the first ingest; see REQ_CURATED_COLUMN_NAMING.md.
       ASK_COLUMN_NAMING: ${ASK_COLUMN_NAMING:-technical}
+      # Semantic-layer authoring language: en | es. Governs the language of
+      # descriptions/synonyms/aliases AND of the IR generator's extracted terms
+      # (they must match, or retrieval degrades silently).
+      # See PLAN_SEMANTIC_LANGUAGE.md.
+      ASK_SEMANTIC_LANGUAGE: ${ASK_SEMANTIC_LANGUAGE:-en}
       # Cross-container cache invalidation: al cambiar el LLM activo, admin-api
       # hace POST a {ASK_ORCHESTRATOR_URL}/v1/internal/reload para que el
       # orquestador reconstruya sus singletons YA (en vez de esperar el TTL de

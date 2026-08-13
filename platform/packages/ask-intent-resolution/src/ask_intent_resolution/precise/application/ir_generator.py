@@ -4,17 +4,31 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from ask_intent_resolution.precise.domain.ir_models import SemanticPlanIR
+from ask_knowledge_graph.domain.language import extraction_directive
+from ask_knowledge_graph.infrastructure.language_config import resolve_semantic_language
 
 
 class IRGeneratorService:
-    def __init__(self, llm):
+    def __init__(self, llm, *, language=None):
         self.parser = PydanticOutputParser(pydantic_object=SemanticPlanIR)
 
+        # The extraction language IS the retrieval query's language, so it must
+        # match the language the semantic layer is authored in — searching a
+        # Spanish corpus with English terms kills the BM25 leg and degrades the
+        # vector leg (PLAN_SEMANTIC_LANGUAGE.md W1). Resolved deployment-level:
+        # ASK_SEMANTIC_LANGUAGE > settings semantic_layer.language > en.
+        self.language = language or resolve_semantic_language()
+
+        # NOTE: this is a plain (non-f) string on purpose — it is a
+        # ChatPromptTemplate source, so literal braces are DOUBLED (`{{...}}`)
+        # and `{current_date}` / `{format_instructions}` / `{user_query}` are
+        # template variables. The language rule is substituted by `.replace()`
+        # below rather than interpolated, so brace semantics stay untouched.
         system_prompt = """You are an expert SAP Data Analyst. Your ONLY job is to extract the user's
 analytical intent into a structured JSON. You do NOT write SQL. You do NOT resolve physical tables.
 You extract BUSINESS TERMS that the downstream pipeline will resolve.
 
-ALL extracted terms MUST be in ENGLISH, regardless of the user's language.
+__LANGUAGE_RULE__
 
 TODAY'S DATE: {current_date}
 Use this to resolve relative time references: "this month", "last quarter", "yesterday",
@@ -200,6 +214,10 @@ Q: "hello"
 A: is_impossible=true, intent_summary="Greeting, not an analytical question"
 
 {format_instructions}"""
+
+        system_prompt = system_prompt.replace(
+            "__LANGUAGE_RULE__", extraction_directive(self.language)
+        )
 
         self.prompt = ChatPromptTemplate.from_messages(
             [("system", system_prompt), ("human", "{user_query}")]

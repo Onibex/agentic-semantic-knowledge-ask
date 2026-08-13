@@ -86,11 +86,12 @@ class DdlImportRequest(BaseModel):
     # into the mapping prompt so the model writes accurate business descriptions
     # / aliases instead of guessing from column names alone.
     context: str = ""
-    # Module for silver/gold entities (drives the workspace path + grouping).
-    # A user-chosen value from the import dialog; `gen` marks a generic /
-    # cross-module entity. Deterministic input beats a model guess — the code
-    # backstops every generated doc with this value when the model omits the key.
-    module: str = "gen"
+    # OPTIONAL override for the silver/gold `module` (workspace path + grouping).
+    # Normally omitted: the module is AUTO-DETECTED per relation from the
+    # physical table name (`SILVER_SD_*` → `sd`) against a whitelist, falling
+    # back to `gen` (owner decision 2026-08-12 — there is no Module picker in the
+    # UI). Set it only to force one module on every relation in the batch.
+    module: str | None = None
 
 
 class DdlImportItem(BaseModel):

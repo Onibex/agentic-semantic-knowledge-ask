@@ -20,6 +20,26 @@ from ask_knowledge_graph.infrastructure.yaml_serializer import dump_yaml, load_y
 SILVER_ID = "silver_s4h_sd_sales_order"
 BRONZE_ID = "bronze_s4h_vbak_order_header"
 
+
+@pytest.fixture(autouse=True)
+def _pin_deployment_config(monkeypatch):
+    """Neutralize AMBIENT deployment config for every test in this package.
+
+    Both deployment flags resolve from the environment and, failing that, from a
+    CWD-relative ``config/settings.json`` — which is gitignored and therefore
+    absent in CI but present, and configured for a real client, on a developer's
+    machine. Without this, running the suite from the project root on a
+    deployment set to ``column_naming: alias`` / ``language: es`` fails tests
+    that assert TECHNICAL-mode published names (``netwr_vbak``) with a diff that
+    looks nothing like its cause. A unit test must control its inputs; deployment
+    config is an input.
+
+    Tests that exercise the other modes override these with their own
+    ``monkeypatch.setenv`` (fixtures run before the test body, so the test wins).
+    """
+    monkeypatch.setenv("ASK_COLUMN_NAMING", "technical")
+    monkeypatch.setenv("ASK_SEMANTIC_LANGUAGE", "en")
+
 SAMPLE_BRONZE_YAML = textwrap.dedent("""\
     id: bronze_s4h_vbak_order_header
     layer: bronze
