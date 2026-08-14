@@ -231,6 +231,53 @@ def test_delete_clears_active_slot(client: TestClient):
     assert after["active"] == {"dev": None, "prod": None}
 
 
+# ── orchestrator invalidation (cross-container cache) ────────────────────────
+
+
+def test_db_mutations_notify_orchestrator(client: TestClient, monkeypatch):
+    """Activating / editing-the-active / deleting-the-active connection must
+    POST the orchestrator's /v1/internal/reload.
+
+    The orchestrator is a different container whose SecretsProvider caches the
+    ``db_active`` pointer + connection docs — without the notify, a database
+    switch from the UI only lands after the 60 s TTL (the exact defect the LLM
+    registry endpoints had before they gained the call).
+    """
+    from ask_admin_api.routers import secrets as secrets_router
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        secrets_router, "_notify_orchestrator_reload", lambda trace_id: calls.append(trace_id)
+    )
+
+    cid = client.post("/v1/admin/secrets/db/connections", json=_SNOWFLAKE).json()["id"]
+    assert calls == []  # creating an (inactive) connection changes nothing at runtime
+
+    client.put(
+        "/v1/admin/secrets/db/connections/active", json={"dev": cid, "prod": None}
+    ).raise_for_status()
+    assert len(calls) == 1  # switch → notify
+
+    client.put(f"/v1/admin/secrets/db/connections/{cid}", json=_SNOWFLAKE).raise_for_status()
+    assert len(calls) == 2  # editing the ACTIVE connection → notify
+
+    client.delete(f"/v1/admin/secrets/db/connections/{cid}").raise_for_status()
+    assert len(calls) == 3  # deleting the ACTIVE connection clears the slot → notify
+
+
+def test_update_inactive_connection_does_not_notify(client: TestClient, monkeypatch):
+    from ask_admin_api.routers import secrets as secrets_router
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        secrets_router, "_notify_orchestrator_reload", lambda trace_id: calls.append(trace_id)
+    )
+    cid = client.post("/v1/admin/secrets/db/connections", json=_SNOWFLAKE).json()["id"]
+    client.put(f"/v1/admin/secrets/db/connections/{cid}", json=_SNOWFLAKE).raise_for_status()
+    client.delete(f"/v1/admin/secrets/db/connections/{cid}").raise_for_status()
+    assert calls == []  # nothing here touched the active pointer
+
+
 # ── legacy import (db_dev / db_prod → registry) ───────────────────────────────
 
 

@@ -678,6 +678,12 @@ async def set_db_active(
             detail="SECRETS_BACKEND_UNAVAILABLE: could not update active connection.",
         ) from exc
     _invalidate("db_active")
+    # _invalidate only evicts THIS process's read cache. The orchestrator is a
+    # different container whose SecretsProvider caches the db_active pointer +
+    # connection docs (60 s TTL), so switching the database from the UI appeared
+    # to do nothing until the TTL expired — the exact bug the LLM registry
+    # endpoints had before they gained this call. Best-effort by design.
+    _notify_orchestrator_reload(uuid.uuid4().hex)
     return DbActiveView(dev=result.get("dev"), prod=result.get("prod"))
 
 
@@ -700,6 +706,11 @@ async def update_db_connection(
             preserve_blank_secrets=True,
             extra={"name": body.name, "kind": "db_connection"},
         )
+        # Editing the ACTIVE connection changes what the orchestrator queries
+        # (host, database, final, credentials) — same cross-container
+        # invalidation as update_llm_connection.
+        if cid in _repo().get_active().values():
+            _notify_orchestrator_reload(uuid.uuid4().hex)
     except OpenSearchException as exc:
         raise HTTPException(
             status_code=503,
@@ -726,6 +737,9 @@ async def delete_db_connection(
             }
             _repo().set_active(new_active, updated_by=user)
             _invalidate("db_active")
+            # Deleting the active connection leaves that env with NO database —
+            # the orchestrator must see it now, not after the 60 s TTL.
+            _notify_orchestrator_reload(uuid.uuid4().hex)
     except OpenSearchException as exc:
         raise HTTPException(
             status_code=503,
