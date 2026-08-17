@@ -573,6 +573,9 @@ def _maybe_import_legacy_connections(user: str) -> None:
             sp.invalidate(cid)
     except Exception:  # noqa: BLE001
         logger.warning("cache invalidation after legacy import failed", exc_info=True)
+    # The import SETS the active pointer, so it changes what the orchestrator
+    # queries — same cross-container invalidation as every other db_active write.
+    _notify_orchestrator_reload(uuid.uuid4().hex)
     logger.info("Imported %d legacy DB connection(s) into the registry", len(imported))
 
 

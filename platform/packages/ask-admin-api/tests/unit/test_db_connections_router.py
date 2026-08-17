@@ -278,6 +278,30 @@ def test_update_inactive_connection_does_not_notify(client: TestClient, monkeypa
     assert calls == []  # nothing here touched the active pointer
 
 
+def test_legacy_import_notifies_orchestrator(client: TestClient, monkeypatch):
+    """The one-time legacy import sets the active pointer → must notify too."""
+    from ask_admin_api.routers import secrets as secrets_router
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        secrets_router, "_notify_orchestrator_reload", lambda trace_id: calls.append(trace_id)
+    )
+    client.put(
+        "/v1/admin/secrets/db/dev",
+        json={
+            "db_type": "hana",
+            "fields": {"host": "legacy.host", "port": "443", "user": "u", "password": "p"},
+        },
+    ).raise_for_status()
+    calls.clear()  # the legacy PUT has its own notify; isolate the import
+
+    client.get("/v1/admin/secrets/db/connections").raise_for_status()
+    assert len(calls) == 1
+
+    client.get("/v1/admin/secrets/db/connections").raise_for_status()
+    assert len(calls) == 1  # import is idempotent → no second notify
+
+
 # ── legacy import (db_dev / db_prod → registry) ───────────────────────────────
 
 
