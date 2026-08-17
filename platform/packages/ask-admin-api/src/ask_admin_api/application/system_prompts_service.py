@@ -452,7 +452,7 @@ SILVER/GOLD shape (curated entity):
   id: silver_{source_system}_{module}_{name}
   layer: {layer}
   source_system: {source_system}
-  module: {2-letter SAP module if inferable (sd/mm/pp/fi/co), else 'gen'}
+  module: {the MODULE value given in the input — copy it verbatim, never omit it}
   name: {snake_case entity name}
   classification: {M | T | C}   # SILVER only — master | transactional | configuration.
                                 # Drives entity_role. OMIT for GOLD: it has no
@@ -489,7 +489,8 @@ SILVER/GOLD shape (curated entity):
       description: {short}
 
 Rules:
-  * Use the LAYER given in the input. Bronze never has a module; Silver/Gold require one.
+  * Use the LAYER given in the input. Bronze never has a module; Silver/Gold REQUIRE one —
+    copy the MODULE value from the input verbatim (it drives the workspace path).
   * ALWAYS emit `classification` (M/T/C) for SILVER — it drives entity_role there.
     Do NOT emit it for GOLD: Gold has no Data-Modeler classification and it drives
     nothing there. Emit `entity_role` directly for Gold instead (`fact` by default).
@@ -560,10 +561,47 @@ Rules:
 """
 
 
+_DEFAULT_DDL_ANNOTATION_PROMPT = """\
+You annotate a database table for a business semantic layer. You receive the
+table's physical shape (name + columns with types, sometimes column comments)
+already extracted from its DDL — you never transcribe or rename columns, you
+only add the business semantics the DDL cannot express. Respond ONLY through
+the structured output schema you are given.
+
+Guidance per field of the schema:
+  * entity_name: a short snake_case business name for the table (e.g.
+    sales_order, ventas_detalle). Lowercase ASCII letters/digits/underscores
+    only — no accents, no spaces. Use the semantic layer's language as stated in
+    the LANGUAGE OF THE SEMANTIC LAYER block; a BUSINESS CONTEXT block, when
+    present, is authoritative over both.
+  * description: one line saying what a ROW of this table represents.
+  * entity_role: `fact` for transactional/analytical tables with measures,
+    `dimension` for lookup/master tables, `reference` for pure config lookups.
+  * classification (Silver only): M = master data, T = transactional,
+    C = configuration.
+  * business_process: one of ORDER TO CASH, PROCURE TO PAY, PLANT TO PRODUCE,
+    RECORD TO REPORT, ORGANIZATIONAL STRUCTURE — or empty when unsure. Never
+    invent other values.
+  * fields[]: one entry PER COLUMN you were given, echoing `column` EXACTLY.
+      - field_role: `measure` = numeric business quantity that gets summed or
+        averaged (amounts, quantities, weights); `identifier` = a key or code
+        that identifies a business object (document numbers, customer/material
+        codes); `timestamp` = dates and times; `dimension` = everything else
+        used for grouping/filtering (names, groups, statuses, units, flags).
+        Numeric technical fields (versions, row counters) are `dimension`,
+        not `measure`.
+      - description: short business meaning, in the semantic layer's language
+        (see the LANGUAGE block). A provided column comment is a strong hint.
+      - alias: snake_case business alias (relevant for Bronze; keep it short).
+Do not skip columns; do not add columns that were not given.
+"""
+
+
 _DEFAULT_PROMPTS: dict[str, str] = {
     "enrichment": _DEFAULT_ENRICHMENT_PROMPT,
     "relationship_suggest": _DEFAULT_RELATIONSHIP_SUGGEST_PROMPT,
     "ddl_mapping": _DEFAULT_DDL_MAPPING_PROMPT,
+    "ddl_annotation": _DEFAULT_DDL_ANNOTATION_PROMPT,
 }
 
 

@@ -112,9 +112,47 @@ _KEYWORD_BASE: dict[str, str] = {
     # SQL temporals
     "DATETIME": "TIMESTAMP",
     "TIMESTAMPTZ": "TIMESTAMP",
+    "DATETIME2": "TIMESTAMP",  # SQL Server
+    "DATETIMEOFFSET": "TIMESTAMP",  # SQL Server
+    "SMALLDATETIME": "TIMESTAMP",  # SQL Server
+    "TIMESTAMP_NTZ": "TIMESTAMP",  # Snowflake / Databricks
+    "TIMESTAMP_LTZ": "TIMESTAMP",  # Snowflake
+    "TIMESTAMP_TZ": "TIMESTAMP",  # Snowflake
+    "DATETIME64": "TIMESTAMP",  # ClickHouse (sub-second precision param ignored)
+    "DATE32": "DATE",  # ClickHouse extended-range date
+    "TIME": "STRING",  # time-of-day text; no TIME in the canonical vocab (like TIMS)
     # SQL booleans
     "BOOL": "BOOLEAN",
     "BIT": "BOOLEAN",
+    # ClickHouse scalars (SHOW CREATE TABLE spells them CamelCase; lookups are
+    # uppercased). Int2/4/8 above are Postgres aliases; these are bit widths.
+    "INT16": "INTEGER",
+    "INT32": "INTEGER",
+    "INT64": "INTEGER",
+    "INT128": "INTEGER",
+    "INT256": "INTEGER",
+    "UINT8": "INTEGER",
+    "UINT16": "INTEGER",
+    "UINT32": "INTEGER",
+    "UINT64": "INTEGER",
+    "UINT128": "INTEGER",
+    "UINT256": "INTEGER",
+    "FLOAT32": "DECIMAL",
+    "FLOAT64": "DECIMAL",
+    "FIXEDSTRING": "STRING",
+    "ENUM8": "STRING",
+    "ENUM16": "STRING",
+    "ENUM": "STRING",
+    "IPV4": "STRING",
+    "IPV6": "STRING",
+    # MySQL / SQL Server / Snowflake extras
+    "MEDIUMINT": "INTEGER",
+    "LONGTEXT": "STRING",
+    "MEDIUMTEXT": "STRING",
+    "TINYTEXT": "STRING",
+    "NTEXT": "STRING",
+    "UNIQUEIDENTIFIER": "STRING",
+    "VARIANT": "STRING",
     # DDIC datatypes (multi-char) occasionally surface instead of inttype
     "DATS": "DATE",
     "TIMS": "STRING",
@@ -135,6 +173,43 @@ _PAREN_RE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(\s*(\d+)\s*(?:,\s*(\d+)
 _BARE_WORD_RE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9_]*?)\s*$")
 _SAP_CODE_RE = re.compile(r"^\s*([A-Za-z])\s*(\d+)\s*$")
 
+# Keyword with arbitrary parenthesized args — catches vendor spellings whose
+# params are not plain integers (``DateTime('UTC')``, ``DateTime64(3, 'UTC')``,
+# ``Enum8('new' = 1, 'done' = 2)``). The keyword decides the base; any LEADING
+# integer args are kept as params (a trailing timezone/label is dropped).
+_ANY_PAREN_RE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*\((.*)\)\s*$", re.DOTALL)
+
+# Transparent wrappers: the physical column's logical type is the INNER type.
+# ClickHouse `Nullable(X)` / `LowCardinality(X)` (nesting occurs in the wild:
+# `LowCardinality(Nullable(String))`).
+_WRAPPER_RE = re.compile(
+    r"^\s*(?:NULLABLE|LOWCARDINALITY)\s*\((.*)\)\s*$", re.IGNORECASE | re.DOTALL
+)
+
+# ClickHouse fixed-precision decimals: the single param is the SCALE; precision
+# is fixed by the bit width. `Decimal64(7)` ≡ `Decimal(18, 7)`.
+_CLICKHOUSE_DECIMAL_PRECISION: dict[str, int] = {
+    "DECIMAL32": 9,
+    "DECIMAL64": 18,
+    "DECIMAL128": 38,
+    "DECIMAL256": 76,
+}
+
+# Multi-word ANSI spellings, rewritten to their single-word alias BEFORE keyword
+# lookup (applied case-insensitively on the whitespace-collapsed string).
+_MULTIWORD_REWRITES: tuple[tuple[str, str], ...] = (
+    ("TIMESTAMP WITHOUT TIME ZONE", "TIMESTAMP"),
+    ("TIMESTAMP WITH TIME ZONE", "TIMESTAMPTZ"),
+    ("TIME WITHOUT TIME ZONE", "TIME"),
+    ("TIME WITH TIME ZONE", "TIME"),
+    ("DOUBLE PRECISION", "DOUBLE"),
+    ("NATIONAL CHARACTER VARYING", "NVARCHAR"),
+    ("NATIONAL CHARACTER", "NCHAR"),
+    ("CHARACTER VARYING", "VARCHAR"),
+    ("CHARACTER", "CHAR"),
+    ("LONG VARCHAR", "VARCHAR"),
+)
+
 
 class TypeMapper:
     """Parses raw column types (SAP ``C10`` / SQL ``VARCHAR(10)`` / canonical
@@ -146,9 +221,25 @@ class TypeMapper:
     """
 
     def parse(self, raw: str | None) -> CanonicalType:
-        s = (raw or "").strip()
+        s = " ".join((raw or "").split())  # collapse newlines/runs: Decimal(76,\n 7)
         if not s:
             return CanonicalType("STRING")
+
+        # 0a. Multi-word ANSI spellings → single-word alias (TIMESTAMP WITH TIME
+        #     ZONE, DOUBLE PRECISION, CHARACTER VARYING(50), …).
+        upper = s.upper()
+        for phrase, alias in _MULTIWORD_REWRITES:
+            if upper.startswith(phrase):
+                s = alias + s[len(phrase) :]
+                break
+
+        # 0b. Unwrap transparent wrappers — the logical type is the inner type.
+        #     Depth-capped so a pathological input can't loop.
+        for _ in range(4):
+            m = _WRAPPER_RE.match(s)
+            if not m:
+                break
+            s = m.group(1).strip()
 
         # 1. Parenthesized keyword: STRING(10) / VARCHAR(10) / DECIMAL(15,2)
         m = _PAREN_RE.match(s)
@@ -156,14 +247,37 @@ class TypeMapper:
             word = m.group(1).upper()
             a = int(m.group(2))
             b = int(m.group(3)) if m.group(3) is not None else None
+            fixed = _CLICKHOUSE_DECIMAL_PRECISION.get(word)
+            if fixed:
+                return CanonicalType("DECIMAL", precision=fixed, scale=a)
             base = _KEYWORD_BASE.get(word)
             if base:
                 return self._with_params(base, a, b)
+
+        # 1b. Keyword with non-integer args: DateTime('UTC') / DateTime64(3,'UTC')
+        #     / Enum8('a' = 1). The keyword decides; leading integer args survive.
+        m = _ANY_PAREN_RE.match(s)
+        if m:
+            word = m.group(1).upper()
+            base = _KEYWORD_BASE.get(word)
+            if base:
+                ints: list[int] = []
+                for part in m.group(2).split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        ints.append(int(part))
+                    else:
+                        break
+                return self._with_params(
+                    base, ints[0] if ints else None, ints[1] if len(ints) > 1 else None
+                )
 
         # 2. Bare keyword (no trailing digits): DATE / INTEGER / VARCHAR / DEC
         m = _BARE_WORD_RE.match(s)
         if m:
             word = m.group(1).upper()
+            if word in _CLICKHOUSE_DECIMAL_PRECISION:
+                return CanonicalType("DECIMAL", precision=_CLICKHOUSE_DECIMAL_PRECISION[word])
             base = _KEYWORD_BASE.get(word)
             if base:
                 return CanonicalType(base)

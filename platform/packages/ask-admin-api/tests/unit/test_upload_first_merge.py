@@ -88,7 +88,10 @@ for _c in _PAYLOAD_V2["columns"]:
 
 @pytest.fixture
 def merge_env(tmp_path: Path, monkeypatch):
-    monkeypatch.delenv("ASK_COLUMN_NAMING", raising=False)
+    # SET, not delenv — see the same note in test_merge_structure.py: delenv
+    # leaves config/settings.json as a second source, so an `alias`-configured
+    # developer machine broke these TECHNICAL-mode expectations.
+    monkeypatch.setenv("ASK_COLUMN_NAMING", "technical")
     repo_root = tmp_path
     workspace = repo_root / "workspace" / "ask"
     workspace.mkdir(parents=True)

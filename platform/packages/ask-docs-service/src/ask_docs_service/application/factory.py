@@ -16,11 +16,14 @@ the `OpenSearchAskRepository` constructor (same cluster, same indices).
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from .rag_flow import DocsRagService
+
+logger = logging.getLogger(__name__)
 
 
 def build_default_docs_service(env: str | None = None) -> DocsRagService:
@@ -50,10 +53,25 @@ def build_default_docs_service(env: str | None = None) -> DocsRagService:
 
 
 def _load_config() -> dict[str, Any]:
+    """Read ``config/settings.json``; ``{}`` when absent or unreadable.
+
+    Never raises: the file is gitignored (a fresh clone has none) and env vars
+    carry every key that matters, so absence must degrade, not crash a request
+    path (BACKLOG group 0, P1 — hit live 2026-08-12)."""
     cfg_path = Path("config/settings.json")
     if not cfg_path.exists():
-        raise RuntimeError("config/settings.json not found — service must run from project root")
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+        logger.warning(
+            "config/settings.json not found (resolved=%s, cwd=%s) — using environment only",
+            cfg_path.resolve(),
+            os.getcwd(),
+        )
+        return {}
+    try:
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — a broken file must not take the service down
+        logger.warning("config/settings.json is not valid JSON — ignoring it")
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _truthy(value: str) -> bool:

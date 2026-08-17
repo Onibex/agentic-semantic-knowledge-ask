@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 from pydantic import ValidationError
@@ -22,6 +23,11 @@ from .sap_schemas import SapRootSchema
 logger = logging.getLogger(__name__)
 
 # SAP "control flag" values that mark a related table as configuration/reference.
+# A published column name that needs quoting to be valid SQL. SAP namespaced
+# fields (`/CWM/MEINS`) are the real-world case: TECHNICAL mode only lowercases
+# the raw name, so the slashes survive into the published column.
+_NON_IDENTIFIER_RE = re.compile(r"[^a-z0-9_]")
+
 _CONFIG_FLAGS = {"C", "G", "E", "S", "W"}
 
 # ── Upstream normalisation ───────────────────────────────────────────────────
@@ -110,6 +116,11 @@ class SapJsonParser:
             logger.info("SapJsonParser: column naming mode = %s", self._naming_mode.value)
         # Per-parse identifier-hygiene warnings (see `naming_warnings`).
         self._naming_warnings: list[str] = []
+        # Normalization events are AGGREGATED into a single warning instead of
+        # one per field: a Spanish export normalizes hundreds of accented
+        # aliases, and hundreds of individually-true warnings bury the few that
+        # need a decision (collisions, non-identifier published names).
+        self._normalizations: list[str] = []
 
     @property
     def naming_warnings(self) -> list[str]:
@@ -127,6 +138,7 @@ class SapJsonParser:
     def parse_to_domain(self, raw_data: dict[str, Any]) -> tuple[list[BronzeNode], SilverNode]:
         """Main orchestrator — reads like a table of contents."""
         self._naming_warnings = []
+        self._normalizations = []
 
         # 1. Strict validation (the Pydantic shield)
         valid_data = self._validate_payload(raw_data)
@@ -189,6 +201,7 @@ class SapJsonParser:
             silver_fields=silver_fields,
         )
 
+        self._flush_normalization_summary()
         for warning in self._naming_warnings:
             logger.warning("identifier hygiene: %s", warning)
 
@@ -296,9 +309,31 @@ class SapJsonParser:
         )
 
     def _warn_if_normalized(self, context: str, raw: Any, normalized: str) -> None:
-        """Record a hygiene warning when normalization changed an identifier."""
+        """Record that normalization changed an identifier.
+
+        Collected, not emitted: :meth:`_flush_normalization_summary` folds them
+        into ONE warning at the end of the parse."""
         if str(raw or "").strip() != normalized:
-            self._naming_warnings.append(f"{context}: {raw!r} normalized to '{normalized}'")
+            self._normalizations.append(f"{context} {raw!r}→'{normalized}'")
+
+    def _flush_normalization_summary(self, *, sample: int = 5) -> None:
+        """Collapse the collected normalizations into a single warning."""
+        if not self._normalizations:
+            return
+        total = len(self._normalizations)
+        shown = self._normalizations[:sample]
+        more = f" (+{total - sample} more)" if total > sample else ""
+        stakes = (
+            "each one is a MISMATCH RISK against the client's physical columns"
+            if self._naming_mode is ColumnNamingMode.ALIAS
+            else "harmless for column names in technical mode, but the Bronze alias and "
+            "id segments carry the normalized value"
+        )
+        self._naming_warnings.append(
+            f"{total} identifier(s) normalized to ASCII snake_case — {stakes}. "
+            f"Examples: {'; '.join(shown)}{more}"
+        )
+        self._normalizations = []
 
     def _build_bronze_layer(
         self, columns: list, relations: list, source_system: str, source_system_no: int
@@ -401,6 +436,20 @@ class SapJsonParser:
                     published = published_column_name(field_alias, tabname)
                 else:
                     published = silver_column_name(tabname, fldname)
+                    # TECHNICAL mode lowercases the raw SAP field name and nothing
+                    # else, so a NAMESPACED column (`/CWM/MEINS`) publishes as
+                    # `/cwm/meins_vbrp` — not a bare SQL identifier. We do NOT
+                    # rewrite it: the published name must match the column the
+                    # client's ETL actually created, and that rule is theirs, not
+                    # ours. But it shipped SILENTLY, so surface it — the author
+                    # either confirms the physical column or renames the field.
+                    if _NON_IDENTIFIER_RE.search(published):
+                        self._naming_warnings.append(
+                            f"{tabname}.{fldname}: published column '{published}' is not a bare "
+                            f"SQL identifier (the SAP name is namespaced). Confirm the physical "
+                            f"column really is spelled this way — SQL must quote it — or rename "
+                            f"the field in the editor."
+                        )
                 name_map[(tabname.upper(), fldname.upper())] = published
 
                 fields_dict[fldname] = BronzeField(

@@ -73,7 +73,7 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 
 ## Mode C — DDL + AI
 
-**Use when:** you have SQL DDL and want the AI to map it into ASK YAML for you.
+**Use when:** you have SQL DDL and want it mapped into ASK YAML for you.
 
 The importer is **dialect-tolerant across all nine supported engines** (PostgreSQL, SAP HANA,
 ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
@@ -81,6 +81,18 @@ Fabric) and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VI
 as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold**
 entities too — not just Bronze — with guardrails: it will not fabricate joins from a bare
 `CREATE TABLE`, and it never guesses a layer (see the note below).
+
+**How the mapping works.** A `CREATE TABLE` with a typed column list is parsed
+**deterministically**: every column name, its canonical type, the physical table name
+(unqualified) and the declared key (`PRIMARY KEY`, or the ClickHouse `ORDER BY` sorting key)
+come straight from the DDL, byte-exact — the AI never transcribes or renames columns. The AI
+contributes only the **semantics** the DDL cannot express (business name, descriptions, field
+roles, Silver classification) through a schema-enforced structured call. When the AI is
+unavailable or its annotation fails, the entity still imports with mechanical defaults and
+surfaces **In Review** for enrichment. Views, `CREATE TABLE … AS SELECT`, and statements
+without a typed column list are mapped by the full AI path (their columns live in a query
+body). A grain proposed from a ClickHouse `ORDER BY` carries a warning: a sorting key is not
+guaranteed unique — verify it against the physical table before publishing.
 
 Pick **DDL + AI**, then:
 
@@ -96,9 +108,14 @@ Pick **DDL + AI**, then:
    - **…or paste a single DDL script** in the text box. If the layer can't be detected from
      the name, a **Layer** selector appears and is **required**.
 3. **Context for all files (optional)** — a sentence about what these tables are for; it
-   enriches the AI mapping. Per-file notes can be added too.
+   enriches the AI annotation. Per-file notes can be added too.
 4. Optionally tick **Overwrite if it exists**.
 5. Click **Map + import**.
+
+There is **no Module field**: for Silver and Gold the `module` is detected from the physical
+table name (`SILVER_SD_SALES_ORDER` → `sd`) against the list of known business modules, and
+falls back to **`gen`** (generic / cross-module) when the name carries no recognizable module.
+Adjust it in the editor if needed — every import lands **In Review** anyway.
 
 ![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/admin-dp-ddl.png)
 

@@ -7,11 +7,9 @@ Only the two methods the admin SPA consumes are exposed:
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 import uuid
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -57,12 +55,9 @@ def _get_writer() -> Any:
             build_default_dictionary_writer,
         )
 
-        cfg_path = Path("config/settings.json")
-        if not cfg_path.exists():
-            raise RuntimeError(
-                "config/settings.json not found — service must run from project root"
-            )
-        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        from ..application.runtime_config import load_runtime_config
+
+        cfg = load_runtime_config()
         _writer_singleton = build_default_dictionary_writer(cfg)
         return _writer_singleton
 

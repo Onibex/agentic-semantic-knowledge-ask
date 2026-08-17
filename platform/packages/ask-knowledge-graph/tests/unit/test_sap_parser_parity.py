@@ -36,6 +36,21 @@ _FIX = Path(__file__).parent / "fixtures"
 _CASES = ["sap_s4h_sales_order", "sap_s4h_inv_mov_stock"]
 
 
+@pytest.fixture(autouse=True)
+def _pin_technical_naming(monkeypatch):
+    """Pin ``ASK_COLUMN_NAMING=technical`` for this whole module.
+
+    The golden snapshot encodes TECHNICAL-mode published column names
+    (``vbeln_vbak``). Without this, the suite silently inherits the ambient
+    config: run from the project root on a deployment configured for
+    ``column_naming: alias`` (a real client setup) and every case fails with a
+    confusing StopIteration, while CI stays green only because it has no
+    ``config/settings.json``. A golden test must pin its own inputs, not read
+    the developer's environment. The alias-mode contract has its own suite
+    (``test_sap_parser_alias_mode.py``)."""
+    monkeypatch.setenv("ASK_COLUMN_NAMING", "technical")
+
+
 def _golden() -> dict:
     return json.loads((_FIX / "parser_golden.json").read_text(encoding="utf-8"))
 

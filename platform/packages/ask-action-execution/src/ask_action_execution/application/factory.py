@@ -10,6 +10,8 @@ calls ``build_default_action_service()`` on first use.
 from __future__ import annotations
 
 import json
+import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +49,25 @@ def _build_adapter(cfg: dict[str, Any]) -> SapMcpAdapter | None:
 
 
 def _load_config() -> dict[str, Any]:
+    """Read ``config/settings.json``; ``{}`` when absent or unreadable.
+
+    Never raises: the file is gitignored (a fresh clone has none) and env vars
+    carry every key that matters, so absence must degrade, not crash a request
+    path (BACKLOG group 0, P1 — hit live 2026-08-12). With ``{}`` the MCP
+    adapter is simply not configured, which this factory already handles."""
     cfg_path = Path("config/settings.json")
     if not cfg_path.exists():
-        raise RuntimeError("config/settings.json not found — service must run from project root")
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+        logging.getLogger(__name__).warning(
+            "config/settings.json not found (resolved=%s, cwd=%s) — using environment only",
+            cfg_path.resolve(),
+            os.getcwd(),
+        )
+        return {}
+    try:
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — a broken file must not take the service down
+        logging.getLogger(__name__).warning(
+            "config/settings.json is not valid JSON — ignoring it"
+        )
+        return {}
+    return data if isinstance(data, dict) else {}

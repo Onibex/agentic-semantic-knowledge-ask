@@ -4,14 +4,23 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from ..application.runtime_config import config_status
 from ..application.warmup import get_warmup_status
 
 router = APIRouter(prefix="/v1", tags=["health"])
 
 
 @router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "service": "ask-admin-api"}
+async def health() -> dict[str, Any]:
+    """Liveness + the config-file state.
+
+    ``config`` reports whether ``config/settings.json`` was found, with the
+    RESOLVED path and the process cwd. The service is ``ok`` either way (env
+    vars carry every key that matters), but a missing file used to be invisible
+    until an unrelated endpoint 500'd with ``'NoneType' object has no attribute
+    'get'`` — this makes it a one-request answer (BACKLOG group 0, P1).
+    """
+    return {"status": "ok", "service": "ask-admin-api", "config": config_status()}
 
 
 @router.get("/health/warmup")

@@ -26,7 +26,6 @@ so the admin SPA can inspect the ``error`` field directly.
 from __future__ import annotations
 
 import io
-import json
 import logging
 import threading
 import uuid
@@ -61,10 +60,10 @@ def reset_singletons() -> list[str]:
 
 
 def _load_config() -> dict[str, Any]:
-    cfg_path = Path("config/settings.json")
-    if not cfg_path.exists():
-        raise RuntimeError("config/settings.json not found — service must run from project root")
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+    # Absent file degrades to {} — see application/runtime_config.py (BACKLOG 0).
+    from ..application.runtime_config import load_runtime_config
+
+    return load_runtime_config()
 
 
 def _get_rag_service() -> Any:

@@ -81,6 +81,10 @@ export function CreateEntityDialog({ open, onClose, onCreated }: Props) {
   const [sourceFromOrg, setSourceFromOrg] = useState(true) // default: derive from Organization
   const [overrideSource, setOverrideSource] = useState(false) // reveal the manual picker
   const [forceOverwrite, setForceOverwrite] = useState(false)
+  // NOTE: there is deliberately no Module input. The backend auto-detects the
+  // silver/gold `module` per relation from the physical table name
+  // (`SILVER_SD_*` → `sd`) and falls back to `gen`; the author adjusts it in the
+  // editor if needed (every import lands In Review anyway).
   const [ddlContext, setDdlContext] = useState('') // general context for the whole batch
   // Per-file: auto-detected layer (overridable), optional per-file note.
   const [ddlFileItems, setDdlFileItems] = useState<

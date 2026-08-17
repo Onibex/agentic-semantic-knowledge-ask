@@ -59,7 +59,73 @@ def test_canonical(raw, expected):
     assert _M.canonical(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["C10", "P15", "VARCHAR(20)", "DECIMAL(15,2)", "DATE", "N6", "BIT"])
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        # ClickHouse scalars (SHOW CREATE TABLE spells them CamelCase)
+        ("String", "STRING"),
+        ("FixedString(16)", "STRING(16)"),
+        ("Int8", "INTEGER"),  # ClickHouse Int8 is a 1-byte int, not Postgres int8
+        ("Int32", "INTEGER"),
+        ("Int64", "INTEGER"),
+        ("UInt64", "INTEGER"),
+        ("Float32", "DECIMAL"),
+        ("Float64", "DECIMAL"),
+        ("Decimal(76, 7)", "DECIMAL(76,7)"),
+        ("Decimal(76,\n 7)", "DECIMAL(76,7)"),  # DDL dumps wrap params across lines
+        ("Decimal64(7)", "DECIMAL(18,7)"),  # single param is the SCALE
+        ("Decimal128(4)", "DECIMAL(38,4)"),
+        ("Date", "DATE"),
+        ("Date32", "DATE"),
+        ("DateTime", "TIMESTAMP"),
+        ("DateTime('UTC')", "TIMESTAMP"),  # non-integer param → keyword decides
+        ("DateTime64(3)", "TIMESTAMP"),
+        ("DateTime64(3, 'UTC')", "TIMESTAMP"),
+        ("Bool", "BOOLEAN"),
+        ("UUID", "STRING"),
+        ("Enum8('new' = 1, 'done' = 2)", "STRING"),
+        # transparent wrappers — the logical type is the INNER type
+        ("Nullable(DateTime('UTC'))", "TIMESTAMP"),
+        ("Nullable(Int64)", "INTEGER"),
+        ("LowCardinality(String)", "STRING"),
+        ("LowCardinality(Nullable(String))", "STRING"),
+        ("Nullable(Decimal(10, 2))", "DECIMAL(10,2)"),
+        # multi-word ANSI spellings
+        ("TIMESTAMP WITH TIME ZONE", "TIMESTAMP"),
+        ("timestamp without time zone", "TIMESTAMP"),
+        ("DOUBLE PRECISION", "DECIMAL"),
+        ("CHARACTER VARYING(50)", "STRING(50)"),
+        ("character varying", "STRING"),
+        ("TIME", "STRING"),  # time-of-day text, same rule as SAP TIMS
+        # other engines' spellings
+        ("DATETIME2", "TIMESTAMP"),  # SQL Server
+        ("TIMESTAMP_NTZ", "TIMESTAMP"),  # Snowflake / Databricks
+        ("UNIQUEIDENTIFIER", "STRING"),
+        ("VARIANT", "STRING"),
+    ],
+)
+def test_canonical_vendor_types(raw, expected):
+    """Vendor DDL types (ClickHouse first — the live PoC) canonicalize instead of
+    silently degrading to STRING via the unknown fallback."""
+    assert _M.canonical(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "C10",
+        "P15",
+        "VARCHAR(20)",
+        "DECIMAL(15,2)",
+        "DATE",
+        "N6",
+        "BIT",
+        "Nullable(DateTime64(3, 'UTC'))",
+        "Decimal64(7)",
+        "LowCardinality(String)",
+        "TIMESTAMP WITH TIME ZONE",
+    ],
+)
 def test_idempotent(raw):
     once = _M.canonical(raw)
     assert _M.canonical(once) == once

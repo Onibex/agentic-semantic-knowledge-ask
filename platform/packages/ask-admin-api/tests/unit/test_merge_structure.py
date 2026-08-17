@@ -351,7 +351,12 @@ _PAYLOAD_V2["relations"] += [
 def merge_env(tmp_path: Path, monkeypatch):
     """Real YAMLFileService + GitService on a temp git repo — the exact stack
     merge_sap_payload runs behind the ingest endpoints."""
-    monkeypatch.delenv("ASK_COLUMN_NAMING", raising=False)
+    # SET, not delenv: the expectations below are TECHNICAL-mode published names
+    # (`netwr_vbak`). Deleting the env var only drops one of two sources — the
+    # resolver then reads the CWD's config/settings.json, so on a machine
+    # configured for `column_naming: alias` these tests failed with a diff that
+    # looked nothing like its cause.
+    monkeypatch.setenv("ASK_COLUMN_NAMING", "technical")
     repo_root = tmp_path
     workspace = repo_root / "workspace" / "ask"
     workspace.mkdir(parents=True)

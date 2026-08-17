@@ -92,6 +92,12 @@ async def lifespan(_app: FastAPI):
         raise
 
     _validate_semantic_layer_paths()
+    # Report the config file's state ONCE, here, where an operator can act on it.
+    # Absence is not fatal (env vars carry every key that matters) but it used to
+    # be invisible until an unrelated endpoint 500'd (BACKLOG group 0, P1).
+    from .application.runtime_config import log_config_status
+
+    log_config_status()
     _init_release_branches()
 
     loop = asyncio.get_event_loop()

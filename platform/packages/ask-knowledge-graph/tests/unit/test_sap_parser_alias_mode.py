@@ -141,6 +141,53 @@ def test_dirty_alias_and_collision_emit_warnings_not_rejections():
     assert any("KLIMK" in w and "credito_total_2" in w for w in warnings)
 
 
+def test_normalizations_are_aggregated_into_one_warning():
+    """A Spanish export normalizes many aliases; hundreds of individually-true
+    warnings bury the few that need a decision, so they collapse into one."""
+    payload = copy.deepcopy(_PAYLOAD)
+    # Six more dirty aliases → 7 normalizations in total with KKBER.
+    for i in range(6):
+        payload["columns"].append(
+            _col("VBAK", f"ZZC{i}", f"Camión Número {i}", desc=f"Camión {i}")
+        )
+    parser = SapJsonParser(naming_mode=ColumnNamingMode.ALIAS)
+    parser.parse_to_domain(payload)
+    summary = [w for w in parser.naming_warnings if "normalized to ASCII" in w]
+    assert len(summary) == 1  # ONE line, not one per field
+    assert "7 identifier(s)" in summary[0]
+    assert "MISMATCH RISK" in summary[0]  # alias mode raises the stakes
+    assert "(+2 more)" in summary[0]  # 5 examples shown, rest counted
+
+
+def test_technical_mode_says_normalizations_are_harmless_for_column_names():
+    parser = SapJsonParser(naming_mode=ColumnNamingMode.TECHNICAL)
+    parser.parse_to_domain(copy.deepcopy(_PAYLOAD))
+    summary = [w for w in parser.naming_warnings if "normalized to ASCII" in w]
+    assert len(summary) == 1
+    assert "harmless for column names in technical mode" in summary[0]
+
+
+def test_namespaced_sap_field_warns_that_the_published_name_needs_quoting():
+    """TECHNICAL mode only lowercases the raw SAP name, so `/CWM/MEINS` publishes
+    as `/cwm/meins_vbak`. We do not rewrite it (the client's ETL owns that rule)
+    but it must not ship silently."""
+    payload = copy.deepcopy(_PAYLOAD)
+    payload["columns"].append(_col("VBAK", "/CWM/MEINS", "puom", desc="Unidad paralela"))
+    parser = SapJsonParser(naming_mode=ColumnNamingMode.TECHNICAL)
+    _, silver = parser.parse_to_domain(payload)
+    assert "/cwm/meins_vbak" in [f.name for f in silver.fields]
+    assert any("not a bare SQL identifier" in w for w in parser.naming_warnings)
+
+
+def test_alias_mode_keeps_a_namespaced_field_clean_and_silent():
+    payload = copy.deepcopy(_PAYLOAD)
+    payload["columns"].append(_col("VBAK", "/CWM/MEINS", "puom", desc="Unidad paralela"))
+    parser = SapJsonParser(naming_mode=ColumnNamingMode.ALIAS)
+    _, silver = parser.parse_to_domain(payload)
+    assert "puom_vbak" in [f.name for f in silver.fields]
+    assert not any("not a bare SQL identifier" in w for w in parser.naming_warnings)
+
+
 def test_warnings_reset_between_parses():
     parser = SapJsonParser(naming_mode=ColumnNamingMode.ALIAS)
     parser.parse_to_domain(copy.deepcopy(_PAYLOAD))

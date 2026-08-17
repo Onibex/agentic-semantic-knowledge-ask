@@ -342,8 +342,52 @@ def _infer_bronze_role(alias: str, description: str) -> str:
     Identifiers come from the explicit `key_field=True` flag, not from here.
     """
     text = f"{alias} {description}".lower()
-    if any(t in text for t in ("date", "fecha", "time", "timestamp", "created", "changed")):
+    if any(t in text for t in _TIMESTAMP_SIGNALS):
         return "timestamp"
-    if any(t in text for t in ("amount", "value", "qty", "quantity", "price", "net", "gross")):
+    if any(t in text for t in _MEASURE_SIGNALS):
         return "measure"
     return "dimension"
+
+
+# Signals are matched against alias + description, so they must cover the
+# language the layer is AUTHORED in (ASK_SEMANTIC_LANGUAGE). The list carried
+# `fecha` but no other Spanish word, so on a Spanish-authored corpus every
+# measure fell through to `dimension` — asymmetric by accident, not by design.
+_TIMESTAMP_SIGNALS = (
+    # English
+    "date",
+    "time",
+    "timestamp",
+    "created",
+    "changed",
+    # Spanish
+    "fecha",
+    "hora",
+    "creado",
+    "modificado",
+    "periodo",
+)
+
+_MEASURE_SIGNALS = (
+    # English
+    "amount",
+    "value",
+    "qty",
+    "quantity",
+    "price",
+    "net",
+    "gross",
+    "weight",
+    "volume",
+    # Spanish
+    "importe",
+    "valor",
+    "cantidad",
+    "precio",
+    "monto",
+    "peso",
+    "volumen",
+    "neto",
+    "bruto",
+    "total",
+)

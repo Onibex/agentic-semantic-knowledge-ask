@@ -50,16 +50,24 @@ def _index_for(collection_name: str, env: str | None = None) -> str:
 # ── Index mapping ─────────────────────────────────────────────────────────────
 
 
-def _build_mapping(embedding_dim: int) -> dict:
+def _build_mapping(embedding_dim: int, language: str | None = None) -> dict:
+    """The RAG chunk index (Flash + docs). ``text`` gets the deployment's
+    analyzer so its BM25 leg folds accents and stems in the corpus's language —
+    the same reasoning as the registry indices (PLAN_SEMANTIC_LANGUAGE.md W3)."""
+    from .language_config import resolve_semantic_language
+    from .opensearch_repository import _ASK_TEXT_ANALYZER, _text_analysis_settings
+
+    lang = language or resolve_semantic_language().value
     return {
         "settings": {
             "index.knn": True,
             "number_of_shards": 1,
             "number_of_replicas": 0,
+            "analysis": _text_analysis_settings(lang),
         },
         "mappings": {
             "properties": {
-                "text": {"type": "text", "analyzer": "english"},
+                "text": {"type": "text", "analyzer": _ASK_TEXT_ANALYZER},
                 "metadata": {"type": "object", "enabled": True},
                 "embedding": {
                     "type": "knn_vector",
