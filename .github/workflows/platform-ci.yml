@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
 name: platform-ci
 
 # pull_request runs unfiltered on purpose: these jobs are required status
@@ -17,6 +24,19 @@ permissions:
   contents: read
 
 jobs:
+  license-headers:
+    name: License headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Every source file must carry the SPDX header. This is the gate that
+      # keeps coverage from decaying: a new file without one fails the build.
+      - name: Verify license headers
+        run: python scripts/license_headers.py --check
+
   python-hygiene:
     name: Python lint + boundary tests
     runs-on: ubuntu-latest

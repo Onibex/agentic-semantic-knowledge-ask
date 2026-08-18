@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+ * Copyright (c) 2026 Onibex, LLC. All rights reserved.
+ *
+ * Part of Onibex ASK — Agentic Semantic Knowledge.
+ * Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+ * Commercial licenses: contact@onibex.com — see LICENSE.
+ */
+
 /**
  * Domain Canvas "Knowledge" rail tab (design-spec §03). Lists the Data Products
  * NOT yet in this domain so the curator can add them — by dragging onto the

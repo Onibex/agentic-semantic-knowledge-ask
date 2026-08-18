@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
 """Upload-first flow: a pre-packed YAML is imported, THEN the client's SAP
 JSON arrives. Rule (owner, 2026-08-11): a JSON must NEVER overwrite a YAML
 silently when no baseline exists — additions apply (they touch nothing),

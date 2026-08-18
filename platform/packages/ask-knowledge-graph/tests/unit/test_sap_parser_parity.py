@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
 """Golden parity: SapJsonParser output must be byte-identical after the
 EntityDeriver refactor. The golden snapshot was captured from the parser
 BEFORE delegation; this guards the active SAP merge + legacy ingestion paths.

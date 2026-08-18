@@ -1,3 +1,12 @@
+/*
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+ * Copyright (c) 2026 Onibex, LLC. All rights reserved.
+ *
+ * Part of Onibex ASK — Agentic Semantic Knowledge.
+ * Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+ * Commercial licenses: contact@onibex.com — see LICENSE.
+ */
+
 // Global axios auth wiring for the chat SPA. The api modules (orchestrator.ts,
 // admin.ts) call the DEFAULT axios instance directly, so registering the
 // interceptors here (imported once from main.tsx) attaches the Keycloak bearer

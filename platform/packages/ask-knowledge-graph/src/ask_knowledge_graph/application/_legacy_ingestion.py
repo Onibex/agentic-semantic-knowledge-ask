@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
 # application/_legacy_ingestion.py — Iter 8.5: promoted from legacy/src/pipeline/application/ingestion_service.py
 from ..infrastructure.yaml_serializer import AskYamlSerializer, load_yaml_text
 from ..infrastructure.file_storage_repo import AskPathBuilder
