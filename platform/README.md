@@ -73,7 +73,7 @@ consecutive calendar days — e.g. via `docker compose up`), at your option.
 Production or any other commercial use requires a commercial license from
 [Onibex](https://onibex.com) — see [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
 
-"Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
+"Onibex", "ASK", and the Onibex logos are trademarks of Onibex, LLC and are excluded
 from the license. This platform also references, without redistributing under this
 license, third-party software including SAP HANA, SAP BTP, and SAP AI Core (trademarks
 of SAP SE), OpenSearch (a registered trademark of Amazon Web Services), and Keycloak

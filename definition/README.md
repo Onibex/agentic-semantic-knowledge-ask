@@ -244,7 +244,7 @@ Please open an issue to discuss substantial changes before submitting a PR.
 
 ## Maintainers
 
-ASK is initiated and maintained by **[Onibex, Inc.](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex publishes the YAML contract as source-available so it can be studied, evaluated, and discussed in the open. See the [repository overview](../README.md) for how this specification relates to the Onibex ASK Platform.
+ASK is initiated and maintained by **[Onibex, LLC](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex publishes the YAML contract as source-available so it can be studied, evaluated, and discussed in the open. See the [repository overview](../README.md) for how this specification relates to the Onibex ASK Platform.
 
 ---
 
@@ -255,7 +255,7 @@ If ASK is useful in your research or product, please cite it:
 ```bibtex
 @misc{ask_semantic_model_2026,
   title  = {ASK: Agentic Semantic Knowledge — A YAML Specification for AI-Ready Data Products},
-  author = {Onibex, Inc.},
+  author = {Onibex, LLC},
   year   = {2026},
   url    = {https://github.com/Onibex/agentic-semantic-knowledge-ask/tree/main/definition}
 }

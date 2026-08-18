@@ -1,4 +1,4 @@
-# Agentic Semantic Knowledge (ASK)
+# Onibex ASK — Agentic Semantic Knowledge
 
 > Turn natural-language questions into governed, deterministic SQL over enterprise
 > data — grounded in a business-vocabulary semantic layer instead of raw schema.
@@ -111,7 +111,7 @@ days** under PolyForm Free Trial (e.g. via `docker compose up`). Production
 or any other commercial use requires a commercial license from
 [Onibex](https://onibex.com) — see [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).
 
-"Onibex", "ASK", and the Onibex logos are trademarks of Onibex, Inc. and are excluded
+"Onibex", "ASK", and the Onibex logos are trademarks of Onibex, LLC and are excluded
 from both licenses. This repository also references, without redistributing under
 this license, third-party software including SAP HANA, SAP BTP, and SAP AI Core
 (trademarks of SAP SE), OpenSearch (a registered trademark of Amazon Web Services),
@@ -121,8 +121,8 @@ and Keycloak (a trademark of Red Hat, Inc.) — see [`THIRD-PARTY-NOTICES.md`](T
 
 ## Maintainers
 
-ASK is initiated and maintained by **[Onibex, Inc.](https://onibex.com)** — an SAP
-Silver Partner and Confluent Gold Partner building real-time SAP data hyperconnectivity
+ASK is initiated and maintained by **[Onibex, LLC](https://onibex.com)** — an SAP
+silver partner and a Confluent gold partner building real-time SAP data hyperconnectivity
 for the enterprise.
 
 > *"Tables don't think. Schemas don't reason. ASK is what an agent reads when it needs

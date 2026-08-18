@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 **Onibex ASK — Agentic Semantic Knowledge**
-Copyright (c) 2026 Onibex, Inc. All rights reserved.
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This repository is source-available under [LICENSE](LICENSE) (PolyForm
 Strict License 1.0.0 / PolyForm Free Trial License 1.0.0). That license

@@ -1,6 +1,12 @@
+# NOTE: 'license:' is intentionally omitted — the CFF 1.2.0 schema only accepts
+# identifiers from the official SPDX License List, and PolyForm Strict 1.0.0 /
+# PolyForm Free Trial 1.0.0 are not on it. 'license-url' is the CFF field designed
+# for that case; the SPDX LicenseRef- identifiers belong in source headers, SBOMs
+# and LICENSE — never in this field.
+# Validate before committing:  pipx run cffconvert --validate
 cff-version: 1.2.0
 message: "If you reference this project, please cite it as below."
-title: "Onibex ASK: Agentic Semantic Knowledge"
+title: "Onibex ASK — Agentic Semantic Knowledge"
 abstract: >-
   A deterministic Text-to-SQL agent and its accompanying YAML specification
   for AI-ready SAP data products. The platform resolves natural-language
@@ -10,9 +16,9 @@ abstract: >-
   table or column names.
 type: software
 authors:
-  - name: "Onibex, Inc."
+  - name: "Onibex, LLC"
     website: "https://onibex.com"
-license: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+license-url: "https://polyformproject.org/licenses/strict/1.0.0"
 version: "1.0.0"
 date-released: "2026-08-13"
 url: "https://onibex.com"
