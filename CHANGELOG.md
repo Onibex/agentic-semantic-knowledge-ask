@@ -31,6 +31,9 @@ slowly than the product version.
   bugfixes, it gets changes. The README badge, which gestured at "Spec v1" with
   an empty label and a dead link, now says it properly.
 
+
+- This changelog, and a supported-versions policy in `SECURITY.md`.
+
 ### Changed
 
 - **Infrastructure names move from the legacy `agenticai` prefix to `ask`**, which
@@ -64,6 +67,17 @@ slowly than the product version.
   GitHub topics and in the prose of `definition/README.md`. There it is the
   industry term people search for, not our prefix.
 
+
+- Every manifest now states the same version as the release. The Python
+  packages said `0.1.0` and the SPAs `0.0.0` while the product was tagged
+  `v1.0.0` — none of them is published to an index, so the number was pure
+  signal, and it signalled unstable components inside a stable product.
+  `scripts/versions.py` moves them together and CI fails if they drift or if a
+  tag disagrees with what the code claims.
+- `services/ask-mcp-server` is marked `private`, like the three SPAs. Without
+  it, an accidental `npm publish` would put source-available code on a public
+  registry, which the license does not permit.
+
 ### Fixed
 
 - `services/ask-mcp-server` declared its dependency as `latest` and shipped no
@@ -80,22 +94,6 @@ slowly than the product version.
   licensor offers a choice; false alarms are how a report stops being read. It
   now elects the permissive option and reports the choice. It also flags
   licences that are not open source at all, which it previously passed as fine.
-
-### Changed
-
-- Every manifest now states the same version as the release. The Python
-  packages said `0.1.0` and the SPAs `0.0.0` while the product was tagged
-  `v1.0.0` — none of them is published to an index, so the number was pure
-  signal, and it signalled unstable components inside a stable product.
-  `scripts/versions.py` moves them together and CI fails if they drift or if a
-  tag disagrees with what the code claims.
-- `services/ask-mcp-server` is marked `private`, like the three SPAs. Without
-  it, an accidental `npm publish` would put source-available code on a public
-  registry, which the license does not permit.
-
-### Added
-
-- This changelog, and a supported-versions policy in `SECURITY.md`.
 
 ## [1.0.0] — 2026-08-19
 
