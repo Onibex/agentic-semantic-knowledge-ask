@@ -26,6 +26,18 @@ Out of scope: vulnerabilities in third-party dependencies with no exploitable
 path through this project (report those upstream), and issues that require a
 misconfigured deployment explicitly warned against in the documentation.
 
+## Supported versions
+
+Security fixes land on `main` and ship in the next release. Only the **latest
+minor** receives patches; there are no backports to earlier ones. Holders of a
+commercial license can arrange extended support for a pinned version — see
+[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+
+| Version | Supported |
+|---|---|
+| 1.0.x | Yes |
+| < 1.0 | No — pre-release development, never published as a release |
+
 ## Response
 
 We aim to acknowledge reports within 5 business days. Confirmed vulnerabilities

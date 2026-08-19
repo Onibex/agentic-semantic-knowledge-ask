@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ask-intent-resolution"
-version = "0.1.0"
+version = "1.0.0"
 description = "ASK Platform — Intent Resolution capability (3 strategies behind a single IntentResolver Protocol)"
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
