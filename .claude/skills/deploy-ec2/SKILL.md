@@ -50,7 +50,7 @@ anything non-obvious. This skill is the short operational path.
   clean build). Keeps volumes.
 - `platform/.env.ec2.example` — the EC2 `.env` template (copy to `.env` on the box).
 - **On the box, keep extracting into the SAME directory as previous deploys**
-  (historically `~/agentic-ai`) — its configured `.env` lives there and must
+  (historically `~/onibex-ask`) — its configured `.env` lives there and must
   survive; the tarball never carries one.
 
 ## Procedure
@@ -59,8 +59,8 @@ anything non-obvious. This skill is the short operational path.
 1. **Package** (dev machine, from `platform/`):
    `./scripts/package-ec2.sh --upload --host ec2-user@<IP> --key <key.pem>`
    (or run without `--upload`, then scp `platform-deploy.tar.gz` yourself).
-2. **Extract** (box): `mkdir -p ~/agentic-ai && tar -xzf ~/platform-deploy.tar.gz -C ~/agentic-ai/`
-3. **Configure `.env`** (box): `cd ~/agentic-ai && cp .env.ec2.example .env`, then
+2. **Extract** (box): `mkdir -p ~/onibex-ask && tar -xzf ~/platform-deploy.tar.gz -C ~/onibex-ask/`
+3. **Configure `.env`** (box): `cd ~/onibex-ask && cp .env.ec2.example .env`, then
    fill in `EXTERNAL_HOST`, generate `ONIBEX_ENCRYPTION_KEY`
    (`python3 -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`),
    set `SEMANTIC_LAYER_HOST_PATH` (must be a real git repo — `git init` it first),
@@ -79,7 +79,7 @@ anything non-obvious. This skill is the short operational path.
 1. **Repackage + upload** (dev, from `platform/`):
    `./scripts/package-ec2.sh --upload --host … --key …`
 2. **Swap + rebuild** (box):
-   `cd ~/agentic-ai && docker compose down && tar -xzf ~/platform-deploy.tar.gz -C ~/agentic-ai/ && ./redeploy.sh`
+   `cd ~/onibex-ask && docker compose down && tar -xzf ~/platform-deploy.tar.gz -C ~/onibex-ask/ && ./redeploy.sh`
    The tarball has no `.env`, so the box's configured `.env` survives the extract.
 
 ## When code touched deploy config

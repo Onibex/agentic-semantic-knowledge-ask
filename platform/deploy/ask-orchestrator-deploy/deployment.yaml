@@ -8,16 +8,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # ASK Orchestrator — FastAPI deployment
 # Wiring shared with the rest of the namespace:
-#   - Namespace onibex-agenticai
-#   - XSUAA credentials from the xsuaa-agenticai-secret
-#   - config/settings.json from the shared agenticai-config-pvc
+#   - Namespace onibex-ask
+#   - XSUAA credentials from the xsuaa-ask-secret
+#   - config/settings.json from the shared ask-config-pvc
 # ─────────────────────────────────────────────────────────────────────────────
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ask-orchestrator
-  namespace: onibex-agenticai
+  namespace: onibex-ask
   labels:
     app: ask-orchestrator
 spec:
@@ -38,7 +38,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: agenticai-config
+                  app: ask-config
               topologyKey: kubernetes.io/hostname
       containers:
         - name: ask-orchestrator
@@ -59,32 +59,32 @@ spec:
             - name: XSUAA_URL
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: url
             - name: XSUAA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: clientid
             - name: XSUAA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: clientsecret
             - name: XSUAA_UAA_DOMAIN
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: uaadomain
             - name: XSUAA_VERIFICATION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: verificationkey
             - name: XSUAA_XSAPPNAME
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: xsappname
           volumeMounts:
             - name: config-volume
@@ -112,13 +112,13 @@ spec:
       volumes:
         - name: config-volume
           persistentVolumeClaim:
-            claimName: agenticai-config-pvc
+            claimName: ask-config-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: ask-orchestrator-service
-  namespace: onibex-agenticai
+  namespace: onibex-ask
 spec:
   selector:
     app: ask-orchestrator
@@ -133,7 +133,7 @@ apiVersion: gateway.kyma-project.io/v2
 kind: APIRule
 metadata:
   name: ask-orchestrator-apirule
-  namespace: onibex-agenticai
+  namespace: onibex-ask
 spec:
   hosts:
     - ask-orchestrator.<YOUR_CLUSTER_DOMAIN>

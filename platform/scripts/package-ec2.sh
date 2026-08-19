@@ -11,7 +11,7 @@
 #
 # Runs ON YOUR DEV MACHINE (Git Bash / WSL / macOS / Linux). Produces a single
 # .tar.gz of the repo working tree with the heavy build artifacts stripped, ready
-# to scp to an EC2 box and extract into ~/agentic-ai/.
+# to scp to an EC2 box and extract into ~/onibex-ask/.
 #
 # EC2 and local run the SAME docker-compose.yml — the only difference is .env —
 # so there is nothing EC2-specific to package: this ships the whole tree minus
@@ -38,15 +38,15 @@
 #   logs/, scratch/, caches   local-only noise
 #
 # Usage:
-#   ./scripts/package-ec2.sh                       # -> ../agentic-ai-deploy.tar.gz
+#   ./scripts/package-ec2.sh                       # -> ../onibex-ask-deploy.tar.gz
 #   OUT=/tmp/ask.tar.gz ./scripts/package-ec2.sh   # custom output path
 #   ./scripts/package-ec2.sh --upload \            # build + scp to the box
 #       --host ec2-user@<EC2-IP> --key ~/keys/dev.pem
 #   EC2_HOST=ec2-user@<IP> EC2_KEY=~/keys/dev.pem ./scripts/package-ec2.sh --upload
 #
 # After upload, on the box:
-#   mkdir -p ~/agentic-ai && tar -xzf ~/agentic-ai-deploy.tar.gz -C ~/agentic-ai/
-#   cd ~/agentic-ai && cp .env.ec2.example .env && nano .env   # first time only
+#   mkdir -p ~/onibex-ask && tar -xzf ~/onibex-ask-deploy.tar.gz -C ~/onibex-ask/
+#   cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time only
 #   ./redeploy.sh                                                # build + start
 # =============================================================================
 set -euo pipefail
@@ -116,7 +116,7 @@ echo "    out  : $OUT"
 
 rm -f "$OUT"
 # -C parents the archive at the repo root so members are ./packages, ./config …
-# extracting with `tar -xzf … -C ~/agentic-ai/` drops them in place.
+# extracting with `tar -xzf … -C ~/onibex-ask/` drops them in place.
 # `"${TAR_LOCAL[@]+...}"`: TAR_LOCAL is EMPTY off Windows, and under `set -u` bash
 # before 4.4 (Amazon Linux 2 ships 4.2) aborts on expanding an empty array. Same
 # fix as redeploy.sh — see the note there.
@@ -153,8 +153,8 @@ if [[ "$UPLOAD" == "1" ]]; then
   echo "==> Uploading to $EC2_HOST:~/"
   "${SCP[@]}" "$OUT" "$EC2_HOST:~/"
   echo "==> Uploaded. On the box:"
-  echo "    mkdir -p ~/agentic-ai && tar -xzf ~/$(basename "$OUT") -C ~/agentic-ai/"
-  echo "    cd ~/agentic-ai && cp .env.ec2.example .env && nano .env   # first time"
+  echo "    mkdir -p ~/onibex-ask && tar -xzf ~/$(basename "$OUT") -C ~/onibex-ask/"
+  echo "    cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time"
   echo "    ./redeploy.sh"
 else
   echo "==> Next: scp it to the box, or re-run with --upload --host user@ip --key key.pem"

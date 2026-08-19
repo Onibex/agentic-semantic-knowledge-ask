@@ -38,7 +38,7 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
 | `GET /v1/health`              | `{"status":"ok"}` — unauthenticated, used by probes |
 | `GET /openapi.json`           | OpenAPI 3.x JSON                                  |
 | `POST /v1/query`              | `QueryResponse` with valid `mode_used`            |
-| `kubectl get pods -n onibex-agenticai -l app=ask-orchestrator` | All replicas Ready |
+| `kubectl get pods -n onibex-ask -l app=ask-orchestrator` | All replicas Ready |
 
 ---
 
@@ -64,7 +64,7 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
 3. Ask a Precise/Smart question through the UI.
 4. From a separate shell, tail orchestrator logs:
    ```
-   kubectl logs -n onibex-agenticai deployment/ask-orchestrator -f
+   kubectl logs -n onibex-ask deployment/ask-orchestrator -f
    ```
    Expect the request log line to include:
    - `auth_bypass: false`
@@ -92,7 +92,7 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
   and surfaces it.
 - **Diagnose:**
   1. Look up the `trace_id` returned in the response.
-  2. `kubectl logs -n onibex-agenticai deployment/ask-orchestrator | grep <trace_id>`.
+  2. `kubectl logs -n onibex-ask deployment/ask-orchestrator | grep <trace_id>`.
   3. Common roots:
      - `OpenSearchAskRepository` connection refused → check `opensearch.host` in `config/settings.json`.
      - HANA / Postgres connection refused → check `hana` / `postgresql` block.
@@ -101,7 +101,7 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
 ### 4. Pod fails liveness probe immediately
 
 - **Cause:** `config/settings.json` is missing or unreadable from `/app/config`.
-- **Fix:** the deployment mounts `agenticai-config-pvc` at `/app/config`.
+- **Fix:** the deployment mounts `ask-config-pvc` at `/app/config`.
   Verify `kubectl describe pod` shows the volume bound and the file exists
   inside the container (`kubectl exec ... -- ls /app/config/`).
 
@@ -109,7 +109,7 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
 
 - The SPA's Nginx couldn't reach the orchestrator it proxies to.
 - Check:
-  - `kubectl get svc -n onibex-agenticai ask-orchestrator-service`
+  - `kubectl get svc -n onibex-ask ask-orchestrator-service`
   - `kubectl exec deployment/ask-chat-spa -- wget -qO- http://ask-orchestrator-service/v1/health`
   - Network policies between pods.
 
@@ -119,10 +119,10 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
 
 ```bash
 # tail orchestrator logs
-kubectl logs -n onibex-agenticai deployment/ask-orchestrator -f
+kubectl logs -n onibex-ask deployment/ask-orchestrator -f
 
 # port-forward for local debugging
-kubectl port-forward -n onibex-agenticai svc/ask-orchestrator-service 8080:80
+kubectl port-forward -n onibex-ask svc/ask-orchestrator-service 8080:80
 
 # hit the orchestrator with a forged token (fails fast — useful to verify auth wiring)
 curl -X POST http://127.0.0.1:8080/v1/query \

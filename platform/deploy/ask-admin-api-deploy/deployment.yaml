@@ -7,13 +7,13 @@
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ASK Admin API — FastAPI admin backend (port 8081)
-# Namespace: onibex-agenticai
+# Namespace: onibex-ask
 #
-# Shares the agenticai-config-pvc (RWO) with the pod that owns it — must be
-# co-located on the same node as agenticai-config.
+# Shares the ask-config-pvc (RWO) with the pod that owns it — must be
+# co-located on the same node as ask-config.
 #
 # Auth: validate_token accepts both XSUAA (BTP) and Keycloak tokens
-# depending on AUTH_MODE.  Client secret supplied via xsuaa-agenticai-secret.
+# depending on AUTH_MODE.  Client secret supplied via xsuaa-ask-secret.
 #
 # The SPA nginx proxies /api/admin/* and /api/* here — no external APIRule
 # needed for the API itself (in-cluster only, reached through the SPA).
@@ -24,7 +24,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ask-admin-api
-  namespace: onibex-agenticai
+  namespace: onibex-ask
   labels:
     app: ask-admin-api
 spec:
@@ -44,7 +44,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: agenticai-config
+                  app: ask-config
               topologyKey: kubernetes.io/hostname
       containers:
         - name: ask-admin-api
@@ -63,38 +63,38 @@ spec:
             - name: XSUAA_URL
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: url
             - name: XSUAA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: clientid
             - name: XSUAA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: clientsecret
             - name: XSUAA_UAA_DOMAIN
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: uaadomain
             - name: XSUAA_VERIFICATION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: verificationkey
             - name: XSUAA_XSAPPNAME
               valueFrom:
                 secretKeyRef:
-                  name: xsuaa-agenticai-secret
+                  name: xsuaa-ask-secret
                   key: xsappname
             # ── Keycloak (optional — set when AUTH_MODE includes keycloak) ───
             - name: KEYCLOAK_ISSUER
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-agenticai-secret
+                  name: keycloak-ask-secret
                   key: issuer
                   optional: true
           volumeMounts:
@@ -123,13 +123,13 @@ spec:
       volumes:
         - name: config-volume
           persistentVolumeClaim:
-            claimName: agenticai-config-pvc
+            claimName: ask-config-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: ask-admin-api           # nginx.conf resolves this hostname in-cluster
-  namespace: onibex-agenticai
+  namespace: onibex-ask
 spec:
   selector:
     app: ask-admin-api

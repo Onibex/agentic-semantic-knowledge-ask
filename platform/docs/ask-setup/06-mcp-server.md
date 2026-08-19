@@ -15,7 +15,7 @@
 **Where this fits:** **Configure — MCP Server (you are here)** → Author → Publish → Ask
 
 > The screenshots and values below use the platform's default in-cluster endpoint
-> (`http://agenticai-mcp-service:4004`). Substitute your own deployment's service name and
+> (`http://ask-mcp-service:4004`). Substitute your own deployment's service name and
 > port if they differ.
 
 ---
@@ -47,14 +47,14 @@ The **Connection Settings** card holds two fields:
 
 | Field | Notes |
 |---|---|
-| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://agenticai-mcp-service:4004` — the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
+| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://ask-mcp-service:4004` — the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
 | **Port** | The MCP service port. Defaults to `4004`. |
 
 Enter your values, then click **Save**. A confirmation toast — *"MCP Server configuration
 saved"* — reports success.
 
 > **Tip — internal address, not a public URL.** The default host
-> (`agenticai-mcp-service`) is a cluster-internal service name resolved by Kubernetes DNS. It
+> (`ask-mcp-service`) is a cluster-internal service name resolved by Kubernetes DNS. It
 > is reached by the orchestrator inside the cluster, not from your browser, so it does not
 > need to be publicly routable.
 

@@ -27,7 +27,7 @@
     "host": "https://<SAP_S4HANA_HOST>:44300",
     "odata_path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV",
     "username": "<SAP_USERNAME>",
-    "mcp_url": "http://agenticai-mcp:4004",
+    "mcp_url": "http://ask-mcp:4004",
     "port": 4004
   }
 }

@@ -7,7 +7,7 @@
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ASK Studio (admin SPA) — nginx static bundle + reverse proxy
-# Namespace: onibex-agenticai (same as orchestrator + admin-api)
+# Namespace: onibex-ask (same as orchestrator + admin-api)
 #
 # The SPA authenticates via browser-side PKCE (Keycloak or XSUAA) — no
 # server-side JWT validation is needed here.  The APIRule is noAuth: true;
@@ -29,7 +29,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ask-admin-spa
-  namespace: onibex-agenticai
+  namespace: onibex-ask
   labels:
     app: ask-admin-spa
 spec:
@@ -74,7 +74,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ask-admin-spa-service
-  namespace: onibex-agenticai
+  namespace: onibex-ask
 spec:
   selector:
     app: ask-admin-spa
@@ -89,7 +89,7 @@ apiVersion: gateway.kyma-project.io/v2
 kind: APIRule
 metadata:
   name: ask-admin-spa-apirule
-  namespace: onibex-agenticai
+  namespace: onibex-ask
 spec:
   hosts:
     - ask-admin-spa.<YOUR_CLUSTER_DOMAIN>

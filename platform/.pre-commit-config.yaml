@@ -6,7 +6,7 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 # ──────────────────────────────────────────────────────────────────────────
-# Pre-commit hooks for agentic-ai.
+# Pre-commit hooks for Onibex ASK.
 # Install once:   pre-commit install
 # Run on demand:  pre-commit run --all-files
 # Hooks run on staged files only by default — fast, lint-on-commit.

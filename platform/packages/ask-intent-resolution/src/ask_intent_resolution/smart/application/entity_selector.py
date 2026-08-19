@@ -39,7 +39,7 @@ from ask_llm_gateway.infrastructure.token_tracker import track_phase
 # Prompt templates — ESTABLES (para prompt caching)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_SYSTEM_RULES = """You are the Entity Selector for the Onibex AgenticAI pipeline.
+_SYSTEM_RULES = """You are the Entity Selector for the Onibex ASK pipeline.
 
 ROLE
 ----
