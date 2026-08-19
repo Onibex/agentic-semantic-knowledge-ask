@@ -12,7 +12,7 @@ covers **only Onibex's own material** in this repository — the code under
 This document lists the direct third-party dependencies pulled in at build
 or install time. Each keeps its own license, listed below; nothing in
 `LICENSE` relicenses them, and when you build or deploy the platform you are
-responsible for complying with those licenses. Audited on 2026-08-13 and re-audited on 2026-08-17 over the real
+responsible for complying with those licenses. Audited on 2026-08-13 and re-audited on 2026-08-19 over the real
 transitive closure — every `package-lock.json` plus the declared Python
 dependencies resolved through PyPI. Versions and licenses are current as of
 that date; re-audit before a release with `python scripts/dependency_licenses.py`.
