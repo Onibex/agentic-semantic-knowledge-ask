@@ -1,6 +1,9 @@
 # Internal authoring aids — NOT shipped to the published manual.
 platform/docs/_authoring/
 
+# Deploy tarballs built by platform/scripts/package-remote.sh
+*.tar.gz
+
 # Python bytecode
 __pycache__/
 *.py[cod]
@@ -13,8 +16,6 @@ Thumbs.db
 .vscode/
 
 # Claude Code — internal tooling stays out of the public repository. The skills
-# carry no credentials, but they map our deployment surface: that a dev box runs
-# on HTTP without TLS, where the internal runbook lives, Security Group and
-# Keycloak redirect details. None of that serves a reader; together it hands a
-# stranger a sketch of how we deploy.
+# carry no credentials, but they describe internal operational detail that
+# serves no reader of this repository.
 .claude/

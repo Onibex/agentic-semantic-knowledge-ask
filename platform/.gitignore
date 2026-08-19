@@ -61,7 +61,7 @@ venv/
 .env
 .env.*
 !.env.example
-!.env.ec2.example
+!.env.remote.example
 config/aicore_config.json
 config/settings.json
 config/settings_kyma.json
@@ -69,7 +69,7 @@ kubeconfig*.yaml
 .sap_baseline/
 baseline/
 
-# ── Internal material (never ships; see _internal/CLEANUP_LEDGER.md) ──────
+# ── Internal material (never ships) ───────────────────────────────
 _internal/
 logs/
 

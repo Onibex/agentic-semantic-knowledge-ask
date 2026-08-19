@@ -35,13 +35,13 @@ cd "$(dirname "$0")"
 
 if [[ ! -f .env ]]; then
   echo "ERROR: .env not found in $(pwd)." >&2
-  echo "       Copy .env.ec2.example -> .env and fill it in first." >&2
+  echo "       Copy .env.remote.example -> .env and fill it in first." >&2
   exit 1
 fi
 
-# Compose v2 comes in two shapes and a box may have only one: the CLI plugin
+# Compose v2 comes in two shapes and a host may have only one: the CLI plugin
 # (`docker compose`) or the standalone binary (`docker-compose`). They take the
-# same flags, so either will do — but hardcoding the plugin form fails on a box
+# same flags, so either will do — but hardcoding the plugin form fails on a host
 # that has only the standalone one in a way that accuses the wrong tool: with no
 # `compose` subcommand the Docker CLI keeps parsing the rest as GLOBAL flags and
 # reports `unknown shorthand flag: 'f' in -f` against docker's own usage, naming
@@ -75,9 +75,9 @@ SERVICES="${ONLY:-}"
 echo "==> Building images ${SERVICES:+for [$SERVICES]}..."
 # `"${BUILD_ARGS[@]+...}"` and not a plain `"${BUILD_ARGS[@]}"`: under `set -u`,
 # bash BEFORE 4.4 treats expanding an EMPTY array as an unbound variable and
-# aborts. Amazon Linux 2 ships bash 4.2, so the plain form worked on every dev
-# machine and failed on the box the moment NO_CACHE was unset — which is the
-# default path. The `+` form expands to nothing when the array is empty and to
+# aborts. Amazon Linux 2 ships bash 4.2, so the plain form works on a modern
+# dev machine and fails on such a host the moment NO_CACHE is unset — which is
+# the default path. The `+` form expands to nothing when the array is empty and to
 # its elements otherwise, on every version.
 "${COMPOSE[@]}" build "${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}" ${SERVICES}
 

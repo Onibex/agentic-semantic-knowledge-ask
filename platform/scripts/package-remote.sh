@@ -7,46 +7,46 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 # =============================================================================
-# package-ec2.sh — Build (and optionally ship) the EC2 deploy tarball.
+# package-remote.sh — Build (and optionally ship) the deploy tarball for a remote host.
 #
 # Runs ON YOUR DEV MACHINE (Git Bash / WSL / macOS / Linux). Produces a single
 # .tar.gz of the repo working tree with the heavy build artifacts stripped, ready
-# to scp to an EC2 box and extract into ~/onibex-ask/.
+# to scp to the target host and extract into ~/onibex-ask/.
 #
-# EC2 and local run the SAME docker-compose.yml — the only difference is .env —
-# so there is nothing EC2-specific to package: this ships the whole tree minus
-# what the box rebuilds itself (SPAs are built ON the box; Python packages are
-# installed INTO the images). See redeploy.sh for the on-box rebuild step.
+# A remote host and local run the SAME docker-compose.yml — the only difference
+# is .env — so there is nothing host-specific to package: this ships the tree minus
+# what the host rebuilds itself (SPAs are built ON the host; Python packages are
+# installed INTO the images). See redeploy.sh for the on-host rebuild step.
 #
 # WHAT IS DELIBERATELY EXCLUDED
-#   node_modules, dist        the SPAs are (re)built on the box from source
+#   node_modules, dist        the SPAs are (re)built on the host from source
 #   .venv / venv / __pycache__ / *.pyc     Python is installed into the images
-#   .git                      the box builds from the working tree, not history
-#   .env                      SECRETS — never leave your machine. The box has its
-#                             own .env (cp .env.ec2.example .env). The templates
-#                             .env.ec2.example / .env.example ARE included.
-#   config/aicore_config.json SAP AI Core creds — a secret; provision on the box
+#   .git                      the host builds from the working tree, not history
+#   .env                      SECRETS — never leave your machine. The host has its
+#                             own .env (cp .env.remote.example .env). The templates
+#                             .env.remote.example / .env.example ARE included.
+#   config/aicore_config.json SAP AI Core creds — a secret; provision on the host
 #                             (or use Bedrock IAM / the ASK Setup UI). settings.json
 #                             and api-config.json still ship.
 #   config/chats|profiles|artifacts   RUNTIME state, not deploy input: chat
 #                             transcripts, user profiles and generated artifacts
 #                             from whoever ran the stack locally. `./config` is a
-#                             bind mount, so shipping these makes the box SERVE
+#                             bind mount, so shipping these makes the host SERVE
 #                             one developer's conversations as if they were its
 #                             own. Each directory is created on demand at
 #                             runtime, so its absence is a no-op.
 #   logs/, scratch/, caches   local-only noise
 #
 # Usage:
-#   ./scripts/package-ec2.sh                       # -> ../onibex-ask-deploy.tar.gz
-#   OUT=/tmp/ask.tar.gz ./scripts/package-ec2.sh   # custom output path
-#   ./scripts/package-ec2.sh --upload \            # build + scp to the box
-#       --host ec2-user@<EC2-IP> --key ~/keys/dev.pem
-#   EC2_HOST=ec2-user@<IP> EC2_KEY=~/keys/dev.pem ./scripts/package-ec2.sh --upload
+#   ./scripts/package-remote.sh                       # -> ../onibex-ask-deploy.tar.gz
+#   OUT=/tmp/ask.tar.gz ./scripts/package-remote.sh   # custom output path
+#   ./scripts/package-remote.sh --upload \            # build + scp to the host
+#       --host user@<host-or-IP> --key ~/keys/dev.pem
+#   DEPLOY_HOST=user@<IP> DEPLOY_KEY=~/keys/dev.pem ./scripts/package-remote.sh --upload
 #
-# After upload, on the box:
+# After upload, on the host:
 #   mkdir -p ~/onibex-ask && tar -xzf ~/onibex-ask-deploy.tar.gz -C ~/onibex-ask/
-#   cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time only
+#   cd ~/onibex-ask && cp .env.remote.example .env && nano .env   # first time only
 #   ./redeploy.sh                                                # build + start
 # =============================================================================
 set -euo pipefail
@@ -59,14 +59,14 @@ REPO_NAME="$(basename "$REPO_ROOT")"
 # ── Args / env ───────────────────────────────────────────────────────────────
 OUT="${OUT:-$(dirname "$REPO_ROOT")/${REPO_NAME}-deploy.tar.gz}"
 UPLOAD=0
-EC2_HOST="${EC2_HOST:-}"
-EC2_KEY="${EC2_KEY:-}"
+DEPLOY_HOST="${DEPLOY_HOST:-}"
+DEPLOY_KEY="${DEPLOY_KEY:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --upload)  UPLOAD=1; shift ;;
-    --host)    EC2_HOST="$2"; shift 2 ;;
-    --key)     EC2_KEY="$2"; shift 2 ;;
+    --host)    DEPLOY_HOST="$2"; shift 2 ;;
+    --key)     DEPLOY_KEY="$2"; shift 2 ;;
     --out)     OUT="$2"; shift 2 ;;
     -h|--help) sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
@@ -81,7 +81,7 @@ fi
 
 # ── GNU tar on Windows reads "C:/path" as host:path; --force-local fixes it. ──
 # Only add it for a drive-letter OUT (harmless on Linux GNU tar; absent on the
-# box where paths are POSIX). Prefer a POSIX OUT (/c/…) to avoid needing it.
+# host where paths are POSIX). Prefer a POSIX OUT (/c/…) to avoid needing it.
 TAR_LOCAL=()
 [[ "$OUT" =~ ^[A-Za-z]: ]] && TAR_LOCAL=(--force-local)
 
@@ -103,7 +103,7 @@ EXCLUDES=(
   --exclude=logs
   --exclude=scratch
   --exclude=./.env                        # exact local secrets file — templates are kept
-  --exclude=./config/aicore_config.json   # SAP AI Core creds — provision on the box
+  --exclude=./config/aicore_config.json   # SAP AI Core creds — provision on the host
   --exclude=./config/chats                # runtime chat transcripts — see header
   --exclude=./config/profiles             # runtime user profiles
   --exclude=./config/artifacts            # runtime generated artifacts
@@ -132,30 +132,30 @@ if grep -qxE '\./\.env' <<<"$LISTING"; then
 fi
 # Same treatment for the two other classes that must never travel: the AI Core
 # credentials, and the runtime state under config/. An exclude typo is silent —
-# the archive just quietly carries one developer's chat history to a shared box —
+# the archive just quietly carries one developer's chat history to a shared host —
 # so the check is here rather than left to whoever remembers to list the tarball.
 if LEAK="$(grep -nE '^\./config/(aicore_config\.json|chats/|profiles/|artifacts/)' <<<"$LISTING" | head -3)"; [[ -n "$LEAK" ]]; then
   echo "FATAL: local/runtime config leaked into the archive — aborting:" >&2
   echo "$LEAK" >&2
   rm -f "$OUT"; exit 1
 fi
-grep -qxE '\./\.env\.ec2\.example' <<<"$LISTING" \
-  || echo "WARN: .env.ec2.example not found in archive (expected it)." >&2
+grep -qxE '\./\.env\.remote\.example' <<<"$LISTING" \
+  || echo "WARN: .env.remote.example not found in archive (expected it)." >&2
 
 SIZE="$(du -h "$OUT" | cut -f1)"
 echo "==> Built $OUT ($SIZE)"
 
 # ── Optional upload ──────────────────────────────────────────────────────────
 if [[ "$UPLOAD" == "1" ]]; then
-  [[ -n "$EC2_HOST" ]] || { echo "ERROR: --upload needs --host user@ip (or EC2_HOST)." >&2; exit 1; }
+  [[ -n "$DEPLOY_HOST" ]] || { echo "ERROR: --upload needs --host user@ip (or DEPLOY_HOST)." >&2; exit 1; }
   SCP=(scp)
-  [[ -n "$EC2_KEY" ]] && SCP+=(-i "$EC2_KEY")
-  echo "==> Uploading to $EC2_HOST:~/"
-  "${SCP[@]}" "$OUT" "$EC2_HOST:~/"
-  echo "==> Uploaded. On the box:"
+  [[ -n "$DEPLOY_KEY" ]] && SCP+=(-i "$DEPLOY_KEY")
+  echo "==> Uploading to $DEPLOY_HOST:~/"
+  "${SCP[@]}" "$OUT" "$DEPLOY_HOST:~/"
+  echo "==> Uploaded. On the host:"
   echo "    mkdir -p ~/onibex-ask && tar -xzf ~/$(basename "$OUT") -C ~/onibex-ask/"
-  echo "    cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time"
+  echo "    cd ~/onibex-ask && cp .env.remote.example .env && nano .env   # first time"
   echo "    ./redeploy.sh"
 else
-  echo "==> Next: scp it to the box, or re-run with --upload --host user@ip --key key.pem"
+  echo "==> Next: scp it to the host, or re-run with --upload --host user@ip --key key.pem"
 fi

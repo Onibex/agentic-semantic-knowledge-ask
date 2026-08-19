@@ -50,17 +50,18 @@
 # SEMANTIC_LAYER_HOST_PATH in your .env (or shell) to that repo's absolute path
 # on the host; the admin-api container reads it via REPO_ROOT=/app/semantic-layer.
 #
-# Browser-facing host (local vs remote / EC2):
+# Browser-facing host (local vs remote):
 #   Every browser-facing URL (Keycloak issuer + the 3 SPAs' baked VITE_KEYCLOAK_URL)
-#   is driven by ONE var, EXTERNAL_HOST (default: localhost). On a remote box set
+#   is driven by ONE var, EXTERNAL_HOST (default: localhost). On a remote host set
 #   EXTERNAL_HOST=<public-DNS-or-IP> in .env and REBUILD the SPAs (VITE_* are baked
 #   at BUILD time). There is NO separate remote overlay: a remote deploy is THIS
-#   file plus a filled-in .env (see .env.ec2.example).
+#   file plus a filled-in .env (see .env.remote.example).
 #   CHAT_AUTH_MODE lets the chat SPA run dev-auth independently of AUTH_MODE
-#   (used on plain-HTTP EC2, where PKCE's crypto.subtle needs a secure context).
+#   (used where the deployment is served over plain HTTP, since PKCE's
+#   crypto.subtle needs a secure context).
 #
 # Off by default via `profiles: [extras]` — a bare `docker compose up -d` (and
-# ./redeploy.sh) skips them, so the box only runs the 7 core services. Start them
+# ./redeploy.sh) skips them, so the host only runs the 7 core services. Start them
 # with `docker compose --profile extras up -d` once you have their creds:
 #   - teams-bot    (needs BOT_APP_ID/PASSWORD)
 #   - mcp-server   (needs SAP S/4HANA creds)
@@ -123,7 +124,7 @@ services:
       KC_HOSTNAME_STRICT:      "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       # Stable frontend URL so issued tokens always carry iss matching EXTERNAL_HOST.
-      # Set EXTERNAL_HOST=<EC2-IP> in .env for production; defaults to localhost.
+      # Set EXTERNAL_HOST=<public-DNS-or-IP> in .env for a remote deploy; defaults to localhost.
       # Lets oauth2-proxy validate the issuer while redeeming tokens over the
       # internal keycloak:8080 URL. (Keycloak two-URL fix.)
       KC_HOSTNAME_URL:         "http://${EXTERNAL_HOST:-localhost}:8180"
@@ -350,9 +351,9 @@ services:
       dockerfile: Dockerfile
       args:
         # Chat SPA auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
-        # can run dev-auth on plain-HTTP EC2 (PKCE's crypto.subtle needs a secure
+        # can run dev-auth on a plain-HTTP host (PKCE's crypto.subtle needs a secure
         # context) while admin/setup stay on keycloak. Falls back to AUTH_MODE,
-        # then keycloak. Set CHAT_AUTH_MODE=dev in .env on a plain-HTTP box.
+        # then keycloak. Set CHAT_AUTH_MODE=dev in .env on a plain-HTTP host.
         VITE_AUTH_MODE:      ${CHAT_AUTH_MODE:-${AUTH_MODE:-keycloak}}
         VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
         VITE_KEYCLOAK_REALM: ask-platform
