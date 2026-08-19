@@ -75,9 +75,9 @@ SERVICES="${ONLY:-}"
 echo "==> Building images ${SERVICES:+for [$SERVICES]}..."
 # `"${BUILD_ARGS[@]+...}"` and not a plain `"${BUILD_ARGS[@]}"`: under `set -u`,
 # bash BEFORE 4.4 treats expanding an EMPTY array as an unbound variable and
-# aborts. Amazon Linux 2 ships bash 4.2, so the plain form worked on every dev
-# machine and failed on the box the moment NO_CACHE was unset — which is the
-# default path. The `+` form expands to nothing when the array is empty and to
+# aborts. Amazon Linux 2 ships bash 4.2, so the plain form works on a modern
+# dev machine and fails on such a host the moment NO_CACHE is unset — which is
+# the default path. The `+` form expands to nothing when the array is empty and to
 # its elements otherwise, on every version.
 "${COMPOSE[@]}" build "${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}" ${SERVICES}
 

@@ -15,17 +15,17 @@
 #
 # EC2 and local run the SAME docker-compose.yml — the only difference is .env —
 # so there is nothing EC2-specific to package: this ships the whole tree minus
-# what the box rebuilds itself (SPAs are built ON the box; Python packages are
+# what the host rebuilds itself (SPAs are built ON the host; Python packages are
 # installed INTO the images). See redeploy.sh for the on-box rebuild step.
 #
 # WHAT IS DELIBERATELY EXCLUDED
-#   node_modules, dist        the SPAs are (re)built on the box from source
+#   node_modules, dist        the SPAs are (re)built on the host from source
 #   .venv / venv / __pycache__ / *.pyc     Python is installed into the images
 #   .git                      the box builds from the working tree, not history
 #   .env                      SECRETS — never leave your machine. The box has its
 #                             own .env (cp .env.ec2.example .env). The templates
 #                             .env.ec2.example / .env.example ARE included.
-#   config/aicore_config.json SAP AI Core creds — a secret; provision on the box
+#   config/aicore_config.json SAP AI Core creds — a secret; provision on the host
 #                             (or use Bedrock IAM / the ASK Setup UI). settings.json
 #                             and api-config.json still ship.
 #   config/chats|profiles|artifacts   RUNTIME state, not deploy input: chat
@@ -44,7 +44,7 @@
 #       --host ec2-user@<EC2-IP> --key ~/keys/dev.pem
 #   EC2_HOST=ec2-user@<IP> EC2_KEY=~/keys/dev.pem ./scripts/package-ec2.sh --upload
 #
-# After upload, on the box:
+# After upload, on the host:
 #   mkdir -p ~/onibex-ask && tar -xzf ~/onibex-ask-deploy.tar.gz -C ~/onibex-ask/
 #   cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time only
 #   ./redeploy.sh                                                # build + start
@@ -103,7 +103,7 @@ EXCLUDES=(
   --exclude=logs
   --exclude=scratch
   --exclude=./.env                        # exact local secrets file — templates are kept
-  --exclude=./config/aicore_config.json   # SAP AI Core creds — provision on the box
+  --exclude=./config/aicore_config.json   # SAP AI Core creds — provision on the host
   --exclude=./config/chats                # runtime chat transcripts — see header
   --exclude=./config/profiles             # runtime user profiles
   --exclude=./config/artifacts            # runtime generated artifacts
@@ -152,7 +152,7 @@ if [[ "$UPLOAD" == "1" ]]; then
   [[ -n "$EC2_KEY" ]] && SCP+=(-i "$EC2_KEY")
   echo "==> Uploading to $EC2_HOST:~/"
   "${SCP[@]}" "$OUT" "$EC2_HOST:~/"
-  echo "==> Uploaded. On the box:"
+  echo "==> Uploaded. On the host:"
   echo "    mkdir -p ~/onibex-ask && tar -xzf ~/$(basename "$OUT") -C ~/onibex-ask/"
   echo "    cd ~/onibex-ask && cp .env.ec2.example .env && nano .env   # first time"
   echo "    ./redeploy.sh"
