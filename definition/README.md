@@ -254,14 +254,23 @@ contract that describes it.
 
 ## Contributing
 
-ASK is an open specification. Contributions are welcome:
+ASK is a **published, vendor-neutral specification**: anyone can read it, adopt
+it, and describe their data products with it. It is not open source — the text
+is source-available under [LICENSE](LICENSE), and Onibex stewards it.
+Contributions are welcome on that footing:
 
 - **Specification proposals** — open an issue with `[RFC]` in the title.
 - **New examples** — submit a PR adding a YAML under `examples/`.
 - **Source-system coverage** — non-SAP examples are especially valuable.
-- **Tooling** — validators, generators, linters, IDE plugins.
+- **Tooling** — validators, generators, linters, IDE plugins. Tooling you build
+  around the specification is yours; the licence covers this repository's own
+  material, not what you write against the contract.
 
 Please open an issue to discuss substantial changes before submitting a PR.
+
+By submitting a contribution you confirm that it is yours to give, and you grant
+Onibex, LLC permission to include it in this repository and distribute it under
+the terms of [LICENSE](LICENSE).
 
 ---
 
