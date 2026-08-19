@@ -107,8 +107,13 @@ slowly than the product version.
 
 ## [1.0.0] — 2026-08-19
 
-First tagged release. ASK has been in development before this point; the tag
-marks where its licensing became complete and consistent enough to publish.
+First tagged release, **withdrawn**. ASK had been in development before this
+point; the tag marked where its licensing became complete and consistent enough
+to publish. The tag and its release were removed the same day: GitHub serves a
+source archive for every tag, and this one still carried internal tooling that
+had been taken out of `main` afterwards. The entry stays because the work
+happened; the link points at the commit rather than a tag that no longer exists.
+Nothing was ever distributed under 1.0.0 that is not also in 1.1.0.
 
 ### Added
 
@@ -145,5 +150,5 @@ marks where its licensing became complete and consistent enough to publish.
   transitives are listed as well.
 
 [Unreleased]: https://github.com/Onibex/agentic-semantic-knowledge-ask/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/releases/tag/v1.0.0
+[1.1.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/releases/tag/v1.1.0
+[1.0.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/commit/bc101dd18c46c45cb9f9c41be914f3d0f7526f91
