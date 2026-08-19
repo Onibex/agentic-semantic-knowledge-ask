@@ -1,5 +1,5 @@
 Onibex ASK — Agentic Semantic Knowledge
-Copyright (c) 2026 Onibex, Inc. All rights reserved.
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This product is source-available under LICENSE (PolyForm Strict License
 1.0.0, with a 32-day evaluation under PolyForm Free Trial License 1.0.0). It
@@ -15,4 +15,5 @@ THIRD-PARTY-NOTICES.md.
 SAP, SAP HANA, and SAP BTP are trademarks of SAP SE. Apache and the Apache
 feather logo are trademarks of the Apache Software Foundation. OpenSearch is
 a registered trademark of Amazon Web Services. Keycloak is a trademark of
-Red Hat, Inc. Used for identification only; no endorsement is implied.
+Red Hat, Inc. CONFLUENT is a registered trademark of Confluent, Inc.
+Used for identification only; no endorsement is implied.

@@ -1,5 +1,5 @@
 Onibex ASK Platform — PolyForm Strict License 1.0.0 / PolyForm Free Trial License 1.0.0
-Copyright (c) 2026-present Onibex, Inc. All rights reserved.
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This software is source-available. You may use it under EITHER of the
 following licenses, at your option:

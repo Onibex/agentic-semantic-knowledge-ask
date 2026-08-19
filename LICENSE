@@ -9,19 +9,19 @@ its own full license text; this file is the authoritative map.
 | `platform/**` | PolyForm Strict License 1.0.0 OR PolyForm Free Trial License 1.0.0 (at your option) | [`platform/LICENSE.md`](platform/LICENSE.md) |
 
 Files outside those two directories (this file, `README.md`) are
-© Onibex, Inc., all rights reserved.
+© Onibex, LLC, all rights reserved.
 
 In short: both tracks are **source-available**, dual-licensed under **PolyForm
 Strict 1.0.0** (noncommercial use, research, evaluation, and personal study,
 indefinitely) **or PolyForm Free Trial 1.0.0** (evaluate the software for
 your business for up to 32 consecutive calendar days). Production or any
 other commercial use beyond the trial window requires a commercial license
-from Onibex, Inc. — see [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md) or
+from Onibex, LLC — see [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md) or
 contact <https://onibex.com>. Each directory is licensed individually, so the
 tracks can evolve independently.
 
 ## Trademarks
 
 "Onibex", "ASK", "Agentic Semantic Knowledge", and the Onibex logos are trademarks of
-Onibex, Inc. Nothing in this repository grants any right to use them, and they are
+Onibex, LLC. Nothing in this repository grants any right to use them, and they are
 excluded from all licenses listed above.

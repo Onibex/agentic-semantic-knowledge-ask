@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 **Onibex ASK — Agentic Semantic Knowledge**
-Copyright (c) 2026 Onibex, Inc. All rights reserved.
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This repository is source-available under [LICENSE](LICENSE) (PolyForm
 Strict License 1.0.0 / PolyForm Free Trial License 1.0.0). That license
@@ -12,9 +12,10 @@ covers **only Onibex's own material** in this repository — the code under
 This document lists the direct third-party dependencies pulled in at build
 or install time. Each keeps its own license, listed below; nothing in
 `LICENSE` relicenses them, and when you build or deploy the platform you are
-responsible for complying with those licenses. Audited with `pip-licenses`
-(Python) and `license-checker` (npm) on 2026-08-13 — versions and licenses
-current as of that date; re-audit before a release.
+responsible for complying with those licenses. Audited on 2026-08-13 and re-audited on 2026-08-19 over the real
+transitive closure — every `package-lock.json` plus the declared Python
+dependencies resolved through PyPI. Versions and licenses are current as of
+that date; re-audit before a release with `python scripts/dependency_licenses.py`.
 
 ## Python — `platform/packages/*`, `platform/requirements.txt`
 
@@ -43,6 +44,8 @@ current as of that date; re-audit before a release.
 | `ibm-db` (IBM Db2 client) | Apache-2.0 wrapper over IBM's Db2 CLI driver — the underlying driver carries IBM's own distribution terms |
 | `presto-python-client`, `snowflake-connector-python`, `databricks-sql-connector`, `clickhouse-connect`, `google-cloud-bigquery` | Apache-2.0 |
 | `pyodbc` | MIT |
+| `certifi` (CA bundle, transitive) | MPL-2.0 — used unmodified, so the MPL's source-disclosure obligation is not triggered |
+| `orjson`, `tqdm` (transitive) | dual: MPL-2.0 AND (Apache-2.0 OR MIT) / MPL-2.0 AND MIT |
 
 ## JavaScript/TypeScript — `ask-chat-spa/`, `ask-admin-spa/`, `ask-setup-spa/`
 
@@ -55,8 +58,13 @@ SPA only), `plotly.js-dist-min` (chat SPA only) — **all MIT**.
 
 Build-time-only tooling (Vite, Rolldown, TypeScript, `lightningcss`) pulls in
 a handful of non-MIT licenses (Apache-2.0, BSD-3-Clause, 0BSD, and MPL-2.0 for
-`lightningcss`), but none of these ship inside the built application bundle —
-they run only at build time.
+`lightningcss`); these run only at build time and do not ship inside the built
+application bundle.
+
+One runtime dependency is not MIT: **`dompurify`**, pulled in by
+`monaco-editor` in the admin SPA, is dual-licensed **MPL-2.0 OR Apache-2.0**.
+It does ship in that bundle. Onibex elects **Apache-2.0** for it, so no MPL
+obligation attaches; the library is used unmodified in either case.
 
 ## Notes
 
@@ -65,8 +73,9 @@ they run only at build time.
 - SAP HANA, SAP BTP, and SAP AI Core are trademarks of SAP SE. Apache, Apache
   Kafka, and the Apache feather logo are trademarks of the Apache Software
   Foundation. OpenSearch is a registered trademark of Amazon Web Services.
-  Keycloak is a trademark of Red Hat, Inc. Used for identification only; no
-  endorsement is implied.
+  Keycloak is a trademark of Red Hat, Inc. CONFLUENT is a registered trademark
+  of Confluent, Inc. Onibex is not affiliated with, and is not endorsed by, the
+  Apache Software Foundation. All marks are used for identification only.
 
 ## Closing clause
 

@@ -1,4 +1,11 @@
 #!/bin/sh
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
 # Startup script: use api-config.json from PVC if available, else seed default.
 CONFIG_DIR=/app/config
 DEFAULT_CONFIG=/app/api-config.json

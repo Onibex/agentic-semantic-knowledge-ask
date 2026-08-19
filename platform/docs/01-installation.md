@@ -159,7 +159,7 @@ credentials are set.)
 The FastAPI backends also publish on host ports for their `/v1/health` endpoints and external
 traffic: **`ask-orchestrator`** on `:8083` and **`ask-admin-api`** on `:8081` by default. Each SPA
 reaches its backend by **container name** (not host port), so remapping these does **not** affect
-the browser flow — they only matter for external / machine callers (watsonx, Kafka ingest) and
+the browser flow — they only matter for external / machine callers (watsonx, [Apache Kafka](https://kafka.apache.org/) ingest) and
 health probes. Remap with `ORCH_HOST_PORT` / `ADMIN_API_HOST_PORT` in `.env` to coexist with a
 co-located Confluent stack (which takes `8083` for Kafka Connect and `8081` for the Schema Registry).
 
