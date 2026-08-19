@@ -1,6 +1,10 @@
 # Internal authoring aids — NOT shipped to the published manual.
 platform/docs/_authoring/
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
