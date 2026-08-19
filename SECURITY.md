@@ -35,7 +35,8 @@ commercial license can arrange extended support for a pinned version — see
 
 | Version | Supported |
 |---|---|
-| 1.0.x | Yes |
+| 1.1.x | Yes |
+| 1.0.x | No — the tag was withdrawn; upgrade to 1.1.x |
 | < 1.0 | No — pre-release development, never published as a release |
 
 ## Response
