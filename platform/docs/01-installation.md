@@ -66,7 +66,7 @@ edit the values in place:
 cp .env.example .env
 ```
 
-For a remote host start from `.env.ec2.example` instead — the same
+For a remote host start from `.env.remote.example` instead — the same
 variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. **There is no separate remote
 compose file:** the remote deploy is this same `docker-compose.yml` plus a filled-in `.env`; only
 the values differ.

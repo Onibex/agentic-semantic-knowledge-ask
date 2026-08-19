@@ -30,7 +30,7 @@ A **deterministic Text-to-SQL agent** that:
 | OpenSearch, Keycloak | containers | Vector/BM25 search · identity (Keycloak or SAP IAS/XSUAA) |
 
 Everything runs from one `docker-compose.yml`; local and server deploys differ only
-in `.env` (see `.env.example` / `.env.ec2.example`, `redeploy.sh`, `scripts/package-ec2.sh`).
+in `.env` (see `.env.example` / `.env.remote.example`, `redeploy.sh`, `scripts/package-remote.sh`).
 
 ## Orchestrator endpoints
 
@@ -157,7 +157,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 |---|---|
 | Run the stack | `docker compose up -d` |
 | Rebuild on a server after `git pull` | `./redeploy.sh` |
-| Package a deploy tarball | `scripts/package-ec2.sh` |
+| Package a deploy tarball | `scripts/package-remote.sh` |
 | Orchestrator tests | `cd packages/ask-orchestrator && pytest` |
 | Admin-API tests | `cd packages/ask-admin-api && pytest` |
 | Boundary + contracts | `pytest tests/boundary/ && lint-imports` |
