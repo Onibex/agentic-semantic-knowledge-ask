@@ -40,6 +40,10 @@ jobs:
       # instead of discovering it as a stale file on the published site.
       - name: llms.txt copies are identical
         run: cmp llms.txt docs/llms.txt
+      # One repository, one version. On a tag push this also checks the tag
+      # against what the code claims, so a release cannot describe itself wrong.
+      - name: Versions agree
+        run: python scripts/versions.py --check
 
   python-hygiene:
     name: Python lint + boundary tests

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ask-orchestrator"
-version = "0.1.0"
+version = "1.0.0"
 description = "ASK Platform — FastAPI orchestrator: single entry point for all user requests, routes by macro intent"
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
