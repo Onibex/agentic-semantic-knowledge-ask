@@ -52,19 +52,50 @@ BLOCKING = re.compile(
 STRONG_COPYLEFT = re.compile(r"(?<!L)\bGPL(?!-compatible)|GNU General Public", re.I)
 WEAK_COPYLEFT = re.compile(r"\bLGPL|MPL|Mozilla Public|EPL|CDDL\b", re.I)
 
-BLOCKED, STRONG, WEAK, UNKNOWN, OK = "BLOCKING", "COPYLEFT", "WEAK-COPYLEFT", "UNKNOWN", "OK"
+# Not open source at all. These do not block use, but they carry their own
+# redistribution terms and have to be named explicitly in the notices file.
+PROPRIETARY = re.compile(
+    r"SAP DEVELOPER LICENSE|SEE LICENSE IN|UNLICENSED|proprietary|all rights reserved", re.I
+)
+
+BLOCKED, STRONG, PROPRIETARY_V = "BLOCKING", "COPYLEFT", "PROPRIETARY"
+WEAK, DUAL, UNKNOWN, OK = "WEAK-COPYLEFT", "DUAL", "UNKNOWN", "OK"
+
+# Worst first, so a dual expression can be reduced to its least severe option.
+SEVERITY = [BLOCKED, STRONG, PROPRIETARY_V, WEAK, UNKNOWN, OK]
 
 
-def classify(license_text: str) -> str:
+def classify_one(license_text: str) -> str:
     if not license_text or license_text.lower() in {"unknown", "none", "null"}:
         return UNKNOWN
     if BLOCKING.search(license_text):
         return BLOCKED
     if STRONG_COPYLEFT.search(license_text):
         return STRONG
+    if PROPRIETARY.search(license_text):
+        return PROPRIETARY_V
     if WEAK_COPYLEFT.search(license_text):
         return WEAK
     return OK
+
+
+def classify(license_text: str) -> str:
+    """Classify a license expression, reading OR as the choice it is.
+
+    "BSD-3-Clause OR GPL-2.0" is not a GPL obligation: the licensor offers both
+    and the licensee elects one. Reporting that as copyleft is a false alarm,
+    and false alarms train people to skip the report. AND is different - both
+    apply - so only OR gets this treatment.
+    """
+    if not license_text:
+        return UNKNOWN
+    alternatives = [part for part in license_text.strip().strip("()").split(" OR ")]
+    if len(alternatives) > 1:
+        verdicts = [classify_one(alt.strip().strip("()")) for alt in alternatives]
+        if OK in verdicts:
+            return DUAL  # a permissive option is on the table; elect it
+        return min(verdicts, key=SEVERITY.index)
+    return classify_one(license_text)
 
 
 def tracked(pattern: str) -> list[Path]:
@@ -179,7 +210,7 @@ def report(title: str, packages: dict[str, str]) -> list[tuple[str, str, str]]:
             findings.append((verdict, name, license_text))
 
     print(f"\n### {title}  ({len(packages)} packages)")
-    for verdict in (BLOCKED, STRONG, WEAK, UNKNOWN):
+    for verdict in (BLOCKED, STRONG, PROPRIETARY_V, WEAK, DUAL, UNKNOWN):
         rows = buckets.get(verdict)
         if not rows:
             continue
@@ -213,7 +244,9 @@ def main() -> int:
     findings += report("Python closure", scan_python(args.offline))
 
     blocking = [f for f in findings if f[0] in (BLOCKED, STRONG)]
+    proprietary = [f for f in findings if f[0] == PROPRIETARY_V]
     weak = [f for f in findings if f[0] == WEAK]
+    dual = [f for f in findings if f[0] == DUAL]
     unknown = [f for f in findings if f[0] == UNKNOWN]
 
     print()
@@ -224,7 +257,12 @@ def main() -> int:
             print(f"  {verdict}: {name} -> {license_text}")
     else:
         print("No AGPL, SSPL, Elastic, BUSL, Confluent Community or strong GPL.")
-    print(f"Weak copyleft (LGPL/MPL — fine while used unmodified): {len(weak)}")
+    if proprietary:
+        print(f"\nNot open source - name each one in THIRD-PARTY-NOTICES.md ({len(proprietary)}):")
+        for _, name, license_text in proprietary:
+            print(f"  {name} -> {license_text}")
+    print(f"\nWeak copyleft (LGPL/MPL — fine while used unmodified): {len(weak)}")
+    print(f"Dual-licensed, permissive option elected: {len(dual)}")
     print(f"License not declared (check by hand): {len(unknown)}")
     print("\nTHIRD-PARTY-NOTICES.md must reflect anything listed above.")
 

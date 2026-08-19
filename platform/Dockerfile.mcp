@@ -9,10 +9,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies and apply Basic Auth patch (via postinstall)
-COPY services/ask-mcp-server/package.json .
+# Install dependencies and apply Basic Auth patch (via postinstall).
+# npm ci, not npm install: it installs exactly what the lockfile pins, so the
+# image matches the tree that was audited instead of resolving fresh at build.
+COPY services/ask-mcp-server/package.json services/ask-mcp-server/package-lock.json ./
 COPY services/ask-mcp-server/patch.js .
-RUN npm install
+RUN npm ci
 
 # Copy default MCP config (used as seed if PVC has no config yet)
 COPY services/ask-mcp-server/api-config.json .

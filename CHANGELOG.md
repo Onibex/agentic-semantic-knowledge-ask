@@ -19,6 +19,23 @@ slowly than the product version.
 
 ## [Unreleased]
 
+### Fixed
+
+- `services/ask-mcp-server` declared its dependency as `latest` and shipped no
+  lockfile, so its 189-package tree was invisible to the licence audit and
+  could change on any install. Pinned to `odata-mcp-proxy` 1.3.0 with a
+  lockfile committed. The audit that this made possible found three components
+  that are not open source and were undocumented: `@sap/xssec` (SAP Developer
+  License Agreement), `@sap/xsenv` and `ai-api-client-sdk`. All three are now
+  named in `THIRD-PARTY-NOTICES.md`. The image build uses `npm ci` against that
+  lockfile, so what ships is what was audited — copying only `package.json` and
+  running `npm install` would have left the pin decorative.
+- `scripts/dependency_licenses.py` read `A OR B` as an obligation under both.
+  `node-forge` (BSD-3-Clause OR GPL-2.0) was reported as copyleft when the
+  licensor offers a choice; false alarms are how a report stops being read. It
+  now elects the permissive option and reports the choice. It also flags
+  licences that are not open source at all, which it previously passed as fine.
+
 ### Changed
 
 - Every manifest now states the same version as the release. The Python

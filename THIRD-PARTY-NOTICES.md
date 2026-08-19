@@ -37,7 +37,7 @@ that date; re-audit before a release with `python scripts/dependency_licenses.py
 | NetworkX | BSD-3-Clause |
 | PyYAML | MIT |
 | python-jose | MIT |
-| SAP AI Core SDK (`ai-core-sdk`), `generative-ai-hub-sdk` | SAP-published, see package terms ⚠ |
+| SAP AI Core SDK (`ai-core-sdk`), `ai-api-client-sdk`, `generative-ai-hub-sdk` | SAP-published, **Other/Proprietary License** ⚠ — not OSI-approved; see each package's own terms |
 | `sap-xssec` | Apache-2.0 |
 | **`psycopg2-binary`** (PostgreSQL driver) | **GNU LGPL, with psycopg's linking exception** ⚠ — the exception permits use from proprietary applications; see the package's `LICENSE` for the exact exception text |
 | **`hdbcli`** (SAP HANA client) | **SAP Developer License Agreement** ⚠ — not an OSI-approved open-source license; governs redistribution of the HANA client separately from this repository's license |
@@ -65,6 +65,25 @@ One runtime dependency is not MIT: **`dompurify`**, pulled in by
 `monaco-editor` in the admin SPA, is dual-licensed **MPL-2.0 OR Apache-2.0**.
 It does ship in that bundle. Onibex elects **Apache-2.0** for it, so no MPL
 obligation attaches; the library is used unmodified in either case.
+
+## JavaScript — `platform/services/ask-mcp-server/`
+
+This service wraps a published proxy rather than implementing the MCP protocol
+itself. Its dependency tree is now pinned and locked so that it can be audited;
+before that it resolved `latest` on every install, which left the set of
+components — and their licenses — unpredictable.
+
+| Component | License |
+|---|---|
+| `odata-mcp-proxy` (the proxy this service runs) | MIT |
+| `@hono/node-server`, `@modelcontextprotocol/*`, `winston` and the rest of the tree (189 packages) | MIT, ISC, BSD-2-Clause, BSD-3-Clause |
+| `@mcp-ui/server`, `@sap-cloud-sdk/*` | Apache-2.0 |
+| **`@sap/xssec`** (SAP XSUAA security) | **SAP Developer License Agreement** ⚠ — not an OSI-approved license; governs redistribution separately from this repository's license |
+| **`@sap/xsenv`** (SAP service bindings) | **SAP-published**, terms in the package's own LICENSE file ⚠ — not OSI-approved |
+| `node-forge` | dual **BSD-3-Clause OR GPL-2.0**; Onibex elects **BSD-3-Clause**, so no GPL obligation attaches |
+
+The npm `@sap/xssec` above is a different package from the Python `sap-xssec`
+listed earlier, which is Apache-2.0.
 
 ## Notes
 
