@@ -158,7 +158,7 @@ flowchart TD
     PO --> PP
 ```
 
-Two rules from the [ASK specification](../definition/README.md) are worth
+Two rules from the [ASK specification](../../definition/README.md) are worth
 knowing even at the concept level, because they explain how the agent chooses what to query:
 
 - **Silver owns the joins.** A Silver fact must be able to reach its dimensions through *its
@@ -192,7 +192,7 @@ changes per branch (working / dev / prod) and restore an earlier version.
 ## 4. Governed SQL: the LLM is a compiler, not an inventor
 
 The whole point of the semantic layer is to make the language model **write** SQL, never
-**invent** it. The [ASK specification](../definition/README.md) puts it plainly:
+**invent** it. The [ASK specification](../../definition/README.md) puts it plainly:
 the layer exists "for one purpose: to let the agent build **deterministic SQL**."
 
 Three consequences follow, and they are why answers are trustworthy:
@@ -217,7 +217,7 @@ flowchart LR
 Field **descriptions** and **synonyms** are what let the agent map a user's words to the
 right column — for example mapping "good output" or "yield" to `AFRU.LMNGA`. Good
 descriptions therefore directly improve answer quality; see the
-[ASK specification](../definition/README.md) for the authoring rules.
+[ASK specification](../../definition/README.md) for the authoring rules.
 
 ---
 
@@ -319,7 +319,7 @@ flowchart TD
 create the containers your data lives in.
 → **[ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)** — create the
 entities the agent maps questions to.
-→ **[ASK specification](../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
+→ **[ASK specification](../../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
 authoring rules behind governed SQL.
 → **Engine behavior** — summarized in section 5 above; deeper internals are maintained by the
 platform team.

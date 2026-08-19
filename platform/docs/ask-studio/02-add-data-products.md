@@ -60,7 +60,7 @@ system), then **fields** (name, type, role, alias), and optionally **relationshi
 
 Field roles and authoring rules are covered in
 [Flow 3 · Edit & Enrich](03-edit-enrich.md) and the
-[ASK specification](../../definition/README.md) (Bronze / Silver / Gold layer definitions).
+[ASK specification](../../../definition/README.md) (Bronze / Silver / Gold layer definitions).
 
 ## Mode B — Upload files
 

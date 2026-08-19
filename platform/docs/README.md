@@ -75,6 +75,6 @@ mirrors it:
 ## License
 
 The Onibex ASK Platform is source-available under the
-**PolyForm Strict License 1.0.0** — see [`LICENSE.md`](LICENSE.md). Noncommercial use,
+**PolyForm Strict License 1.0.0** — see [`LICENSE.md`](../LICENSE.md). Noncommercial use,
 research, evaluation, and personal study are permitted; commercial or production use
 requires a commercial license from [Onibex](https://onibex.com).

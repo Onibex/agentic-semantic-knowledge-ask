@@ -1,7 +1,7 @@
 # ASK Platform · Glossary
 
 > **Reference page.** Every user-facing term the manual uses, defined once, in one place.
-> Definitions here match the [ASK specification](../../definition/README.md) —
+> Definitions here match the [ASK specification](../../../definition/README.md) —
 > when a term means something specific to the platform (Gold, measure, grain), this page uses
 > that meaning, not a generic one.
 
@@ -84,7 +84,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Gold** | A layer for a **physical, denormalized analytics table you can query directly** (it has a real `db_table_name`). Dimension descriptions are flattened in as columns, so many questions resolve from the Gold alone with zero joins — the cheapest, most deterministic path. In the demo, `production_performance` is Gold. **Note:** Gold is a physical table you `SELECT FROM`, **not** a view computed at query time. See the [Gold layer specification](../../definition/docs/GOLD_LAYER.md). |
+| **Gold** | A layer for a **physical, denormalized analytics table you can query directly** (it has a real `db_table_name`). Dimension descriptions are flattened in as columns, so many questions resolve from the Gold alone with zero joins — the cheapest, most deterministic path. In the demo, `production_performance` is Gold. **Note:** Gold is a physical table you `SELECT FROM`, **not** a view computed at query time. See the [Gold layer specification](../../../definition/docs/GOLD_LAYER.md). |
 | **Grain** | The level of detail one row represents, expressed as its ordered key fields (`grain.entity_grain`) plus a human label (`grain.business_grain`). For the demo Silver `production_order` the grain is the order item — one row per order number + item. Grain drives correct aggregation and deduplication. |
 
 ## I
@@ -113,7 +113,7 @@
 | Term | Meaning |
 |---|---|
 | **Measure** | A `field_role` for a quantitative value that can be aggregated — a quantity or amount, with a default aggregation (SUM/COUNT/AVG/…). In the demo, planned quantity `AFKO.GAMNG`, confirmed yield `AFRU.LMNGA`, and scrap `AFRU.XMNGA` are measures. A measure is **just a field on its owning Silver/Gold** — there is no separate node for it (see **Metric**). |
-| **Metric** | **Deprecated as a standalone layer.** Earlier versions modeled a business measure as its own `layer: metric` YAML; that is no longer authored. A business measure is now simply a field with `field_role: measure` and an aggregation behavior on the Silver or Gold that owns it. The agent aggregates it directly in SQL. See the [Silver layer specification](../../definition/docs/SILVER_LAYER.md). |
+| **Metric** | **Deprecated as a standalone layer.** Earlier versions modeled a business measure as its own `layer: metric` YAML; that is no longer authored. A business measure is now simply a field with `field_role: measure` and an aggregation behavior on the Silver or Gold that owns it. The agent aggregates it directly in SQL. See the [Silver layer specification](../../../definition/docs/SILVER_LAYER.md). |
 
 ## O
 
@@ -174,6 +174,6 @@
 Business Domain, and Data Product come to life.
 → **[Add Data Products](../ask-studio/02-add-data-products.md)** — Bronze / Silver / Gold and the
 four creation modes.
-→ **[ASK specification](../../definition/README.md)** — the authoritative rules
+→ **[ASK specification](../../../definition/README.md)** — the authoritative rules
 behind these definitions (layers, field roles, relationships, Gold), incl. the
-[Bronze](../../definition/docs/BRONZE_LAYER.md) / [Silver](../../definition/docs/SILVER_LAYER.md) / [Gold](../../definition/docs/GOLD_LAYER.md) layer specs.
+[Bronze](../../../definition/docs/BRONZE_LAYER.md) / [Silver](../../../definition/docs/SILVER_LAYER.md) / [Gold](../../../definition/docs/GOLD_LAYER.md) layer specs.
