@@ -42,6 +42,12 @@ slowly than the product version.
   with "Document prepared by AgenticAI Analytics" — visible to whoever receives
   the document. Both now say Onibex ASK.
 
+- **`ask-admin-spa` is now `ask-studio-spa`.** The interface calls itself ASK
+  Studio on every screen; only the code still said admin. The directory, the
+  image, the container, the Kubernetes manifests and the Keycloak client id all
+  move together — the client id matters, because the realm seed, the SPA default
+  and `KEYCLOAK_CLIENT_ID` have to agree or nobody logs in.
+
   Deliberately left alone: `agentic-ai` as a keyword in `CITATION.cff`, in the
   GitHub topics and in the prose of `definition/README.md`. There it is the
   industry term people search for, not our prefix.

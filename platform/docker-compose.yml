@@ -14,7 +14,7 @@
 #   - keycloak            (identity provider)         8080 → 8180
 #   - ask-orchestrator    (FastAPI chat backend)      8080 → ${ORCH_HOST_PORT:-8083}
 #   - ask-admin-api       (FastAPI admin backend)     8081 → ${ADMIN_API_HOST_PORT:-8081}
-#   - ask-admin-spa       (React admin UI + Nginx)      80 → 5173
+#   - ask-studio-spa       (React admin UI + Nginx)      80 → 5173
 #   - ask-chat-spa        (React chat  UI + Nginx)      80 → 5174
 #   - ask-setup-spa       (React setup UI + Nginx)      80 → 5175
 #   - teams-bot           (Teams middleware, opt-in)  8085 → ${TEAM_BOT_HOST_PORT:-8085}
@@ -36,7 +36,7 @@
 #   AUTH_MODE=keycloak DEV_BYPASS_AUTH=false docker-compose up
 #   Admin console: http://localhost:8180  (admin / admin o KC_ADMIN_PASSWORD)
 #   SPA login:     apunta VITE_AUTH_MODE=keycloak VITE_KEYCLOAK_URL=http://localhost:8180
-#                  VITE_KEYCLOAK_REALM=ask-platform en ask-admin-spa/.env.local
+#                  VITE_KEYCLOAK_REALM=ask-platform en ask-studio-spa/.env.local
 #
 # Shared state:
 #   - ./config                 → /app/config (settings.json, aicore_config.json)
@@ -305,25 +305,25 @@ services:
       start_period: 30s
 
   # ─── ASK Studio — admin SPA (React + Nginx) ────────────────────────────
-  ask-admin-spa:
+  ask-studio-spa:
     build:
-      context: ./ask-admin-spa
+      context: ./ask-studio-spa
       dockerfile: Dockerfile
       args:
         # VITE_* se hornean en el bundle en build time (NO en runtime): cambiar
         # AUTH_MODE en .env NO afecta al SPA hasta que se REBUILDEA la imagen
-        # (`docker compose build ask-admin-spa` o `up --build`).
+        # (`docker compose build ask-studio-spa` o `up --build`).
         # VITE_KEYCLOAK_URL debe ser la URL que alcanza el BROWSER (no la red
         # Docker interna) — por eso apunta a localhost:8180 y no a keycloak:8080.
         VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
         VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
         VITE_KEYCLOAK_REALM: ask-platform
-        # Cross-app link: ASK Setup owns LLM config; admin-spa shows it read-only.
+        # Cross-app link: ASK Setup owns LLM config; ASK Studio shows it read-only.
         VITE_SETUP_SPA_URL:  "http://${EXTERNAL_HOST:-localhost}:5175"
     mem_limit: 64m
     mem_reservation: 20m
-    image: ask-admin-spa:${APP_VERSION:-latest}
-    container_name: ask-admin-spa
+    image: ask-studio-spa:${APP_VERSION:-latest}
+    container_name: ask-studio-spa
     ports:
       - "5173:80"   # browser: http://localhost:5173
     networks: [ ask-net ]

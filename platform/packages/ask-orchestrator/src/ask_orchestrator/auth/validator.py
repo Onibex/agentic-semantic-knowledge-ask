@@ -32,7 +32,7 @@ Role extraction
 ───────────────
   xsuaa:    `scope` claim — keeps scopes prefixed with `ask.`
              e.g. `ask.ask-orchestrator!t1234.query` → role `query`
-  keycloak: `resource_access.ask-admin-spa.roles[]` array
+  keycloak: `resource_access.ask-studio-spa.roles[]` array
             (client id read from KEYCLOAK_CLIENT_ID env var)
 
 Dev bypass

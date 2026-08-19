@@ -20,7 +20,7 @@ import { LanguageSelector } from '@/components/LanguageSelector'
 import type { Mode, Env } from '@/api/orchestrator'
 
 // Logged-in user + Sign-out. Hidden in dev-bypass ('none') mode where there is
-// no real principal. Mirrors ask-admin-spa's AppLayout "User footer".
+// no real principal. Mirrors ask-studio-spa's AppLayout "User footer".
 function UserFooter() {
   const { user, logout } = useAuthStore()
   const { t } = useTranslation()

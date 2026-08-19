@@ -27,7 +27,7 @@ Role extraction
 ───────────────
   xsuaa:    `scope` claim — keeps scopes prefixed with `ask.`
              e.g. `ask.ask-admin-api!t1234.admin` → role `admin`
-  keycloak: `resource_access.ask-admin-spa.roles[]` array
+  keycloak: `resource_access.ask-studio-spa.roles[]` array
 
 Dev bypass
 ──────────

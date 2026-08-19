@@ -22,7 +22,7 @@ export interface AuthConfig {
 function buildKeycloakConfig(): AuthConfig {
   const baseUrl = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8180'
   const realm = import.meta.env.VITE_KEYCLOAK_REALM ?? 'ask-platform'
-  const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? 'ask-admin-spa'
+  const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? 'ask-studio-spa'
   const issuerUrl = `${baseUrl}/realms/${realm}`
 
   return {

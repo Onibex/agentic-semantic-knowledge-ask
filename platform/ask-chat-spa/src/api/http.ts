@@ -10,7 +10,7 @@
 // Global axios auth wiring for the chat SPA. The api modules (orchestrator.ts,
 // admin.ts) call the DEFAULT axios instance directly, so registering the
 // interceptors here (imported once from main.tsx) attaches the Keycloak bearer
-// to every request and transparently refreshes on a 401 — mirrors ask-admin-spa.
+// to every request and transparently refreshes on a 401 — mirrors ask-studio-spa.
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore'
 import { authConfig } from '../auth/config'

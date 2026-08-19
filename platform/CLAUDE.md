@@ -20,7 +20,7 @@ A **deterministic Text-to-SQL agent** that:
 
 | Component | Technology | Purpose |
 |---|---|---|
-| `ask-admin-spa/` (**ASK Studio**) | React + Vite + Nginx | Author & publish the semantic layer: workspaces, business domains, Data Products |
+| `ask-studio-spa/` (**ASK Studio**) | React + Vite + Nginx | Author & publish the semantic layer: workspaces, business domains, Data Products |
 | `ask-chat-spa/` (**ASK Chat**) | React + Vite + Nginx | End-user chat |
 | `ask-setup-spa/` (**ASK Setup**) | React + Vite + Nginx | Technical setup: DB connections, LLM providers, identity |
 | `packages/ask-orchestrator` | FastAPI | Public chat backend (see endpoints below) |
@@ -175,7 +175,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 | SQL generation rules / dialects | `packages/ask-sql-generation/.../application/freeform_generator.py` + `prompts/` |
 | Add DB adapter | `packages/ask-sql-executor/.../infrastructure/` |
 | Ingestion / YAML model | `packages/ask-knowledge-graph/` |
-| Admin flows (publish, enrich, DDL) | `packages/ask-admin-api/` + `ask-admin-spa/` |
+| Admin flows (publish, enrich, DDL) | `packages/ask-admin-api/` + `ask-studio-spa/` |
 | Design tokens (all SPAs) | `design/tokens.css` + `scripts/sync-design-tokens.mjs` |
 
 ## House rules

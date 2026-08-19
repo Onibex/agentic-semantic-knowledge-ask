@@ -26,7 +26,7 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE
 ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
 ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
 
-# vite build directly (skip tsc -b) - same as ask-admin-spa / ask-setup-spa
+# vite build directly (skip tsc -b) - same as ask-studio-spa / ask-setup-spa
 RUN node node_modules/vite/bin/vite.js build
 
 # ── Stage 2: serve ──────────────────────────────────────────────────────────

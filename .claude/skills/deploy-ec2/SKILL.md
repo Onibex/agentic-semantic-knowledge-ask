@@ -68,7 +68,7 @@ anything non-obvious. This skill is the short operational path.
 4. **Build + start**: `./redeploy.sh` (first SPA build ~15-20 min). Or bring up in
    layers per runbook §4.
 5. **Keycloak init** (only on a fresh `keycloak-data` volume): `sslRequired=NONE`
-   on `master`, register the EC2 redirect URIs for `ask-admin-spa` / `ask-setup-spa`.
+   on `master`, register the EC2 redirect URIs for `ask-studio-spa` / `ask-setup-spa`.
    See runbook §5.
 6. **Security Group + access**: open only 5173/5174/5175/8180 (+ 8091/8085/4004 for
    M2M) to the team's IPs; never 9200. Apply the Chrome insecure-origin flag for the

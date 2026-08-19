@@ -70,7 +70,7 @@ agentic-semantic-knowledge-ask/
     ├── LICENSE.md            ← PolyForm Strict/Free Trial 1.0.0
     ├── docker-compose.yml    ← the whole stack (OpenSearch, Keycloak, APIs, 3 SPAs)
     ├── packages/             ← typed Python packages (orchestrator, admin-api, …)
-    ├── ask-admin-spa/        ← ASK Studio (React)
+    ├── ask-studio-spa/        ← ASK Studio (React)
     ├── ask-chat-spa/         ← ASK Chat (React)
     ├── ask-setup-spa/        ← ASK Setup (React)
     └── docs/                 ← product manual + engine docs

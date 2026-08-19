@@ -27,7 +27,7 @@ import { LanguageSelector } from '@/components/LanguageSelector'
 import onibexLogo from '@/assets/Onibex_logo-azul2.png'
 
 // Logged-in user + Sign-out. Hidden in dev-bypass ('none') mode. Mirrors
-// ask-admin-spa / ask-chat-spa "User footer" (now the same light, token-driven shell).
+// ask-studio-spa / ask-chat-spa "User footer" (now the same light, token-driven shell).
 function UserFooter() {
   const { user, logout } = useAuthStore()
   const { t } = useTranslation()

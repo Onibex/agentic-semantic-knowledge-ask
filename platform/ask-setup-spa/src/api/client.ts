@@ -53,7 +53,7 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// 401 -> one silent refresh + replay, else bounce to /login (mirrors admin-spa).
+// 401 -> one silent refresh + replay, else bounce to /login (mirrors studio-spa).
 let refreshInFlight: Promise<boolean> | null = null
 http.interceptors.response.use(
   (response) => response,
