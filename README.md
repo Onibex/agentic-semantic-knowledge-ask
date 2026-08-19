@@ -117,6 +117,10 @@ this license, third-party software including SAP HANA, SAP BTP, and SAP AI Core
 (trademarks of SAP SE), OpenSearch (a registered trademark of Amazon Web Services),
 and Keycloak (a trademark of Red Hat, Inc.) — see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
+Apache Kafka and the Kafka logo are trademarks of the Apache Software Foundation; Onibex is
+not affiliated with, and is not endorsed by, the Apache Software Foundation. CONFLUENT is a
+registered trademark of Confluent, Inc. All marks are used for identification only.
+
 ---
 
 ## Maintainers

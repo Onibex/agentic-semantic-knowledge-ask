@@ -36,6 +36,10 @@ jobs:
       # keeps coverage from decaying: a new file without one fails the build.
       - name: Verify license headers
         run: python scripts/license_headers.py --check
+      # GitHub Pages serves /docs, so llms.txt lives twice. Catch the drift
+      # instead of discovering it as a stale file on the published site.
+      - name: llms.txt copies are identical
+        run: cmp llms.txt docs/llms.txt
 
   python-hygiene:
     name: Python lint + boundary tests

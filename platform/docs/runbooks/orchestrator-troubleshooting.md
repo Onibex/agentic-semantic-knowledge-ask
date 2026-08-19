@@ -52,7 +52,7 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
   orchestrator **preserving that header**. A 401 therefore means either the
   browser session has no token (log in again) or a proxy in front of the SPA is
   stripping `Authorization`.
-- **In machine-to-machine callers (watsonx, Kafka Connect, LangFlow):** include a
+- **In machine-to-machine callers (watsonx, [Apache Kafka](https://kafka.apache.org/) Connect, LangFlow):** include a
   client-credentials token in the Authorization header.
 
 ### Validating JWT forwarding end-to-end

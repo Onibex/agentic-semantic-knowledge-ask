@@ -1,7 +1,7 @@
-# Kafka Connect HTTP Sink → /v1/ingest/sap-json
+# Apache Kafka Connect HTTP Sink → /v1/ingest/sap-json
 
 The ASK Admin API exposes a machine-to-machine ingestion endpoint that is
-designed to be consumed by Kafka Connect HTTP Sink connectors (Confluent,
+designed to be consumed by [Apache Kafka](https://kafka.apache.org/) Connect HTTP Sink connectors (Confluent,
 Lenses, Aiven) and similar agents such as IBM Watson X webhooks. The
 endpoint accepts an SAP metadata JSON payload, parses it into Bronze +
 Silver ASK YAMLs, writes them to the workspace, and indexes the catalog
