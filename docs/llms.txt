@@ -29,6 +29,8 @@ below before integrating this project into a product or service.
 - [COMMERCIAL-LICENSE.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/COMMERCIAL-LICENSE.md): production/commercial use.
 - [THIRD-PARTY-NOTICES.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/THIRD-PARTY-NOTICES.md): third-party components.
 
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
+
 ## Contact
 
 - Commercial licensing and integration services: contact@onibex.com

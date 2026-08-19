@@ -1,6 +1,7 @@
 {
   "name": "sap-salesorder-mcp-server",
   "version": "1.0.0",
+  "license": "SEE LICENSE IN LICENSE.md",
   "scripts": {
     "postinstall": "node patch.js",
     "start": "node node_modules/odata-mcp-proxy/dist/index.js"
