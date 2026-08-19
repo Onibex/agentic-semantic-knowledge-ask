@@ -1,7 +1,7 @@
 # Installation & Running the Platform
 
 > **Getting started.** Bring the full ASK Platform up on one machine with Docker and
-> reach each of its user interfaces — **ASK Admin**, the **Chat**, and **ASK Setup** — plus the
+> reach each of its user interfaces — **ASK Studio**, the **Chat**, and **ASK Setup** — plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
 
@@ -27,7 +27,7 @@
   knowledge graph / vectors **and** the encrypted configuration store (database connections and
   LLM providers). **Keycloak** is the identity provider.
 - The three interfaces you use are separate **React single-page apps**, each on **its own host
-  port**: **ASK Admin** (semantic-layer authoring), the **Chat** (natural-language querying), and
+  port**: **ASK Studio** (semantic-layer authoring), the **Chat** (natural-language querying), and
   **ASK Setup** (technical configuration). There is no shared login proxy and no path-routing —
   each app runs its own Keycloak sign-in.
 - The SPAs are static bundles served by Nginx. Their auth posture and host address are **baked
@@ -115,7 +115,7 @@ them up **in dependency order** — the backing services first, then the backend
    starts alongside it.
 2. **`ask-orchestrator`** and **`ask-admin-api`** — the FastAPI backends; each waits for
    OpenSearch to report healthy.
-3. **`ask-admin-spa`** (waits on the admin API), **`ask-chat-spa`** (waits on the orchestrator
+3. **`ask-studio-spa`** (waits on the admin API), **`ask-chat-spa`** (waits on the orchestrator
    and the admin API), and **`ask-setup-spa`** (waits on the admin API) — the three React UIs.
    They are static Nginx bundles and talk to Keycloak from the **browser**, so they do **not**
    gate on Keycloak's healthcheck.
@@ -148,7 +148,7 @@ opensearch         opensearch         Up (healthy)    0.0.0.0:9200->9200/tcp
 keycloak           keycloak           Up (healthy)    0.0.0.0:8180->8080/tcp
 ask-orchestrator   ask-orchestrator   Up (healthy)    0.0.0.0:8083->8080/tcp
 ask-admin-api      ask-admin-api      Up (healthy)    0.0.0.0:8081->8081/tcp
-ask-admin-spa      ask-admin-spa      Up (healthy)    0.0.0.0:5173->80/tcp
+ask-studio-spa      ask-studio-spa      Up (healthy)    0.0.0.0:5173->80/tcp
 ask-chat-spa       ask-chat-spa       Up (healthy)    0.0.0.0:5174->80/tcp
 ask-setup-spa      ask-setup-spa      Up (healthy)    0.0.0.0:5175->80/tcp
 ```
@@ -170,7 +170,7 @@ mappings in `docker-compose.yml`:
 
 | Interface | URL | Served by | Notes |
 |---|---|---|---|
-| **ASK Admin** (React SPA) | `http://localhost:5173` | `ask-admin-spa` (Nginx) | Authoring: workspaces, domains, Data Products, dictionary, history. |
+| **ASK Studio** (React SPA) | `http://localhost:5173` | `ask-studio-spa` (Nginx) | Authoring: workspaces, domains, Data Products, dictionary, history. |
 | **Chat** (React SPA) | `http://localhost:5174` | `ask-chat-spa` (Nginx) | Natural-language querying. |
 | **ASK Setup** (React SPA) | `http://localhost:5175` | `ask-setup-spa` (Nginx) | Technical configuration: OpenSearch, database connections, LLM providers, identity. |
 | **Keycloak** (admin console) | `http://localhost:8180` | `keycloak` | Identity-provider admin console (only relevant when auth is on). |
@@ -202,7 +202,7 @@ through the Keycloak login before landing on the UI.
   **not** touch volumes — for a destructive wipe run `docker compose down -v` yourself.
 
 > **Tip — rebuild one service.** To rebuild just the SPA whose config you changed, scope the
-> script: `ONLY=ask-setup-spa ./redeploy.sh` (or `ask-admin-spa` / `ask-chat-spa`). This is the
+> script: `ONLY=ask-setup-spa ./redeploy.sh` (or `ask-studio-spa` / `ask-chat-spa`). This is the
 > step that makes an `AUTH_MODE` or `EXTERNAL_HOST` change take effect in the browser.
 
 ---
@@ -217,7 +217,7 @@ through the Keycloak login before landing on the UI.
 | YAML edits save but never appear in history; publish-to-environment fails | The directory `SEMANTIC_LAYER_HOST_PATH` points at has **no `.git`**, or it has no `dev` / `prod` branches yet. On a from-zero deploy the repo isn't auto-initialized: `git init` it, make an initial commit, and ensure the `dev` and `prod` branches exist — publish-to-environment writes to those branches. |
 | `AUTH_MODE` change has no effect in the browser | The SPAs bake `AUTH_MODE` (and `EXTERNAL_HOST`) into their bundle at build time. Rebuild the SPA image — `./redeploy.sh` (or `ONLY=<spa> ./redeploy.sh`) — a restart alone reuses the old bundle. |
 | A database connection Test is green but chat can't query it | `EXECUTOR_EXTRAS` differs between `ask-admin-api` (which runs the Test) and `ask-orchestrator` (which runs chat), or the engine's driver isn't baked in. Set the **same** `EXECUTOR_EXTRAS` on both and rebuild. |
-| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port — ASK Admin `5173`, Chat `5174`, ASK Setup `5175`. |
+| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port — ASK Studio `5173`, Chat `5174`, ASK Setup `5175`. |
 
 > **Warning — first-boot config.** The database connections and provider credentials are **not**
 > set by this install step. Configure them after the stack is up, in **ASK Setup**. Until a
@@ -229,9 +229,9 @@ through the Keycloak login before landing on the UI.
 
 → **[ASK Setup](ask-setup/00-overview.md)** — set up the database connections, LLM providers, and
 identity.
-→ **[ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)** — create the
+→ **[ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)** — create the
 containers your data lives in.
-→ **[ASK Admin · Add Data Products](ask-admin/02-add-data-products.md)** — author the entities the
+→ **[ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)** — author the entities the
 agent maps questions to.
 → **Deployment runbook** (maintained by your platform / ops team) — the full per-service
 procedure (native ports, venv setup, troubleshooting).

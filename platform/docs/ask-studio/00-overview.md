@@ -1,6 +1,6 @@
-# ASK Admin · Overview & Navigation
+# ASK Studio · Overview & Navigation
 
-> **Flow 0 of the ASK Admin manual — the map.** Get oriented in **ASK Admin**: how you
+> **Flow 0 of the ASK Studio manual — the map.** Get oriented in **ASK Studio**: how you
 > sign in, what each sidebar section does, and which flow doc to open next. Every other
 > flow (01–09) is reachable from here.
 
@@ -19,13 +19,13 @@
 
 ## Concepts (30-second version)
 
-- **ASK Admin** is the semantic-layer curator app. Its sign-in screen shows the title
-  **Agentic Semantic Knowledge** with **Admin** on a subtitle line (short: **ASK Admin**).
+- **ASK Studio** is the semantic-layer curator app. Its sign-in screen shows the title
+  **Agentic Semantic Knowledge** with **Admin** on a subtitle line (short: **ASK Studio**).
   This is where you author and publish the business meaning the chat agent maps questions to.
-- It is one of two admin surfaces. ASK Admin owns the **semantic layer** (workspaces,
+- It is one of two admin surfaces. ASK Studio owns the **semantic layer** (workspaces,
   domains, Data Products). Technical/system configuration — database, providers, MCP —
   lives in the separate **ASK Setup** app (see [ASK Setup](../ask-setup/00-overview.md)).
-- The whole platform follows one journey: **Configure → Author → Publish → Ask**. ASK Admin
+- The whole platform follows one journey: **Configure → Author → Publish → Ask**. ASK Studio
   covers the **Author** and **Publish** steps.
 
 ---
@@ -35,7 +35,7 @@
 Open the app URL. If you're not already authenticated you land on the **sign-in** screen —
 the Onibex logo above the title **Agentic Semantic Knowledge**, with **Admin** on the line beneath.
 
-![ASK Admin sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title with the Admin subtitle, and the Sign in button](../images/admin-overview-login.png)
+![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title with the Admin subtitle, and the Sign in button](../images/admin-overview-login.png)
 
 What you see depends on how the deployment is configured:
 
@@ -56,7 +56,7 @@ Keycloak, **XSUAA** for SAP BTP, **Dev** for the bypass), next to your email and
 Once signed in, the left sidebar is your permanent map. It's grouped into five labelled
 sections; the current page is highlighted in Onibex blue.
 
-![ASK Admin sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/admin-overview-sidebar.png)
+![ASK Studio sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/admin-overview-sidebar.png)
 
 | Section | Item | What the page does | Flow |
 |---|---|---|---|
@@ -85,7 +85,7 @@ Signing in takes you to **Workspaces** — the app's home. It's a split screen: 
 all workspaces on the left and the selected workspace's business domains on the right. This is
 where the authoring journey begins.
 
-![ASK Admin landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/admin-overview-workspaces.png)
+![ASK Studio landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/admin-overview-workspaces.png)
 
 From here, follow the flows in order:
 

@@ -28,7 +28,7 @@
   },
   "clients": [
     {
-      "clientId": "ask-admin-spa",
+      "clientId": "ask-studio-spa",
       "name": "ASK Studio",
       "description": "Browser-based Single Page Application for the ASK Platform admin console",
       "enabled": true,
@@ -74,7 +74,7 @@
             "access.token.claim": "true",
             "claim.name": "resource_access.${clientId}.roles",
             "jsonType.label": "String",
-            "usermodel.clientRoleMapping.clientId": "ask-admin-spa"
+            "usermodel.clientRoleMapping.clientId": "ask-studio-spa"
           }
         }
       ]

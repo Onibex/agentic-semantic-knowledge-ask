@@ -17,7 +17,7 @@ explains why a question can only be answered after an administrator has publishe
 3. [Before you begin](#3-before-you-begin)
 4. [Part A · Administrator — prepare the platform](#4-part-a--administrator--prepare-the-platform)
    - [A1. Configure the system](#a1-configure-the-system-ask-setup)
-   - [A2. Build your semantic layer](#a2-build-your-semantic-layer-admin-spa)
+   - [A2. Build your semantic layer](#a2-build-your-semantic-layer-ask-studio)
    - [A3. Publish: dev → prod](#a3-publish-dev--prod)
    - [A4. Optional: dictionary & documents](#a4-optional-dictionary--documents)
 5. [Part B · Business user — ask your first question](#5-part-b--business-user--ask-your-first-question)

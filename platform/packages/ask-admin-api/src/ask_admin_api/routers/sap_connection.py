@@ -112,13 +112,13 @@ async def save_sap_connection(
         try:
             transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
             with httpx.Client(transport=transport, base_url="http://docker", timeout=30) as client:
-                resp = client.post("/containers/agenticai-mcp/restart")
+                resp = client.post("/containers/ask-mcp/restart")
             if resp.status_code == 204:
-                logger.info("[%s] agenticai-mcp restarted via Docker API", tid, extra={"trace_id": tid})
+                logger.info("[%s] ask-mcp restarted via Docker API", tid, extra={"trace_id": tid})
             else:
                 logger.warning("[%s] MCP restart returned %d", tid, resp.status_code, extra={"trace_id": tid})
         except Exception as exc:  # noqa: BLE001
-            logger.warning("[%s] MCP restart failed (run manually: docker restart agenticai-mcp): %s", tid, exc, extra={"trace_id": tid})
+            logger.warning("[%s] MCP restart failed (run manually: docker restart ask-mcp): %s", tid, exc, extra={"trace_id": tid})
 
     threading.Thread(target=_restart_mcp, args=(trace_id,), daemon=True).start()
 

@@ -161,7 +161,7 @@ _FORMAT_GUIDES: dict[str, str] = {
         "## Key Findings (numbered list of 5-7 specific, quantified findings); "
         "## Recommendations (numbered list of 4-6 concrete, actionable items with rationale and next step). "
         "Bold every key metric. Use real numbers from the data. Be specific and analytical. "
-        "End with: 'Document prepared by AgenticAI Analytics'."
+        "End with: 'Document prepared by Onibex ASK'."
     ),
     "data_tables": (
         "Format: Data-First. Lead with one or more well-structured Markdown tables. "

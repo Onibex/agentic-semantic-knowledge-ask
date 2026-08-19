@@ -24,7 +24,7 @@ import { create } from 'zustand'
 import { listWorkspaces } from '../api/client'
 import type { Workspace } from '../api/types'
 
-const STORAGE_KEY = 'ask-admin-spa:activeWorkspaceId'
+const STORAGE_KEY = 'ask-studio-spa:activeWorkspaceId'
 
 function readPersisted(): string | null {
   try {

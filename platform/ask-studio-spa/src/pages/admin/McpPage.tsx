@@ -116,7 +116,7 @@ export default function McpPage() {
             type="text"
             value={mcpUrl}
             onChange={(e) => setMcpUrl(e.target.value)}
-            placeholder="http://agenticai-mcp:4004"
+            placeholder="http://ask-mcp:4004"
           />
         </div>
         <div className="space-y-1.5">

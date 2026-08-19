@@ -70,14 +70,14 @@ agentic-semantic-knowledge-ask/
     ├── LICENSE.md            ← PolyForm Strict/Free Trial 1.0.0
     ├── docker-compose.yml    ← the whole stack (OpenSearch, Keycloak, APIs, 3 SPAs)
     ├── packages/             ← typed Python packages (orchestrator, admin-api, …)
-    ├── ask-admin-spa/        ← ASK Studio (React)
+    ├── ask-studio-spa/        ← ASK Studio (React)
     ├── ask-chat-spa/         ← ASK Chat (React)
     ├── ask-setup-spa/        ← ASK Setup (React)
     └── docs/                 ← product manual + engine docs
         ├── README.md         ← manual index (read in order / by area)
         ├── 01-installation.md
         ├── 02-concepts.md
-        ├── ask-admin/        ← semantic-layer authoring flows
+        ├── ask-studio/        ← semantic-layer authoring flows
         ├── ask-chat/         ← using the chat (end users)
         └── reference/        ← glossary + troubleshooting
 ```
@@ -90,7 +90,7 @@ agentic-semantic-knowledge-ask/
 - **Deploying or using the product?** Start with
   [Installation](platform/docs/01-installation.md), then
   [Concepts & Architecture](platform/docs/02-concepts.md), then the
-  [ASK Studio flows](platform/docs/ask-admin/00-overview.md).
+  [ASK Studio flows](platform/docs/ask-studio/00-overview.md).
 
 ---
 

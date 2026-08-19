@@ -25,7 +25,7 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE
 ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
 ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
 
-# Call vite directly (skip the `tsc -b` in `npm run build`) — same as ask-admin-spa.
+# Call vite directly (skip the `tsc -b` in `npm run build`) — same as ask-studio-spa.
 # Type-checking stays a dev/CI concern; the image build only needs the bundle.
 RUN node node_modules/vite/bin/vite.js build
 

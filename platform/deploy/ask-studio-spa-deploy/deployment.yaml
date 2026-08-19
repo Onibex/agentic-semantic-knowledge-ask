@@ -7,7 +7,7 @@
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ASK Studio (admin SPA) — nginx static bundle + reverse proxy
-# Namespace: onibex-agenticai (same as orchestrator + admin-api)
+# Namespace: onibex-ask (same as orchestrator + admin-api)
 #
 # The SPA authenticates via browser-side PKCE (Keycloak or XSUAA) — no
 # server-side JWT validation is needed here.  The APIRule is noAuth: true;
@@ -22,31 +22,31 @@
 #   docker build --build-arg VITE_AUTH_MODE=xsuaa \
 #                --build-arg VITE_XSUAA_URL=https://... \
 #                --build-arg VITE_XSUAA_CLIENT_ID=... \
-#                -t <your-registry>/onibex-ask-admin-spa:latest .
+#                -t <your-registry>/onibex-ask-studio-spa:latest .
 # ─────────────────────────────────────────────────────────────────────────────
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ask-admin-spa
-  namespace: onibex-agenticai
+  name: ask-studio-spa
+  namespace: onibex-ask
   labels:
-    app: ask-admin-spa
+    app: ask-studio-spa
 spec:
   replicas: 1
   strategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: ask-admin-spa
+      app: ask-studio-spa
   template:
     metadata:
       labels:
-        app: ask-admin-spa
+        app: ask-studio-spa
     spec:
       containers:
-        - name: ask-admin-spa
-          image: <your-registry>/onibex-ask-admin-spa:latest
+        - name: ask-studio-spa
+          image: <your-registry>/onibex-ask-studio-spa:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -73,11 +73,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ask-admin-spa-service
-  namespace: onibex-agenticai
+  name: ask-studio-spa-service
+  namespace: onibex-ask
 spec:
   selector:
-    app: ask-admin-spa
+    app: ask-studio-spa
   ports:
     - port: 80
       targetPort: 80
@@ -88,13 +88,13 @@ spec:
 apiVersion: gateway.kyma-project.io/v2
 kind: APIRule
 metadata:
-  name: ask-admin-spa-apirule
-  namespace: onibex-agenticai
+  name: ask-studio-spa-apirule
+  namespace: onibex-ask
 spec:
   hosts:
-    - ask-admin-spa.<YOUR_CLUSTER_DOMAIN>
+    - ask-studio-spa.<YOUR_CLUSTER_DOMAIN>
   service:
-    name: ask-admin-spa-service
+    name: ask-studio-spa-service
     port: 80
   gateway: kyma-system/kyma-gateway
   rules:

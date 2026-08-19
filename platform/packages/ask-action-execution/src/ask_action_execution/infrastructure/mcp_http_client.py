@@ -98,7 +98,7 @@ class MCPClient:
             "method": "initialize",
             "params": {
                 "protocolVersion": "2024-11-05",
-                "clientInfo": {"name": "onibex-agenticai", "version": "1.0"},
+                "clientInfo": {"name": "onibex-ask", "version": "1.0"},
                 "capabilities": {},
             },
         }

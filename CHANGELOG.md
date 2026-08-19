@@ -19,6 +19,39 @@ slowly than the product version.
 
 ## [Unreleased]
 
+### Changed
+
+- **Infrastructure names move from the legacy `agenticai` prefix to `ask`**, which
+  is what the Compose service names already used. Containers are now
+  `ask-orchestrator`, `ask-admin-api`, `ask-mcp` and so on; the Compose project
+  is `onibex-ask`, the network `ask-net`, the images `ask-*`. On Kubernetes the
+  namespace becomes `onibex-ask` and the objects the manifests consume are
+  `xsuaa-ask-secret`, `keycloak-ask-secret` and `ask-config-pvc`.
+
+  **This requires a fresh install. No migration path is provided.** The Compose
+  project name prefixes the volumes, so the existing `opensearch-data` and
+  `keycloak-data` will not be found under the new name: the stack comes up with
+  no published semantic layer and no Keycloak realm. Anyone with a deployment
+  that must keep its data should copy the volumes across before upgrading. The
+  Kubernetes objects are consumed, not created, by these manifests, so the
+  namespace, the XSUAA binding secret and the PVC have to exist under the new
+  names before applying them.
+
+  Two names were reached that are not infrastructure: the Entity Selector's
+  system prompt said "Onibex AgenticAI pipeline", and generated documents ended
+  with "Document prepared by AgenticAI Analytics" — visible to whoever receives
+  the document. Both now say Onibex ASK.
+
+- **`ask-admin-spa` is now `ask-studio-spa`.** The interface calls itself ASK
+  Studio on every screen; only the code still said admin. The directory, the
+  image, the container, the Kubernetes manifests and the Keycloak client id all
+  move together — the client id matters, because the realm seed, the SPA default
+  and `KEYCLOAK_CLIENT_ID` have to agree or nobody logs in.
+
+  Deliberately left alone: `agentic-ai` as a keyword in `CITATION.cff`, in the
+  GitHub topics and in the prose of `definition/README.md`. There it is the
+  industry term people search for, not our prefix.
+
 ### Fixed
 
 - `services/ask-mcp-server` declared its dependency as `latest` and shipped no

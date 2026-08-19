@@ -47,7 +47,7 @@ that date; re-audit before a release with `python scripts/dependency_licenses.py
 | `certifi` (CA bundle, transitive) | MPL-2.0 — used unmodified, so the MPL's source-disclosure obligation is not triggered |
 | `orjson`, `tqdm` (transitive) | dual: MPL-2.0 AND (Apache-2.0 OR MIT) / MPL-2.0 AND MIT |
 
-## JavaScript/TypeScript — `ask-chat-spa/`, `ask-admin-spa/`, `ask-setup-spa/`
+## JavaScript/TypeScript — `ask-chat-spa/`, `ask-studio-spa/`, `ask-setup-spa/`
 
 Direct `dependencies` (audited via `license-checker`): React, React DOM,
 React Router, Zustand, Axios, Zod, React Hook Form, TanStack Query, Radix UI

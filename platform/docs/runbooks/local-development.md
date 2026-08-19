@@ -30,7 +30,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
         └────────┬─────────┘                      │            │
                  │ HTTP                      HTTP │            │ HTTP
         ┌────────┴─────────┐          ┌───────────┴────┐  ┌────┴───────────┐
-        │ ask-chat-spa     │          │ ask-admin-spa  │  │ ask-setup-spa  │
+        │ ask-chat-spa     │          │ ask-studio-spa  │  │ ask-setup-spa  │
         │ React + Nginx    │          │ React + Nginx  │  │ React + Nginx  │
         │ :5174            │          │ :5173          │  │ :5175          │
         │ chat + artifacts │          │ semantic layer │  │ technical setup│
@@ -46,7 +46,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 | `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `VITE_AUTH_MODE=keycloak`. Skip in pure dev. |
 | `ask-orchestrator` | `ask_orchestrator.main:app` | 8080 | Chat backend (intent → SQL → exec) |
 | `ask-admin-api` | `ask_admin_api.main:app` | 8081 | Admin backend (dictionary, KG ingestion, embeddings, secrets, prompts, enrichment, workspaces, organization) |
-| `ask-admin-spa` | `ask-admin-spa/` (Vite dev or Nginx) | 5173 | React admin UI — Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
+| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | React admin UI — Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
 | `ask-chat-spa` | `ask-chat-spa/` (Vite dev or Nginx) | 5174 | React chat UI — Chat (streaming), Artifacts gallery + creator |
 | `ask-setup-spa` | `ask-setup-spa/` (Vite dev or Nginx) | 5175 | React setup UI — database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
 
@@ -357,12 +357,12 @@ npm run preview   # → http://localhost:4173
 
 ---
 
-## 5. Boot the Admin SPA (`ask-admin-spa`, :5173)
+## 5. Boot the Admin SPA (`ask-studio-spa`, :5173)
 
 **Terminal 4:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai\ask-admin-spa
+cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai\ask-studio-spa
 
 # One-time install of npm deps (only the first time).
 npm install --legacy-peer-deps
@@ -374,7 +374,7 @@ npm run dev
 
 → Browser: **http://localhost:5173**
 
-**Auth mode:** default `dev` (no Keycloak). Set `VITE_AUTH_MODE=keycloak` in `ask-admin-spa/.env.local` if you want the real login flow + a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180).
+**Auth mode:** default `dev` (no Keycloak). Set `VITE_AUTH_MODE=keycloak` in `ask-studio-spa/.env.local` if you want the real login flow + a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180).
 
 Pages available:
 
@@ -391,7 +391,7 @@ Pages available:
 | `/admin/docs` | Documentation ingestion into the RAG index |
 | `/admin/setup` | Read-only effective config (LLM / Embedder / OpenSearch) |
 
-> Regenerating the OpenAPI-typed client: `cd ask-admin-spa && npm run generate-api:file` — reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
+> Regenerating the OpenAPI-typed client: `cd ask-studio-spa && npm run generate-api:file` — reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
 
 ---
 
@@ -528,7 +528,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | Setup save doesn't refresh the orchestrator's cached config | The admin-api broadcasts `/v1/internal/reload`; make sure `ASK_ORCHESTRATOR_URL` is exported in the **admin-api** terminal so the broadcast reaches the chat backend |
 | Port already in use after killed run | Use the `Get-NetTCPConnection` one-liner above to free 8080/8081/5173/5174/5175 |
 | SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2 + that `VITE_API_BASE_URL` (if set in `.env.local`) matches `http://127.0.0.1:8081` |
-| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-admin-spa/.env.local` |
+| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio-spa/.env.local` |
 | Chat SPA (`ask-chat-spa`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for the chat SPA only works while `npm run dev` is running — the proxy is not active in the production build. |
 | Chat SPA workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via the admin SPA at `:5173`. |
 | Port 5174 already in use | `Get-NetTCPConnection -LocalPort 5174 -State Listen \| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }` |
@@ -540,7 +540,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 
 ## Tip: launch all services with a single Windows Terminal command
 
-If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed — each lives in its own working directory (`ask-chat-spa/` at :5174, `ask-admin-spa/` at :5173, `ask-setup-spa/` at :5175).
+If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed — each lives in its own working directory (`ask-chat-spa/` at :5174, `ask-studio-spa/` at :5173, `ask-setup-spa/` at :5175).
 
 Set the master key + semantic-layer paths once before running the one-liner:
 
@@ -675,7 +675,7 @@ npm install          # first time only
 npm run dev          # → http://localhost:5174
 
 # Boot the Admin SPA (terminal 4)
-cd ask-admin-spa
+cd ask-studio-spa
 npm install --legacy-peer-deps   # first time only
 npm run dev                       # → http://localhost:5173
 

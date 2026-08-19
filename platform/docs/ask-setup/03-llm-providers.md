@@ -9,7 +9,7 @@
 | **Who** | Administrator |
 | **Time** | ~2 minutes to add and activate a model |
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have the provider's credentials to hand (API key, or cloud access keys). |
-| **You'll end with** | One **active** LLM the agent uses for chat and SQL generation, and a configured **embedder** shared with ASK Admin. |
+| **You'll end with** | One **active** LLM the agent uses for chat and SQL generation, and a configured **embedder** shared with ASK Studio. |
 
 **Where this fits:** **Configure — LLM Providers (you are here)** → Author → Publish → Ask
 
@@ -31,7 +31,7 @@
   leaving a secret field blank **keeps** the stored value.
 - The **first** connection you add is **activated automatically**, so the agent always has a model
   once you begin.
-- The **embedder** is a separate, **single, org-wide** setting — the *same* configuration ASK Admin
+- The **embedder** is a separate, **single, org-wide** setting — the *same* configuration ASK Studio
   uses. It has no dev/prod split, and changing its provider or model is a disruptive operation
   (see step 6).
 - The old **"Stack Mode"** control has been **removed** — you no longer pick a managed/direct stack;
@@ -124,8 +124,8 @@ test will fail) before relying on it.
 ## 6. Configure the shared embedder
 
 Below the connection list, the **Embedder** section (**single · global**) shows the embedding model
-that turns your semantic layer, dictionary and docs into vectors. It carries a **Shared · ASK Admin**
-badge because it is the *same* configuration ASK Admin uses — there is one embedder org-wide, with
+that turns your semantic layer, dictionary and docs into vectors. It carries a **Shared · ASK Studio**
+badge because it is the *same* configuration ASK Studio uses — there is one embedder org-wide, with
 **no dev/prod split**.
 
 Click **Test** to verify it, or **Edit** to change it. The drawer opens as **Edit embedder**. Pick
@@ -148,5 +148,5 @@ the provider and model as in step 2 — demo: **AWS Bedrock** · `amazon.titan-e
 → **[ASK Setup · Identity Provider](04-identity-provider.md)** — who signs in, and how.
 → **[ASK Setup · Database Connections](02-database-connections.md)** — the peer registry, where the
 active connection is chosen **per environment** (contrast the global active model here).
-→ **[ASK Admin · Providers & Docs](../ask-admin/09-providers-docs.md)** — the ASK Admin side that
+→ **[ASK Studio · Providers & Docs](../ask-studio/09-providers-docs.md)** — the ASK Studio side that
 shares this embedder and ingests documents.

@@ -54,7 +54,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function EntityHeaderDetail({ row }: { row: YAMLNodeSummary }) {
-  // Defensive reads: admin-api and admin-spa are separate images, so a rollout
+  // Defensive reads: admin-api and studio-spa are separate images, so a rollout
   // can serve this component against an API that predates the projection. The
   // types say these are always present; a stale payload would say otherwise and
   // `undefined.length` would take the whole page down for a cosmetic panel.

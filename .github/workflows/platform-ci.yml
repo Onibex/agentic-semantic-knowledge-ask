@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        spa: [ask-admin-spa, ask-chat-spa, ask-setup-spa]
+        spa: [ask-studio-spa, ask-chat-spa, ask-setup-spa]
     defaults:
       run:
         working-directory: platform/${{ matrix.spa }}

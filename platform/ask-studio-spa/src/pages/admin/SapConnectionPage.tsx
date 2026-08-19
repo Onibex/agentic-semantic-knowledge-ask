@@ -162,7 +162,7 @@ export default function SapConnectionPage() {
               label="MCP Server URL"
               value={mcpUrl}
               onChange={setMcpUrl}
-              placeholder="http://agenticai-mcp:4004"
+              placeholder="http://ask-mcp:4004"
             />
           </div>
           <div className="space-y-1.5">

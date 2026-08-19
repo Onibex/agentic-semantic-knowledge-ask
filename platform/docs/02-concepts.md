@@ -38,7 +38,7 @@ The platform is three applications, used by two kinds of people.
 
 | Surface | Who uses it | What it's for |
 |---|---|---|
-| **ASK Admin** | Administrator / data steward | Author and publish the **semantic layer**: workspaces, business domains, Data Products. |
+| **ASK Studio** | Administrator / data steward | Author and publish the **semantic layer**: workspaces, business domains, Data Products. |
 | **ASK Setup** | Administrator | Technical setup: database connections, LLM/embeddings provider, search index. |
 | **Chat** | Business user | Ask questions in natural language and read the answers. |
 
@@ -51,7 +51,7 @@ The two roles map cleanly onto the surfaces:
   in plain language, and read the answer — no SQL, no schema knowledge required.
 
 > **How the two roles are enforced.** Access is governed by two platform roles: **ask-admin**
-> (full authoring and configuration — ASK Admin and ASK Setup) and **ask-user** (the chat).
+> (full authoring and configuration — ASK Studio and ASK Setup) and **ask-user** (the chat).
 > Every user of the realm is auto-granted **ask-user**, so business users can ask questions
 > without extra setup; **ask-admin** is assigned deliberately to the people who author and
 > configure the platform.
@@ -60,7 +60,7 @@ The two roles map cleanly onto the surfaces:
 flowchart LR
     subgraph ADMIN["Administrator / data steward"]
         CFG["ASK Setup<br/><i>DB · LLM · Search index</i>"]
-        ADM["ASK Admin<br/><i>Workspaces · Domains · Data Products</i>"]
+        ADM["ASK Studio<br/><i>Workspaces · Domains · Data Products</i>"]
     end
     subgraph USER["Business user"]
         CHAT["Chat<br/><i>Ask questions · Read answers</i>"]
@@ -85,8 +85,8 @@ queries. The diagram below is the full path from an empty platform to a first an
 flowchart LR
     subgraph SETUP["Administrator (one-time setup)"]
         C["1 · Configure<br/>DB · LLM · Search<br/><i>ASK Setup</i>"]
-        S["2 · Author semantic layer<br/>Workspace → Business Domain → Data Products<br/><i>ASK Admin</i>"]
-        P["3 · Publish<br/>dev → prod<br/><i>ASK Admin</i>"]
+        S["2 · Author semantic layer<br/>Workspace → Business Domain → Data Products<br/><i>ASK Studio</i>"]
+        P["3 · Publish<br/>dev → prod<br/><i>ASK Studio</i>"]
         C --> S --> P
     end
     subgraph DAILY["Business user (every day)"]
@@ -123,8 +123,8 @@ Workspace  ─►  Business Domain  ─►  Data Products (Bronze / Silver / Gol
 | **Data Product** | One entity definition (a YAML): its fields, roles, relationships, and descriptions. | `production_order`, `production_performance` |
 
 You create workspaces and domains in
-[ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md), and Data
-Products in [ASK Admin · Add Data Products](ask-admin/02-add-data-products.md).
+[ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md), and Data
+Products in [ASK Studio · Add Data Products](ask-studio/02-add-data-products.md).
 
 ### 3.2 The three layers (Bronze / Silver / Gold)
 
@@ -158,7 +158,7 @@ flowchart TD
     PO --> PP
 ```
 
-Two rules from the [ASK specification](../definition/README.md) are worth
+Two rules from the [ASK specification](../../definition/README.md) are worth
 knowing even at the concept level, because they explain how the agent chooses what to query:
 
 - **Silver owns the joins.** A Silver fact must be able to reach its dimensions through *its
@@ -176,7 +176,7 @@ current. This ensures nothing reaches production without first being validated i
 
 ```mermaid
 flowchart LR
-    W["Working<br/><i>edits in ASK Admin</i>"] -->|publish| DEV["dev<br/><i>validate here</i>"]
+    W["Working<br/><i>edits in ASK Studio</i>"] -->|publish| DEV["dev<br/><i>validate here</i>"]
     DEV -->|"promote (only when dev is current)"| PROD["prod<br/><i>production</i>"]
     DEV -.->|"chat env = dev"| CHATD["Chat"]
     PROD -.->|"chat env = prod"| CHATP["Chat"]
@@ -184,7 +184,7 @@ flowchart LR
 
 The chat's **environment** selector (`dev` / `prod`) decides which published snapshot the
 user queries. A Data Product published only to `dev` is invisible when the chat is set to
-`prod`. Publishing is covered in the ASK Admin publish flow; **History** lets you audit
+`prod`. Publishing is covered in the ASK Studio publish flow; **History** lets you audit
 changes per branch (working / dev / prod) and restore an earlier version.
 
 ---
@@ -192,7 +192,7 @@ changes per branch (working / dev / prod) and restore an earlier version.
 ## 4. Governed SQL: the LLM is a compiler, not an inventor
 
 The whole point of the semantic layer is to make the language model **write** SQL, never
-**invent** it. The [ASK specification](../definition/README.md) puts it plainly:
+**invent** it. The [ASK specification](../../definition/README.md) puts it plainly:
 the layer exists "for one purpose: to let the agent build **deterministic SQL**."
 
 Three consequences follow, and they are why answers are trustworthy:
@@ -217,7 +217,7 @@ flowchart LR
 Field **descriptions** and **synonyms** are what let the agent map a user's words to the
 right column — for example mapping "good output" or "yield" to `AFRU.LMNGA`. Good
 descriptions therefore directly improve answer quality; see the
-[ASK specification](../definition/README.md) for the authoring rules.
+[ASK specification](../../definition/README.md) for the authoring rules.
 
 ---
 
@@ -315,11 +315,11 @@ flowchart TD
 
 ## What's next
 
-→ **[ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)** —
+→ **[ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)** —
 create the containers your data lives in.
-→ **[ASK Admin · Add Data Products](ask-admin/02-add-data-products.md)** — create the
+→ **[ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)** — create the
 entities the agent maps questions to.
-→ **[ASK specification](../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
+→ **[ASK specification](../../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
 authoring rules behind governed SQL.
 → **Engine behavior** — summarized in section 5 above; deeper internals are maintained by the
 platform team.

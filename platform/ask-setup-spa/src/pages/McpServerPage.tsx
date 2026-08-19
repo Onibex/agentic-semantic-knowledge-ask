@@ -26,7 +26,7 @@ export function McpServerPage() {
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<McpTestResult | null>(null)
-  const [mcpUrl, setMcpUrl] = useState('http://agenticai-mcp-service:4004')
+  const [mcpUrl, setMcpUrl] = useState('http://ask-mcp-service:4004')
   const [port, setPort] = useState('4004')
 
   useEffect(() => { load() }, [])
@@ -126,7 +126,7 @@ export function McpServerPage() {
                   type="text"
                   value={mcpUrl}
                   onChange={(e) => setMcpUrl(e.target.value)}
-                  placeholder="http://agenticai-mcp-service:4004"
+                  placeholder="http://ask-mcp-service:4004"
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 font-mono shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-xs text-slate-400">

@@ -89,4 +89,4 @@ echo "==> Status:"
 
 echo
 echo "==> Done. Tail the admin-api logs with:"
-echo "    docker logs -f agenticai-admin-api"
+echo "    docker logs -f ask-admin-api"

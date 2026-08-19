@@ -1,4 +1,4 @@
-# ask-admin-spa
+# ask-studio-spa
 
 ASK Platform Admin SPA — React 18 + Vite + TypeScript + Tailwind CSS 3 + React Router v6 + Zustand 4 + React Flow 11.
 
