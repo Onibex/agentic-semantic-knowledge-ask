@@ -36,6 +36,14 @@ slowly than the product version.
 
 ### Changed
 
+- The specification no longer calls itself an "open specification" while inviting
+  pull requests. It is published and vendor-neutral — anyone may read and adopt
+  it — but it is not open source, and PolyForm Strict does not grant derivative
+  works. The section now says so, states that tooling written against the
+  contract belongs to whoever writes it, and adds the line a contributor needs:
+  that what they submit is theirs to give and may be distributed under this
+  repository's licence. A formal CLA, if legal wants one, is a separate step.
+
 - **Infrastructure names move from the legacy `agenticai` prefix to `ask`**, which
   is what the Compose service names already used. Containers are now
   `ask-orchestrator`, `ask-admin-api`, `ask-mcp` and so on; the Compose project
