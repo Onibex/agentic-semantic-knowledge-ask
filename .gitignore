@@ -12,5 +12,9 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Claude Code — personal permissions stay local; skills + shared config are tracked
-.claude/settings.local.json
+# Claude Code — internal tooling stays out of the public repository. The skills
+# carry no credentials, but they map our deployment surface: that a dev box runs
+# on HTTP without TLS, where the internal runbook lives, Security Group and
+# Keycloak redirect details. None of that serves a reader; together it hands a
+# stranger a sketch of how we deploy.
+.claude/
