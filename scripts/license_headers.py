@@ -17,6 +17,7 @@ SPDX tag) is replaced in place rather than duplicated.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -64,6 +65,14 @@ def kind_of(path: Path) -> str | None:
         return None
     if path.name.lower().startswith("dockerfile"):
         return BY_STEM["dockerfile"]
+    if path.suffix == ".toml":
+        # A package manifest states its license in metadata — that is the
+        # canonical place, and a comment header would only drift from it. A
+        # TOML with no license field has nowhere to say it, so it gets one.
+        try:
+            return None if re.search(r"^license\s*=", path.read_text(encoding="utf-8"), re.M) else HASH
+        except (UnicodeDecodeError, OSError):
+            return None
     return BY_SUFFIX.get(path.suffix)
 
 
