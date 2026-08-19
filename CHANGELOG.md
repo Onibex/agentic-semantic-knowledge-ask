@@ -19,6 +19,8 @@ slowly than the product version.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-08-19
+
 ### Added
 
 - **The specification carries its own version: `ask-spec 1.0`**, declared in
@@ -142,5 +144,6 @@ marks where its licensing became complete and consistent enough to publish.
   `monaco-editor`; Onibex elects Apache-2.0 for it. The MPL-licensed Python
   transitives are listed as well.
 
-[Unreleased]: https://github.com/Onibex/agentic-semantic-knowledge-ask/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Onibex/agentic-semantic-knowledge-ask/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Onibex/agentic-semantic-knowledge-ask/releases/tag/v1.0.0

@@ -19,7 +19,7 @@ authors:
   - name: "Onibex, LLC"
     website: "https://onibex.com"
 license-url: "https://polyformproject.org/licenses/strict/1.0.0"
-version: "1.0.0"
+version: "1.1.0"
 date-released: "2026-08-19"
 url: "https://onibex.com"
 repository-code: "https://github.com/Onibex/agentic-semantic-knowledge-ask"

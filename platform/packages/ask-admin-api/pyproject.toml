@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ask-admin-api"
-version = "1.0.0"
+version = "1.1.0"
 description = "ASK Platform — Admin API: dictionary CRUD + ingestion endpoints consumed by the admin SPA. Physically separate from ask-orchestrator (different pod, different audience)."
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
