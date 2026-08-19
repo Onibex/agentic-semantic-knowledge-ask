@@ -19,6 +19,18 @@ slowly than the product version.
 
 ## [Unreleased]
 
+### Added
+
+- **The specification carries its own version: `ask-spec 1.0`**, declared in
+  `definition/README.md` and in `llms.txt`. It is deliberately separate from the
+  repository release: the release says which build of the platform you run, the
+  specification version says which contract your YAML is written against. The
+  platform iterates far more often than the contract, and a breaking change in
+  the platform should not signal to everyone who adopted the specification that
+  their files need revisiting. Two digits, no patch — a contract does not get
+  bugfixes, it gets changes. The README badge, which gestured at "Spec v1" with
+  an empty label and a dead link, now says it properly.
+
 ### Changed
 
 - **Infrastructure names move from the legacy `agenticai` prefix to `ask`**, which

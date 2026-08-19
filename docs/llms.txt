@@ -20,7 +20,8 @@ below before integrating this project into a product or service.
 - [Getting Started](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/GETTING_STARTED.md): bring up the stack
   locally or via `docker compose up`.
 - [ASK Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/README.md): the Bronze/Silver/Gold YAML
-  contract for the semantic layer.
+  contract for the semantic layer — **ask-spec 1.0**, versioned separately from
+  the platform release.
 
 ## Licensing
 
