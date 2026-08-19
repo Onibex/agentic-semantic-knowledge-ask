@@ -2,7 +2,7 @@
 
 > A YAML specification for AI-ready data products. The semantic foundation for Agentic AI on enterprise data.
 
-[![Spec: ](https://img.shields.io/badge/Spec-%20v1-orange.svg)]()
+[![Spec: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-orange.svg)](#specification-version)
 [![Maintained by: Onibex](https://img.shields.io/badge/Maintained%20by-Onibex-black.svg)](https://onibex.com)
 
 ---
@@ -215,6 +215,30 @@ ASK is deliberately **runtime-neutral**. You can serve an ASK catalog from Cube,
 - **Data practitioners** wanting a portable, vendor-neutral way to describe Foundational and Business Logic Data Products.
 
 ASK was forged on SAP ECC and S/4HANA workloads, but the spec is source-system agnostic. Examples for Salesforce, Workday, NetSuite, and other systems are welcome via PR.
+
+---
+
+## Specification version
+
+**ask-spec 1.0.**
+
+The specification carries its own version, separate from the release number of
+the repository. They answer different questions: the release says which build of
+the Onibex ASK Platform you are running, and the specification version says
+which contract your YAML is written against. The platform will iterate far more
+often than the contract, and a breaking change there should not tell everyone
+who adopted the specification that their files need revisiting.
+
+Two digits, no patch level: a contract does not get bugfixes, it gets changes.
+
+| | When it moves |
+|---|---|
+| **MAJOR** — `2.0` | A document valid under the previous version stops being valid: a required field is removed or renamed, or resolution semantics change. |
+| **MINOR** — `1.1` | Additions that leave existing documents valid: a new optional field, a new layer of documentation, clarified wording. |
+
+Not to be confused with the `version:` field inside each data product, which
+belongs to that artifact — it tracks the evolution of one entity, not of the
+contract that describes it.
 
 ---
 
