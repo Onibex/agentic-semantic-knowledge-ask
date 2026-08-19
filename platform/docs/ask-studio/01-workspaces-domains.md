@@ -1,13 +1,13 @@
-# ASK Admin · Workspaces & Business Domains
+# ASK Studio · Workspaces & Business Domains
 
-> **Flow 1 of the ASK Admin manual.** Create the containers your data lives in — a
+> **Flow 1 of the ASK Studio manual.** Create the containers your data lives in — a
 > **Workspace** and the **Business Domains** inside it — and assign Data Products to a domain.
 
 | | |
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~3 minutes |
-| **Prerequisites** | You can sign in to **ASK Admin** (see [Installation](../01-installation.md)). |
+| **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A workspace containing at least one business domain, ready to hold Data Products. |
 
 **Where this fits:** Configure → **Author — containers (you are here)** → Add Data Products → Publish → Ask

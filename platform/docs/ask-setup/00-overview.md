@@ -10,7 +10,7 @@
 | **Who** | Administrator (**ask-admin** role) |
 | **Time** | ~10 minutes for a first pass; most sections are set once |
 | **Prerequisites** | The platform is installed and running (see [Installation](../01-installation.md)) and you can sign in to **ASK Setup**. |
-| **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Admin and answer in the chat. |
+| **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Studio and answer in the chat. |
 
 **Where this fits:** **Configure — Overview (you are here)** → Author → Publish → Ask
 
@@ -23,7 +23,7 @@
 ## Concepts (30-second version)
 
 - **ASK Setup is one of three apps.** The platform ships three separate front-ends: **ASK Setup**
-  (this configuration app), **ASK Admin** (authoring the semantic layer), and the **chat** (asking
+  (this configuration app), **ASK Studio** (authoring the semantic layer), and the **chat** (asking
   questions). This section of the manual documents ASK Setup only.
 - **Two kinds of section.** Some sections are **read-only** mirrors of what the environment already
   provides (**Setup** / OpenSearch, **Identity Provider**). Others are **editable registries**
@@ -32,7 +32,7 @@
 - **Secrets live in an encrypted store, not on disk.** Connection credentials are encrypted at rest
   inside OpenSearch and never written to `settings.json`. See [Where configuration is stored](#where-configuration-is-stored).
 - **The Semantic Dictionary and Documents are not here.** Business-term mappings and document
-  ingestion moved to **ASK Admin**. See [What lives in ASK Admin, not here](#what-lives-in-ask-admin-not-here).
+  ingestion moved to **ASK Studio**. See [What lives in ASK Studio, not here](#what-lives-in-ask-admin-not-here).
 
 ---
 
@@ -111,17 +111,17 @@ others are read-only:
 - **`settings.json` is pruned.** The on-disk config file now holds only a handful of non-secret
   keys. It is no longer the home of database or LLM credentials.
 
-## What lives in ASK Admin, not here
+## What lives in ASK Studio, not here
 
 Two capabilities that older versions of the platform placed under configuration now belong to
-**ASK Admin**:
+**ASK Studio**:
 
-- **The Semantic Dictionary** — business-term and phrase mappings. Managed on the ASK Admin
+- **The Semantic Dictionary** — business-term and phrase mappings. Managed on the ASK Studio
   dictionary page, not in ASK Setup.
 - **Document ingestion** — uploading PDFs, Word, text and Markdown for documentation answers.
-  Managed on the ASK Admin Docs page.
+  Managed on the ASK Studio Docs page.
 
-If you are looking for either, switch to ASK Admin.
+If you are looking for either, switch to ASK Studio.
 
 ---
 

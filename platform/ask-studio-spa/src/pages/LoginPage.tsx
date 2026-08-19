@@ -15,7 +15,7 @@ import { startLoginFlow } from '@/auth/pkceFlow'
 import { useAuthStore } from '@/store/authStore'
 import onibexLogo from '@/assets/Onibex_logo-azul2.png'
 
-// ─── Shared login design line (kept identical across ask-admin/chat/setup SPAs;
+// ─── Shared login design line (kept identical across ask-studio/chat/setup SPAs;
 // only APP_ROLE differs). Until the `@ask/spa-auth` package lands (BACKLOG M),
 // this block is duplicated verbatim in each SPA's LoginPage.tsx. ──────────────
 const APP_ROLE = 'ASK Studio'

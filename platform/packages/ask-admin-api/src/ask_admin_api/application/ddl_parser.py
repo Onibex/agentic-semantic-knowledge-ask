@@ -18,7 +18,7 @@ the assembly and ``ddl_import_service.py`` for the orchestration.
 
 Scope: ``CREATE TABLE`` statements with a typed column list, across the engines
 the DDL + AI feature declares (PostgreSQL, SAP HANA, ClickHouse, Db2, Snowflake,
-Databricks, BigQuery, SQL Server, Fabric — docs/ask-admin/02-add-data-products.md
+Databricks, BigQuery, SQL Server, Fabric — docs/ask-studio/02-add-data-products.md
 Mode C). Views / CTAS / column-less definitions parse to a relation with
 ``columns == []`` — the caller falls back to the full-LLM path for those.
 

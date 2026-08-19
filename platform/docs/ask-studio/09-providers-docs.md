@@ -1,6 +1,6 @@
-# ASK Admin · System Setup & Document Ingestion
+# ASK Studio · System Setup & Document Ingestion
 
-> **Flow 9 of the ASK Admin manual.** Two curator tools that remain in ASK Admin now that most
+> **Flow 9 of the ASK Studio manual.** Two curator tools that remain in ASK Studio now that most
 > configuration has moved to ASK Setup: **System Setup** — view the LLM, Embedder and
 > OpenSearch providers and edit the shared **Embedder** — and **Docs** — upload documentation
 > files into the RAG index so the agent can answer documentation questions.
@@ -9,14 +9,14 @@
 |---|---|
 | **Who** | Administrator / platform curator |
 | **Time** | ~5 minutes |
-| **Prerequisites** | Signed in to **ASK Admin**; embedder credentials to hand (paste-ready) if you intend to edit the Embedder. |
+| **Prerequisites** | Signed in to **ASK Studio**; embedder credentials to hand (paste-ready) if you intend to edit the Embedder. |
 | **You'll end with** | A verified Embedder connection and any documentation files indexed for the agent's docs-query mode. |
 
 **Where this fits:** **Configure — System Setup & Docs (you are here)** → Author → Publish → Ask
 
 > **Provider, model, database and identity configuration now live in ASK Setup**, not here —
 > see the [ASK Setup overview](../ask-setup/00-overview.md). This page covers only the two
-> concerns that remain in ASK Admin: the **shared Embedder** and **document ingestion**. Use a
+> concerns that remain in ASK Studio: the **shared Embedder** and **document ingestion**. Use a
 > **real** provider when editing the Embedder; **never expose a real API key** — redact every
 > credential field before capturing a screenshot.
 
@@ -26,8 +26,8 @@
 
 - **System Setup** shows one **card per system concern** — **LLM**, **Embedder** and
   **OpenSearch**. Only the **Embedder** is editable here; it is a **single shared config**
-  used across ASK Admin and ASK Setup.
-- The **LLM** card is **read-only** in ASK Admin. It is managed in ASK Setup — the card links
+  used across ASK Studio and ASK Setup.
+- The **LLM** card is **read-only** in ASK Studio. It is managed in ASK Setup — the card links
   out with **Manage in ASK Setup**. LLM and Embedder each render as a clean **model-summary
   line**, not a list of credential rows.
 - The **OpenSearch** card lists its fields with a **source badge** per row (where each value
@@ -67,7 +67,7 @@ only reflects what is configured there.
 ### 3. Edit the Embedder (the one editable provider)
 
 The **Embedder** card carries a **Shared** badge, a model-summary line, and both an **Edit**
-and a **Test** button. It is the only provider you edit from ASK Admin, and the same config is
+and a **Test** button. It is the only provider you edit from ASK Studio, and the same config is
 shared with ASK Setup.
 
 Click **Edit** to open the **Edit embedder** drawer (a right-side panel). Its subtitle reads

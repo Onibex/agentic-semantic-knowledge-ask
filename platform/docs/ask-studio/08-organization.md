@@ -1,6 +1,6 @@
-# ASK Admin · Organization Profile
+# ASK Studio · Organization Profile
 
-> **Flow 8 of the ASK Admin manual.** Set the singleton **Organization profile** — the
+> **Flow 8 of the ASK Studio manual.** Set the singleton **Organization profile** — the
 > customer's identity (company name, source system, portal URL) that is prepended to the
 > agent's system prompt so every answer is framed in your environment.
 
@@ -8,7 +8,7 @@
 |---|---|
 | **Who** | Administrator |
 | **Time** | ~1 minute |
-| **Prerequisites** | You can sign in to **ASK Admin** (see [Installation](../01-installation.md)). |
+| **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A saved Organization profile the agent uses on every query, and a source system that pre-fills new Data Products. |
 
 **Where this fits:** **Configure — Organization (you are here)** → Author → Publish → Ask

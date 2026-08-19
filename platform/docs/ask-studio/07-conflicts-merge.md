@@ -1,6 +1,6 @@
-# ASK Admin · Conflicts & OneConnect Merge
+# ASK Studio · Conflicts & OneConnect Merge
 
-> **Flow 7 of the ASK Admin manual.** When a fresh **OneConnect** export disagrees
+> **Flow 7 of the ASK Studio manual.** When a fresh **OneConnect** export disagrees
 > with a Data Product you already curated, the platform records the differences as
 > **conflicts**. This page shows how to find them and resolve them, field by field.
 

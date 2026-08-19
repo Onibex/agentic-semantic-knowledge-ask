@@ -1,6 +1,6 @@
-# ASK Admin · Edit & Enrich Data Products
+# ASK Studio · Edit & Enrich Data Products
 
-> **Flow 3 of the ASK Admin manual.** Refine a Data Product after you've created it — fix its
+> **Flow 3 of the ASK Studio manual.** Refine a Data Product after you've created it — fix its
 > **fields**, **relationships** and **join conditions** by hand, then let **AI Assist** improve
 > descriptions and synonyms. Everything here happens *before* you publish.
 

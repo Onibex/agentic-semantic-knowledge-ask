@@ -1,6 +1,6 @@
-# ASK Admin · Publish & Deploy (dev → prod)
+# ASK Studio · Publish & Deploy (dev → prod)
 
-> **Flow 5 of the ASK Admin manual.** Nothing you author is queryable until it is
+> **Flow 5 of the ASK Studio manual.** Nothing you author is queryable until it is
 > **published**. This page covers how a Data Product moves from your **Working** draft to
 > **dev**, then is promoted to **prod** — one Data Product at a time, or a whole domain at once.
 

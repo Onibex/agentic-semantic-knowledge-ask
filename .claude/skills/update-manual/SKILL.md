@@ -16,11 +16,11 @@ documents. A code change and its doc update belong in the same PR.
 ## Where things are
 - **Code**: `platform/` — packages, the three SPAs, compose.
 - **Manual**: `platform/docs/` — `README.md` (index), `01-installation.md`,
-  `02-concepts.md`, `ask-admin/` (authoring flows), `ask-chat/`, `reference/`, `images/`.
+  `02-concepts.md`, `ask-studio/` (authoring flows), `ask-chat/`, `reference/`, `images/`.
 - **Engine docs** (same folder, different audience): `FLASH.md`, `PRECISE.md`,
   `SMART.md`, `semantic-layer/`, `runbooks/`.
 - **Spec** the manual references: `definition/` in this same repo — link RELATIVELY
-  (e.g. from `platform/docs/ask-admin/` → `../../../definition/docs/...`).
+  (e.g. from `platform/docs/ask-studio/` → `../../../definition/docs/...`).
 - **`platform/docs/_authoring/`** (`DEMO_DATA.md`, `SCREENSHOTS.md`, `AUTHORING.md`) is
   **git-ignored** — internal aids, never shipped.
 

@@ -1,6 +1,6 @@
-# ASK Admin · Domain Canvas (Graph)
+# ASK Studio · Domain Canvas (Graph)
 
-> **Flow 4 of the ASK Admin manual.** Open a single **Business Domain** to see its
+> **Flow 4 of the ASK Studio manual.** Open a single **Business Domain** to see its
 > **canvas** — the scoped graph of the Data Products it contains and how they relate.
 > This is where you visually curate a domain: add or remove Data Products, inspect any
 > node, and read the layer topology at a glance.

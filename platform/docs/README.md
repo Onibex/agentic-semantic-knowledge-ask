@@ -4,7 +4,7 @@
 
 If you just want to get going fast, start with [Installation](01-installation.md) then
 [Concepts](02-concepts.md); this manual is the in-depth reference that documents **every
-flow** across ASK Setup, ASK Admin and the Chat.
+flow** across ASK Setup, ASK Studio and the Chat.
 
 > Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
 
@@ -23,12 +23,12 @@ mirrors it:
 1. [Installation & Running the Platform](01-installation.md)
 2. [Concepts & Architecture](02-concepts.md)
 3. [ASK Setup · Overview](ask-setup/00-overview.md) — configure the platform (database, providers, identity)
-4. [ASK Admin · Overview & Navigation](ask-admin/00-overview.md)
-5. [ASK Admin · Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)
-6. [ASK Admin · Add Data Products](ask-admin/02-add-data-products.md)
-7. [ASK Admin · Edit & Enrich Data Products](ask-admin/03-edit-enrich.md)
-8. [ASK Admin · Domain Canvas (Graph)](ask-admin/04-domain-canvas.md)
-9. [ASK Admin · Publish & Deploy (dev → prod)](ask-admin/05-publish-deploy.md)
+4. [ASK Studio · Overview & Navigation](ask-studio/00-overview.md)
+5. [ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)
+6. [ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)
+7. [ASK Studio · Edit & Enrich Data Products](ask-studio/03-edit-enrich.md)
+8. [ASK Studio · Domain Canvas (Graph)](ask-studio/04-domain-canvas.md)
+9. [ASK Studio · Publish & Deploy (dev → prod)](ask-studio/05-publish-deploy.md)
 10. [ASK Chat · Overview & Navigation](ask-chat/00-overview.md)
 
 ## By area
@@ -47,17 +47,17 @@ mirrors it:
 - [MCP Server](ask-setup/06-mcp-server.md)
 - [Contracts](ask-setup/07-contracts.md) — OpenAPI → MCP tools
 
-### ASK Admin (semantic-layer authoring)
-- [Overview & Navigation](ask-admin/00-overview.md)
-- [Workspaces & Business Domains](ask-admin/01-workspaces-domains.md)
-- [Add Data Products](ask-admin/02-add-data-products.md) — Manual / Upload / DDL + AI / OneConnect
-- [Edit & Enrich Data Products](ask-admin/03-edit-enrich.md)
-- [Domain Canvas (Graph)](ask-admin/04-domain-canvas.md)
-- [Publish & Deploy (dev → prod)](ask-admin/05-publish-deploy.md)
-- [History (Audit, Diff, Restore)](ask-admin/06-history.md)
-- [Conflicts & OneConnect Merge](ask-admin/07-conflicts-merge.md)
-- [Organization Profile](ask-admin/08-organization.md)
-- [System Setup & Document Ingestion](ask-admin/09-providers-docs.md) — read-only providers, shared embedder, RAG docs
+### ASK Studio (semantic-layer authoring)
+- [Overview & Navigation](ask-studio/00-overview.md)
+- [Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)
+- [Add Data Products](ask-studio/02-add-data-products.md) — Manual / Upload / DDL + AI / OneConnect
+- [Edit & Enrich Data Products](ask-studio/03-edit-enrich.md)
+- [Domain Canvas (Graph)](ask-studio/04-domain-canvas.md)
+- [Publish & Deploy (dev → prod)](ask-studio/05-publish-deploy.md)
+- [History (Audit, Diff, Restore)](ask-studio/06-history.md)
+- [Conflicts & OneConnect Merge](ask-studio/07-conflicts-merge.md)
+- [Organization Profile](ask-studio/08-organization.md)
+- [System Setup & Document Ingestion](ask-studio/09-providers-docs.md) — read-only providers, shared embedder, RAG docs
 
 ### ASK Chat (end users)
 - [Overview & Navigation](ask-chat/00-overview.md)

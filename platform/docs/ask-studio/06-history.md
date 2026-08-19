@@ -1,6 +1,6 @@
-# ASK Admin · History (Audit, Diff, Restore)
+# ASK Studio · History (Audit, Diff, Restore)
 
-> **Flow 6 of the ASK Admin manual.** Every Data Product is Git-backed. This page shows how to
+> **Flow 6 of the ASK Studio manual.** Every Data Product is Git-backed. This page shows how to
 > **audit** the changes to a Data Product over time, **diff** any two versions side by side, and
 > **restore** an earlier version — all keyed to the person who made each change.
 
@@ -8,7 +8,7 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~2 minutes |
-| **Prerequisites** | Signed in to **ASK Admin**; at least one Data Product with a change or two (create one in [Flow 2 · Add Data Products](02-add-data-products.md)). |
+| **Prerequisites** | Signed in to **ASK Studio**; at least one Data Product with a change or two (create one in [Flow 2 · Add Data Products](02-add-data-products.md)). |
 | **You'll end with** | Confidence in what changed, when, and by whom — plus a restored version if you needed one. |
 
 **Where this fits:** Configure → **Author — History (you are here)** → Publish → Ask

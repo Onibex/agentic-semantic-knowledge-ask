@@ -1,6 +1,6 @@
-# ASK Admin · Add Data Products
+# ASK Studio · Add Data Products
 
-> **Flow 2 of the ASK Admin manual.** Create the entities that make up your semantic layer —
+> **Flow 2 of the ASK Studio manual.** Create the entities that make up your semantic layer —
 > the **Data Products** the agent maps questions to. There are **four ways** to add one;
 > this page covers when to use each and how.
 
@@ -8,7 +8,7 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 2–10 minutes depending on the mode |
-| **Prerequisites** | Signed in to **ASK Admin**; a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
+| **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
 
 **Where this fits:** Configure → **Author — Data Products (you are here)** → Organize → Publish → Ask
