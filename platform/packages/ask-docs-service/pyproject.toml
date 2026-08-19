@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ask-docs-service"
-version = "1.0.0"
+version = "1.1.0"
 description = "ASK Platform — Docs service (handles DOCS_QUERY: data-product Q&A via dedicated retrieval)"
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}

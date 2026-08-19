@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ask-llm-gateway"
-version = "1.0.0"
+version = "1.1.0"
 description = "ASK Platform — Backbone: SAP AI Core adapter (LLM + embeddings + token tracking)"
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
