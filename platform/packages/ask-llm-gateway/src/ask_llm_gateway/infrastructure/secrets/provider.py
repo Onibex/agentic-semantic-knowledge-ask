@@ -22,11 +22,11 @@ safety net.
 from __future__ import annotations
 
 import logging
-import os
 import threading
 import time
 from typing import Any
 
+from ..env_ledger import apply as apply_env
 from .repository import SecretsRepository
 
 logger = logging.getLogger(__name__)
@@ -162,9 +162,14 @@ def _export_fields(target: str, fields: dict[str, str]) -> list[str]:
     For ``target == "llm"`` a field named ``api_key`` becomes ``LLM_API_KEY``;
     for ``target == "embedder"`` it becomes ``EMBEDDER_API_KEY``. Provider-
     specific env vars (AWS_*, VERTEXAI_*) stay as-is.
+
+    Writes go through the env ledger under ``target``, so the variables the
+    previous config seeded for the same plane are retired here. That is what
+    makes the ``/test`` probe's seeding transient: the probe writes under the
+    same plane, and the next real read replaces it.
     """
     prefix = "LLM_" if target == "llm" else "EMBEDDER_" if target == "embedder" else ""
-    written: list[str] = []
+    pending: dict[str, str] = {}
     for name, value in fields.items():
         if value in (None, ""):
             continue
@@ -173,6 +178,5 @@ def _export_fields(target: str, fields: dict[str, str]) -> list[str]:
         else:
             env_name = name
         if env_name:
-            os.environ[env_name] = str(value)
-            written.append(env_name)
-    return written
+            pending[env_name] = str(value)
+    return apply_env(f"fields:{target}", pending)

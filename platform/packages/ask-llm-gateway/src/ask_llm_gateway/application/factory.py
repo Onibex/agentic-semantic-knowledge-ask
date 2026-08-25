@@ -228,8 +228,10 @@ def build_llm_probe(provider: str, model: str, fields: dict[str, str]) -> Any:
 
     Credentials are seeded into ``os.environ`` (LLM_ prefix for
     api_key/api_base/api_version/deployment_id; AWS_*/VERTEXAI_*/GOOGLE_* verbatim)
-    so env-var providers (Bedrock, Vertex) work. The next real ``build_llm()``
-    re-seeds from the live ``llm`` doc, so this transient pollution self-heals.
+    so env-var providers (Bedrock, Vertex) work. Both writes are ledgered: the
+    field seeding shares the ``llm`` plane, so the next real ``build_llm()``
+    replaces it, and the LiteLLM layer writes under its own ``probe`` scope so
+    testing one connection never retires the credentials of the active one.
     """
     if not provider:
         raise ValueError("No provider configured for the connection under test.")
@@ -247,6 +249,7 @@ def build_llm_probe(provider: str, model: str, fields: dict[str, str]) -> Any:
 
     return build_litellm_chat(
         provider=provider,
+        scope="probe",
         model=model,
         api_key=fields.get("api_key") or None,
         api_base=fields.get("api_base") or None,

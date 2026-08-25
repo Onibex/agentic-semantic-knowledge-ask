@@ -26,12 +26,20 @@ Two layers, applied in order (later wins):
 
 Only sets a var when a value is present — never clobbers an existing env var
 with an empty string (so a Kyma Secret / shell export is not wiped out).
+
+Writes go through :mod:`env_ledger`, which also **retires** what a previous
+configuration wrote. Without that, switching providers leaves the old one's
+variables in the process: an ``AWS_ACCESS_KEY_ID`` from a config that is gone
+still reaches boto3, which stops at the first credential source it finds. The
+``scope`` argument names the writer — the live LLM, the embedder, a ``/test``
+probe — so retiring one never strips a variable another still needs.
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
+
+from .env_ledger import apply as _apply_env
 
 # Set LiteLLM-wide flags exactly once, at the earliest point in the import
 # graph that the direct path can be wired from.
@@ -87,21 +95,22 @@ _VERSION_ENV: dict[str, str] = {
 }
 
 
-def _set(name: str, value: str | None) -> None:
-    """Export ``name`` only when both ``name`` and ``value`` are non-empty.
+def _stage(pending: dict[str, str], name: str, value: str | None) -> None:
+    """Queue ``name`` only when both ``name`` and ``value`` are non-empty.
 
     Skipping empty names matters when the active provider has no entry in
     ``_API_KEY_ENV`` / ``_BASE_ENV`` / ``_VERSION_ENV``: ``dict.get(prov, "")``
-    returns ``""`` and ``os.environ[""] = ...`` would raise ``ValueError``.
-    Such providers rely on the ``params`` literal-passthrough escape hatch.
+    returns ``""`` and an empty env var name is not writable. Such providers
+    rely on the ``params`` literal-passthrough escape hatch.
     """
     if name and value:
-        os.environ[name] = str(value)
+        pending[name] = str(value)
 
 
 def ensure_litellm_provider_env(
     provider: str,
     *,
+    scope: str = "llm",
     api_key: str | None = None,
     api_base: str | None = None,
     api_version: str | None = None,
@@ -111,15 +120,23 @@ def ensure_litellm_provider_env(
 
     ``provider`` is the LiteLLM provider id (``bedrock``, ``azure``, ``anthropic``,
     ``vertex_ai`` …). ``params`` is a literal env-var map applied last.
+
+    ``scope`` identifies the writer — ``"llm"``, ``"embedder"``, ``"probe"``.
+    Each scope's contribution is replaced wholesale, so a provider switch retires
+    the previous provider's variables instead of leaving them to be found by
+    boto3 later. Variables another scope still contributes are left alone.
     """
     prov = (provider or "").strip().lower()
+    pending: dict[str, str] = {}
 
     # Layer 1 — convenience fields mapped to the provider's expected env var.
-    _set(_API_KEY_ENV.get(prov, ""), api_key)
-    _set(_BASE_ENV.get(prov, ""), api_base)
-    _set(_VERSION_ENV.get(prov, ""), api_version)
+    _stage(pending, _API_KEY_ENV.get(prov, ""), api_key)
+    _stage(pending, _BASE_ENV.get(prov, ""), api_base)
+    _stage(pending, _VERSION_ENV.get(prov, ""), api_version)
 
     # Layer 2 — literal passthrough (overrides on conflict). Escape hatch for
     # Bedrock (AWS_*), Vertex (VERTEXAI_*/GOOGLE_APPLICATION_CREDENTIALS), etc.
     for key, value in (params or {}).items():
-        _set(str(key), value)
+        _stage(pending, str(key), value)
+
+    _apply_env(f"litellm:{scope}", pending)

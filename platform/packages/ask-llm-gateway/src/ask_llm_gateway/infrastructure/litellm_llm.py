@@ -85,6 +85,7 @@ def build_litellm_chat(
     *,
     provider: str,
     model: str,
+    scope: str = "llm",
     api_key: str | None = None,
     api_base: str | None = None,
     api_version: str | None = None,
@@ -97,11 +98,17 @@ def build_litellm_chat(
     langchain-litellm releases); the constructor stays on the universally
     present fields. ``AutoTrackingCallback`` is attached for token accounting.
 
+    ``scope`` names the writer for the env ledger — ``"llm"`` for the active
+    model, ``"probe"`` for a ``/test`` call against a connection that is not
+    active. Keeping the probe separate stops a test from retiring the
+    credentials the live model is using.
+
     Raises ValueError if ``model`` is missing, ImportError if langchain-litellm
     is not installed.
     """
     ensure_litellm_provider_env(
         provider,
+        scope=scope,
         api_key=api_key,
         api_base=api_base,
         api_version=api_version,
