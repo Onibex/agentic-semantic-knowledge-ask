@@ -1,96 +1,160 @@
 # Onibex ASK — Agentic Semantic Knowledge
 
-> Turn natural-language questions into governed, deterministic SQL over enterprise
-> data — grounded in a business-vocabulary semantic layer instead of raw schema.
+> Ask your enterprise data a question in plain language. Get governed, deterministic
+> SQL back — compiled from a business-vocabulary semantic layer, never guessed from
+> raw schema.
 
-This repository is the single home for **ASK**. It holds two complementary bodies of
-work — the **ASK specification** and the **product** that implements it. Pick your path:
+**"How many sales orders are still open for trading goods in plant 1000?"**
+
+A business user types that into **ASK Chat**. ASK resolves *open*, *sales order*,
+*trading goods* and *plant* against a curated semantic layer, computes the join path
+deterministically, compiles SQL in your database's own dialect, runs it, and answers
+with the numbers and the citations behind them.
+
+The LLM maps language to a contract you control. It never invents a table or a column
+name, because it is never shown one it may invent from.
+
+---
+
+## Works with your data where it already lives
+
+ASK does not move or copy your data. It connects to the engine you already run and
+compiles to **that engine's dialect** — each of these has its own SQL generator and
+its own execution adapter, not a generic fallback:
+
+| | | |
+|---|---|---|
+| **SAP HANA** | **Snowflake** | **Google BigQuery** |
+| **PostgreSQL** | **Databricks** | **ClickHouse** |
+| **Microsoft SQL Server** | **Microsoft Fabric** | **IBM Db2** |
+| **Presto** | | |
+
+Connections are configured in **ASK Setup** and stored encrypted — never in a file in
+this repository. Which drivers ship in your image is one build variable
+(`EXECUTOR_EXTRAS`), so a HANA-only deployment stays small.
+
+ASK was forged on SAP ECC and S/4HANA workloads, and that is where its reference
+semantic layer comes from — but nothing in the contract is SAP-specific.
+
+---
+
+## Three interfaces, one platform
+
+| | For | What you do there |
+|---|---|---|
+| 🟣 **ASK Studio** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod through git. |
+| 🔵 **ASK Chat** | Business users | Ask questions in any language. Get answers with the SQL, the sources, and a per-request token breakdown. |
+| ⚙️ **ASK Setup** | Platform engineers | Wire up databases, LLM providers and identity. Everything encrypted at rest. |
+
+All three run from one `docker compose up`, on the same backend, behind the same
+identity provider. There is also an [MCP server](platform/services/) for SAP write
+operations and a `/external/ask` API for agent runtimes such as watsonx Orchestrate,
+n8n and Zapier.
+
+---
+
+## Why not just point an LLM at the schema?
+
+Because a schema does not say what anything *means*. It does not know that `MATNR` is a
+material number, that "open order" means four status fields agreeing, or which of six
+join paths between two tables is the correct one for a revenue question.
+
+An LLM given raw schema fills those gaps by guessing. It is confident, it is fluent, and
+it is wrong in ways nobody catches until the number reaches a board deck.
+
+ASK removes the guessing from the part that must be exact:
+
+- **The LLM chooses among resolved entities.** It never names a table.
+- **Join paths are computed, not written** — Dijkstra over a declared relationship graph.
+- **Retrieval is hybrid and ranked** — kNN + BM25 + RRF over a curated vocabulary.
+- **Everything is scoped** — a workspace allowlist decides what any question can reach.
+
+---
+
+## The semantic layer
+
+Two layers face the agent, and they answer different kinds of question:
+
+| Layer | What it is | When the agent uses it |
+|---|---|---|
+| 🥇 **Gold** | A **business definition** — pre-joined and semantically resolved. "Open Sales Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
+| 🥈 **Silver** | A **reusable enterprise entity** — Customer, Product, Sales Order — with declared grain, measures and relationships. | **Fallback**, when no Gold fits. Also the building blocks Gold is composed from. |
+
+> **Bronze is lineage, and in the usual path you never write it.** When SAP metadata is
+> ingested — the way Onibex OneConnect feeds ASK — one Bronze node per source table is
+> **generated for you**, along with the Silver that composes them. Bronze is what makes
+> a business field traceable back to the physical column it came from, and it is
+> machine output. You author it by hand only when you choose to; a flat Silver imported
+> from a single `CREATE TABLE` has no Bronze at all, and Gold never has any — its table
+> is `db_table_name` and its lineage is `relationships`.
+>
+> The other half never varies: **Bronze is never agent context.** It is not embedded and
+> not indexed into the retrieval registries, so no question can resolve to a raw table.
+> That isolation is structural, not a rule someone has to remember.
+>
+> So the [Bronze specification](definition/docs/BRONZE_LAYER.md) is there to make the
+> generated output well-defined and auditable — read it when you are modelling ingestion
+> or tracing a number to its source. If you are evaluating ASK, skip it.
+
+The [`definition/`](definition/README.md) folder holds the normative rules; the
+[manual](platform/docs/README.md) shows how to author them in ASK Studio.
+
+---
+
+## What ships, and what you write
+
+`definition/examples/` contains **4 Gold, 12 Silver and 15 Bronze** data products drawn
+from SAP SD and MM. They are **reference examples — a shape to copy, not a catalog to
+deploy.** Reading one teaches the contract faster than the spec does.
+
+So where does the line fall in practice?
+
+**Silver is where reuse lives.** A Sales Order, a Customer, a Material behave much the
+same across SAP shops, and the shipped Silvers are a genuine head start — adjust the
+fields your org actually populates and you have a foundation.
+
+**Gold is yours by definition.** A Gold Data Product encodes *your* business question:
+what your company counts as an open order, which exclusions your controllers apply,
+which measures your board reviews. Two companies on identical S/4HANA schemas need
+different Golds, because they run their business differently. The four shipped Golds
+show the shape; the ones that answer your questions are the ones you author — and
+authoring them in ASK Studio is the everyday work the product is built around.
+
+---
+
+## The two halves of this repository
 
 | If you want to… | Go to | What it is |
 |---|---|---|
-| **Learn the ASK specification** — how AI-ready data products are described in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The **ASK specification**: Bronze / Silver / Gold layers, resolution priority, and reference examples. |
-| **Use the Onibex ASK Platform** — install it, author a semantic layer, publish it, and query it from chat | **[`platform/`](platform/README.md)** | The **platform itself** — source code, Docker Compose stack, and the complete manual under [`platform/docs/`](platform/docs/README.md): ASK Studio, ASK Chat, ASK Setup. |
-
----
-
-## What is ASK?
-
-**Agentic Semantic Knowledge (ASK)** is a way to describe enterprise data so that AI
-agents can understand it, reason over it, and act on it reliably.
-
-LLMs are good at writing SQL and chaining steps, but bad at knowing *which* table
-answers *which* business question, what a cryptic code like `MATNR` means, or which
-join path is cheapest. Without that context they hallucinate or refuse. ASK closes the
-gap by formalizing the **business semantics** of data — entities, grains, measures,
-statuses, relationships, and intent — into a layered contract any agent runtime can
-consume.
-
-This repository expresses that idea at two levels:
-
-- **The specification** — [`definition/`](definition/README.md) — the runtime-neutral
-  YAML contract. It describes *what a data product means*, not how it is built. Any
-  vendor or team can adopt it.
-- **The platform** — [`platform/`](platform/README.md) — **Onibex ASK Platform**, the
-  product that implements the standard end to end: author the semantic layer in **ASK
-  Studio**, wire up databases and models in **ASK Setup**, publish dev → prod, and let
-  business users query it in plain language through **ASK Chat**.
-
----
-
-## The three layers
-
-Both halves of this repository speak the same vocabulary — a medallion model in which
-every data product sits in one of three layers, and an agent resolves a question by
-preferring the most business-ready layer first:
-
-| Layer | What it is | Agent visibility |
-|-------|------------|------------------|
-| **Gold** | A business definition, pre-joined and semantically resolved (e.g. "Open Sales Order Tracker"). | **Primary** — preferred first |
-| **Silver** | A reusable enterprise artifact (Customer, Product, Sales Order), composed from Bronze. | **Fallback** — used when no Gold fits |
-| **Bronze** | A raw source table, mostly uninterpreted. | **Avoided** — lineage only, not agent context |
-
-The [`definition/`](definition/README.md) folder gives the **normative rules** for each
-layer; the [`platform/docs/`](platform/docs/README.md) manual shows how to **author
-them** in the product.
-
----
-
-## Repository layout
+| **Learn the specification** — how AI-ready data products are described in vendor-neutral YAML | **[`definition/`](definition/README.md)** | The **ASK specification** (`ask-spec 1.0`): layer rules, resolution priority, reference examples. Runtime-neutral — any vendor can adopt it. |
+| **Run the product** — install it, author a semantic layer, publish it, query it | **[`platform/`](platform/README.md)** | The **Onibex ASK Platform**: source, the Docker Compose stack, and the [complete manual](platform/docs/README.md). |
 
 ```
 agentic-semantic-knowledge-ask/
-├── README.md                 ← you are here
-├── definition/               ← the ASK specification — PolyForm Strict/Free Trial 1.0.0
-│   ├── README.md             ← spec overview + quick example
-│   ├── docs/                 ← Bronze / Silver / Gold layer specifications
-│   ├── examples/             ← reference YAML data products
-│   └── LICENSE               ← PolyForm Strict/Free Trial 1.0.0
-└── platform/                 ← Onibex ASK Platform (the product) — PolyForm Strict/Free Trial 1.0.0
-    ├── README.md             ← product front door + quick start
-    ├── LICENSE.md            ← PolyForm Strict/Free Trial 1.0.0
-    ├── docker-compose.yml    ← the whole stack (OpenSearch, Keycloak, APIs, 3 SPAs)
+├── definition/               ← the ASK specification
+│   ├── docs/                 ← Gold / Silver / Bronze layer specifications
+│   └── examples/             ← reference YAML data products
+└── platform/                 ← Onibex ASK Platform
+    ├── docker-compose.yml    ← the whole stack, one command
+    ├── ask-studio-spa/       ← ASK Studio    (React)
+    ├── ask-chat-spa/         ← ASK Chat      (React)
+    ├── ask-setup-spa/        ← ASK Setup     (React)
     ├── packages/             ← typed Python packages (orchestrator, admin-api, …)
-    ├── ask-studio-spa/        ← ASK Studio (React)
-    ├── ask-chat-spa/         ← ASK Chat (React)
-    ├── ask-setup-spa/        ← ASK Setup (React)
+    ├── services/             ← MCP server for SAP write operations
     └── docs/                 ← product manual + engine docs
-        ├── README.md         ← manual index (read in order / by area)
-        ├── 01-installation.md
-        ├── 02-concepts.md
-        ├── ask-studio/        ← semantic-layer authoring flows
-        ├── ask-chat/         ← using the chat (end users)
-        └── reference/        ← glossary + troubleshooting
 ```
 
 ---
 
 ## Where to start
 
-- **New to the concepts?** Read the standard overview → [`definition/README.md`](definition/README.md).
-- **Deploying or using the product?** Start with
-  [Installation](platform/docs/01-installation.md), then
-  [Concepts & Architecture](platform/docs/02-concepts.md), then the
-  [ASK Studio flows](platform/docs/ask-studio/00-overview.md).
+| You are… | Start here |
+|---|---|
+| **Evaluating ASK** | This page, then [Concepts & Architecture](platform/docs/02-concepts.md) |
+| **Installing it** | [Installation](platform/docs/01-installation.md) — `docker compose up`, then ASK Setup |
+| **Authoring a semantic layer** | [ASK Studio flows](platform/docs/ask-studio/00-overview.md) |
+| **Adopting the specification** | [`definition/README.md`](definition/README.md) |
+| **An AI agent** | [`llms.txt`](llms.txt) |
 
 ---
 
