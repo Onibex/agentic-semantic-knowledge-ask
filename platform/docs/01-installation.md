@@ -59,17 +59,20 @@
 
 ## 2. Create your `.env` file
 
-The stack reads a `.env` file at the repo root. Copy the local template as a starting point and
-edit the values in place:
+The stack reads a `.env` file at the repo root. Two templates ship with it — copy the one that
+matches where you are running and edit the values in place:
+
+| Template | Use it when |
+|---|---|
+| [`.env.example`](../.env.example) | Running on your own machine. |
+| [`.env.remote.example`](../.env.remote.example) | Serving from a remote host — the same variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. |
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # or: cp .env.remote.example .env
 ```
 
-For a remote host start from `.env.remote.example` instead — the same
-variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. **There is no separate remote
-compose file:** the remote deploy is this same `docker-compose.yml` plus a filled-in `.env`; only
-the values differ.
+**There is no separate remote compose file:** the remote deploy is this same `docker-compose.yml`
+plus a filled-in `.env`; only the values differ.
 
 Set the following variables **by name** — never paste real secret values into the manual or into
 version control (`.env` is gitignored). Generate secrets with the one-liners the file documents.
