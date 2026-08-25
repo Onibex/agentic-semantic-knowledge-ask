@@ -42,7 +42,7 @@ semantic layer comes from — but nothing in the contract is SAP-specific.
 
 | | For | What you do there |
 |---|---|---|
-| 🟣 **ASK Studio** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod through git. |
+| 🟣 **ASK Studio** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod. |
 | 🔵 **ASK Chat** | Business users | Ask questions in any language. Get answers with the SQL, the sources, and a per-request token breakdown. |
 | ⚙️ **ASK Setup** | Platform engineers | Wire up databases, LLM providers and identity. Everything encrypted at rest. |
 
