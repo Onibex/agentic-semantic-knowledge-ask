@@ -459,6 +459,25 @@ async def import_ddl(
         raise HTTPException(
             status_code=400, detail=f"layer must be bronze/silver/gold, got '{req.layer}'."
         )
+
+    # `source_system` is not decoration: it picks the TypeMapper that reads the DDL's
+    # column types, and it becomes part of the entity's identity. get_profile() falls
+    # back to the generic ANSI profile for anything it does not recognise and never
+    # raises — right for domain code, wrong for an entry point, because a typo would
+    # then map SAP types with generic rules and say nothing. The UI already offers
+    # only these keys; the API now agrees.
+    from ask_knowledge_graph.domain.source_profiles import list_profiles
+
+    known = {p["key"] for p in list_profiles()}
+    source_system = req.source_system.strip().lower()
+    if source_system not in known:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"source_system must be one of {sorted(known)}, got "
+                f"'{req.source_system}'. It selects the type mapping for this DDL."
+            ),
+        )
     # Fail-fast pre-validator (§7.1): reject garbage / non-DDL / oversized input
     # BEFORE spending an LLM call on it.
     try:
@@ -484,7 +503,7 @@ async def import_ddl(
         ).generate_yaml(
             req.ddl,
             layer=req.layer,
-            source_system=req.source_system,
+            source_system=source_system,   # normalised above, not the raw payload
             context=req.context,
             module=module,
         )

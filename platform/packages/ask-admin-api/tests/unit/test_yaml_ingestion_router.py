@@ -565,6 +565,50 @@ def test_ddl_import_rejects_non_ddl_400_without_llm(client, monkeypatch):
     assert "create table" in resp.json().get("detail", "").lower()
 
 
+def test_ddl_import_rejects_unknown_source_system_400(client, monkeypatch):
+    """A typo must not silently become the generic ANSI type mapping.
+
+    `source_system` picks the TypeMapper that reads the DDL's column types, and
+    `get_profile` falls back to the generic profile for anything it does not
+    recognise without ever raising. Left unchecked at the entry point, a mistyped
+    system mapped SAP types with generic rules and said nothing.
+    """
+    import ask_admin_api.application.ddl_import_service as ddl_mod
+
+    def _boom(self, *a, **kw):
+        raise AssertionError("generate_yaml must not be called for an unknown source system")
+
+    monkeypatch.setattr(ddl_mod.DdlImportService, "generate_yaml", _boom)
+    resp = client[0].post(
+        "/v1/admin/yaml/import/ddl",
+        json={"ddl": "CREATE TABLE x (a int);", "layer": "bronze", "source_system": "sap-s4"},
+    )
+    assert resp.status_code == 400
+    detail = resp.json().get("detail", "")
+    assert "source_system" in detail
+    assert "s4h" in detail  # the caller is told what IS valid
+
+
+def test_ddl_import_normalises_the_source_system(client, monkeypatch):
+    """`S4H `, `s4h` and `S4H` are one system — compare normalised, not raw."""
+    import ask_admin_api.application.ddl_import_service as ddl_mod
+
+    seen: dict[str, str] = {}
+
+    def _capture(self, ddl, *, layer, source_system, context="", module=None, max_attempts=3):
+        seen["source_system"] = source_system
+        return [], 0, []
+
+    monkeypatch.setattr(ddl_mod.DdlImportService, "generate_yaml", _capture)
+    resp = client[0].post(
+        "/v1/admin/yaml/import/ddl",
+        json={"ddl": "CREATE TABLE x (a int);", "layer": "bronze", "source_system": "  S4H "},
+    )
+    # 422: no docs produced — the point is that it got past validation normalised.
+    assert resp.status_code == 422
+    assert seen["source_system"] == "s4h"
+
+
 def test_ddl_import_rejects_bad_layer_400(client):
     cli = client[0]
     resp = cli.post(
