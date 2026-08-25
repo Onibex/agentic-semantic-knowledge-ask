@@ -119,6 +119,11 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
   // Silver / Gold
   const [modules, setModules] = useState<string[]>(['sd'])
   const [dbTableName, setDbTableName] = useState('')
+  // A Silver that IS one table has no bronze beneath it — the shape a DDL import
+  // already produces from a bare CREATE TABLE. `composed_of` stays required (the
+  // workspace scope resolver and the publish cascade both read it), so this fills
+  // it with the entity's own physical table rather than relaxing the contract.
+  const [isFlat, setIsFlat] = useState(false)
   const [classification, setClassification] = useState('T')
   // Gold authors entity_role directly (see derivedEntityRole).
   const [goldEntityRole, setGoldEntityRole] = useState('fact')
@@ -534,7 +539,11 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
         })),
     }
     // Silver carries composed_of + join_graph (lineage); Gold omits both.
-    if (layer === 'silver') {
+    if (layer === 'silver' && isFlat) {
+      // One table, no joins — same shape the DDL import writes for a bare
+      // CREATE TABLE, so every consumer of composed_of keeps working unchanged.
+      node.composed_of = [dbTableName.trim() || entityId]
+    } else if (layer === 'silver') {
       node.composed_of = composed
       node.join_graph = joins.map((j) => ({
         left_table: j.left,
@@ -557,7 +566,7 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
       return null
     }
     if (modules.length === 0) return 'Pick at least one module'
-    if (layer === 'silver' && composed.length === 0) return 'Pick at least one bronze table (composed_of)'
+    if (layer === 'silver' && !isFlat && composed.length === 0) return 'Pick at least one bronze table (composed_of)'
     if (layer === 'silver' && !dbTableName.trim() && !entityId) return 'db_table_name is required'
     const rows = sgFields.filter((f) => f.name.trim())
     if (rows.length === 0) return 'Add at least one field'
@@ -686,10 +695,32 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
 
       {/* Compose + join graph (silver) */}
       {layer === 'silver' && (
-        <Section title="Composed of" hint="Pick the bronze tables this Silver is built from.">
+        <Section
+          title="Composed of"
+          hint={isFlat ? 'This Silver is its own table — nothing to compose.' : 'Pick the bronze tables this Silver is built from.'}
+        >
           <div className="rounded-md border border-amber-200 bg-amber-50/50 px-3 py-2 text-[11px] text-amber-800 mb-3">
             <b>Lineage, not runtime.</b> The agent queries the single <span className="font-mono">db_table_name</span>; <span className="font-mono">composed_of</span> + <span className="font-mono">join_graph</span> document how it was assembled — never executed at query time.
           </div>
+          <label className="flex items-start gap-2 mb-3 text-xs text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isFlat}
+              onChange={(e) => setIsFlat(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              <b>This Silver is a single table</b> — it has no bronze lineage.
+              <span className="block text-gray-500">
+                Use it for an entity that already exists as one physical table.{' '}
+                <span className="font-mono">composed_of</span> is set to{' '}
+                <span className="font-mono">{dbTableName.trim() || entityId || 'db_table_name'}</span>{' '}
+                and there is no join graph.
+              </span>
+            </span>
+          </label>
+          {isFlat ? null : (
+          <>
           <div className="flex gap-2 items-center">
             <select value={pickBronze} onChange={(e) => setPickBronze(e.target.value)} className={`${inputCls} flex-1`}>
               <option value="">— pick a bronze table —</option>
@@ -734,6 +765,8 @@ export function ManualEntityForm({ onCreated, onClose }: Props) {
                 ))}
               </div>
             </div>
+          )}
+          </>
           )}
         </Section>
       )}
