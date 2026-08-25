@@ -104,7 +104,18 @@ def _normalize_flat_entity(docs: list[str], ddl: str, layer: str) -> tuple[list[
     target layer, or has no ``db_table_name`` to anchor on."""
     if layer not in ("silver", "gold"):
         return docs, []
-    is_bare_table = not _JOIN_RE.search(_strip_sql_comments(ddl))
+    # Flatness is a property of ONE statement, but this path can be handed several
+    # (the legacy route receives every fallback relation joined together). Judged
+    # over the batch, a single view with a JOIN would deny the guardrail to the bare
+    # tables beside it. Re-parse — the slicer is regex over a short string — so each
+    # doc is judged by the statement that produced it.
+    joins_by_table: dict[str, bool] = {}
+    for parsed_rel in parse_relations(ddl):
+        if parsed_rel.name:
+            joins_by_table[parsed_rel.name.lower()] = bool(
+                _JOIN_RE.search(_strip_sql_comments(parsed_rel.statement or ""))
+            )
+    batch_is_bare = not _JOIN_RE.search(_strip_sql_comments(ddl))
     from ask_knowledge_graph.infrastructure.yaml_serializer import dump_yaml, load_yaml_text
 
     out: list[str] = []
@@ -124,6 +135,9 @@ def _normalize_flat_entity(docs: list[str], ddl: str, layer: str) -> tuple[list[
             continue
         changed = False
         label = layer.capitalize()
+        # This doc's own statement decides; the batch verdict is the fallback for a
+        # doc whose table the slicer could not name.
+        is_bare_table = not joins_by_table.get(flat_name.lower(), not batch_is_bare)
 
         # (a) collapse a wrongly-split composition to a single flat table (bare table
         #     only — a JOIN body carries real composition we must not discard).
