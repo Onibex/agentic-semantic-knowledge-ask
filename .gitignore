@@ -19,3 +19,9 @@ Thumbs.db
 # carry no credentials, but they describe internal operational detail that
 # serves no reader of this repository.
 .claude/
+
+# Databricks AI Tools drops ~580 files of its own product documentation here
+# (twice — once for itself, once for Gemini CLI) the first time it runs. None of
+# it is ours and none of it belongs to a reader of this repository.
+.databricks/
+.gemini/
