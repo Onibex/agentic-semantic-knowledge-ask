@@ -32,8 +32,12 @@ class SecretsPutRequest(BaseModel):
     the registry to decide which keys are sensitive (encrypted) vs plain.
     Unknown keys for the given provider are dropped silently.
 
-    To clear a field, send it with an empty string. To clear a whole config
-    section, send ``provider=""`` (caller intent: "no provider configured").
+    A sensitive field that arrives blank — or is omitted — keeps whatever is
+    stored, which is what both drawers promise the admin. That means a blank
+    does NOT clear: to drop an individual credential, save under a different
+    provider (preservation is skipped when the provider changes), and to clear a
+    whole config section send ``provider=""`` (caller intent: "no provider
+    configured"). Non-sensitive fields are written as given, blanks included.
     """
 
     provider: str = Field(..., min_length=0, description="Provider id (e.g. 'bedrock').")

@@ -220,6 +220,79 @@ def test_put_embedder_separate_from_llm(secrets_client: TestClient):
 # ── setup_effective consumes the new store ──────────────────────────────────
 
 
+def test_put_embedder_keeps_secrets_the_admin_did_not_retype(secrets_client: TestClient):
+    """Editing the model must not drop the credential behind it.
+
+    Both drawers tell the admin that a blank secret field keeps the stored
+    value, and both send one: ASK Setup submits an empty string, ASK Studio
+    omits the key. Either used to rewrite the doc without it, so changing the
+    embedding model silently unset the Bedrock bearer token — and the running
+    process kept serving with the old value until it was restarted, which hid
+    the loss until the next deploy.
+    """
+    secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "bedrock",
+            "model": "amazon.titan-embed-text-v2:0",
+            "fields": {"AWS_BEARER_TOKEN_BEDROCK": "keep-me", "AWS_REGION": "us-east-2"},
+        },
+    ).raise_for_status()
+
+    # ASK Setup's shape: every field submitted, the untouched secret blank.
+    resp = secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "bedrock",
+            "model": "amazon.titan-embed-text-v1",
+            "fields": {"AWS_BEARER_TOKEN_BEDROCK": "", "AWS_REGION": "us-east-2"},
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    by_name = {f["name"]: f for f in resp.json()["fields"]}
+    assert resp.json()["model"] == "amazon.titan-embed-text-v1"
+    assert by_name["AWS_BEARER_TOKEN_BEDROCK"]["source"] == "encrypted"
+
+    # ASK Studio's shape: the untouched secret is omitted entirely.
+    resp = secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "bedrock",
+            "model": "amazon.titan-embed-text-v2:0",
+            "fields": {"AWS_REGION": "us-east-1"},
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    by_name = {f["name"]: f for f in resp.json()["fields"]}
+    assert by_name["AWS_REGION"]["value"] == "us-east-1"
+    assert by_name["AWS_BEARER_TOKEN_BEDROCK"]["source"] == "encrypted"
+
+
+def test_put_embedder_changing_provider_drops_the_old_credentials(secrets_client: TestClient):
+    """The escape hatch: a stored secret is cleared by moving off its provider.
+
+    A credential from one backend must never carry over to another, so this is
+    also how an admin removes one they no longer want.
+    """
+    secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "bedrock",
+            "model": "amazon.titan-embed-text-v2:0",
+            "fields": {"AWS_ACCESS_KEY_ID": "AKIA-stale", "AWS_REGION": "us-east-2"},
+        },
+    ).raise_for_status()
+
+    secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={"provider": "openai", "model": "text-embedding-3-small", "fields": {"api_key": "sk-new"}},
+    ).raise_for_status()
+
+    body = secrets_client.get("/v1/admin/secrets/embedder").json()
+    assert body["provider"] == "openai"
+    assert "AWS_ACCESS_KEY_ID" not in {f["name"] for f in body["fields"]}
+
+
 def test_setup_effective_reflects_secrets_store(secrets_client: TestClient):
     secrets_client.put(
         "/v1/admin/secrets/llm",

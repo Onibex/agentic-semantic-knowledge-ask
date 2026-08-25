@@ -69,6 +69,7 @@ class LiteLLMEmbedder:
     ) -> None:
         ensure_litellm_provider_env(
             provider,
+            scope="embedder",
             api_key=api_key,
             api_base=api_base,
             api_version=api_version,

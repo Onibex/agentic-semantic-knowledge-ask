@@ -299,6 +299,13 @@ def _do_upsert(
             model=body.model,
             fields=body.fields,
             updated_by=user,
+            # Both SPAs send a sensitive field the admin did not retype as blank
+            # (ASK Setup) or omit it entirely (ASK Studio), and both drawers tell
+            # the admin that leaving it alone keeps the stored value. Without
+            # this, editing the model on a Bedrock embedder silently dropped the
+            # bearer token. Clearing an individual credential is done by changing
+            # the provider, which skips preservation by design.
+            preserve_blank_secrets=True,
         )
     except OpenSearchException as exc:
         logger.error("[%s] OpenSearch write failed: %s", trace_id, exc)
