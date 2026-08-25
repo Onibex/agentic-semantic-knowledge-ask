@@ -64,9 +64,32 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 - **SAP HANA Cloud** reachable (or PostgreSQL if `db_type` is `postgresql` in `config/settings.json`).
 - **SAP AI Core** credentials at the path declared by `sap_ai_core.config_path` in `config/settings.json` (typically `config/aicore_config.json`).
 
+### Paths in this runbook
+
+Every command below runs from `platform/`, so set this once per shell and the
+rest copy-pastes unchanged:
+
+```powershell
+# The platform/ directory of YOUR checkout — adjust to wherever you cloned it.
+$PLATFORM = "C:\src\agentic-semantic-knowledge-ask\platform"
+```
+
+```bash
+# Git Bash / WSL equivalent
+PLATFORM=/c/src/agentic-semantic-knowledge-ask/platform
+```
+
+One more path is yours to choose: the **semantic-layer git repo** the platform reads
+and commits to. It is a separate repository from this one — create it wherever you
+like and refer to it as `$SEMANTIC_LAYER` below.
+
+```powershell
+$SEMANTIC_LAYER = "C:/src/semantic-layer-s4h"   # forward slashes: it also goes into .env
+```
+
 ### Local environment
 
-- Python 3.12 venv at `c:\Onibex\python\agentic-ai-mvp1\agentic-ai\venv`
+- Python 3.12 venv at `$PLATFORM\venv` (see **Paths in this runbook** below)
 - `uv` installed (used by the project for fast pip operations)
 - Windows Terminal (`wt`) recommended for managing 4+ tabs
 
@@ -93,13 +116,13 @@ aren't set, so you must wire them to the on-disk path of that repo.
 #### 1. Create the external repo once
 
 ```powershell
-mkdir C:\Onibex\python\semantic-layer-s4h
-cd C:\Onibex\python\semantic-layer-s4h
+mkdir $SEMANTIC_LAYER
+cd $SEMANTIC_LAYER
 git init
 git config user.email "viz-bot@onibex.com"
 git config user.name  "viz-bot"
 # (optional) seed with your existing YAMLs:
-#   Copy-Item -Recurse c:\Onibex\python\agentic-ai-mvp1\agentic-ai\workspace-s4h\ask\* .
+#   Copy-Item -Recurse <your-existing-workspace>\ask\* .
 git add .
 git commit -m "initial semantic-layer import"
 ```
@@ -115,14 +138,14 @@ semantic-layer-s4h/
 └── gold/
 ```
 
-> One repo per SAP system. If you also work on ECC, repeat with
-> `C:\Onibex\python\semantic-layer-ecc\`.
+> One repo per SAP system. If you also work on ECC, repeat with a second checkout
+> (`semantic-layer-ecc`) and point `$SEMANTIC_LAYER` at whichever one you are using.
 
 #### 2. Set the env vars in `.env` (or per terminal)
 
 ```
-REPO_ROOT=C:/Onibex/python/semantic-layer-s4h
-WORKSPACE_PATH=C:/Onibex/python/semantic-layer-s4h
+REPO_ROOT=$SEMANTIC_LAYER
+WORKSPACE_PATH=$SEMANTIC_LAYER
 ```
 
 Forward slashes work on Windows under Python. Both vars usually point at the
@@ -149,7 +172,7 @@ container. Inside the container, `REPO_ROOT` / `WORKSPACE_PATH` are wired to
 Add to your host `.env`:
 
 ```
-SEMANTIC_LAYER_HOST_PATH=C:/Onibex/python/semantic-layer-s4h
+SEMANTIC_LAYER_HOST_PATH=$SEMANTIC_LAYER
 ```
 
 `docker compose up` fails fast with a helpful error if the variable is
@@ -206,10 +229,10 @@ Idempotent — re-runs are no-ops once the doc exists.
 ## 1. Setup once (fresh venv)
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 
 # Point uv at the project's venv (uv requires this hint when no .venv is auto-detected).
-$env:VIRTUAL_ENV = "c:\Onibex\python\agentic-ai-mvp1\agentic-ai\venv"
+$env:VIRTUAL_ENV = "$PLATFORM\venv"
 
 # Install third-party deps shared across the platform.
 uv pip install -r requirements.txt
@@ -247,7 +270,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 **Terminal 1:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 .\venv\Scripts\Activate.ps1
 
 # Auth bypass (only honoured when ENVIRONMENT == "local").
@@ -279,7 +302,7 @@ OpenAPI docs: **http://127.0.0.1:8080/docs**
 **Terminal 2:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 .\venv\Scripts\Activate.ps1
 
 $env:ENVIRONMENT = "local"
@@ -288,8 +311,8 @@ $env:ONIBEX_ENCRYPTION_KEY = "<paste-the-generated-value-here>"
 $env:PYTHONIOENCODING = "utf-8"
 
 # Required — semantic-layer repo (admin-api fail-closes if either is empty).
-$env:REPO_ROOT      = "C:/Onibex/python/semantic-layer-s4h"
-$env:WORKSPACE_PATH = "C:/Onibex/python/semantic-layer-s4h"
+$env:REPO_ROOT      = "$SEMANTIC_LAYER"
+$env:WORKSPACE_PATH = "$SEMANTIC_LAYER"
 
 python -m uvicorn ask_admin_api.main:app --host 127.0.0.1 --port 8081 --reload
 ```
@@ -312,7 +335,7 @@ The admin-api owns dictionary CRUD, YAML ingestion, embeddings management, and t
 **Terminal 3:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai\ask-chat-spa
+cd $PLATFORM\ask-chat-spa
 
 # One-time install of npm deps.
 npm install
@@ -362,7 +385,7 @@ npm run preview   # → http://localhost:4173
 **Terminal 4:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai\ask-studio-spa
+cd $PLATFORM\ask-studio-spa
 
 # One-time install of npm deps (only the first time).
 npm install --legacy-peer-deps
@@ -400,7 +423,7 @@ Pages available:
 **Terminal 5:**
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai\ask-setup-spa
+cd $PLATFORM\ask-setup-spa
 
 # One-time install of npm deps (only the first time).
 npm install
@@ -448,7 +471,7 @@ Pages available:
 ## Smoke (with both backends running)
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 .\venv\Scripts\Activate.ps1
 
 $env:ASK_ORCHESTRATOR_URL = "http://127.0.0.1:8080"
@@ -464,7 +487,7 @@ Expected: **5 passed in ~56s** (health + openapi + 3 modes against HANA).
 ## Per-package unit tests (no backends needed)
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 .\venv\Scripts\Activate.ps1
 
 foreach ($pkg in 'ask-orchestrator','ask-admin-api','ask-intent-resolution',
@@ -518,7 +541,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | `SEMANTIC_LAYER_PATHS_MISSING` at admin-api boot | Set `REPO_ROOT` and `WORKSPACE_PATH` in the admin-api terminal (typically the same value — see §Pre-requisites → Semantic-layer repo). |
 | `SEMANTIC_LAYER_PATHS_INVALID` at admin-api boot | The path is set but doesn't exist or isn't a directory. Verify it on disk; remember forward slashes are fine on Windows. |
 | `SEMANTIC_LAYER_NO_GIT` warning + commits look no-op | `git init` inside the directory `REPO_ROOT` points to. Until then YAML writes still persist to disk but no history is recorded. |
-| Docker fails with `SEMANTIC_LAYER_HOST_PATH variable is not set` | Add `SEMANTIC_LAYER_HOST_PATH=C:/Onibex/python/semantic-layer-s4h` to host `.env` before `docker compose up`. |
+| Docker fails with `SEMANTIC_LAYER_HOST_PATH variable is not set` | Add `SEMANTIC_LAYER_HOST_PATH=$SEMANTIC_LAYER` to host `.env` before `docker compose up`. |
 | `'charmap' codec can't encode ...` in logs | `$env:PYTHONIOENCODING = "utf-8"` BEFORE starting uvicorn |
 | `Activate.ps1 cannot be loaded because running scripts is disabled` | One-time: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` |
 | `lint-imports.exe` not found | Make sure the venv is active (`.\venv\Scripts\Activate.ps1`) |
@@ -546,14 +569,14 @@ Set the master key + semantic-layer paths once before running the one-liner:
 
 ```powershell
 $env:ONIBEX_ENCRYPTION_KEY = "<paste-the-generated-value-here>"
-$env:REPO_ROOT      = "C:/Onibex/python/semantic-layer-s4h"
-$env:WORKSPACE_PATH = "C:/Onibex/python/semantic-layer-s4h"
+$env:REPO_ROOT      = "$SEMANTIC_LAYER"
+$env:WORKSPACE_PATH = "$SEMANTIC_LAYER"
 ```
 
 Then:
 
 ```powershell
-wt -w 0 nt -d c:\Onibex\python\agentic-ai-mvp1\agentic-ai pwsh -NoExit -Command ".\venv\Scripts\Activate.ps1; `$env:ENVIRONMENT='local'; `$env:DEV_BYPASS_AUTH='true'; `$env:ONIBEX_ENCRYPTION_KEY='$env:ONIBEX_ENCRYPTION_KEY'; `$env:PYTHONIOENCODING='utf-8'; python -m uvicorn ask_orchestrator.main:app --host 127.0.0.1 --port 8080 --reload" `; nt -d c:\Onibex\python\agentic-ai-mvp1\agentic-ai pwsh -NoExit -Command ".\venv\Scripts\Activate.ps1; `$env:ENVIRONMENT='local'; `$env:DEV_BYPASS_AUTH='true'; `$env:ONIBEX_ENCRYPTION_KEY='$env:ONIBEX_ENCRYPTION_KEY'; `$env:REPO_ROOT='$env:REPO_ROOT'; `$env:WORKSPACE_PATH='$env:WORKSPACE_PATH'; `$env:ASK_ORCHESTRATOR_URL='http://127.0.0.1:8080'; `$env:PYTHONIOENCODING='utf-8'; python -m uvicorn ask_admin_api.main:app --host 127.0.0.1 --port 8081 --reload"
+wt -w 0 nt -d $PLATFORM pwsh -NoExit -Command ".\venv\Scripts\Activate.ps1; `$env:ENVIRONMENT='local'; `$env:DEV_BYPASS_AUTH='true'; `$env:ONIBEX_ENCRYPTION_KEY='$env:ONIBEX_ENCRYPTION_KEY'; `$env:PYTHONIOENCODING='utf-8'; python -m uvicorn ask_orchestrator.main:app --host 127.0.0.1 --port 8080 --reload" `; nt -d $PLATFORM pwsh -NoExit -Command ".\venv\Scripts\Activate.ps1; `$env:ENVIRONMENT='local'; `$env:DEV_BYPASS_AUTH='true'; `$env:ONIBEX_ENCRYPTION_KEY='$env:ONIBEX_ENCRYPTION_KEY'; `$env:REPO_ROOT='$env:REPO_ROOT'; `$env:WORKSPACE_PATH='$env:WORKSPACE_PATH'; `$env:ASK_ORCHESTRATOR_URL='http://127.0.0.1:8080'; `$env:PYTHONIOENCODING='utf-8'; python -m uvicorn ask_admin_api.main:app --host 127.0.0.1 --port 8081 --reload"
 ```
 
 One tab per service: Orchestrator (8080), Admin API (8081).
@@ -565,7 +588,7 @@ One tab per service: Orchestrator (8080), Admin API (8081).
 If you'd rather not manage a venv and five terminals, the same topology runs in containers via [`docker-compose.yml`](../../docker-compose.yml):
 
 ```powershell
-cd c:\Onibex\python\agentic-ai-mvp1\agentic-ai
+cd $PLATFORM
 docker compose up -d
 # Browser: http://localhost:5174 (chat) — http://localhost:5173 (admin) — http://localhost:5175 (setup)
 docker compose logs -f ask-orchestrator    # tail any service
@@ -642,10 +665,10 @@ python -c "from ask_llm_gateway.application.factory import build_embedder; e = b
 ## Linux / macOS equivalents (bash)
 
 ```bash
-cd /c/Onibex/python/agentic-ai-mvp1/agentic-ai
+cd "$PLATFORM"
 
 # Setup once
-export VIRTUAL_ENV=/c/Onibex/python/agentic-ai-mvp1/agentic-ai/venv
+export VIRTUAL_ENV=$PLATFORM/venv
 uv pip install -r requirements.txt
 for pkg in ask-llm-gateway ask-knowledge-graph ask-intent-resolution \
           ask-sql-generation ask-sql-executor ask-schema-service \
@@ -657,8 +680,8 @@ done
 export ONIBEX_ENCRYPTION_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
 
 # Semantic-layer repo paths — required by admin-api (boot fails closed if empty).
-export REPO_ROOT=/c/Onibex/python/semantic-layer-s4h
-export WORKSPACE_PATH=/c/Onibex/python/semantic-layer-s4h
+export REPO_ROOT="$SEMANTIC_LAYER"
+export WORKSPACE_PATH="$SEMANTIC_LAYER"
 
 # Boot orchestrator (terminal 1)
 export ENVIRONMENT=local DEV_BYPASS_AUTH=true PYTHONIOENCODING=utf-8
