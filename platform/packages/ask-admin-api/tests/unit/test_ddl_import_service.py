@@ -205,6 +205,66 @@ def test_normalize_flat_entity_flattens_bare_table_silver():
     assert warnings and any("flattened" in w for w in warnings)
 
 
+def test_normalize_flat_entity_judges_each_statement_on_its_own():
+    """A view's JOIN must not deny the guardrail to a bare table beside it.
+
+    The legacy path receives every fallback relation joined into one string, so a
+    verdict taken over the whole batch let one JOIN anywhere decide flatness for
+    all of them. Flatness is a property of the statement that produced the doc.
+    """
+    flat_doc = (
+        "id: silver_s4h_gen_trading_goods\n"
+        "layer: silver\n"
+        "db_table_name: TRADING_GOODS\n"
+        "name: trading_goods\n"
+        "composed_of:\n  - MARA\n  - MAKT\n"
+        "join_graph: []\n"
+        "fields:\n  - name: matnr_mara\n"
+    )
+    ddl = (
+        'CREATE TABLE ZS.TRADING_GOODS ("matnr_mara" VARCHAR(40), "maktx_makt" VARCHAR(80));'
+        "\n\n"
+        "CREATE VIEW ZS.ORDER_LINES AS SELECT a.vbeln FROM vbak a JOIN vbap b ON a.vbeln = b.vbeln;"
+    )
+
+    docs, warnings = _normalize_flat_entity([flat_doc], ddl, "silver")
+
+    from ask_knowledge_graph.infrastructure.yaml_serializer import load_yaml_text
+
+    parsed = load_yaml_text(docs[0])
+    assert parsed["composed_of"] == ["TRADING_GOODS"]
+    assert "join_graph" not in parsed
+    assert any("flattened" in w for w in warnings)
+
+
+def test_normalize_flat_entity_leaves_a_real_composition_alone():
+    """The other direction: a doc whose OWN statement joins keeps its composition."""
+    composed_doc = (
+        "id: silver_s4h_sd_order_lines\n"
+        "layer: silver\n"
+        "db_table_name: ORDER_LINES\n"
+        "name: order_lines\n"
+        "composed_of:\n  - VBAK\n  - VBAP\n"
+        "join_graph:\n"
+        "  - left_table: VBAK\n    right_table: VBAP\n"
+        "    join_type: INNER\n    condition: VBAK.VBELN = VBAP.VBELN\n    sequence: 2\n"
+        "fields:\n  - name: vbeln\n"
+    )
+    ddl = (
+        'CREATE TABLE ZS.TRADING_GOODS ("matnr_mara" VARCHAR(40));'
+        "\n\n"
+        "CREATE VIEW ZS.ORDER_LINES AS SELECT a.vbeln FROM vbak a JOIN vbap b ON a.vbeln = b.vbeln;"
+    )
+
+    docs, _ = _normalize_flat_entity([composed_doc], ddl, "silver")
+
+    from ask_knowledge_graph.infrastructure.yaml_serializer import load_yaml_text
+
+    parsed = load_yaml_text(docs[0])
+    assert parsed["composed_of"] == ["VBAK", "VBAP"]
+    assert parsed["join_graph"]
+
+
 def test_normalize_flat_entity_restores_physical_field_name_from_self_source():
     # Flat table: the model stripped the suffix onto `name` and hid the physical
     # column in a self-referencing `source`. `name` MUST be the physical column
