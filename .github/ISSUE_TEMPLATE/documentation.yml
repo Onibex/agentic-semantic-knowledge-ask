@@ -1,0 +1,39 @@
+name: Documentation
+description: Something in the docs is wrong, missing, or hard to follow.
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This is a bug and we treat it as one.** Documentation that misleads costs
+        more than documentation that is absent, because a reader acts on it.
+
+  - type: input
+    id: page
+    attributes:
+      label: Which page
+      description: A path or a URL.
+      placeholder: platform/docs/ask-setup/02-database-connections.md
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem
+      options:
+        - It says something untrue
+        - It is missing something I needed
+        - I could not follow it
+        - I could not find it — it exists but I did not get there
+        - It contradicts another page
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: What went wrong
+      description: If you were trying to do something, say what — the fix is often a different page, not a different sentence.
+    validations:
+      required: true

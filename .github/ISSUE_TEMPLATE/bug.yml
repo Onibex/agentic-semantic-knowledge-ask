@@ -1,0 +1,90 @@
+name: Bug
+description: Something in the platform does not behave as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Redact credentials, customer names and business figures before you paste
+        anything. If this is a security vulnerability, close this and follow
+        [SECURITY.md](../blob/main/SECURITY.md) instead.
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+      description: The broken behaviour, not the fix you had in mind — the cause is often somewhere else.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - ASK Chat
+        - ASK Studio
+        - ASK Setup
+        - Orchestrator / API
+        - Ingestion / publish
+        - Deployment (Docker, compose)
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Chat engine
+      description: Only if the problem is an answer. Which engine was selected?
+      options:
+        - Not applicable
+        - Smart
+        - Precise
+        - Flash
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: dev or prod
+    validations:
+      required: false
+
+  - type: textarea
+    id: sql
+    attributes:
+      label: Generated SQL
+      description: If the problem is a wrong answer, this is the single most useful thing you can include.
+      render: sql
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: e.g. 1.1.0, or a commit sha
+    validations:
+      required: false

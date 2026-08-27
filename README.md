@@ -157,7 +157,8 @@ agentic-semantic-knowledge-ask/
 | **Evaluating ASK** | This page, then [Concepts & Architecture](platform/docs/02-concepts.md) |
 | **Here to see the product** | [Using ASK Chat](platform/docs/ask-chat/02-chat.md) — ask a question, read the answer, see the SQL behind it |
 | **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md) — what is computed rather than guessed |
-| **Installing it** | [Installation](platform/docs/01-installation.md) — `docker compose up`, then ASK Setup |
+| **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md) — one guided path, empty machine to a real answer, ~45 min |
+| **Installing it** | [Installation](platform/docs/01-installation.md) — every variable, the startup order, the gotchas |
 | **Authoring a semantic layer** | [ASK Studio flows](platform/docs/ask-studio/00-overview.md) |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |
 | **An AI agent** | [`llms.txt`](llms.txt) |
@@ -190,6 +191,23 @@ and Keycloak (a trademark of Red Hat, Inc.) — see [`THIRD-PARTY-NOTICES.md`](T
 Apache Kafka and the Kafka logo are trademarks of the Apache Software Foundation; Onibex is
 not affiliated with, and is not endorsed by, the Apache Software Foundation. CONFLUENT is a
 registered trademark of Confluent, Inc. All marks are used for identification only.
+
+---
+
+## Contributing & support
+
+ASK is **source-available, not open source** — see [`LICENSE`](LICENSE). Contributions are
+welcome on that footing:
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — the two tracks, how a specification change is
+  handled differently from a platform one, and the checks CI runs.
+- [`SUPPORT.md`](SUPPORT.md) — where to go for a bug, a documentation problem, a
+  specification proposal, or a licensing question.
+- [`SECURITY.md`](SECURITY.md) — vulnerability disclosure. Not a public issue.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
+Found something inaccurate or confusing in the documentation? That is a bug, and reporting
+it is a contribution.
 
 ---
 
