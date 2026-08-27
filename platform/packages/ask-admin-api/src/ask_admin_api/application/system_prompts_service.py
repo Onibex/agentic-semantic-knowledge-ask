@@ -14,11 +14,12 @@ Two responsibilities packed in a small surface:
      doc is stored in OpenSearch.
 
   2. ``get_standards_excerpt(layer)`` returns the cached authoring standard
-     for one layer: the matching file under ``docs/semantic-layer/``
+     for one layer: the matching file under ``prompts/standards/``
      (``BRONZE_LAYER.md`` / ``SILVER_LAYER.md`` / ``GOLD_LAYER.md``), injected
      WHOLE — each file is written scoped to what an enricher of that layer
-     needs. ``None`` / unknown returns the three files concatenated. The
-     folder README (cross-layer philosophy) is deliberately excluded.
+     needs. ``None`` / unknown returns the three files concatenated. These are
+     package data resolved from this module, so they travel inside the wheel;
+     they are prompt payload, not user documentation.
 
 Cache strategy: load the standards files once at module-init time. Reloading
 requires a process restart OR ``POST /v1/internal/reload``.
@@ -623,12 +624,18 @@ def is_known_key(key: str) -> bool:
 # ── Standards-doc loader (cached at module import) ──────────────────────────
 
 
-_STANDARDS_DIR = Path("docs/semantic-layer")
+# Resolved from this module, never from the process CWD. A bare relative path
+# only ever worked when the interpreter happened to start in `platform/`: the
+# image installs this package non-editably and runs with WORKDIR /app, so
+# `docs/semantic-layer` resolved to nothing and every Docker deployment enriched
+# with an EMPTY standards block — silently, because the loader returned "" and
+# `build_entity_prompt` drops the section when it is blank.
+_STANDARDS_DIR = Path(__file__).resolve().parent.parent / "prompts" / "standards"
 
 # One authoring-standard file per layer. Each is written to be injected into
-# the enrichment prompt WHOLE (see the authority banner inside each file), so
-# there is no section slicing anymore. The folder README carries cross-layer
-# philosophy the enricher does not need and is deliberately excluded.
+# the enrichment prompt WHOLE, so there is no section slicing. These files are
+# prompt payload shipped inside the wheel (see `package-data` in pyproject),
+# not user documentation.
 _LAYER_FILES = {
     "bronze": "BRONZE_LAYER.md",
     "silver": "SILVER_LAYER.md",
@@ -637,15 +644,25 @@ _LAYER_FILES = {
 
 
 def _read_standard_file(filename: str) -> str:
+    """Read one layer standard, or raise.
+
+    Refusing to degrade silently, on the `resolve_column_naming_mode` precedent:
+    a missing standard does not fail the enrichment call, it quietly makes the
+    model's output worse, which is the failure nobody reports. Absence here is
+    always a packaging defect, never a runtime condition to tolerate.
+    """
     path = _STANDARDS_DIR / filename
-    if not path.exists():
-        logger.warning("Semantic Layer Standard not found at %s", path)
-        return ""
     try:
-        return path.read_text(encoding="utf-8").strip()
-    except Exception:
-        logger.exception("Could not read %s", path)
-        return ""
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise RuntimeError(
+            f"Semantic Layer Standard {filename!r} is not readable at {path}. "
+            "It ships as package data of ask-admin-api; a missing file means the "
+            "wheel was built without `prompts/standards/*.md`."
+        ) from exc
+    if not text:
+        raise RuntimeError(f"Semantic Layer Standard {filename!r} at {path} is empty.")
+    return text
 
 
 @lru_cache(maxsize=8)
@@ -654,16 +671,14 @@ def get_standards_excerpt(layer: str | None = None) -> str:
 
     A ``layer`` of bronze/silver/gold returns that layer's file whole; ``None``
     or an unknown value returns the three layer files concatenated (the safe
-    superset for callers that cannot know the layer). Returns "" on failure.
+    superset for callers that cannot know the layer). Raises if a standard is
+    missing or empty — never returns a blank excerpt.
     """
     key = (layer or "").strip().lower()
     if key in _LAYER_FILES:
         return _read_standard_file(_LAYER_FILES[key])
     parts = [_read_standard_file(f) for f in _LAYER_FILES.values()]
-    excerpt = "\n\n".join(p for p in parts if p).strip()
-    if not excerpt:
-        logger.warning("Standards excerpt is empty — no layer files found under %s", _STANDARDS_DIR)
-    return excerpt
+    return "\n\n".join(parts).strip()
 
 
 def reload_standards_cache() -> None:

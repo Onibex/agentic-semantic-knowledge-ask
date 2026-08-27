@@ -7,12 +7,14 @@
 
 """The standards excerpt must actually carry each layer's rules to the LLM.
 
-``get_standards_excerpt(layer)`` injects the matching ``docs/semantic-layer/``
+``get_standards_excerpt(layer)`` injects the matching ``prompts/standards/``
 file WHOLE into the enrichment prompt. That design has two failure modes this
 guard pins:
 
 1. A layer file goes missing / gets emptied → its entities silently enrich with
-   no standard at all (the loader returns "" without raising).
+   no standard at all. The loader now raises instead, and
+   ``test_standards_are_reachable_wherever_the_process_starts`` pins the
+   CWD-independence that the old bare relative path did not have.
 2. The folder duplicates shared contracts per layer BY DESIGN (owner decision,
    2026-08-02) — the drift risk of that duplication is checked here by asserting
    the load-bearing shared markers in BOTH carriers (SILVER and GOLD).
@@ -28,28 +30,37 @@ from ask_admin_api.application.system_prompts_service import get_standards_excer
 
 @pytest.fixture(scope="module")
 def bronze() -> str:
-    # lru_cache'd; paths resolve from the repo root — skip rather than fail when
-    # tests run from a directory where docs/ is not visible.
-    text = get_standards_excerpt("bronze")
-    if not text:
-        pytest.skip("docs/semantic-layer/ not reachable from this cwd")
-    return text
+    return get_standards_excerpt("bronze")
 
 
 @pytest.fixture(scope="module")
 def silver() -> str:
-    text = get_standards_excerpt("silver")
-    if not text:
-        pytest.skip("docs/semantic-layer/ not reachable from this cwd")
-    return text
+    return get_standards_excerpt("silver")
 
 
 @pytest.fixture(scope="module")
 def gold() -> str:
-    text = get_standards_excerpt("gold")
-    if not text:
-        pytest.skip("docs/semantic-layer/ not reachable from this cwd")
-    return text
+    return get_standards_excerpt("gold")
+
+
+@pytest.mark.parametrize("layer", ["bronze", "silver", "gold"])
+def test_standards_are_reachable_wherever_the_process_starts(layer, tmp_path, monkeypatch):
+    """The one guard that would have caught the Docker outage.
+
+    The standards used to be loaded from the bare relative path
+    ``docs/semantic-layer``, so they resolved only when the interpreter started
+    in ``platform/``. Every container (WORKDIR ``/app``, package installed
+    non-editably) got an empty excerpt and enriched with no rules at all. The
+    old version of this test skipped in exactly that situation, so nothing ever
+    went red. Run it from a directory that contains no ``docs/`` to prove the
+    lookup no longer depends on where the process happens to start.
+    """
+    get_standards_excerpt.cache_clear()
+    monkeypatch.chdir(tmp_path)
+    try:
+        assert get_standards_excerpt(layer).strip()
+    finally:
+        get_standards_excerpt.cache_clear()
 
 
 @pytest.mark.parametrize(
