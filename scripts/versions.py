@@ -69,7 +69,11 @@ def read_version(path: Path) -> str | None:
 
 
 def write_version(path: Path, version: str) -> bool:
-    text = path.read_text(encoding="utf-8")
+    # newline="" on both sides: read the file as it is on disk and write it
+    # back the same way. Without it a release bump silently rewrites CRLF to
+    # LF across every manifest, and the diff of the bump is fifteen files of
+    # line endings with the version change buried in them.
+    text = path.read_text(encoding="utf-8", newline="")
     if path.name == "README.md":
         updated = BADGE.sub(rf"\g<1>{version}\g<3>", text, count=1)
         if updated == text:
