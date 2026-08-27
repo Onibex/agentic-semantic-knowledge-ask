@@ -10,7 +10,7 @@
 | **Prerequisites** | Signed in to ASK Studio, and a **green Embedder** ([Check the embedder and search index](09-check-providers.md)) — ingestion embeds every chunk. |
 | **You'll end with** | A document indexed and citable by the agent's documentation mode. |
 
-**Where this fits:** **Configure — ingest documents (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Ingest documents the agent can cite**
 
 ---
 
@@ -76,3 +76,7 @@ whose numbers will go stale — the agent will cite them with the same confidenc
 → **[Using the Chat](../ask-chat/02-chat.md)** — ask a documentation question and read the
 citation.
 → **[Check the embedder and search index](09-check-providers.md)** — the other curator tool.
+
+---
+
+[← Back to the manual](../README.md)

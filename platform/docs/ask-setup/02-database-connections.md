@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is running ([Installation](../01-installation.md)) and reachable network access to your database. |
 | **You'll end with** | At least one registered connection, marked active for **Development** and/or **Production**, so the chat can answer data questions. |
 
-**Where this fits:** **Configure — Database (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Connect a database**
 
 > The screenshots and sample values below use the illustrative demo target: an **SAP HANA**
 > connection (host shown, port `443`, schema `US_ONEC_TECH`). Substitute your own engine and
@@ -156,3 +156,7 @@ credentials. A toast reports success with the round-trip latency, or the error i
 → **[LLM Providers](03-llm-providers.md)** — register the language model the agent uses to write SQL.
 → **[Infrastructure (OpenSearch)](01-setup.md)** — the store where these encrypted credentials live.
 → **[Publish & Deploy](../ask-studio/05-publish-deploy.md)** — how the chat's dev / prod environments map to the active connections here.
+
+---
+
+[← Back to the manual](../README.md)

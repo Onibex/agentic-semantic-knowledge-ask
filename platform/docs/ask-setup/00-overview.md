@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is installed and running (see [Installation](../01-installation.md)) and you can sign in to **ASK Setup**. |
 | **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Studio and answer in the chat. |
 
-**Where this fits:** **Configure — Overview (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Overview**
 
 > The screenshots and sample values below use the illustrative demo environment: an **SAP HANA**
 > target (port `443`), OpenSearch at `opensearch:9200`, and a Bedrock model. Substitute your own
@@ -130,3 +130,7 @@ If you are looking for either, switch to ASK Studio.
 → **[Infrastructure (OpenSearch)](01-setup.md)** — confirm the store the whole platform runs on.
 → **[Database Connections](02-database-connections.md)** — register the databases the agent queries.
 → **[Installation](../01-installation.md)** — the environment variables and services behind these pages.
+
+---
+
+[← Back to the manual](../README.md)

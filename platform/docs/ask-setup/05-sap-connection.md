@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have an S/4HANA OData user (host, user, password) for the service you want to expose. |
 | **You'll end with** | Saved S/4HANA OData credentials, verified with a live **Test Connection**. |
 
-**Where this fits:** **Configure — SAP Connection (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Connect to SAP**
 
 > The screenshots below use an illustrative host and username. Substitute your own — and never type
 > or screenshot a real S/4HANA password (the page masks it once saved).
@@ -90,3 +90,7 @@ actions.
 → **[ASK Setup · Contracts](07-contracts.md)** — register an OpenAPI contract as MCP tools the agent
 can call against SAP.
 → **[ASK Setup · Identity Provider](04-identity-provider.md)** — who signs in, and how.
+
+---
+
+[← Back to the manual](../README.md)

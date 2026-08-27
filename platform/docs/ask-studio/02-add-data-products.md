@@ -11,7 +11,7 @@
 | **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
 
-**Where this fits:** Configure → **Author — Data Products (you are here)** → Organize → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -163,3 +163,7 @@ improve descriptions and synonyms.
 → **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — assign this Data
 Product to a domain.
 → **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — make it queryable in the chat.
+
+---
+
+[← Back to the manual](../README.md)

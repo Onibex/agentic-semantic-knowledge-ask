@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is installed with OpenSearch running (see [Installation](../01-installation.md)). |
 | **You'll end with** | Confidence that the platform is pointed at the right OpenSearch cluster and that it responds. |
 
-**Where this fits:** **Configure — Setup (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Check the search index**
 
 > The screenshots and sample values below use the illustrative demo environment: OpenSearch at host
 > `opensearch`, port `9200`, SSL off. Substitute your own host — never screenshot a real password.
@@ -114,3 +114,7 @@ Set these variables in your `.env` file (development) or a **Kubernetes Secret**
 → **[Database Connections](02-database-connections.md)** — register the databases the agent queries.
 → **[ASK Setup · Overview](00-overview.md)** — the storage model behind the source chips.
 → **[Installation](../01-installation.md)** — where the `OPENSEARCH_*` variables are defined.
+
+---
+
+[← Back to the manual](../README.md)

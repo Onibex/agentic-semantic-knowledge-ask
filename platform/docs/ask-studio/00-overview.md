@@ -11,7 +11,7 @@
 | **Prerequisites** | The SPA is installed and reachable (see [Installation](../01-installation.md)). |
 | **You'll end with** | A clear picture of the navigation and where every task lives. |
 
-**Where this fits:** Configure → **Author — get oriented (you are here)** → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Overview & Navigation**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -88,3 +88,7 @@ From here, follow the flows in order:
 
 → **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — start authoring:
 create a workspace and its first business domain.
+
+---
+
+[← Back to the manual](../README.md)

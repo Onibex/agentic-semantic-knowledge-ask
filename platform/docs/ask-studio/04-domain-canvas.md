@@ -12,7 +12,7 @@
 | **Prerequisites** | A workspace with at least one **Business Domain** that has a few Data Products assigned (see [Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)). |
 | **You'll end with** | A clear picture of one domain's entities and relationships, and the ability to add / remove Data Products from it. |
 
-**Where this fits:** Configure → **Author — Domain Canvas (you are here)** → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Inspect a domain as a graph**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -147,3 +147,7 @@ Product) to **dev** / **prod** so the chat can answer over it.
 descriptions from the inspector's **Edit** action.
 → **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — the workspace view
 where you first open a domain.
+
+---
+
+[← Back to the manual](../README.md)

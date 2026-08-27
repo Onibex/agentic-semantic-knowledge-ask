@@ -1,5 +1,7 @@
 # Getting Started — from zero to your first answered question
 
+[Manual](README.md) › [Foundations](README.md#foundations) › **Getting Started — from zero to your first answered question**
+
 > **Tutorial.** One path, end to end: bring the platform up, describe a slice of your data,
 > publish it, and ask a question in plain language. Roughly 45 minutes on a clean machine.
 
@@ -146,3 +148,7 @@ You now have the whole loop working on one table. Where to go depends on what yo
 | Know why the answer is trustworthy | [The three chat engines](explain/engines.md) |
 | Author a real semantic layer | [The ASK specification](../../definition/README.md) |
 | Look up a term | [Glossary](reference/glossary.md) |
+
+---
+
+[← Back to the manual](README.md)

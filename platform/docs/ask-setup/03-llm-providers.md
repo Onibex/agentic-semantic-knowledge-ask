@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have the provider's credentials to hand (API key, or cloud access keys). |
 | **You'll end with** | One **active** LLM the agent uses for chat and SQL generation, and a configured **embedder** shared with ASK Studio. |
 
-**Where this fits:** **Configure — LLM Providers (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Connect an LLM provider**
 
 > The screenshots and sample values below use illustrative, non-secret settings (an **AWS Bedrock**
 > model). Substitute your own provider and model — and never type or screenshot a real API key,
@@ -150,3 +150,7 @@ the provider and model as in step 2 — demo: **AWS Bedrock** · `amazon.titan-e
 active connection is chosen **per environment** (contrast the global active model here).
 → **[ASK Studio · Check the embedder and search index](../ask-studio/09-check-providers.md)** — the ASK Studio side that
 shares this embedder and ingests documents.
+
+---
+
+[← Back to the manual](../README.md)

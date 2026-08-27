@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A clear view of the active identity provider, its OIDC configuration, and the roles carried in your token. |
 
-**Where this fits:** **Configure — Identity Provider (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Review the identity provider**
 
 > The screenshots below show illustrative issuer and client values. Substitute your own — none of it
 > is editable here, so there is nothing secret to type in.
@@ -111,3 +111,7 @@ informational: it tells you what the platform can be built against, not a menu y
 → **[ASK Setup · LLM Providers](03-llm-providers.md)** — the model registry and shared embedder.
 → **[Concepts](../02-concepts.md)** — how the `ask-admin` / `ask-user` roles map to what each person
 can do.
+
+---
+
+[← Back to the manual](../README.md)

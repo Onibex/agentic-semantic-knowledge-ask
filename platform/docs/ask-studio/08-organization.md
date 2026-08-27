@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A saved Organization profile the agent uses on every query, and a source system that pre-fills new Data Products. |
 
-**Where this fits:** **Configure — Organization (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Set the organization profile**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -90,3 +90,7 @@ After saving, a small line shows **who** last changed the profile and **when** �
 your data lives in.
 → **[Flow 2 · Add Data Products](02-add-data-products.md)** — the **Source system** you set here
 pre-fills DDL + AI imports.
+
+---
+
+[← Back to the manual](../README.md)

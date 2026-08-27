@@ -11,7 +11,7 @@
 | **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Flow 2 · Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
 | **You'll end with** | A reconciled Data Product — every field either keeps your enriched value or accepts the incoming SAP value. |
 
-**Where this fits:** Configure → Author → **Reconcile — conflicts (you are here)** → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Conflicts & OneConnect Merge**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -123,3 +123,7 @@ that produces conflicts is triggered.
 the chat sees it.
 → **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — the enrichments that a conflict asks you to
 preserve or discard.
+
+---
+
+[← Back to the manual](../README.md)

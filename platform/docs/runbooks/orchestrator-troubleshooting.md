@@ -1,5 +1,7 @@
 # ASK Orchestrator — Troubleshooting Runbook
 
+[Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **ASK Orchestrator — Troubleshooting Runbook**
+
 > **Audience:** ops / on-call.
 > **Scope:** the `ask-orchestrator` deployment.
 
@@ -130,3 +132,7 @@ curl -X POST http://127.0.0.1:8080/v1/query \
   -H "Authorization: Bearer fake.jwt.token" \
   -d '{"question":"how many open POs?","mode":"precise"}'
 ```
+
+---
+
+[← Back to the manual](../README.md)

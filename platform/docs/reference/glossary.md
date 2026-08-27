@@ -12,7 +12,7 @@
 | **Prerequisites** | None. |
 | **You'll end with** | A shared vocabulary for the ASK Studio flows, ASK Setup, and the chat. |
 
-**Where this fits:** **Configure · Author · Publish · Ask (all of them — this page underpins every step)**
+[Manual](../README.md) › [Reference](../README.md#reference) › **Glossary**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -177,3 +177,7 @@ four creation modes.
 → **[ASK specification](../../../definition/README.md)** — the authoritative rules
 behind these definitions (layers, field roles, relationships, Gold), incl. the
 [Bronze](../../../definition/docs/BRONZE_LAYER.md) / [Silver](../../../definition/docs/SILVER_LAYER.md) / [Gold](../../../definition/docs/GOLD_LAYER.md) layer specs.
+
+---
+
+[← Back to the manual](../README.md)

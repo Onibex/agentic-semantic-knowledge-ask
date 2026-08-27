@@ -11,7 +11,7 @@
 | **Prerequisites** | At least one Data Product exists ([Flow 2](02-add-data-products.md)) and is assigned to a domain ([Flow 1](01-workspaces-domains.md)). |
 | **You'll end with** | Data Products **Released** and answerable in the chat for the target environment. |
 
-**Where this fits:** Configure → Author → **Publish — dev → prod (you are here)** → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Publish & Deploy (dev → prod)**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -176,3 +176,7 @@ reads **"N versions behind"** so you know the size of the gap before you promote
 → **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — where the Deployment & Versions panel lives,
 alongside the editor that produces the working draft.
 → **[Flow 2 · Add Data Products](02-add-data-products.md)** — create the entities you publish here.
+
+---
+
+[← Back to the manual](../README.md)
