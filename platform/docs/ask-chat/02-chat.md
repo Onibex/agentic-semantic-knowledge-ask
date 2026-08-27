@@ -29,6 +29,8 @@
 
 ---
 
+![Chat empty state with the Onibex logo, a prompt, and three quick-start chips](../images/chat-empty-state.png)
+
 ## 1. Manage sessions
 
 The **Chat history sidebar** sits on the left side of the Chat page — separate from the
@@ -110,6 +112,14 @@ Collapsed by default. Click **SQL** to expand the raw SQL the agent sent to the 
 A **Copy SQL** button copies it to the clipboard — useful for reuse in an external tool or
 for verifying the query logic.
 
+![An assistant message showing the written answer and the Table tab with a striped results table](../images/chat-answer-table.png)
+
+![The SQL tab expanded showing the generated SQL query with a Copy SQL button](../images/chat-answer-sql.png)
+
+The query above is what the agent actually ran. It joins `GOLD_SD_OPEN_ORDER_TRACKER` to
+`GOLD_MM_INVENTORY_POSITION` — two Gold Data Products, resolved from a question that named
+neither.
+
 > **Tip —** the mode badge (e.g. *precise*) shown next to the answer tells you which engine
 > produced it, in case you switch modes between questions.
 
@@ -149,6 +159,8 @@ original question.
 While the backend is processing, a **thinking bubble** appears — a pulsing indicator with
 rotating status messages ("Translating your question into SQL…", "Querying the database…",
 etc.). The indicator disappears as soon as streaming begins.
+
+![The thinking bubble with a rotating humorous status message while the agent processes a query](../images/chat-thinking-bubble.png)
 
 ---
 

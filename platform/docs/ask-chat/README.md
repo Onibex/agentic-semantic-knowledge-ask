@@ -3,6 +3,8 @@
 ASK Chat is the surface business users see. They pick what a question may reach, ask it in
 plain language, and read an answer with the SQL behind it.
 
+![ASK Chat answering a stock-coverage question: the written answer, the key figures, the results table, and the generated SQL joining two Gold Data Products](../images/ask-chat-answer.gif)
+
 Nothing here works until an administrator has configured the platform and published Data
 Products — see [Configure the platform first · ASK Setup](../ask-setup/README.md) and
 [Author the semantic layer · ASK Studio](../ask-studio/README.md).
