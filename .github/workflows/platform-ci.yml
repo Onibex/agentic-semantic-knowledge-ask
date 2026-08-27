@@ -44,6 +44,13 @@ jobs:
       # against what the code claims, so a release cannot describe itself wrong.
       - name: Versions agree
         run: python scripts/versions.py --check
+      # A dead link is the first thing a reader hits and the cheapest signal
+      # that documentation is not maintained. The audit that introduced this
+      # step found 34 of them, all pointing at a source layout replaced long
+      # before. Relative paths and heading anchors only — external URLs fail
+      # for reasons that have nothing to do with the commit under test.
+      - name: Documentation links resolve
+        run: python scripts/docs_links.py --check
 
   python-hygiene:
     name: Python lint + boundary tests

@@ -32,7 +32,7 @@
 - **Secrets live in an encrypted store, not on disk.** Connection credentials are encrypted at rest
   inside OpenSearch and never written to `settings.json`. See [Where configuration is stored](#where-configuration-is-stored).
 - **The Semantic Dictionary and Documents are not here.** Business-term mappings and document
-  ingestion moved to **ASK Studio**. See [What lives in ASK Studio, not here](#what-lives-in-ask-admin-not-here).
+  ingestion moved to **ASK Studio**. See [What lives in ASK Studio, not here](#what-lives-in-ask-studio-not-here).
 
 ---
 

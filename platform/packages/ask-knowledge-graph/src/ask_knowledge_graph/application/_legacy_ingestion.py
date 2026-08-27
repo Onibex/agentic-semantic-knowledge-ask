@@ -112,7 +112,7 @@ class MetadataIngestionService:
                 # measure is a `field_role: measure` field with an
                 # `aggregation_behavior` on its owning Silver/Gold. Reject
                 # loudly so a stale metric YAML cannot silently re-enter the
-                # registry. See docs/semantic-layer/README.md Appendix A.
+                # registry. The layer set is bronze/silver/gold; see definition/docs/.
                 raise ValueError(
                     "The 'metric' layer has been removed from the ASK semantic layer. "
                     "Declare the measure as a field with field_role: measure + "

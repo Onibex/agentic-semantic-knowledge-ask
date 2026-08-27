@@ -227,57 +227,20 @@ For data questions, the chat offers three engines that trade **speed**, **cost**
 **rigor** differently. They all return the same shape of answer (SQL + rows + written
 answer + chart); they differ in *how* they decide which tables and joins to use.
 
-- **Flash** — one LLM call. Searches your schema as free-text chunks and writes SQL in a
-  single shot. No plan, no deterministic join planning, no scope validation. Fastest and
-  cheapest; least rigorous.
-- **Precise** — the most reproducible engine. It extracts a plan, ranks Data Products
-  **deterministically** (hybrid search + medallion re-ranking), picks optimal joins with
-  Dijkstra over the relationship graph, and validates that the SQL only touches allowed
-  tables (with one retry if not). Highest rigor; highest cost and latency.
-- **Smart** — the balanced default. It shows the LLM a compact **catalog** of your Data
-  Products, lets the LLM pick the relevant ones, then resolves the joins **deterministically**
-  through the same relationship graph (Dijkstra). Efficient and production-grade.
+- **Flash** — one LLM call, straight from free-text schema chunks to SQL. Fastest and
+  cheapest; no computed join planning.
+- **Precise** — selection *and* joins computed, then the emitted SQL is audited against the
+  entities it was allowed to touch. Most reproducible; slowest.
+- **Smart** — the default. The LLM picks Data Products from a scoped catalog; the joins are
+  computed. Balanced and production-grade.
 
-### 5.1 Comparison
+The difference that matters is **where determinism lives**: Precise computes the selection,
+Smart computes the join planning, Flash computes neither. All three emit governed SQL over the
+same database and the same workspace scope, and none of them can answer a business question
+from a raw table.
 
-| | **Flash** | **Precise** | **Smart** |
-|---|---|---|---|
-| **In plain English** | Fastest — one-shot SQL from schema text. | Most rigorous and reproducible. | Balanced, production-grade default. |
-| **LLM calls per query** | 1 | 3 | 2 |
-| **Schema source** | Free-text RAG chunks | Structured Data Products | Structured Data Products |
-| **How Data Products are chosen** | Chunk similarity (approximate) | Hybrid search + medallion re-ranking (deterministic) | LLM picks from a compact catalog |
-| **How joins are planned** | LLM guesses from schema text | Dijkstra over the relationship graph | Dijkstra over the relationship graph |
-| **Scope validation** | None | Post-SQL audit + one retry | None (but catalog-scoped) |
-| **Speed (approx.)** | ~15–20 s | ~60 s | ~40 s |
-| **Rigor / reproducibility** | Low | High | Medium |
-| **Best for** | Quick, exploratory questions; well-indexed data. | Audit, compliance, "explain exactly which table and join." | Everyday use and high volume. |
-
-*Speed and cost figures are observational estimates for the Flash, Precise and Smart engines;
-they vary with your model provider and question complexity.*
-
-> **Tip —** If you are unsure which engine to pick, start with **Smart**. Switch to
-> **Precise** when an answer looks off and you want a rigorously validated, reproducible
-> result; use **Flash** for quick exploration where latency matters more than guarantees.
-
-### 5.2 What they share
-
-All three engines share the same downstream contract, which is what makes them
-interchangeable from the chat's point of view:
-
-- They target the **same database** — any of the supported SQL engines (**PostgreSQL**,
-  **SAP HANA**, **ClickHouse**, **IBM Db2**, **Snowflake**, **Databricks**, **Google
-  BigQuery**, **SQL Server**, **Microsoft Fabric**) — and the same published
-  environment (`dev` / `prod`). The active connection is chosen in ASK Setup, not in the chat.
-- They emit **governed SQL** constrained by the semantic layer — none of them invents
-  columns.
-- They return the same response shape: generated **SQL**, a **results table**, a written
-  **answer**, and an **automatic chart** when the result has more than one row.
-
-The deeper difference is *where determinism lives*. Precise makes the **selection** of Data
-Products deterministic (a pure ranking function); Smart makes the **join planning**
-deterministic while letting the LLM do the selection; Flash leaves both to the LLM in a
-single call. Precise and Smart both plan joins deterministically over the relationship graph;
-Flash does not.
+→ **[The three chat engines](explain/engines.md)** covers the trade-offs, the comparison table,
+and how to choose.
 
 ---
 
@@ -321,5 +284,5 @@ create the containers your data lives in.
 entities the agent maps questions to.
 → **[ASK specification](../../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
 authoring rules behind governed SQL.
-→ **Engine behavior** — summarized in section 5 above; deeper internals are maintained by the
-platform team.
+→ **[The three chat engines](explain/engines.md)** — what each one computes rather than
+guesses, and how to choose between them.

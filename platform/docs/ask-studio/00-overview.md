@@ -92,7 +92,8 @@ From here, follow the flows in order:
 1. [Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md) — create the containers.
 2. [Flow 2 · Add Data Products](02-add-data-products.md) — create the entities.
 3. [Flow 3 · Edit & Enrich](03-edit-enrich.md) — refine fields and descriptions.
-4. [Flow 5 · Publish & Deploy](05-publish-deploy.md) — make it queryable in the chat.
+4. [Flow 4 · Domain Canvas](04-domain-canvas.md) — see the domain as a graph and check the join paths.
+5. [Flow 5 · Publish & Deploy](05-publish-deploy.md) — make it queryable in the chat.
 
 ---
 

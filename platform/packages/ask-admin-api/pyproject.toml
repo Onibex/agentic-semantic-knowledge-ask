@@ -42,6 +42,14 @@ where = ["src"]
 [tool.setuptools.package-dir]
 "" = "src"
 
+# The layer authoring standards are prompt payload, not documentation: they are
+# injected into the enrichment prompts at runtime. They must travel inside the
+# wheel — the image installs this package non-editably (`uv pip install --system
+# packages/ask-admin-api`), so anything not declared here is simply absent in
+# the container.
+[tool.setuptools.package-data]
+ask_admin_api = ["prompts/standards/*.md"]
+
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 testpaths = ["tests"]

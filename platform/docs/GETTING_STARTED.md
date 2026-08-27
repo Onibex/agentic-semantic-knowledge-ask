@@ -280,7 +280,7 @@ was produced.
 ## 8. Where to go next
 
 - **Semantic-layer authoring rules** → [`semantic-layer/`](semantic-layer/README.md)
-- **How each engine works** → [`FLASH.md`](FLASH.md) · [`PRECISE.md`](PRECISE.md) · [`SMART.md`](SMART.md)
+- **How each engine works** → [The three chat engines](explain/engines.md)
 - **Install & run the platform** → [`runbooks/local-development.md`](runbooks/local-development.md)
 - **Developer overview & architecture** → [`../CLAUDE.md`](../CLAUDE.md)
 - **In-product on-ramp** → the **Getting Started** page inside the ASK Studio.

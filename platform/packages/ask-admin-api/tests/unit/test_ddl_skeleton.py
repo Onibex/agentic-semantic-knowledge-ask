@@ -6,7 +6,7 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 """build_skeleton — the layer contracts, pinned against the official standards
-(platform/docs/semantic-layer/): unqualified db_table_name, no composed_of /
+(definition/docs/): unqualified db_table_name, no composed_of /
 join_graph / source / aggregation_behavior at Gold, DDL key → identifiers →
 grain, Bronze client-column exclusion, and the annotation-absent degradation."""
 

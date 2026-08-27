@@ -88,9 +88,13 @@ Two layers face the agent, and they answer different kinds of question:
 > from a single `CREATE TABLE` has no Bronze at all, and Gold never has any — its table
 > is `db_table_name` and its lineage is `relationships`.
 >
-> The other half never varies: **Bronze is never agent context.** It is not embedded and
-> not indexed into the retrieval registries, so no question can resolve to a raw table.
-> That isolation is structural, not a rule someone has to remember.
+> The other half never varies: **Bronze is never agent context.** It is never embedded, never
+> given field-registry rows and never chunked into the retrieval collections — so a business
+> question has nothing to resolve a raw table *against*, in any of the three engines. Most of
+> that isolation is structural rather than a rule someone has to remember: a Bronze is simply
+> not given the representations retrieval runs on. The remaining step is an explicit
+> layer filter, and the one path meant to reach a Bronze is a schema question — *"what columns
+> does VBAK have"* — which is not a question about your data.
 >
 > So the [Bronze specification](definition/docs/BRONZE_LAYER.md) is there to make the
 > generated output well-defined and auditable — read it when you are modelling ingestion
@@ -151,6 +155,8 @@ agentic-semantic-knowledge-ask/
 | You are… | Start here |
 |---|---|
 | **Evaluating ASK** | This page, then [Concepts & Architecture](platform/docs/02-concepts.md) |
+| **Here to see the product** | [Using ASK Chat](platform/docs/ask-chat/02-chat.md) — ask a question, read the answer, see the SQL behind it |
+| **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md) — what is computed rather than guessed |
 | **Installing it** | [Installation](platform/docs/01-installation.md) — `docker compose up`, then ASK Setup |
 | **Authoring a semantic layer** | [ASK Studio flows](platform/docs/ask-studio/00-overview.md) |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |

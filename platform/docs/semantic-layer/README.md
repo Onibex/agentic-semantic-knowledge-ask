@@ -1,27 +1,24 @@
 # ASK Semantic Layer — Authoring Standards
 
-> **Status: AUTHORITATIVE & MAINTAINED.** This folder is the source of truth for how
-> Bronze / Silver / Gold YAMLs are authored. It supersedes the parts of the ASK
-> Specification that no longer match reality — see
-> [Appendix A](#appendix-a--deprecated-from-the-ask-spec).
->
-> It is also the **source for prompt engineering**: `get_standards_excerpt(layer)`
-> (`ask-admin-api/system_prompts_service.py`) injects the matching **layer file, whole**,
-> into the enrichment prompts, and the agent's retrieval / SQL-generation prompts are
-> derived from these rules. Change a rule here first, then propagate it to the prompts.
+> **The normative specification lives in [`definition/docs/`](../../../definition/docs/).**
+> Read that to author Bronze / Silver / Gold YAML.
 
-## Files
+The three layer files that used to sit here were **prompt payload, not documentation**:
+`get_standards_excerpt(layer)` injects each one *whole* into the AI enrichment prompts. They
+now live with the code that injects them, as package data of `ask-admin-api`:
 
 | File | Scope |
 |---|---|
-| [BRONZE_LAYER.md](BRONZE_LAYER.md) | Bronze: physical schema binding — columns, types, keys, aliases, isolation. **Single home of the canonical type-system tables.** |
-| [SILVER_LAYER.md](SILVER_LAYER.md) | Silver: curated business entities — grain, `composed_of` + `join_graph`, fields, `field_role`, relationships, costs, safety, descriptions. |
-| [GOLD_LAYER.md](GOLD_LAYER.md) | Gold: denormalized physical tables — authored `entity_role`, the edge-vs-denormalization rule, gold authoring rules, prohibitions. |
+| [`prompts/standards/BRONZE_LAYER.md`](../../packages/ask-admin-api/src/ask_admin_api/prompts/standards/BRONZE_LAYER.md) | Bronze: physical schema binding — columns, types, keys, aliases, isolation. |
+| [`prompts/standards/SILVER_LAYER.md`](../../packages/ask-admin-api/src/ask_admin_api/prompts/standards/SILVER_LAYER.md) | Silver: curated business entities — grain, `composed_of` + `join_graph`, fields, relationships, costs, safety. |
+| [`prompts/standards/GOLD_LAYER.md`](../../packages/ask-admin-api/src/ask_admin_api/prompts/standards/GOLD_LAYER.md) | Gold: denormalized physical tables — `entity_role`, the edge-vs-denormalization rule, prohibitions. |
 
-Each layer file is **self-contained** (it is injected into LLM prompts whole) and carries an
-authority banner: when it disagrees with its counterpart in
-[`agentic-semantic-knowledge-ask`](https://github.com/Onibex/agentic-semantic-knowledge-ask),
-the file in this folder wins and the counterpart is corrected.
+They moved because a bare relative path resolved only when the process started in `platform/`.
+In every container the standards were absent and enrichment ran with no layer rules at all,
+silently. As package data they travel inside the wheel.
+
+The rest of this file — the two-plane resolution model and the duplication register — is being
+folded into the normative specification. It is kept here until that merge lands.
 
 ## Maintenance rule — shared contracts are duplicated on purpose
 

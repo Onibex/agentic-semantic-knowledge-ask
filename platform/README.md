@@ -47,9 +47,9 @@ Full setup and environment variables are in
 | For… | Read |
 |---|---|
 | **Getting started (everyone)** | [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) |
-| **Authoring the semantic layer** | [`docs/semantic-layer/`](docs/semantic-layer/) |
-| **How the SQL engines work** | [`docs/FLASH.md`](docs/FLASH.md) · [`docs/PRECISE.md`](docs/PRECISE.md) · [`docs/SMART.md`](docs/SMART.md) |
-| **Architecture & developer overview** | [`CLAUDE.md`](CLAUDE.md) |
+| **Authoring the semantic layer** | [`definition/docs/`](../definition/docs/) — the normative Bronze / Silver / Gold specification |
+| **How the SQL engines work** | [`docs/explain/engines.md`](docs/explain/engines.md) |
+| **Architecture & developer overview** | [`docs/02-concepts.md`](docs/02-concepts.md) |
 | **Install & deploy** | [`docs/runbooks/`](docs/runbooks/) |
 
 ## Technology
@@ -58,10 +58,14 @@ Full setup and environment variables are in
 - **LLM & embeddings:** pluggable — SAP AI Core (managed) or any LiteLLM provider
   (Anthropic, OpenAI, AWS Bedrock, Databricks, …) via the Setup SPA.
 - **Semantic search:** OpenSearch (hybrid kNN + BM25).
-- **Target databases:** SAP HANA Cloud or PostgreSQL.
-- **UIs:** three React SPAs (admin, chat, setup) served by Nginx.
+- **Target databases:** SAP HANA, PostgreSQL, Snowflake, Databricks, Google BigQuery,
+  ClickHouse, Microsoft SQL Server, Microsoft Fabric, IBM Db2 and Presto — each with its own
+  SQL generator and execution adapter. Which drivers ship in your image is one build variable
+  (`EXECUTOR_EXTRAS`).
+- **UIs:** three React SPAs (ASK Studio, ASK Chat, ASK Setup) served by Nginx.
 
-See [`CLAUDE.md`](CLAUDE.md) for the authoritative architecture and package layout.
+See [`docs/02-concepts.md`](docs/02-concepts.md) for the architecture, and
+[`docs/explain/engines.md`](docs/explain/engines.md) for how the three SQL engines differ.
 
 ## License
 

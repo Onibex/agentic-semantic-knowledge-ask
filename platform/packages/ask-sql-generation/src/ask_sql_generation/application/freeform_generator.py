@@ -89,7 +89,7 @@ _PG_STRICT_RULES = _prompts_pg.STRICT_RULES
 
 
 # Rules 7-8 (2026-07-30) propagate rules that were ALREADY ratified in the
-# semantic-layer standards (docs/semantic-layer/, then a single file) but had
+# semantic-layer standards (now definition/docs/) but had
 # never reached the prompt — not a compensating PATCH like the date rules in
 # prompts/{hana,postgresql}.py:
 #   rule 7 ← the grain contract (`grain.entity_grain` is R/S, "drives

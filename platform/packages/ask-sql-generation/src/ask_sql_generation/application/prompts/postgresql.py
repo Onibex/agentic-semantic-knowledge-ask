@@ -8,7 +8,7 @@
 """PostgreSQL-specific dialect rules — verbatim from the legacy freeform generator."""
 
 # PATCH (2026-06-17, refined 2026-07-15) — compensates for an OPEN GAP in
-# docs/semantic-layer/SILVER_LAYER.md §6.2 (temporal fields, not yet ratified).
+# definition/docs/SILVER_LAYER.md (temporal fields, not yet ratified).
 # SAP dates land in Silver as VARCHAR 'YYYY-MM-DD'
 # but Gold uses native DATE/TIMESTAMP, and the declared `type` can't be trusted.
 # Rule 9 forces a normalization so date comparisons work for BOTH representations.

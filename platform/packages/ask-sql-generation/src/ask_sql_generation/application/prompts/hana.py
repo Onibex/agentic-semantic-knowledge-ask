@@ -22,8 +22,8 @@ def schema_prefix_rule(schema: str) -> str:
     )
 
 
-# PATCH (2026-06-17) — compensates for an OPEN GAP in docs/semantic-layer/
-# SILVER_LAYER.md §6.2 (temporal fields, not yet ratified).
+# PATCH (2026-06-17) — compensates for an OPEN GAP in
+# definition/docs/SILVER_LAYER.md (temporal fields, not yet ratified).
 # SAP dates land in Silver as VARCHAR/NVARCHAR 'YYYY-MM-DD' but Gold uses native
 # DATE/TIMESTAMP, and the declared `type` can't be trusted. Rule 17 below forces a CAST
 # so date comparisons work for BOTH representations. This is a stopgap — relax/remove it

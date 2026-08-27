@@ -9,6 +9,12 @@
 
 > **New here?** Start with the [repository overview](../README.md) for the big picture and the companion **Onibex ASK Platform** manual. This document is the normative specification.
 
+> **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
+> Onibex ASK Platform derives its AI-enrichment prompts from these rules and ships them as
+> code assets, but the prompt is a rendering of the specification — never a second authority.
+> Where the platform's behaviour and this text disagree, that is a defect in one of them, to be
+> reconciled here rather than forked.
+
 ## What is ASK?
 
 **Agentic Semantic Knowledge (ASK)** is a YAML specification that describes enterprise data in a way AI agents can actually understand, reason over, and act on.
