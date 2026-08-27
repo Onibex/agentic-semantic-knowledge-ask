@@ -32,6 +32,8 @@ Products — see [Configure the platform first · ASK Setup](../ask-setup/README
 
 ### 1. Sign in
 
+![The ASK Chat sign-in screen: the Onibex logo, the Agentic Semantic Knowledge title and the Sign in button](../images/chat-overview-login.png)
+
 Every user of the realm gets the **`ask-user`** role automatically, so asking questions needs
 no extra setup.
 

@@ -106,6 +106,8 @@ Appears only when the result has **at least 2 rows** and at least one numeric co
 Bar charts use a blue gradient scale; line charts use Onibex blue (`#2563eb`). The Y axis
 picks the numeric column with the highest maximum value.
 
+![The Chart tab: a bar chart of billed quantity by material, beside the written answer that flags only two materials were returned rather than the ten asked for](../images/chat-answer-chart.png)
+
 **SQL tab**
 
 Collapsed by default. Click **SQL** to expand the raw SQL the agent sent to the database.
@@ -123,10 +125,20 @@ neither.
 > **Tip —** the mode badge (e.g. *precise*) shown next to the answer tells you which engine
 > produced it, in case you switch modes between questions.
 
+**The token badge opens.** Next to the mode badge, `N LLM calls · N tok` expands into the
+cost of the answer: by phase, and per call with the model that served it and when.
+
+![The token breakdown expanded: totals by phase — macro classification, IR generation, SQL generation — and a per-call table naming the model and the time of each call](../images/chat-token-usage.png)
+
+That panel is why an answer's cost is a fact rather than an estimate. It is also where a slow
+answer explains itself: the phase that took the time is named.
+
 ### Schema questions
 
 The agent describes the entity's structure — tables, fields, their types and roles, and the
 exact join predicates — without running a query or drawing a chart.
+
+![A schema question answered: the entity's tables, fields and join predicates, with no query run](../images/chat-answer-schema.png)
 
 ### Documentation questions
 
