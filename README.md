@@ -155,6 +155,8 @@ agentic-semantic-knowledge-ask/
 | You are… | Start here |
 |---|---|
 | **Evaluating ASK** | This page, then [Concepts & Architecture](platform/docs/02-concepts.md) |
+| **Here to see the product** | [Using ASK Chat](platform/docs/ask-chat/02-chat.md) — ask a question, read the answer, see the SQL behind it |
+| **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md) — what is computed rather than guessed |
 | **Installing it** | [Installation](platform/docs/01-installation.md) — `docker compose up`, then ASK Setup |
 | **Authoring a semantic layer** | [ASK Studio flows](platform/docs/ask-studio/00-overview.md) |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |
