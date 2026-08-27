@@ -4,6 +4,15 @@
 > SQL back — compiled from a business-vocabulary semantic layer, never guessed from
 > raw schema.
 
+**[Quick start](#quick-start)** · **[Manual](platform/docs/README.md)** ·
+**[Specification](definition/README.md)** · **[How ASK compares](#how-ask-compares)** ·
+**[FAQ](#faq)** · **[Support](SUPPORT.md)**
+
+[![Specification: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-e8a838.svg)](definition/README.md)
+[![Platform: 1.1.0](https://img.shields.io/badge/platform-1.1.0-2f6feb.svg)](CHANGELOG.md)
+[![Source-available: PolyForm Strict or Free Trial](https://img.shields.io/badge/licence-PolyForm%20Strict%20%7C%20Free%20Trial-6f42c1.svg)](LICENSE)
+[![SQL engines: 10](https://img.shields.io/badge/SQL%20engines-10-1a7f37.svg)](#works-with-your-data-where-it-already-lives)
+
 **"Based on open sales orders for material ID TG12, do we have enough stock to cover that
 demand?"**
 
@@ -108,6 +117,44 @@ relationship somebody declared. Each carries a join predicate, a cardinality, a 
 and an aggregation-safety hint, which is what lets a path be **computed** rather than chosen.
 Point an LLM at the raw schema and this graph does not exist; it has to guess its way across.
 
+### How ASK compares
+
+The choice is rarely *"ASK or nothing"*. It is usually one of these:
+
+| | LLM + raw schema | RAG over schema text | BI semantic layer | **ASK** |
+|---|---|---|---|---|
+| **Knows what `MATNR` means** | No | If someone wrote it down | Yes | Yes — that *is* the contract |
+| **The join path is decided by** | The model | The model | Fixed when the model was built | **Computed** — Dijkstra over declared edges |
+| **Can name a table that does not exist** | Yes | Yes | No | No — it is never shown one |
+| **Answers a question nobody modelled first** | Yes | Yes | Only what the model exposes | Yes — Gold first, Silver as fallback |
+| **The definitions live** | Nowhere | In prose | In a vendor's modelling layer | In **vendor-neutral YAML, in your git** |
+| **One question may reach** | The whole schema | The whole corpus | The model | A **workspace allowlist** |
+| **You see the SQL, and its scope** | Sometimes | Sometimes | Not applicable | Always, with the entities it was authorised to touch |
+
+Column two is not a straw man — ASK ships it. **Flash** is retrieval over schema text straight
+to SQL, and it is the fastest of the three engines. What it concedes, and what the other two
+compute instead, is set out in
+[The three chat engines](platform/docs/explain/engines.md). Choosing an engine is choosing how
+much you are willing to let the model decide.
+
+### ASK is for you if
+
+- Your data lives in an enterprise system where the names are codes — `VBAK`, `MATNR`, `WERKS`
+  — and what they *mean* lives in a handful of people's heads.
+- The same question has to give the same number tomorrow, and somebody has to be able to show
+  **why** that number is right.
+- You want the definitions to be **yours**: vendor-neutral YAML you version, review and diff,
+  not a modelling layer you rent.
+
+### Skip ASK if
+
+- Your schema is small and self-describing, and a model handed the `CREATE TABLE` statements
+  already answers well enough. It probably does.
+- You want dashboards more than answers. ASK returns an answer, its table, its chart and its
+  SQL — it is not a BI front end.
+- **Nobody is going to author a semantic layer.** ASK's determinism comes from the contract.
+  Without one there is nothing to compile against, and you have bought a slower way to guess.
+
 ---
 
 ## The semantic layer
@@ -190,8 +237,6 @@ semantic layer comes from — but nothing in the contract is SAP-specific.
 
 ---
 
----
-
 ## The two halves of this repository
 
 | If you want to… | Go to | What it is |
@@ -230,6 +275,41 @@ agentic-semantic-knowledge-ask/
 | **Reading the whole manual** | [The manual](platform/docs/README.md) — every page, grouped by what you are trying to do |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |
 | **An AI agent** | [`llms.txt`](llms.txt) |
+
+---
+
+## FAQ
+
+**Is my data sent to the model?**
+To write SQL, the agent is shown your **semantic layer** — the Data Products you authored —
+never the raw schema. Query **results** are sent: once the SQL has run, the rows go to the
+model to be written up as the answer you read. The model is whichever one you configured in
+ASK Setup, and it can be a self-hosted one.
+
+**Do I need SAP?**
+No. ASK compiles for ten SQL engines and nothing in the specification is SAP-specific. The
+reference examples are SAP SD and MM because that is where ASK was built, and it is where a
+semantic layer earns the most — but a `CREATE TABLE` on PostgreSQL is a valid starting point.
+
+**Which models can I use?**
+SAP AI Core for managed models, or any LiteLLM provider — Anthropic, OpenAI, AWS Bedrock,
+Databricks and others. Chosen in ASK Setup; changing one reloads the affected services rather
+than needing a redeploy.
+
+**Do I have to write the YAML by hand?**
+No, and mostly you should not. Import a `CREATE TABLE` and let AI draft the layer, ingest SAP
+metadata through OneConnect, or author in the UI — then review the diff. See
+[Add Data Products](platform/docs/ask-studio/02-add-data-products.md).
+
+**Is this open source?**
+**No — source-available.** Read it, evaluate it, study it, build against it. Production use
+needs a commercial licence. The distinction is real and we would rather you learn it here than
+after a procurement review.
+
+**How long does an answer take?**
+Between roughly fifteen and sixty seconds, depending on the engine. That is a real trade, and
+[The three chat engines](platform/docs/explain/engines.md) is where it is laid out rather than
+hidden.
 
 ---
 

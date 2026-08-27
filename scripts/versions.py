@@ -19,9 +19,11 @@ field does carry, in a public repository, is a signal to whoever reads it: a
 manifest saying 0.1.0 next to a v1.0.0 release reads as an unstable component
 inside a stable product.
 
-Covered: CITATION.cff, every pyproject.toml with a [project] table, and every
-package.json outside node_modules. On a tag build the gate also checks the tag
-itself, so a release cannot go out describing a version the code does not claim.
+Covered: CITATION.cff, every pyproject.toml with a [project] table, every
+package.json outside node_modules, and the version badge on the front page --
+a number a reader sees before anything else, and the one most likely to be
+forgotten. On a tag build the gate also checks the tag itself, so a release
+cannot go out describing a version the code does not claim.
 """
 
 from __future__ import annotations
@@ -36,6 +38,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+# The shields.io badge on the front page: .../badge/platform-1.1.0-2f6feb.svg
+BADGE = re.compile(r"(badge/platform-)([0-9A-Za-z.\-]+?)(-[0-9a-fA-F]{6}\.svg)")
 
 
 def tracked(pattern: str) -> list[Path]:
@@ -49,24 +53,34 @@ def manifests() -> list[Path]:
     files = [REPO / "CITATION.cff"]
     files += [p for p in tracked("*pyproject.toml") if "[project]" in p.read_text(encoding="utf-8")]
     files += [p for p in tracked("*package.json") if "node_modules" not in p.parts]
+    files.append(REPO / "README.md")
     return [p for p in files if p.is_file()]
 
 
 def read_version(path: Path) -> str | None:
     text = path.read_text(encoding="utf-8")
+    if path.name == "README.md":
+        match = BADGE.search(text)
+        return match.group(2) if match else None
     if path.suffix == ".json":
         return json.loads(text).get("version")
-    match = re.search(r'^version\s*[:=]\s*"([^"]+)"', text, re.M)
+    match = re.search(r'^version\s*[:=]\s*"([^"]+)"', text, re.MULTILINE)
     return match.group(1) if match else None
 
 
 def write_version(path: Path, version: str) -> bool:
     text = path.read_text(encoding="utf-8")
+    if path.name == "README.md":
+        updated = BADGE.sub(rf"\g<1>{version}\g<3>", text, count=1)
+        if updated == text:
+            return False
+        path.write_text(updated, encoding="utf-8", newline="")
+        return True
     if path.suffix == ".json":
         # Rewritten as text, not via json.dump, so formatting and key order survive.
         updated = re.sub(r'("version"\s*:\s*)"[^"]+"', rf'\1"{version}"', text, count=1)
     else:
-        updated = re.sub(r'^(version\s*[:=]\s*)"[^"]+"', rf'\1"{version}"', text, count=1, flags=re.M)
+        updated = re.sub(r'^(version\s*[:=]\s*)"[^"]+"', rf'\1"{version}"', text, count=1, flags=re.MULTILINE)
     if updated == text:
         return False
     path.write_text(updated, encoding="utf-8", newline="")
