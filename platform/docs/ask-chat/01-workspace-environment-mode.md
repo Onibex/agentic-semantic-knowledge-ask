@@ -44,7 +44,7 @@ query. Workspaces are loaded from the admin API and listed by name.
 | Workspace count (Home page) | The Home dashboard shows how many workspaces are available as a quick reference. |
 
 > **Warning —** If the dropdown is empty, no workspace has been configured yet or the admin API
-> is unreachable. Ask an administrator to create a workspace in the admin app, then refresh
+> is unreachable. Ask an administrator to create a workspace in ASK Studio, then refresh
 > the page.
 
 > **Warning —** Until a workspace is selected, the Chat page shows an amber banner and refuses
