@@ -7,7 +7,9 @@
 
 ---
 
-> **New here?** Start with the [repository overview](../README.md) for the big picture and the companion **Onibex ASK Platform** manual. This document is the normative specification.
+> **New here?** Start with the [repository overview](../README.md) for the big picture, or go
+> straight to the [Onibex ASK Platform manual](../platform/docs/README.md) to see the contract
+> authored and queried in a running product. This document is the normative specification.
 
 > **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
 > Onibex ASK Platform derives its AI-enrichment prompts from these rules and ships them as
@@ -338,6 +340,16 @@ If ASK is useful in your research or product, please cite it:
 ```
 
 ---
+
+## Where this is implemented
+
+The [Onibex ASK Platform](../platform/README.md) is Onibex's implementation of this
+specification. Its manual covers
+[Author the semantic layer · ASK Studio](../platform/docs/ask-studio/README.md), where a layer
+is written against these rules, and
+[The three chat engines](../platform/docs/explain/engines.md), where the resolution model above
+becomes a query. The specification is runtime-neutral: any vendor can adopt it, and the platform
+is not the only possible reader.
 
 ## License
 

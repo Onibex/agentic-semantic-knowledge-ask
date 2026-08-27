@@ -285,3 +285,7 @@ Before publishing a Bronze YAML to the catalog, verify:
 - [ ] Aliases are unique within the file (case-insensitively) and contain only lowercase ASCII, digits and underscores.
 - [ ] `description` is filled on the table and on every field — an empty string is a placeholder, not a valid end state.
 - [ ] No business logic, derivations, or status interpretations are encoded here — those belong in Silver and Gold.
+
+---
+
+[← Back to the ASK specification](../README.md) · [The layer specifications](README.md)

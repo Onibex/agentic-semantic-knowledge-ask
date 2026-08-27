@@ -129,6 +129,7 @@ def check() -> list[str]:
 
 MANUAL = ROOT / "platform" / "docs"
 MANUAL_INDEX = MANUAL / "README.md"
+SPEC = ROOT / "definition" / "docs"
 
 
 @functools.lru_cache(maxsize=1)
@@ -182,6 +183,24 @@ def check_navigation() -> list[str]:
             problems.append(f"{rel}: not linked from the manual index")
         if "Back to the manual" not in path.read_text(encoding="utf-8"):
             problems.append(f"{rel}: no way back to the index")
+    return problems
+
+
+def check_specification() -> list[str]:
+    """The other half of the repository can be left, too.
+
+    The manual links into `definition/` eighteen times and, until this check
+    existed, `definition/` linked back zero. Someone evaluating ASK as a
+    standard -- the audience half this repository exists for -- could reach the
+    contract and never find the product that implements it. The layer
+    specifications ended on the last bullet of a checklist.
+    """
+    problems: list[str] = []
+    for path in sorted(SPEC.glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        if "Back to the ASK specification" not in text:
+            rel = path.relative_to(ROOT).as_posix()
+            problems.append(f"{rel}: no way back to the specification")
     return problems
 
 
@@ -253,7 +272,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    problems = check() + check_navigation() + check_names()
+    problems = check() + check_navigation() + check_names() + check_specification()
     total = len(markdown_files())
 
     if problems:
