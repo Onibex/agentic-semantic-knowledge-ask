@@ -1,5 +1,7 @@
 # ASK Setup · Check the search index
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Check the search index**
+
 > **How to.** The **Setup** page shows the **OpenSearch** connection
 > ASK Platform uses for its semantic index and its encrypted secret store. It is **read-only** —
 > the connection is supplied by the environment — and gives you a one-click **health check** to
@@ -12,13 +14,9 @@
 | **Prerequisites** | The platform is installed with OpenSearch running (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | Confidence that the platform is pointed at the right OpenSearch cluster and that it responds. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Check the search index**
-> The screenshots and sample values below use the illustrative demo environment: OpenSearch at host
-> `opensearch`, port `9200`, SSL off. Substitute your own host — never screenshot a real password.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **OpenSearch is the platform's bootstrap store.** It holds the semantic index *and* the encrypted
   secret store that every other Setup page writes to. Because the secret store lives inside

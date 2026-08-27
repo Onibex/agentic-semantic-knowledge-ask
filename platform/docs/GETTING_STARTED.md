@@ -1,6 +1,7 @@
 # Getting Started
 
 [Manual](README.md) › [Foundations](README.md#foundations) › **Getting Started**
+
 > **Tutorial.** One path, end to end: bring the platform up, describe a slice of your data,
 > publish it, and ask a question in plain language. Roughly 45 minutes on a clean machine.
 

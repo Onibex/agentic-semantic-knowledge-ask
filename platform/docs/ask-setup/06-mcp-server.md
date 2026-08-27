@@ -1,5 +1,7 @@
 # ASK Setup · Enable the MCP server
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
+
 > **How to.** Point the platform at the internal **MCP
 > Server** — the tool bridge the agent uses to make SAP OData write and action calls. This
 > page stores the endpoint (URL + port) the orchestrator uses to reach that service and lets
@@ -12,14 +14,13 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; the MCP service is deployed in your cluster. |
 | **You'll end with** | A saved MCP endpoint the agent uses for SAP OData actions, verified reachable with a health check. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
 > The screenshots and values below use the platform's default in-cluster endpoint
 > (`http://ask-mcp-service:4004`). Substitute your own deployment's service name and
 > port if they differ.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **MCP** (Model Context Protocol) is the **tool bridge** the agent uses to call SAP OData
   services — for example, to create or update a sales order. It runs as a separate internal

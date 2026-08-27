@@ -1,5 +1,7 @@
 # ASK Chat · Using the Chat
 
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Using the Chat**
+
 > **How to.** Ask questions in plain language and read governed SQL
 > answers — written summaries, results tables, auto-generated charts, and optionally the SQL
 > and token trace behind each answer.
@@ -11,14 +13,9 @@
 | **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Scope a question](01-workspace-environment-mode.md)). |
 | **You'll end with** | Answers to your questions — text, tables, charts — in one or more named conversations you can return to. |
 
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Using the Chat**
-> The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
-> example (Sales Orders). Substitute your own Data Products — the exact demo names and
-> questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - Each conversation is an independent **chat session** with its own history. You can have
   multiple sessions per workspace and switch between them freely.

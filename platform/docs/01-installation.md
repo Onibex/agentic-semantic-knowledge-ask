@@ -1,6 +1,8 @@
 # Install and run the platform
 
-> **Getting started.** Bring the full ASK Platform up on one machine with Docker and
+[Manual](README.md) › [Foundations](README.md#foundations) › **Install and run the platform**
+
+> **How to.** Bring the full ASK Platform up on one machine with Docker and
 > reach each of its user interfaces — **ASK Studio**, the **Chat**, and **ASK Setup** — plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
@@ -12,13 +14,9 @@
 | **Prerequisites** | **Docker** (with Docker Compose v2) installed and running; a shell at the repo root. |
 | **You'll end with** | Every service healthy and each UI reachable in the browser, ready to configure. |
 
-[Manual](README.md) › [Foundations](README.md#foundations) › **Install and run the platform**
-> This page only needs environment-variable **names**, never their secret values. The rest of
-> the manual uses an illustrative **SAP Production Planning** example — substitute your own data.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The platform is a **multi-service stack** started as one unit with **Docker Compose**. The
   compose file (`docker-compose.yml`) is the source of truth for the topology.

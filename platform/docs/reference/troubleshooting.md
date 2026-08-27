@@ -1,5 +1,7 @@
 # Troubleshooting & FAQ
 
+[Manual](../README.md) › [Reference](../README.md#reference) › **Troubleshooting & FAQ**
+
 > **Reference page.** When an answer comes back empty, an environment behaves
 > unexpectedly, or the platform won't start from zero, look up the **symptom** below and follow
 > the **fix**. Most "it's broken" reports trace back to one rule: the chat only sees Data
@@ -12,12 +14,9 @@
 | **Prerequisites** | The platform is deployed and running (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A resolved symptom, or a clear next step for your administrator or ops team. |
 
-[Manual](../README.md) › [Reference](../README.md#reference) › **Troubleshooting & FAQ**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The chat can only answer from Data Products an administrator has **published** to the
   environment being queried (**dev** or **prod**). If nothing is published, answers come back

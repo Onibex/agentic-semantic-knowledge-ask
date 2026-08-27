@@ -1,5 +1,7 @@
 # Find your way around ASK Setup
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Find your way around ASK Setup**
+
 > **Reference page.** **ASK Setup** is where an
 > administrator points the platform at its infrastructure — the OpenSearch store, the databases
 > the agent queries, the language models it uses, the identity provider, and the SAP write-back
@@ -12,14 +14,9 @@
 | **Prerequisites** | The platform is installed and running (see [Install and run the platform](../01-installation.md)) and you can sign in to **ASK Setup**. |
 | **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Studio and answer in the chat. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Find your way around ASK Setup**
-> The screenshots and sample values below use the illustrative demo environment: an **SAP HANA**
-> target (port `443`), OpenSearch at `opensearch:9200`, and a Bedrock model. Substitute your own
-> hosts and credentials — never screenshot a real API key, client secret, or database password.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **ASK Setup comes first, and then you leave it alone.** It is the prerequisite for the other
   two surfaces, not a peer of them: **ASK Studio** has nothing to publish against and **ASK Chat**

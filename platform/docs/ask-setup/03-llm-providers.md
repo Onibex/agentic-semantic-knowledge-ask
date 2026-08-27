@@ -1,5 +1,7 @@
 # ASK Setup · Connect an LLM provider
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect an LLM provider**
+
 > **How to.** Register the language models the agent may use. The page holds a
 > **registry** of LLM connections, of which exactly **one is active** at any time, plus the
 > single **shared embedder** that builds the platform's vector space.
@@ -11,14 +13,9 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Install and run the platform](../01-installation.md)), and you have the provider's credentials to hand (API key, or cloud access keys). |
 | **You'll end with** | One **active** LLM the agent uses for chat and SQL generation, and a configured **embedder** shared with ASK Studio. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect an LLM provider**
-> The screenshots and sample values below use illustrative, non-secret settings (an **AWS Bedrock**
-> model). Substitute your own provider and model — and never type or screenshot a real API key,
-> access key, or secret.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The page is a **registry**: you can store many LLM connections (one per provider/model/account),
   but **exactly one is active** at a time. The active model is what chat and SQL generation call.

@@ -1,7 +1,8 @@
 # Orchestrator troubleshooting
 
 [Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Orchestrator troubleshooting**
-> **Audience:** ops / on-call.
+
+> **How to.** Diagnose the chat backend when it misbehaves. For ops and on-call.
 > **Scope:** the `ask-orchestrator` deployment.
 
 ---

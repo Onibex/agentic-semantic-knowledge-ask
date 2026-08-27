@@ -1,5 +1,7 @@
 # ASK Chat · Scope a question
 
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
+
 > **How to.** Configure the three sidebar controls that scope every
 > query — **Workspace**, **Environment**, and **Mode** — before you ask your first question.
 
@@ -10,14 +12,9 @@
 | **Prerequisites** | You are signed in to ASK Chat (see [Find your way around ASK Chat](00-overview.md)). |
 | **You'll end with** | A workspace selected, an environment chosen, and a query mode set — the chat is ready to use. |
 
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
-> The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
-> example (Sales Orders). Substitute your own Data Products — the exact demo names and
-> questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **Workspace** is the hard scope — the agent can only see Data Products that belong to the
   workspace you pick. Without one selected, every query is refused.

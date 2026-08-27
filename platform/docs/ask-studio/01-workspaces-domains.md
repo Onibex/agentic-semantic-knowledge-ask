@@ -1,5 +1,7 @@
 # ASK Studio · Create workspaces and business domains
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
+
 > **How to.** Create the containers your data lives in — a
 > **Workspace** and the **Business Domains** inside it — and assign Data Products to a domain.
 
@@ -10,12 +12,9 @@
 | **Prerequisites** | You can sign in to **ASK Studio** (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A workspace containing at least one business domain, ready to hold Data Products. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **Workspace** is the top-level container the chat scopes to — it backs a deployment
   (`dev` / `prod`). Think "Manufacturing Operations".

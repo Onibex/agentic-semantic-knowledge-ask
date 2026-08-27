@@ -8,10 +8,11 @@ come back to afterwards, when you need one specific thing.
 
 > Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
 
-Most walkthroughs use one consistent, **illustrative** example — **SAP Production Planning
-(Production Orders)**; the **ASK Chat** flows use a **Sales & Distribution** example. Both are
-demonstration datasets: substitute your own Data Products, and expect the sample questions to
-return results only against matching data.
+**About the examples.** Every walkthrough uses one of two demonstration datasets — **SAP
+Production Planning** (Production Orders) for authoring and configuration, **Sales &
+Distribution** (Sales Orders) for the chat. Substitute your own Data Products as you read: the
+demo names will not exist in your system, and the sample questions return results only against
+matching data. This is said here rather than on every page.
 
 ---
 

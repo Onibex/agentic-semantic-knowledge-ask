@@ -1,5 +1,7 @@
 # ASK Studio · Edit and enrich Data Products
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Edit and enrich Data Products**
+
 > **How to.** Refine a Data Product after you've created it — fix its
 > **fields**, **relationships** and **join conditions** by hand, then let **AI Assist** improve
 > descriptions and synonyms. Everything here happens *before* you publish.
@@ -11,12 +13,9 @@
 | **Prerequisites** | At least one Data Product exists (see [Add Data Products](02-add-data-products.md)); a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for AI Assist. |
 | **You'll end with** | A cleaned-up Data Product — correct fields, join topology and descriptions — back in **In Review**, ready to publish. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Edit and enrich Data Products**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **Editing is global.** A Data Product's YAML is shared across every Business Domain that
   reuses it. When you change a field here, the change lands in **all** of those domains — the

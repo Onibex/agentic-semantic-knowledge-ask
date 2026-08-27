@@ -1,5 +1,7 @@
 # ASK Studio · Add Data Products
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
+
 > **How to.** Create the entities that make up your semantic layer —
 > the **Data Products** the agent maps questions to. There are **four ways** to add one;
 > this page covers when to use each and how.
@@ -10,9 +12,6 @@
 | **Time** | 2–10 minutes depending on the mode |
 | **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 

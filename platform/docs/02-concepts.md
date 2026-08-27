@@ -1,6 +1,8 @@
 # Concepts and architecture
 
-> **The mental model for the whole platform.** Read this once and the rest of the manual
+[Manual](README.md) › [Foundations](README.md#foundations) › **Concepts and architecture**
+
+> **Explanation.** The mental model for the whole platform. Read this once and the rest of the manual
 > falls into place: the two surfaces you work in and the one you configure first, the two
 > roles that use them, how the
 > **semantic layer** is organized, why the SQL is **governed**, and how the three chat
@@ -13,12 +15,9 @@
 | **Prerequisites** | None. This is the orientation page; no login required. |
 | **You'll end with** | A clear picture of how a natural-language question becomes a governed SQL answer, and where each task in this manual fits. |
 
-[Manual](README.md) › [Foundations](README.md#foundations) › **Concepts and architecture**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The platform turns a **natural-language question** into **governed SQL** over your SAP
   data, runs it, and returns a written answer plus a table and an automatic chart.

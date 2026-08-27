@@ -1,5 +1,7 @@
 # ASK Setup · Connect to SAP
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect to SAP**
+
 > **How to.** Store the **S/4HANA OData API credentials** the platform uses to read from
 > and write to SAP. It is a small form — host, service path, username, password — with a **Test**
 > button to confirm the platform can reach the service.
@@ -11,13 +13,9 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Install and run the platform](../01-installation.md)), and you have an S/4HANA OData user (host, user, password) for the service you want to expose. |
 | **You'll end with** | Saved S/4HANA OData credentials, verified with a live **Test Connection**. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect to SAP**
-> The screenshots below use an illustrative host and username. Substitute your own — and never type
-> or screenshot a real S/4HANA password (the page masks it once saved).
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - This page holds the credentials for the **S/4HANA OData API** — the endpoint the platform calls to
   read SAP data and to perform write actions.

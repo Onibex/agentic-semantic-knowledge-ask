@@ -1,5 +1,7 @@
 # ASK Studio · Set the organization profile
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Set the organization profile**
+
 > **How to.** Set the singleton **Organization profile** — the
 > customer's identity (company name, source system, portal URL) that is prepended to the
 > agent's system prompt so every answer is framed in your environment.
@@ -11,12 +13,9 @@
 | **Prerequisites** | You can sign in to **ASK Studio** (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A saved Organization profile the agent uses on every query, and a source system that pre-fills new Data Products. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Set the organization profile**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The Organization profile is a **singleton** — there is exactly one per deployment. Saving it
   again **overwrites** the previous values (an idempotent upsert), it does not create a second

@@ -1,5 +1,7 @@
 # ASK Studio · Audit, compare and restore versions
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Audit, compare and restore versions**
+
 > **How to.** Every Data Product is Git-backed. This page shows how to
 > **audit** the changes to a Data Product over time, **diff** any two versions side by side, and
 > **restore** an earlier version — all keyed to the person who made each change.
@@ -11,12 +13,9 @@
 | **Prerequisites** | Signed in to **ASK Studio**; at least one Data Product with a change or two (create one in [Add Data Products](02-add-data-products.md)). |
 | **You'll end with** | Confidence in what changed, when, and by whom — plus a restored version if you needed one. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Audit, compare and restore versions**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - Every **Publish**, manual edit and AI Assist accept becomes a **commit** — a point-in-time
   snapshot of the Data Product's YAML, stamped with an author and a timestamp.

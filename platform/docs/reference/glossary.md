@@ -1,5 +1,7 @@
 # Glossary
 
+[Manual](../README.md) › [Reference](../README.md#reference) › **Glossary**
+
 > **Reference page.** Every user-facing term the manual uses, defined once, in one place.
 > Definitions here match the [ASK specification](../../../definition/README.md) —
 > when a term means something specific to the platform (Gold, measure, grain), this page uses
@@ -11,9 +13,6 @@
 | **Time** | Skim as needed; ~5 minutes end to end |
 | **Prerequisites** | None. |
 | **You'll end with** | A shared vocabulary for the ASK Studio flows, ASK Setup, and the chat. |
-
-[Manual](../README.md) › [Reference](../README.md#reference) › **Glossary**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
@@ -148,7 +147,7 @@
 | **Slug** | The URL- and API-safe identifier for a workspace or domain (lowercase letters, digits, hyphens), auto-derived from the name — e.g. `manufacturing-operations`. It identifies the object, so it must be unique. |
 | **Smart** | See **Agent Mode**. The balanced engine — catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. (The chat's default engine is **Precise**.) |
 | **Source system** | The system your data originates from (e.g. `s4h` for SAP S/4HANA). Set on the **Organization profile** and per Data Product; it tunes the AI mapping in DDL + AI and OneConnect modes. |
-| **SQL engine / multi-DB** | The kind of database the generated SQL runs against. The platform supports nine engines — **PostgreSQL, SAP HANA, ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft Fabric** — each with its own SQL dialect. You register connections and pick the active one per environment in **ASK Setup** (see **Connection**). |
+| **SQL engine / multi-DB** | The kind of database the generated SQL runs against. The platform supports ten engines — **PostgreSQL, SAP HANA, ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft Fabric, Presto** — each with its own SQL dialect and its own execution adapter. You register connections and pick the active one per environment in **ASK Setup** (see **Connection**). |
 | **Status flag** | A `field_role` for a field whose value space is a small closed set of business states (typically 2–5, e.g. `X = blocked, blank = not blocked`). The agent treats it as **filter-only** — never aggregates it or groups by it. |
 | **Synonyms** | Alternative words for a field or term that boost retrieval and disambiguation — e.g. *good quantity, good output, yield* for confirmed yield. Added by hand or suggested during **Enrichment**. |
 

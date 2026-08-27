@@ -1,7 +1,8 @@
 # Local development
 
 [Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Local development**
-> **Audience:** developers running the platform locally on Windows (PowerShell), without Docker.
+
+> **How to.** Run the services natively instead of in Docker, on Windows and PowerShell.
 > **Source of truth:** [`docker-compose.yml`](../../docker-compose.yml) — this guide reproduces the same multi-service topology (2 Python services + 3 React SPAs + OpenSearch + optional Keycloak), but with each service booted natively instead of in a container.
 > **Linux/macOS:** bash equivalents at the end. **Docker fallback:** `docker compose up -d` if you'd rather skip the venv setup (see [`docker-compose.yml`](../../docker-compose.yml)).
 

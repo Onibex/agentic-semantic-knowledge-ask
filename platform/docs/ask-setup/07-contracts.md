@@ -1,5 +1,7 @@
 # ASK Setup · Register an OpenAPI contract
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
+
 > **How to.** Register a SAP OData service — described by an
 > **OpenAPI 3.0** specification — so the agent can call it. Each registered contract turns the
 > service's entity sets and operations into MCP tools the agent uses for SAP actions.
@@ -11,13 +13,12 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; an OpenAPI 3.0 spec **in JSON** for the OData service you want to expose. |
 | **You'll end with** | The OData service registered as MCP tools, its entity sets and operations available to the agent. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
 > The screenshots use a sample OData spec. Register your own service's spec — the exact entity
 > sets shown here won't match yours.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **contract** is an **OpenAPI 3.0 specification** describing a SAP OData service.
   Registering it turns each **entity set** and its **operations** (list, get, create, update,

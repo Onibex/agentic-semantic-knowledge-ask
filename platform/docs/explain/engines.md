@@ -1,6 +1,7 @@
 # The three chat engines
 
 [Manual](../README.md) › [Understanding how it works](../README.md#understanding-how-it-works) › **The three chat engines**
+
 > **Explanation.** Why ASK ships three ways to answer the same question, what each one
 > makes deterministic, and how to choose. No procedure here — to switch engines in the
 > chat, see [Scope a question](../ask-chat/01-workspace-environment-mode.md).

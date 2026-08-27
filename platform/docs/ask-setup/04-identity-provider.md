@@ -1,5 +1,7 @@
 # ASK Setup · Review the identity provider
 
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Review the identity provider**
+
 > **How to.** See who signs in to the platform, and how. This page is **read-only by
 > design**: the identity provider is chosen at deploy time and baked into the build — the page
 > exists to show you the active configuration and your own session, not to edit them.
@@ -11,13 +13,9 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A clear view of the active identity provider, its OIDC configuration, and the roles carried in your token. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Review the identity provider**
-> The screenshots below show illustrative issuer and client values. Substitute your own — none of it
-> is editable here, so there is nothing secret to type in.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - Authentication is configured **at deploy time**, not in the UI. Everything on this page is
   **read-only** — there are no editable fields by design.

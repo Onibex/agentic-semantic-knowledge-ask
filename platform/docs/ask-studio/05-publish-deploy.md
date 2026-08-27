@@ -1,5 +1,7 @@
 # ASK Studio · Publish and deploy
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Publish and deploy**
+
 > **How to.** Nothing you author is queryable until it is
 > **published**. This page covers how a Data Product moves from your **Working** draft to
 > **dev**, then is promoted to **prod** — one Data Product at a time, or a whole domain at once.
@@ -11,12 +13,9 @@
 | **Prerequisites** | At least one Data Product exists ([Add Data Products](02-add-data-products.md)) and is assigned to a domain ([Create workspaces and business domains](01-workspaces-domains.md)). |
 | **You'll end with** | Data Products **Released** and answerable in the chat for the target environment. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Publish and deploy**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **Working** is your live draft — whatever you last saved in the editor. A draft that differs
   from what's deployed shows the status **In Review**.

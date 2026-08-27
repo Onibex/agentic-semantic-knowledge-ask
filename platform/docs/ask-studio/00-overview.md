@@ -1,5 +1,7 @@
 # Find your way around ASK Studio
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Find your way around ASK Studio**
+
 > **Reference page.** Get oriented in **ASK Studio**: how you
 > sign in, what each sidebar section does, and which flow doc to open next. Every other
 > flow (01–09) is reachable from here.
@@ -11,12 +13,9 @@
 | **Prerequisites** | The SPA is installed and reachable (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A clear picture of the navigation and where every task lives. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Find your way around ASK Studio**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **ASK Studio** is the semantic-layer curator app. Its sign-in screen shows the title
   **Agentic Semantic Knowledge** (short: **ASK Studio**).

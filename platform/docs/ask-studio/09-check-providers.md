@@ -1,5 +1,7 @@
 # ASK Studio · Check the embedder and search index
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Check the embedder and search index**
+
 > **How to.** The **System Setup** page is what remains in ASK Studio
 > now that provider, database and identity configuration moved to ASK Setup: three read-only
 > cards showing what the platform is actually using, and one editable provider — the shared
@@ -12,14 +14,13 @@
 | **Prerequisites** | Signed in to ASK Studio ([Sign in to ASK](../guides/sign-in.md)); embedder credentials to hand if you intend to edit it. |
 | **You'll end with** | A verified Embedder connection, and a green Test on every card. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Check the embedder and search index**
 > Provider, model, database and identity configuration live in **ASK Setup** — see [Find your way around ASK Setup](../ask-setup/00-overview.md),
 > not here. Use a **real** provider when editing the Embedder, and redact every credential field
 > before capturing a screenshot.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **System Setup** shows one **card per system concern** — **LLM**, **Embedder** and
   **OpenSearch**. Only the **Embedder** is editable here, and it is a **single shared config**

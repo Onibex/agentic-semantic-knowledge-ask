@@ -1,5 +1,7 @@
 # ASK Studio · Inspect a domain as a graph
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Inspect a domain as a graph**
+
 > **How to.** Open a single **Business Domain** to see its
 > **canvas** — the scoped graph of the Data Products it contains and how they relate.
 > This is where you visually curate a domain: add or remove Data Products, inspect any
@@ -12,12 +14,9 @@
 | **Prerequisites** | A workspace with at least one **Business Domain** that has a few Data Products assigned (see [Create workspaces and business domains](01-workspaces-domains.md)). |
 | **You'll end with** | A clear picture of one domain's entities and relationships, and the ability to add / remove Data Products from it. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Inspect a domain as a graph**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **The canvas *is* the graph.** There is no separate global graph tab — opening a domain
   lands you on its scoped canvas.

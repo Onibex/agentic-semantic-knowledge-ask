@@ -1,5 +1,7 @@
 # ASK Studio · Resolve conflicts on a OneConnect merge
 
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Resolve conflicts on a OneConnect merge**
+
 > **How to.** When a fresh **OneConnect** export disagrees
 > with a Data Product you already curated, the platform records the differences as
 > **conflicts**. This page shows how to find them and resolve them, field by field.
@@ -11,12 +13,9 @@
 | **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
 | **You'll end with** | A reconciled Data Product — every field either keeps your enriched value or accepts the incoming SAP value. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Resolve conflicts on a OneConnect merge**
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **conflict** is a field where a re-imported **OneConnect** JSON differs from the
   **working** Data Product you already have. The merge engine applies everything that

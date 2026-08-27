@@ -1,6 +1,7 @@
 # Sign in to ASK
 
 [Manual](../README.md) › [Everyday tasks](../README.md#everyday-tasks) › **Sign in to ASK**
+
 > **How to.** Get into ASK Studio, ASK Chat or ASK Setup, understand which of the three
 > authentication modes your deployment uses, and know what your role lets you do.
 

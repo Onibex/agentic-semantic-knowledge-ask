@@ -1,5 +1,7 @@
 # Find your way around ASK Chat
 
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Find your way around ASK Chat**
+
 > **Reference page.** Get oriented in **ASK Chat**: how you sign
 > in, what each sidebar section controls, and which flow doc to open next. Every other flow
 > (01–03) is reachable from here.
@@ -11,14 +13,9 @@
 | **Prerequisites** | The SPA is installed and reachable (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A clear picture of the navigation and where every task lives. |
 
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Find your way around ASK Chat**
-> The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
-> example (Sales Orders). Substitute your own Data Products — the exact demo names and
-> questions won't exist in your system.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **ASK Chat** is the natural-language query interface. You type a question; the agent answers
   from the governed semantic layer — a written answer, a results table, an auto-generated chart,
