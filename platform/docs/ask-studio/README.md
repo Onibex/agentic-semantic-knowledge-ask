@@ -37,8 +37,11 @@ queryable.
   you enriched.
 - [Set the organization profile](08-organization.md) — defaults that pre-fill authoring.
 - [Check the embedder and search index](09-check-providers.md) — the one provider you edit here.
-- [Ingest documents the agent can cite](10-ingest-documents.md) — a corpus separate from the
-  semantic layer.
+
+> **The Docs page is parked.** ASK Studio still shows **Curator › Docs**, and it still
+> uploads. Nothing reads what it writes: the retrieval path that let the chat answer from
+> uploaded documents was lost across successive changes to the flow and is being rebuilt from
+> scratch. Until it lands, treat that page as inert and keep your written material outside ASK.
 
 ## Find your way around
 
@@ -64,7 +67,7 @@ sections; the current page is highlighted in Onibex blue.
 | **Semantic Layer** | **History** | Version history of the semantic layer, viewable per branch (working / dev / prod). | [Audit, compare and restore versions](06-history.md) |
 | **Organization** | **Workspaces** | Create and manage workspaces and the business domains inside them; the app's landing page. | [Create workspaces and business domains](01-workspaces-domains.md) |
 | **Organization** | **Organization** | Your organization profile (company name, source system) that pre-fills authoring defaults. | [Set the organization profile](08-organization.md) |
-| **Curator** | **Docs** | Manage the documentation corpus the agent uses to answer DOCS-type questions. | [Ingest documents the agent can cite](10-ingest-documents.md) |
+| **Curator** | **Docs** | Uploads documentation files. Not currently reachable from the chat — see below. | — |
 | **Curator** | **Setup** | The shared embedder and the read-only provider cards. | [Check the embedder and search index](09-check-providers.md) |
 | **System** | **Health** | Service health check for the platform's backing services. | [Check the embedder and search index](09-check-providers.md) |
 

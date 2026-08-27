@@ -31,6 +31,8 @@
 
 ## 1. The Gallery
 
+![The Artifacts gallery: cards for each artifact with its name, type and when it was last edited, a search box and a type filter](../images/chat-artifacts-gallery.png)
+
 Open the **Artifacts** page from the sidebar. The gallery shows all saved artifacts as cards
 in a responsive grid.
 
@@ -48,6 +50,8 @@ indicator.
 ---
 
 ## 2. Create an artifact — the wizard
+
+![The artifact wizard: the assistant asking for the purpose of the document, with the previous answer above it](../images/chat-artifacts-wizard.png)
 
 Click **New artifact**. The page switches to a **conversational wizard** that walks you
 through four steps, one at a time. Each step shows an assistant prompt; you type your answer
@@ -80,6 +84,8 @@ status messages.
 ---
 
 ## 3. View an artifact
+
+![An artifact open: the header bar with its actions, the Document tab with the formatted content, and the Data tab beside it](../images/chat-artifacts-viewer.png)
 
 Once generation completes — or when you click a card in the gallery — the **Artifact
 Viewer** opens.
@@ -129,6 +135,8 @@ The file is downloaded immediately with the artifact name as the filename.
 ---
 
 ## 5. Edit and regenerate
+
+![The edit panel: name, format, purpose, data focus and a SQL override, with Apply and Regenerate](../images/chat-artifacts-edit.png)
 
 Click **Edit** in the header to open the Edit panel alongside the document.
 

@@ -113,8 +113,6 @@ the live cluster directly.
 
 ## What's next
 
-→ **[Ingest documents the agent can cite](10-ingest-documents.md)** — the other curator tool in
-ASK Studio.
 → **[Create workspaces and business domains](01-workspaces-domains.md)** — start authoring once your
 Embedder is green.
 

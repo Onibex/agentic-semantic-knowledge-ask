@@ -21,9 +21,9 @@
   multiple sessions per workspace and switch between them freely.
 - You type in **natural language** — any language, business terms only. The agent maps your
   words to the governed semantic layer; you never need to know table or column names.
-- The agent classifies every question as one of four types: **data** (runs SQL), **schema**
-  (describes structure), **documentation** (explains definitions), or **action** (writes to
-  SAP via MCP). The type is determined by your wording — you don't pick it.
+- The agent classifies every question by what answering it needs: **data** (runs SQL),
+  **schema** (describes structure) or **action** (writes to SAP via MCP). The type is
+  determined by your wording — you don't pick it.
 - For data questions, a **chart is drawn automatically** whenever the result has more than
   one row.
 
@@ -69,7 +69,6 @@ Using the demo's Sales & Distribution model, try:
 | Data with a chart | `What were the top 10 materials by net sales value last quarter?` |
 | Data over time | `Show me total revenue by month for the current year, broken down by sales organization.` |
 | Schema | `What tables and fields make up the sales order entity, and how are VBAK and VBAP joined?` |
-| Documentation | `How is net value defined in this model, and which SAP field does it map to?` |
 
 **Quick-start chips** appear on the empty-state screen before the first message: "Top 10
 customers by revenue", "Sales orders this month", and "Pending purchase orders". Clicking
@@ -106,6 +105,8 @@ Appears only when the result has **at least 2 rows** and at least one numeric co
 Bar charts use a blue gradient scale; line charts use Onibex blue (`#2563eb`). The Y axis
 picks the numeric column with the highest maximum value.
 
+![The Chart tab: a bar chart of billed quantity by material, beside the written answer that flags only two materials were returned rather than the ten asked for](../images/chat-answer-chart.png)
+
 **SQL tab**
 
 Collapsed by default. Click **SQL** to expand the raw SQL the agent sent to the database.
@@ -123,15 +124,20 @@ neither.
 > **Tip —** the mode badge (e.g. *precise*) shown next to the answer tells you which engine
 > produced it, in case you switch modes between questions.
 
+**The token badge opens.** Next to the mode badge, `N LLM calls · N tok` expands into the
+cost of the answer: by phase, and per call with the model that served it and when.
+
+![The token breakdown expanded: totals by phase — macro classification, IR generation, SQL generation — and a per-call table naming the model and the time of each call](../images/chat-token-usage.png)
+
+That panel is why an answer's cost is a fact rather than an estimate. It is also where a slow
+answer explains itself: the phase that took the time is named.
+
 ### Schema questions
 
 The agent describes the entity's structure — tables, fields, their types and roles, and the
 exact join predicates — without running a query or drawing a chart.
 
-### Documentation questions
-
-The agent retrieves and summarises the answer from ingested documentation (KPI catalogs,
-process descriptions, field definitions). No query is executed.
+![A schema question answered: the entity's tables, fields and join predicates, with no query run](../images/chat-answer-schema.png)
 
 ### Action questions *(requires MCP)*
 
