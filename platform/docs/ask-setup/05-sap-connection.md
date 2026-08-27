@@ -1,4 +1,4 @@
-# ASK Setup · SAP Connection
+# ASK Setup · Connect to SAP
 
 > **Configuration flow.** Store the **S/4HANA OData API credentials** the platform uses to read from
 > and write to SAP. It is a small form — host, service path, username, password — with a **Test**

@@ -1,4 +1,4 @@
-# ASK Chat · Artifacts
+# ASK Chat · Generate a report or brief
 
 > **Flow 3 of the ASK Chat manual.** Generate shareable business documents — reports,
 > executive briefs, and data tables — from your governed semantic layer without writing SQL.

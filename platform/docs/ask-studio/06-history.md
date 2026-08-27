@@ -1,4 +1,4 @@
-# ASK Studio · History (Audit, Diff, Restore)
+# ASK Studio · Audit, compare and restore versions
 
 > **Flow 6 of the ASK Studio manual.** Every Data Product is Git-backed. This page shows how to
 > **audit** the changes to a Data Product over time, **diff** any two versions side by side, and

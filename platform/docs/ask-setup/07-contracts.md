@@ -1,4 +1,4 @@
-# ASK Setup · Contracts
+# ASK Setup · Register an OpenAPI contract
 
 > **ASK Setup configuration — Contracts.** Register a SAP OData service — described by an
 > **OpenAPI 3.0** specification — so the agent can call it. Each registered contract turns the

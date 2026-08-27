@@ -34,33 +34,34 @@ that needs to be read in a particular order.
 ### Everyday tasks
 - [Sign in to ASK](guides/sign-in.md) — the three authentication modes, the role model, and what 401 / 403 mean
 
-### ASK Setup (technical configuration)
-- [Overview](ask-setup/00-overview.md) — the ASK Setup home + the config-storage model
-- [Infrastructure (OpenSearch)](ask-setup/01-setup.md)
-- [Database Connections](ask-setup/02-database-connections.md) — multi-engine registry, one active per environment
-- [LLM Providers](ask-setup/03-llm-providers.md) — LLM registry + the shared embedder
-- [Identity Provider](ask-setup/04-identity-provider.md)
-- [SAP Connection](ask-setup/05-sap-connection.md)
-- [MCP Server](ask-setup/06-mcp-server.md)
-- [Contracts](ask-setup/07-contracts.md) — OpenAPI → MCP tools
+### Configure the platform · ASK Setup
+- [Connect a database](ask-setup/02-database-connections.md) — multi-engine registry, one active per environment
+- [Connect an LLM provider](ask-setup/03-llm-providers.md) — the LLM registry and the shared embedder
+- [Connect to SAP](ask-setup/05-sap-connection.md) — S/4HANA URL, credentials, OAuth endpoint
+- [Enable the MCP server](ask-setup/06-mcp-server.md) — the endpoint for write-back actions
+- [Register an OpenAPI contract](ask-setup/07-contracts.md) — turn a spec into MCP tools
+- [Review the identity provider](ask-setup/04-identity-provider.md) — read-only: the active provider and your session
+- [Check the search index](ask-setup/01-setup.md) — read-only: the OpenSearch connection
+- [Where ASK Setup keeps configuration](ask-setup/00-overview.md) — the dashboard and the storage model
 
-### ASK Studio (semantic-layer authoring)
-- [Overview & Navigation](ask-studio/00-overview.md)
-- [Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)
-- [Add Data Products](ask-studio/02-add-data-products.md) — Manual / Upload / DDL + AI / OneConnect
-- [Edit & Enrich Data Products](ask-studio/03-edit-enrich.md)
-- [Domain Canvas (Graph)](ask-studio/04-domain-canvas.md)
-- [Publish & Deploy (dev → prod)](ask-studio/05-publish-deploy.md)
-- [History (Audit, Diff, Restore)](ask-studio/06-history.md)
-- [Conflicts & OneConnect Merge](ask-studio/07-conflicts-merge.md)
-- [Organization Profile](ask-studio/08-organization.md)
-- [System Setup & Document Ingestion](ask-studio/09-providers-docs.md) — read-only providers, shared embedder, RAG docs
+### Author the semantic layer · ASK Studio
+- [Create workspaces and business domains](ask-studio/01-workspaces-domains.md) — the containers everything else lives in
+- [Add Data Products](ask-studio/02-add-data-products.md) — manual, upload, DDL + AI, or OneConnect
+- [Edit and enrich Data Products](ask-studio/03-edit-enrich.md) — fields, relationships, AI-drafted descriptions
+- [Inspect a domain as a graph](ask-studio/04-domain-canvas.md) — see the join paths the agent will use
+- [Publish and deploy](ask-studio/05-publish-deploy.md) — dev first, then prod
+- [Resolve conflicts on a OneConnect merge](ask-studio/07-conflicts-merge.md)
+- [Audit, compare and restore versions](ask-studio/06-history.md)
+- [Set the organization profile](ask-studio/08-organization.md) — defaults that pre-fill authoring
+- [Check the embedder and search index](ask-studio/09-check-providers.md) — the one provider you edit here
+- [Ingest documents the agent can cite](ask-studio/10-ingest-documents.md) — a corpus separate from the semantic layer
+- [Find your way around ASK Studio](ask-studio/00-overview.md) — the sidebar and the page chrome
 
-### ASK Chat (end users)
-- [Overview & Navigation](ask-chat/00-overview.md)
-- [Workspace, Environment & Mode](ask-chat/01-workspace-environment-mode.md)
-- [Using the Chat](ask-chat/02-chat.md)
-- [Artifacts](ask-chat/03-artifacts.md)
+### Ask questions · ASK Chat
+- [Scope a question](ask-chat/01-workspace-environment-mode.md) — workspace, environment and mode
+- [Using the Chat](ask-chat/02-chat.md) — ask, read the answer, see the SQL
+- [Generate a report or brief](ask-chat/03-artifacts.md) — shareable documents, no SQL required
+- [Find your way around ASK Chat](ask-chat/00-overview.md) — the sidebar and the home dashboard
 
 ### Operating the platform
 - [Local development](runbooks/local-development.md) — running the services natively instead of in Docker

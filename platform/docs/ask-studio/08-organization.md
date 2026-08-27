@@ -1,4 +1,4 @@
-# ASK Studio · Organization Profile
+# ASK Studio · Set the organization profile
 
 > **Flow 8 of the ASK Studio manual.** Set the singleton **Organization profile** — the
 > customer's identity (company name, source system, portal URL) that is prepended to the

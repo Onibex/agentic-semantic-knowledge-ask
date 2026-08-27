@@ -1,4 +1,4 @@
-# ASK Setup · Database Connections
+# ASK Setup · Connect a database
 
 > **The databases the agent can query.** The **Database** page is a registry: you can hold as many
 > named connections as you like, across nine SQL engines, and mark **one active per environment**

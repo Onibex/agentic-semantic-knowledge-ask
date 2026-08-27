@@ -1,4 +1,4 @@
-# ASK Setup · MCP Server
+# ASK Setup · Enable the MCP server
 
 > **ASK Setup configuration — MCP Server.** Point the platform at the internal **MCP
 > Server** — the tool bridge the agent uses to make SAP OData write and action calls. This

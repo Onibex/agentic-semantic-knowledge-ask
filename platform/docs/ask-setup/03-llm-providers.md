@@ -1,4 +1,4 @@
-# ASK Setup · LLM Providers
+# ASK Setup · Connect an LLM provider
 
 > **Configuration flow.** Register the language models the agent may use. The page holds a
 > **registry** of LLM connections, of which exactly **one is active** at any time, plus the
@@ -148,5 +148,5 @@ the provider and model as in step 2 — demo: **AWS Bedrock** · `amazon.titan-e
 → **[ASK Setup · Identity Provider](04-identity-provider.md)** — who signs in, and how.
 → **[ASK Setup · Database Connections](02-database-connections.md)** — the peer registry, where the
 active connection is chosen **per environment** (contrast the global active model here).
-→ **[ASK Studio · Providers & Docs](../ask-studio/09-providers-docs.md)** — the ASK Studio side that
+→ **[ASK Studio · Check the embedder and search index](../ask-studio/09-check-providers.md)** — the ASK Studio side that
 shares this embedder and ingests documents.
