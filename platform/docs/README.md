@@ -27,14 +27,14 @@ that needs to be read in a particular order.
 - [Install and run the platform](01-installation.md)
 - [Concepts and architecture](02-concepts.md)
 
-### Understanding how it works
+### [Understanding how it works](explain/README.md)
 - [The three chat engines](explain/engines.md) — Flash / Precise / Smart: what each computes rather than guesses, and how to choose
 - [ASK specification](../../definition/README.md) — the normative Bronze / Silver / Gold contract
 
-### Everyday tasks
+### [Everyday tasks](guides/README.md)
 - [Sign in to ASK](guides/sign-in.md) — the three authentication modes, the role model, and what 401 / 403 mean
 
-### Configure the platform first · ASK Setup
+### [Configure the platform first · ASK Setup](ask-setup/README.md)
 
 **Nothing in ASK Studio or ASK Chat works until this section is done.** ASK Setup is a
 prerequisite, not a third product: the platform needs a database connection and a model
@@ -50,7 +50,7 @@ required; the rest are optional or read-only.
 - [Check the search index](ask-setup/01-setup.md) — read-only: the OpenSearch connection
 - [Find your way around ASK Setup](ask-setup/00-overview.md) — the dashboard and the storage model
 
-### Author the semantic layer · ASK Studio
+### [Author the semantic layer · ASK Studio](ask-studio/README.md)
 - [Create workspaces and business domains](ask-studio/01-workspaces-domains.md) — the containers everything else lives in
 - [Add Data Products](ask-studio/02-add-data-products.md) — manual, upload, DDL + AI, or OneConnect
 - [Edit and enrich Data Products](ask-studio/03-edit-enrich.md) — fields, relationships, AI-drafted descriptions
@@ -63,17 +63,17 @@ required; the rest are optional or read-only.
 - [Ingest documents the agent can cite](ask-studio/10-ingest-documents.md) — a corpus separate from the semantic layer
 - [Find your way around ASK Studio](ask-studio/00-overview.md) — the sidebar and the page chrome
 
-### Ask questions · ASK Chat
+### [Ask questions · ASK Chat](ask-chat/README.md)
 - [Scope a question](ask-chat/01-workspace-environment-mode.md) — workspace, environment and mode
 - [Using the Chat](ask-chat/02-chat.md) — ask, read the answer, see the SQL
 - [Generate a report or brief](ask-chat/03-artifacts.md) — shareable documents, no SQL required
 - [Find your way around ASK Chat](ask-chat/00-overview.md) — the sidebar and the home dashboard
 
-### Operating the platform
+### [Operating the platform](runbooks/README.md)
 - [Local development](runbooks/local-development.md) — running the services natively instead of in Docker
 - [Orchestrator troubleshooting](runbooks/orchestrator-troubleshooting.md) — on-call diagnosis for the chat backend
 
-### Reference
+### [Reference](reference/README.md)
 - [Glossary](reference/glossary.md)
 - [Troubleshooting & FAQ](reference/troubleshooting.md)
 
