@@ -19,9 +19,10 @@ during.
 
 ## Step 1 — Bring the stack up
 
-From the repository root, create your environment file and start everything:
+The stack lives in `platform/`, next to its `docker-compose.yml`. From your clone:
 
 ```bash
+cd platform
 cp .env.example .env
 docker compose up -d
 ```
