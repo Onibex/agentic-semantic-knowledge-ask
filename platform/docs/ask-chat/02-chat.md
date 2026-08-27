@@ -21,9 +21,9 @@
   multiple sessions per workspace and switch between them freely.
 - You type in **natural language** — any language, business terms only. The agent maps your
   words to the governed semantic layer; you never need to know table or column names.
-- The agent classifies every question as one of four types: **data** (runs SQL), **schema**
-  (describes structure), **documentation** (explains definitions), or **action** (writes to
-  SAP via MCP). The type is determined by your wording — you don't pick it.
+- The agent classifies every question by what answering it needs: **data** (runs SQL),
+  **schema** (describes structure) or **action** (writes to SAP via MCP). The type is
+  determined by your wording — you don't pick it.
 - For data questions, a **chart is drawn automatically** whenever the result has more than
   one row.
 
@@ -69,7 +69,6 @@ Using the demo's Sales & Distribution model, try:
 | Data with a chart | `What were the top 10 materials by net sales value last quarter?` |
 | Data over time | `Show me total revenue by month for the current year, broken down by sales organization.` |
 | Schema | `What tables and fields make up the sales order entity, and how are VBAK and VBAP joined?` |
-| Documentation | `How is net value defined in this model, and which SAP field does it map to?` |
 
 **Quick-start chips** appear on the empty-state screen before the first message: "Top 10
 customers by revenue", "Sales orders this month", and "Pending purchase orders". Clicking
@@ -139,11 +138,6 @@ The agent describes the entity's structure — tables, fields, their types and r
 exact join predicates — without running a query or drawing a chart.
 
 ![A schema question answered: the entity's tables, fields and join predicates, with no query run](../images/chat-answer-schema.png)
-
-### Documentation questions
-
-The agent retrieves and summarises the answer from ingested documentation (KPI catalogs,
-process descriptions, field definitions). No query is executed.
 
 ### Action questions *(requires MCP)*
 

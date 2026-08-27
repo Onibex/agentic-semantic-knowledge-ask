@@ -60,7 +60,6 @@ required; the rest are optional or read-only.
 - [Audit, compare and restore versions](ask-studio/06-history.md)
 - [Set the organization profile](ask-studio/08-organization.md) — defaults that pre-fill authoring
 - [Check the embedder and search index](ask-studio/09-check-providers.md) — the one provider you edit here
-- [Ingest documents the agent can cite](ask-studio/10-ingest-documents.md) — a corpus separate from the semantic layer
 
 ### [Ask questions · ASK Chat](ask-chat/README.md)
 - [Scope a question](ask-chat/01-workspace-environment-mode.md) — workspace, environment and mode
