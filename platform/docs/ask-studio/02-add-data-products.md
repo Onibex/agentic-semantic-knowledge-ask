@@ -10,7 +10,7 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 2–10 minutes depending on the mode |
-| **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
+| **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [ASK Setup](../ask-setup/README.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
 
 ---

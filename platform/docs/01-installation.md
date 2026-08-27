@@ -232,7 +232,7 @@ through the Keycloak login before landing on the UI.
 
 ## What's next
 
-→ **[Find your way around ASK Setup](ask-setup/00-overview.md)** — set up the database connections, LLM providers, and
+→ **[ASK Setup](ask-setup/README.md)** — set up the database connections, LLM providers, and
 identity.
 → **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)** — create the
 containers your data lives in.

@@ -9,7 +9,7 @@
 |---|---|
 | **Who** | Business user / analyst |
 | **Time** | ~2 minutes |
-| **Prerequisites** | You are signed in to ASK Chat (see [Find your way around ASK Chat](00-overview.md)). |
+| **Prerequisites** | You are signed in to ASK Chat (see [ASK Chat](README.md)). |
 | **You'll end with** | A workspace selected, an environment chosen, and a query mode set — the chat is ready to use. |
 
 ---

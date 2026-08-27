@@ -89,7 +89,7 @@ The mode itself is fixed at deployment time through environment variables, cover
 ## What's next
 
 → **[Using the Chat](../ask-chat/02-chat.md)** — ask your first question.
-→ **[Find your way around ASK Studio](../ask-studio/00-overview.md)** — start authoring.
+→ **[ASK Studio](../ask-studio/README.md)** — start authoring.
 
 ---
 
