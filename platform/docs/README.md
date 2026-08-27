@@ -2,9 +2,9 @@
 
 > The complete user manual for the **Onibex ASK Platform** — install it, author a semantic layer, publish it dev → prod, and let business users query enterprise data in plain language.
 
-If you just want to get going fast, start with [Installation](01-installation.md) then
-[Concepts](02-concepts.md); this manual is the in-depth reference that documents **every
-flow** across ASK Setup, ASK Studio and the Chat.
+**New here? Start with [Getting Started](GETTING_STARTED.md)** — one guided path from an
+empty machine to a real answer, in about 45 minutes. Everything below is the reference you
+come back to afterwards, when you need one specific thing.
 
 > Part of the [Agentic Semantic Knowledge repository](../README.md) — see the root overview for the ASK concepts and the open ASK standard under `definition/`.
 
@@ -15,23 +15,13 @@ return results only against matching data.
 
 ---
 
-## Read in order (new administrators)
+## Start here
 
-The platform follows one journey — **Configure → Author → Publish → Ask** — and this order
-mirrors it:
+**[Getting Started](GETTING_STARTED.md)** walks the platform's one journey —
+**Configure → Author → Publish → Ask** — end to end, on a single table. It is the only page
+that needs to be read in a particular order.
 
-1. [Installation & Running the Platform](01-installation.md)
-2. [Concepts & Architecture](02-concepts.md)
-3. [ASK Setup · Overview](ask-setup/00-overview.md) — configure the platform (database, providers, identity)
-4. [ASK Studio · Overview & Navigation](ask-studio/00-overview.md)
-5. [ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)
-6. [ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)
-7. [ASK Studio · Edit & Enrich Data Products](ask-studio/03-edit-enrich.md)
-8. [ASK Studio · Domain Canvas (Graph)](ask-studio/04-domain-canvas.md)
-9. [ASK Studio · Publish & Deploy (dev → prod)](ask-studio/05-publish-deploy.md)
-10. [ASK Chat · Overview & Navigation](ask-chat/00-overview.md)
-
-## By area
+## Every page, by area
 
 ### Foundations
 - [Installation & Running the Platform](01-installation.md)
@@ -40,6 +30,9 @@ mirrors it:
 ### Understanding how it works
 - [The three chat engines](explain/engines.md) — Flash / Precise / Smart: what each computes rather than guesses, and how to choose
 - [ASK specification](../../definition/README.md) — the normative Bronze / Silver / Gold contract
+
+### Everyday tasks
+- [Sign in to ASK](guides/sign-in.md) — the three authentication modes, the role model, and what 401 / 403 mean
 
 ### ASK Setup (technical configuration)
 - [Overview](ask-setup/00-overview.md) — the ASK Setup home + the config-storage model
@@ -68,6 +61,10 @@ mirrors it:
 - [Workspace, Environment & Mode](ask-chat/01-workspace-environment-mode.md)
 - [Using the Chat](ask-chat/02-chat.md)
 - [Artifacts](ask-chat/03-artifacts.md)
+
+### Operating the platform
+- [Local development](runbooks/local-development.md) — running the services natively instead of in Docker
+- [Orchestrator troubleshooting](runbooks/orchestrator-troubleshooting.md) — on-call diagnosis for the chat backend
 
 ### Reference
 - [Glossary](reference/glossary.md)

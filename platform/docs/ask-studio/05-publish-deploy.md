@@ -51,7 +51,7 @@ Open a Data Product to reveal its detail. In the detail panel find the **Environ
 (the **Deployment & Versions** section). It has up to three rows — **Working**, **dev**, and
 **prod** — each with its version chip, a state note, and an action button.
 
-![Deployment & Versions panel showing Working / dev / prod rows with version chips and publish buttons](../images/admin-publish-deployment-panel.png)
+![Deployment & Versions panel showing Working / dev / prod rows with version chips and publish buttons](../images/studio-publish-deployment-panel.png)
 
 | Row | Version chip | Note & icon | Action button |
 |---|---|---|---|
@@ -83,7 +83,7 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 | **Up to date** | prod already holds the exact version that's in dev (`prod.sha == dev.sha`). | Nothing to do — prod is current. Push a new dev version first if you have changes. |
 | **Publish to prod** (enabled) | dev is ahead of prod, or prod has never been published yet (the note reads *ready for first prod publish*). | Click to promote the dev version to prod. |
 
-![The prod row locked on a never-dev-published Data Product: a grey lock, the disabled "Publish to dev first" button, and a "waiting on dev" note](../images/admin-publish-prod-disabled.png)
+![The prod row locked on a never-dev-published Data Product: a grey lock, the disabled "Publish to dev first" button, and a "waiting on dev" note](../images/studio-publish-prod-disabled.png)
 
 > **Warning — you promote dev, not Working.** Publishing to prod ships whatever version is
 > currently in **dev**, not your latest unsaved edits. If you changed the definition after the
@@ -108,7 +108,7 @@ opens in two phases.
 The dialog lists every domain member that has **pending changes** for the target environment,
 each pre-checked. Deselect any you want to skip.
 
-![Publish domain dialog, plan phase: a checklist of eligible Data Products with Select all and the Publish N → dev button](../images/admin-publish-domain-plan.png)
+![Publish domain dialog, plan phase: a checklist of eligible Data Products with Select all and the Publish N → dev button](../images/studio-publish-domain-plan.png)
 
 Behavior of the plan:
 
@@ -126,7 +126,7 @@ Click **Publish N → dev** (or **→ prod**) to start.
 The dialog switches to a progress view and publishes **one Data Product at a time**, streaming
 each result as it lands. A progress bar and a per-row status list update live.
 
-![Publish domain dialog, progress phase: progress bar, per-DP status rows, and the Stop button](../images/admin-publish-domain-progress.png)
+![Publish domain dialog, progress phase: progress bar, per-DP status rows, and the Stop button](../images/studio-publish-domain-progress.png)
 
 | Marker | Status | Meaning |
 |---|---|---|

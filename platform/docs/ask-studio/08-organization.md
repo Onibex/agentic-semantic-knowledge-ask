@@ -36,7 +36,7 @@ In the left sidebar, under **Organization**, click **Organization**. The page sh
 form with three fields, a **Reload** button in the top-right, and a **Save organization**
 button at the bottom.
 
-![Organization page: Company name, Source system and Portal URL fields with Save and Reload](../images/admin-org-page.png)
+![Organization page: Company name, Source system and Portal URL fields with Save and Reload](../images/studio-org-page.png)
 
 If the profile has never been saved, the fields open empty with placeholder hints.
 
@@ -66,7 +66,7 @@ success a confirmation toast appears and the form reflects the stored values.
 After saving, a small line shows **who** last changed the profile and **when** —
 *Last updated by `<user>` at `<timestamp>`*.
 
-![Organization page after saving: the confirmation toast and the "Last updated by … at …" line](../images/admin-org-saved.png)
+![Organization page after saving: the confirmation toast and the "Last updated by … at …" line](../images/studio-org-saved.png)
 
 > **Warning — the profile is shared.** There is only one Organization profile for the whole
 > deployment. Saving replaces the existing values for everyone. Use the **Reload** button

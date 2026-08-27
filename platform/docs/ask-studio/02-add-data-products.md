@@ -37,11 +37,11 @@ you can refine it in [Flow 3 · Edit & Enrich](03-edit-enrich.md) before publish
 Go to the sidebar → **Semantic Layer** → **Semantic Knowledge**. This is the global catalog of
 all Data Products. Click **New data product** (top-right).
 
-![Semantic Knowledge catalog with the New data product button and the All / In Review / Released filters (a Conflicts filter appears only when there are pending conflicts)](../images/admin-sk-catalog.png)
+![Semantic Knowledge catalog with the New data product button and the All / In Review / Released filters (a Conflicts filter appears only when there are pending conflicts)](../images/studio-sk-catalog.png)
 
 The dialog opens with four tabs:
 
-![New data product dialog showing the four tabs: Manual, Upload files, DDL + AI, From OneConnect](../images/admin-dp-create-tabs.png)
+![New data product dialog showing the four tabs: Manual, Upload files, DDL + AI, From OneConnect](../images/studio-dp-create-tabs.png)
 
 > Whatever mode you choose, the result lands **In Review**. After creating, the catalog
 > auto-filters to **In Review** so you see your new Data Product in the review queue.
@@ -56,7 +56,7 @@ by hand.
 Pick the **Manual** tab. Fill the structured form: header (layer, name, description, source
 system), then **fields** (name, type, role, alias), and optionally **relationships** (joins).
 
-![Manual authoring form for a Silver entity: the header fields, then its composed-of tables and join graph](../images/admin-dp-manual.png)
+![Manual authoring form for a Silver entity: the header fields, then its composed-of tables and join graph](../images/studio-dp-manual.png)
 
 Field roles and authoring rules are covered in
 [Flow 3 · Edit & Enrich](03-edit-enrich.md) and the
@@ -69,7 +69,7 @@ Field roles and authoring rules are covered in
 Pick **Upload files** (the default tab) and drop one or many `.yaml` files. Each is imported
 into the workspace **In Review**; publish them later from the Deployment panel.
 
-![Upload files tab: drag-and-drop area for .yaml files](../images/admin-dp-upload.png)
+![Upload files tab: drag-and-drop area for .yaml files](../images/studio-dp-upload.png)
 
 ## Mode C — DDL + AI
 
@@ -117,13 +117,13 @@ table name (`SILVER_SD_SALES_ORDER` → `sd`) against the list of known business
 falls back to **`gen`** (generic / cross-module) when the name carries no recognizable module.
 Adjust it in the editor if needed — every import lands **In Review** anyway.
 
-![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/admin-dp-ddl.png)
+![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/studio-dp-ddl.png)
 
 Each source is processed in sequence with a **live progress list** (queued → processing →
 done), showing how many items imported OK vs. failed, with an expandable **Generated YAML**
 preview per file.
 
-![DDL import progress: per-file rows with ok/failed counts and a Generated YAML preview](../images/admin-dp-ddl-progress.png)
+![DDL import progress: per-file rows with ok/failed counts and a Generated YAML preview](../images/studio-dp-ddl-progress.png)
 
 > **No silent assumptions.** The importer never guesses Bronze — if it can't detect a layer
 > it blocks import until you pick one. If the AI returns malformed YAML it's surfaced as a
@@ -137,7 +137,7 @@ differences against an existing Data Product surface as **conflicts** to resolve
 
 Pick **From OneConnect**, paste the SAP JSON, and click **Merge from OneConnect**.
 
-![From OneConnect tab: paste box for the SAP JSON export and the Merge button](../images/admin-dp-oneconnect.png)
+![From OneConnect tab: paste box for the SAP JSON export and the Merge button](../images/studio-dp-oneconnect.png)
 
 The result summary shows the entity id, how many changes were **auto-applied**, and how many
 **conflicts** need manual resolution. Resolve conflicts in
@@ -152,7 +152,7 @@ Whatever mode you used, your Data Product is now in **In Review**. The Semantic 
 catalog filters to **In Review** so you can find it. From a row you can **Edit**, view
 **History**, resolve **Conflicts**, or **Delete**.
 
-![Semantic Knowledge filtered to In Review, the new Data Product highlighted](../images/admin-dp-inreview.png)
+![Semantic Knowledge filtered to In Review, the new Data Product highlighted](../images/studio-dp-inreview.png)
 
 ---
 

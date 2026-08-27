@@ -20,7 +20,7 @@
 ## Concepts (30-second version)
 
 - **ASK Studio** is the semantic-layer curator app. Its sign-in screen shows the title
-  **Agentic Semantic Knowledge** with **Admin** on a subtitle line (short: **ASK Studio**).
+  **Agentic Semantic Knowledge** (short: **ASK Studio**).
   This is where you author and publish the business meaning the chat agent maps questions to.
 - It is one of two admin surfaces. ASK Studio owns the **semantic layer** (workspaces,
   domains, Data Products). Technical/system configuration — database, providers, MCP —
@@ -32,31 +32,18 @@
 
 ## 1. Sign in
 
-Open the app URL. If you're not already authenticated you land on the **sign-in** screen —
-the Onibex logo above the title **Agentic Semantic Knowledge**, with **Admin** on the line beneath.
+Authoring needs the **`ask-admin`** role; signing in with **`ask-user`** reaches the Chat but
+not this app.
 
-![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title with the Admin subtitle, and the Sign in button](../images/admin-overview-login.png)
-
-What you see depends on how the deployment is configured:
-
-| Auth mode | Button label | What happens |
-|---|---|---|
-| **Keycloak (SSO)** | **Sign in** | Redirects to your identity provider, then back to the app. The usual on-prem / self-hosted production mode. |
-| **SAP BTP (XSUAA)** | **Sign in** | Redirects to SAP BTP identity (IAS / XSUAA), then back. Used on SAP BTP deployments. |
-| **Dev bypass** | **Continue without authentication** | Enters the app directly with no login — for local development only. |
-
-After you're in, the auth mode is shown as a small chip in the sidebar footer (**SSO** for
-Keycloak, **XSUAA** for SAP BTP, **Dev** for the bypass), next to your email and role.
-
-> **Warning —** *Continue without authentication* only appears when the deployment is
-> explicitly set to the dev-bypass mode. Never run production with the bypass enabled.
+→ **[Sign in to ASK](../guides/sign-in.md)** — the three authentication modes, the role model,
+and what a 401 or a 403 actually means.
 
 ## 2. The navigation sidebar
 
 Once signed in, the left sidebar is your permanent map. It's grouped into five labelled
 sections; the current page is highlighted in Onibex blue.
 
-![ASK Studio sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/admin-overview-sidebar.png)
+![ASK Studio sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/studio-overview-sidebar.png)
 
 | Section | Item | What the page does | Flow |
 |---|---|---|---|
@@ -85,7 +72,7 @@ Signing in takes you to **Workspaces** — the app's home. It's a split screen: 
 all workspaces on the left and the selected workspace's business domains on the right. This is
 where the authoring journey begins.
 
-![ASK Studio landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/admin-overview-workspaces.png)
+![ASK Studio landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/studio-overview-workspaces.png)
 
 From here, follow the flows in order:
 
