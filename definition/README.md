@@ -91,6 +91,43 @@ This is a **priority, not a sequence of passes.** A resolver is free to search t
 
 **Why Bronze is skipped:** A raw table like `VBAK` has no notion that `GBSTK='C'` means "closed", that `VDATU` is the *requested* delivery date (not actual), or how it joins to `VBAP`. Giving agents Bronze leaks raw schema noise and almost always produces wrong SQL. Bronze exists to be **lineage** for Silver and Gold — not the agent surface.
 
+### The two planes
+
+That priority produces two resolution planes, and knowing which one a question lands in is
+what makes the authoring rules make sense:
+
+```
+request → intent (measures, dimensions, filters, grain)
+   │
+   ▼
+retrieval, gold-first
+   │
+   ├─ a Gold COVERS it — measures, dimensions, grain and filters, already denormalized
+   │      → SQL from the Gold alone, no joins. Cheapest and most deterministic.
+   │
+   ├─ a Gold has the fact but one attribute is not flattened into it
+   │      → traverse the GOLD's relationships to enrich or drill out
+   │
+   └─ no Gold applies
+          → the SILVER plane:
+              anchor on the fact Silver that owns the measures
+              shortest path over silver→silver relationships, weighted by traversal_cost
+              resolve composed_of to the physical tables
+              honour aggregation_safety so a fan-out does not double-count
+```
+
+Two consequences bind the author:
+
+- **The Silver plane must be self-sufficient.** A Silver fact has to reach its dimensions
+  through *its own* `relationships`. Strip those and the fallback has no graph to walk —
+  which is why relationships live on Silver and not only on Gold.
+- **The two planes are parallel, not layered.** On fallback the agent uses the *Silver's*
+  relationships, never a Gold's: the Gold was not selected, and its join keys differ. Gold
+  relationships exist only to enrich a non-flattened attribute or to drill down to detail.
+
+Which plane is used is decided by retrieval priority, not by which entities happen to carry
+edges. Declaring relationships on Silver does not weaken the preference for Gold.
+
 ---
 
 ## What ASK does *not* describe
