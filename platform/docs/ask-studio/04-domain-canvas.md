@@ -1,4 +1,4 @@
-# ASK Studio · Domain Canvas (Graph)
+# ASK Studio · Inspect a domain as a graph
 
 > **Flow 4 of the ASK Studio manual.** Open a single **Business Domain** to see its
 > **canvas** — the scoped graph of the Data Products it contains and how they relate.

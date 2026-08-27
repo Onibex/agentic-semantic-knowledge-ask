@@ -1,4 +1,4 @@
-# ASK Studio · Workspaces & Business Domains
+# ASK Studio · Create workspaces and business domains
 
 > **Flow 1 of the ASK Studio manual.** Create the containers your data lives in — a
 > **Workspace** and the **Business Domains** inside it — and assign Data Products to a domain.

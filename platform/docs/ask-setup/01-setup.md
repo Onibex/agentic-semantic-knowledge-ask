@@ -1,4 +1,4 @@
-# ASK Setup · Infrastructure (OpenSearch)
+# ASK Setup · Check the search index
 
 > **The store the whole platform runs on.** The **Setup** page shows the **OpenSearch** connection
 > ASK Platform uses for its semantic index and its encrypted secret store. It is **read-only** —

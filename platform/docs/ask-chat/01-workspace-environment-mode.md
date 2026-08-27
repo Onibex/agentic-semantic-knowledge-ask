@@ -1,4 +1,4 @@
-# ASK Chat · Workspace, Environment & Mode
+# ASK Chat · Scope a question
 
 > **Flow 1 of the ASK Chat manual.** Configure the three sidebar controls that scope every
 > query — **Workspace**, **Environment**, and **Mode** — before you ask your first question.

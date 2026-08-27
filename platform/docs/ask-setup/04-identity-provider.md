@@ -1,4 +1,4 @@
-# ASK Setup · Identity Provider
+# ASK Setup · Review the identity provider
 
 > **Configuration flow.** See who signs in to the platform, and how. This page is **read-only by
 > design**: the identity provider is chosen at deploy time and baked into the build — the page

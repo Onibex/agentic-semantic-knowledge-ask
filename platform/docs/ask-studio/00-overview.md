@@ -52,9 +52,9 @@ sections; the current page is highlighted in Onibex blue.
 | **Semantic Layer** | **History** | Version history of the semantic layer, viewable per branch (working / dev / prod). | [Flow 6 · History](06-history.md) |
 | **Organization** | **Workspaces** | Create and manage workspaces and the business domains inside them; the app's landing page. | [Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md) |
 | **Organization** | **Organization** | Your organization profile (company name, source system) that pre-fills authoring defaults. | [Flow 8 · Organization](08-organization.md) |
-| **Curator** | **Docs** | Manage the documentation corpus the agent uses to answer DOCS-type questions. | [Flow 9 · Providers & Docs](09-providers-docs.md) |
-| **Curator** | **Setup** | Curator-side setup for the semantic-layer workflow. | [Flow 9 · Providers & Docs](09-providers-docs.md) |
-| **System** | **Health** | Service health check for the platform's backing services. | [Flow 9 · Providers & Docs](09-providers-docs.md) |
+| **Curator** | **Docs** | Manage the documentation corpus the agent uses to answer DOCS-type questions. | [Flow 10 · Ingest documents](10-ingest-documents.md) |
+| **Curator** | **Setup** | The shared embedder and the read-only provider cards. | [Flow 9 · Check the providers](09-check-providers.md) |
+| **System** | **Health** | Service health check for the platform's backing services. | [Flow 9 · Check the providers](09-check-providers.md) |
 
 > **Tip —** The sidebar footer always shows the **auth chip**, your **email**, your **role**,
 > and a **sign-out** button. Use the sign-out button (the door icon) to end your session.
