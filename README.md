@@ -14,6 +14,12 @@ with the numbers and the citations behind them.
 The LLM maps language to a contract you control. It never invents a table or a column
 name, because it is never shown one it may invent from.
 
+![ASK Chat answering a stock-coverage question: the written answer, the key figures, the results table, and the generated SQL joining two Gold Data Products](platform/docs/images/ask-chat-answer.gif)
+
+> The question above spans two Data Products — open sales orders and inventory position.
+> ASK resolves both, computes the join between them, and shows you the SQL it ran. Nothing in
+> that query was guessed.
+
 ---
 
 ## Works with your data where it already lives
@@ -74,6 +80,11 @@ ASK removes the guessing from the part that must be exact:
 - **Join paths are computed, not written** — Dijkstra over a declared relationship graph.
 - **Retrieval is hybrid and ranked** — kNN + BM25 + RRF over a curated vocabulary.
 - **Everything is scoped** — a workspace allowlist decides what any question can reach.
+
+![The domain canvas filtered to five nodes: two Gold Data Products, two Silver, and the labelled relationships between them](platform/docs/images/studio-canvas-filtered.png)
+
+That graph is the one the join above was computed over. It is declared, not inferred — every
+edge carries a join predicate, a cardinality and a traversal cost.
 
 Each of those is a decision the product makes rather than a claim it asserts, and
 [The three chat engines](platform/docs/explain/engines.md) is where they are set out — what
