@@ -4,6 +4,8 @@ ASK Studio is where the semantic layer is written: the workspaces and business d
 scope a question, the Data Products that answer it, and the publish step that makes them
 queryable.
 
+![ASK Studio: a business domain with its Data Products, then the domain canvas showing the declared relationships between them](../images/ask-studio-authoring.gif)
+
 ## If you are starting from nothing, in this order
 
 1. [Create workspaces and business domains](01-workspaces-domains.md) — the containers

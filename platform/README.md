@@ -10,6 +10,8 @@ The agent never invents a column or guesses a join. It can only use Data Product
 defined and **published** — which is what makes an answer reproducible, and what makes it
 auditable when someone asks where a number came from.
 
+![ASK Chat answering a stock-coverage question: the written answer, the key figures, the results table, and the generated SQL joining two Gold Data Products](docs/images/ask-chat-answer.gif)
+
 > **New here?** [Getting Started](docs/GETTING_STARTED.md) takes you from an empty machine to a
 > real answer in about 45 minutes, and makes every choice for you along the way.
 
