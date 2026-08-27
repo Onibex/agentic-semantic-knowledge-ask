@@ -5,7 +5,7 @@
 > raw schema.
 
 **[Quick start](#quick-start)** · **[Manual](platform/docs/README.md)** ·
-**[Specification](definition/README.md)** · **[How ASK compares](#how-ask-compares)** ·
+**[Specification](definition/README.md)** · **[Is it for me?](#ask-is-for-you-if)** ·
 **[FAQ](#faq)** · **[Support](SUPPORT.md)**
 
 [![Specification: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-e8a838.svg)](definition/README.md)
@@ -54,17 +54,13 @@ Two values in `.env` have to be set before the stack will come up:
 docker compose up -d
 ```
 
-| | Where | What you do first |
-|---|---|---|
-| ⚙️ **ASK Setup** | `localhost:5175` | **Start here.** Point ASK at a database and a model provider. |
-| 🟣 **ASK Studio** | `localhost:5173` | Author a Data Product and publish it to `dev`. |
-| 🔵 **ASK Chat** | `localhost:5174` | Ask. |
+Three interfaces come up. **Open ASK Setup first** — nothing answers until it holds a database
+and a model provider, and until ASK Studio has published something.
 
-Nothing answers until Setup has a database and a model, and until Studio has published
-something — that order is the whole path.
-
-**→ [Getting Started](platform/docs/GETTING_STARTED.md)** walks it end to end, from an empty
-machine to a real answer, in about 45 minutes.
+**→ [Getting Started](platform/docs/GETTING_STARTED.md)** walks that path end to end, from an
+empty machine to a real answer, in about 45 minutes.
+**→ [Install and run the platform](platform/docs/01-installation.md)** has the ports, every
+variable, the health checks and what to do when a service will not start.
 
 ---
 
@@ -117,25 +113,18 @@ relationship somebody declared. Each carries a join predicate, a cardinality, a 
 and an aggregation-safety hint, which is what lets a path be **computed** rather than chosen.
 Point an LLM at the raw schema and this graph does not exist; it has to guess its way across.
 
-### How ASK compares
+### What changes, in four lines
 
-The choice is rarely *"ASK or nothing"*. It is usually one of these:
+| | Most text-to-SQL tools | **ASK** |
+|---|---|---|
+| **The table and column names** | Shown to the model, which may invent one | Never shown — the model picks from resolved Data Products |
+| **The join between two tables** | Written by the model, by plausibility | **Computed** — the shortest declared path, by cost |
+| **What "open order" means** | Whatever the model infers today | A definition you wrote, versioned in your git |
+| **What one question can reach** | The whole schema | Only what a workspace allows |
 
-| | LLM + raw schema | RAG over schema text | BI semantic layer | **ASK** |
-|---|---|---|---|---|
-| **Knows what `MATNR` means** | No | If someone wrote it down | Yes | Yes — that *is* the contract |
-| **The join path is decided by** | The model | The model | Fixed when the model was built | **Computed** — Dijkstra over declared edges |
-| **Can name a table that does not exist** | Yes | Yes | No | No — it is never shown one |
-| **Answers a question nobody modelled first** | Yes | Yes | Only what the model exposes | Yes — Gold first, Silver as fallback |
-| **The definitions live** | Nowhere | In prose | In a vendor's modelling layer | In **vendor-neutral YAML, in your git** |
-| **One question may reach** | The whole schema | The whole corpus | The model | A **workspace allowlist** |
-| **You see the SQL, and its scope** | Sometimes | Sometimes | Not applicable | Always, with the entities it was authorised to touch |
-
-Column two is not a straw man — ASK ships it. **Flash** is retrieval over schema text straight
-to SQL, and it is the fastest of the three engines. What it concedes, and what the other two
-compute instead, is set out in
-[The three chat engines](platform/docs/explain/engines.md). Choosing an engine is choosing how
-much you are willing to let the model decide.
+The right-hand column is what the demo above shows: two Data Products resolved, one join
+computed, the SQL on screen. How much of that a given engine computes rather than guesses is the
+subject of [The three chat engines](platform/docs/explain/engines.md).
 
 ### ASK is for you if
 
@@ -143,17 +132,18 @@ much you are willing to let the model decide.
   — and what they *mean* lives in a handful of people's heads.
 - The same question has to give the same number tomorrow, and somebody has to be able to show
   **why** that number is right.
+- Two teams answer *"how many orders are open?"* differently, and you need one definition that
+  settles it.
 - You want the definitions to be **yours**: vendor-neutral YAML you version, review and diff,
   not a modelling layer you rent.
+- Business users should ask in their own words — in any language — without learning your
+  schema, your table names or SQL.
+- Somebody will eventually audit a number, and *"the AI said so"* is not an answer you can give.
 
-### Skip ASK if
-
-- Your schema is small and self-describing, and a model handed the `CREATE TABLE` statements
-  already answers well enough. It probably does.
-- You want dashboards more than answers. ASK returns an answer, its table, its chart and its
-  SQL — it is not a BI front end.
-- **Nobody is going to author a semantic layer.** ASK's determinism comes from the contract.
-  Without one there is nothing to compile against, and you have bought a slower way to guess.
+One honest condition: **ASK's determinism comes from the contract.** If nobody is going to
+author a semantic layer, there is nothing for it to compile against. Importing a `CREATE TABLE`
+and letting AI draft the layer is a fifteen-minute start — but somebody has to review what it
+drafted.
 
 ---
 
@@ -166,25 +156,11 @@ Two layers face the agent, and they answer different kinds of question:
 | 🥇 **[Gold](definition/docs/GOLD_LAYER.md)** | A **business definition** — pre-joined and semantically resolved. "Open Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
 | 🥈 **[Silver](definition/docs/SILVER_LAYER.md)** | A **reusable enterprise entity** — Customer, Product, Sales Order — with declared grain, measures and relationships. | **Fallback**, when no Gold fits. Also the building blocks Gold is composed from. |
 
-> **Bronze is lineage, and in the usual path you never write it.** When SAP metadata is
-> ingested — the way Onibex OneConnect feeds ASK — one Bronze node per source table is
-> **generated for you**, along with the Silver that composes them. Bronze is what makes
-> a business field traceable back to the physical column it came from, and it is
-> machine output. You author it by hand only when you choose to; a flat Silver imported
-> from a single `CREATE TABLE` has no Bronze at all, and Gold never has any — its table
-> is `db_table_name` and its lineage is `relationships`.
->
-> The other half never varies: **Bronze is never agent context.** It is never embedded, never
-> given field-registry rows and never chunked into the retrieval collections — so a business
-> question has nothing to resolve a raw table *against*, in any of the three engines. Most of
-> that isolation is structural rather than a rule someone has to remember: a Bronze is simply
-> not given the representations retrieval runs on. The remaining step is an explicit
-> layer filter, and the one path meant to reach a Bronze is a schema question — *"what columns
-> does VBAK have"* — which is not a question about your data.
->
-> So the [Bronze specification](definition/docs/BRONZE_LAYER.md) is there to make the
-> generated output well-defined and auditable — read it when you are modelling ingestion
-> or tracing a number to its source. If you are evaluating ASK, skip it.
+> 🥉 **There is a third layer, and you can ignore it while you evaluate.** **Bronze** is
+> lineage: one node per source table, **generated for you** when metadata is ingested, and
+> **never shown to the agent**. It is what makes a business field traceable back to the physical
+> column it came from. Read the [Bronze specification](definition/docs/BRONZE_LAYER.md) when you
+> are modelling ingestion or tracing a number to its source.
 
 The [`definition/`](definition/README.md) folder holds the normative rules; the
 [manual](platform/docs/README.md) shows how to author them in ASK Studio.

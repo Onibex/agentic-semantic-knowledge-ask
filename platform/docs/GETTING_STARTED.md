@@ -15,6 +15,12 @@ This page makes the choices for you. Where a step has options worth understandin
 to the page that covers them — follow those **after** you have an answer on screen, not
 during.
 
+**Not the same page as [Install and run the platform](01-installation.md).** That one is the
+reference for the stack itself — every environment variable, the startup order, the health
+checks, what to do when a service will not come up — and it stops once the stack is running.
+This one walks past all of that with the choices already made, and does not stop until a
+question has been answered.
+
 ---
 
 ## Step 1 — Bring the stack up
