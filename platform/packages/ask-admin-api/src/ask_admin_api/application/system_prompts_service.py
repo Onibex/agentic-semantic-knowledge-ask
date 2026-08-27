@@ -632,14 +632,23 @@ def is_known_key(key: str) -> bool:
 # `build_entity_prompt` drops the section when it is blank.
 _STANDARDS_DIR = Path(__file__).resolve().parent.parent / "prompts" / "standards"
 
-# One authoring-standard file per layer. Each is written to be injected into
-# the enrichment prompt WHOLE, so there is no section slicing. These files are
-# prompt payload shipped inside the wheel (see `package-data` in pyproject),
-# not user documentation.
-_LAYER_FILES = {
-    "bronze": "BRONZE_LAYER.md",
-    "silver": "SILVER_LAYER.md",
-    "gold": "GOLD_LAYER.md",
+# The enrichment prompt for one layer, composed at read time. Silver and Gold
+# share most of their contract — the aggregation axes, the field_role taxonomy,
+# the relationship schema, and the whole of what makes a good description — so
+# that half lives in `_SHARED.md` and is single-sourced. Composing here is what
+# lets each layer still be injected WHOLE while nothing is written twice.
+#
+# These files are prompt payload shipped inside the wheel (see `package-data`
+# in pyproject), not user documentation. The normative specification an author
+# reads is `definition/docs/`; this is its rendering for a model, and it is
+# scoped to what enrichment may actually write — descriptions, aliases and
+# synonyms. Structural keys are stated only where reading them correctly
+# changes what a description should say.
+_SHARED_FILE = "_SHARED.md"
+_LAYER_FILES: dict[str, tuple[str, ...]] = {
+    "bronze": ("BRONZE_LAYER.md",),
+    "silver": (_SHARED_FILE, "SILVER_LAYER.md"),
+    "gold": (_SHARED_FILE, "GOLD_LAYER.md"),
 }
 
 
@@ -669,16 +678,22 @@ def _read_standard_file(filename: str) -> str:
 def get_standards_excerpt(layer: str | None = None) -> str:
     """Return the authoring standard for ``layer``, cached per process.
 
-    A ``layer`` of bronze/silver/gold returns that layer's file whole; ``None``
-    or an unknown value returns the three layer files concatenated (the safe
+    A ``layer`` of bronze/silver/gold returns that layer's rules, shared part
+    first; ``None`` or an unknown value returns every file once (the safe
     superset for callers that cannot know the layer). Raises if a standard is
     missing or empty — never returns a blank excerpt.
     """
     key = (layer or "").strip().lower()
     if key in _LAYER_FILES:
-        return _read_standard_file(_LAYER_FILES[key])
-    parts = [_read_standard_file(f) for f in _LAYER_FILES.values()]
-    return "\n\n".join(parts).strip()
+        names: tuple[str, ...] = _LAYER_FILES[key]
+    else:
+        # Every file exactly once, shared first, in layer order.
+        seen: dict[str, None] = {}
+        for layer_names in _LAYER_FILES.values():
+            for name in layer_names:
+                seen.setdefault(name, None)
+        names = tuple(sorted(seen, key=lambda n: (n != _SHARED_FILE,)))
+    return "\n\n".join(_read_standard_file(name) for name in names).strip()
 
 
 def reload_standards_cache() -> None:
