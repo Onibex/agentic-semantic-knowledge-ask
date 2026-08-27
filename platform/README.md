@@ -48,7 +48,7 @@ Full setup and environment variables are in
 |---|---|
 | **Getting started (everyone)** | [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) |
 | **Authoring the semantic layer** | [`definition/docs/`](../definition/docs/) — the normative Bronze / Silver / Gold specification |
-| **How the SQL engines work** | [`docs/FLASH.md`](docs/FLASH.md) · [`docs/PRECISE.md`](docs/PRECISE.md) · [`docs/SMART.md`](docs/SMART.md) |
+| **How the SQL engines work** | [`docs/explain/engines.md`](docs/explain/engines.md) |
 | **Architecture & developer overview** | [`CLAUDE.md`](CLAUDE.md) |
 | **Install & deploy** | [`docs/runbooks/`](docs/runbooks/) |
 
