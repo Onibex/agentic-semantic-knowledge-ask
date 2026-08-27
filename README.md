@@ -38,13 +38,18 @@ semantic layer comes from — but nothing in the contract is SAP-specific.
 
 ---
 
-## Three interfaces, one platform
+## Two surfaces you work in, and one you configure first
 
 | | For | What you do there |
 |---|---|---|
+| ⚙️ **ASK Setup** | Platform engineers | **Configure once, before anything else works.** Point ASK at the database it queries, the LLM provider and the embedder it uses, and your identity provider. Everything encrypted at rest. |
 | 🟣 **ASK Studio** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod. |
 | 🔵 **ASK Chat** | Business users | Ask questions in any language. Get answers with the SQL, the sources, and a per-request token breakdown. |
-| ⚙️ **ASK Setup** | Platform engineers | Wire up databases, LLM providers and identity. Everything encrypted at rest. |
+
+**ASK Setup is a prerequisite, not a third product.** Until it holds a database connection and
+a model provider, Studio has nothing to publish against and Chat has nothing to answer from.
+Whoever owns the infrastructure configures it once; after that most of it is read-only, and the
+people who author and ask never open it again.
 
 All three run from one `docker compose up`, on the same backend, behind the same
 identity provider. There is also an [MCP server](platform/services/) for SAP write

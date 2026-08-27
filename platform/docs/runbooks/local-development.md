@@ -48,7 +48,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 | `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `VITE_AUTH_MODE=keycloak`. Skip in pure dev. |
 | `ask-orchestrator` | `ask_orchestrator.main:app` | 8080 | Chat backend (intent → SQL → exec) |
 | `ask-admin-api` | `ask_admin_api.main:app` | 8081 | Admin backend (dictionary, KG ingestion, embeddings, secrets, prompts, enrichment, workspaces, organization) |
-| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | React admin UI — Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
+| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | ASK Studio — Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
 | `ask-chat-spa` | `ask-chat-spa/` (Vite dev or Nginx) | 5174 | React chat UI — Chat (streaming), Artifacts gallery + creator |
 | `ask-setup-spa` | `ask-setup-spa/` (Vite dev or Nginx) | 5175 | React setup UI — database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
 

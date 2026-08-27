@@ -44,7 +44,7 @@ query. Workspaces are loaded from the admin API and listed by name.
 | Workspace count (Home page) | The Home dashboard shows how many workspaces are available as a quick reference. |
 
 > **Warning —** If the dropdown is empty, no workspace has been configured yet or the admin API
-> is unreachable. Ask an administrator to create a workspace in the admin app, then refresh
+> is unreachable. Ask an administrator to create a workspace in ASK Studio, then refresh
 > the page.
 
 > **Warning —** Until a workspace is selected, the Chat page shows an amber banner and refuses
@@ -80,7 +80,7 @@ Under **Mode** in the sidebar, click one of the three options:
 | Mode | When to use it |
 |---|---|
 | **Flash** | Quick exploration. One LLM call, no join planning, no scope check. Fastest and cheapest; least rigorous. Use when latency matters more than guarantees. |
-| **Precise** *(default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
+| **Precise** *(the Chat's default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
 | **Smart** | The all-rounder. Shows the LLM a compact catalog, lets it pick the relevant Data Products, then resolves joins deterministically. Useful for broad or unusually phrased questions. |
 
 ![Mode selector showing Flash, Precise, and Smart stacked vertically](../images/chat-mode-selector.png)

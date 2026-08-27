@@ -34,7 +34,13 @@ that needs to be read in a particular order.
 ### Everyday tasks
 - [Sign in to ASK](guides/sign-in.md) — the three authentication modes, the role model, and what 401 / 403 mean
 
-### Configure the platform · ASK Setup
+### Configure the platform first · ASK Setup
+
+**Nothing in ASK Studio or ASK Chat works until this section is done.** ASK Setup is a
+prerequisite, not a third product: the platform needs a database connection and a model
+provider before there is anything to author against or answer from. The first two pages are
+required; the rest are optional or read-only.
+
 - [Connect a database](ask-setup/02-database-connections.md) — multi-engine registry, one active per environment
 - [Connect an LLM provider](ask-setup/03-llm-providers.md) — the LLM registry and the shared embedder
 - [Connect to SAP](ask-setup/05-sap-connection.md) — S/4HANA URL, credentials, OAuth endpoint

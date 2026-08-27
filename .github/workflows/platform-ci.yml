@@ -51,6 +51,12 @@ jobs:
       # for reasons that have nothing to do with the commit under test.
       - name: Documentation links resolve
         run: python scripts/docs_links.py --check
+      # The authoring app was ASK Admin for most of this repository's life, and
+      # the rename touched 98 mentions. This is a regression guard: it was
+      # written against a passing documentation set, and only mechanically
+      # decidable names are in it.
+      - name: The product is called what it is called
+        run: python scripts/docs_terms.py --check
 
   python-hygiene:
     name: Python lint + boundary tests

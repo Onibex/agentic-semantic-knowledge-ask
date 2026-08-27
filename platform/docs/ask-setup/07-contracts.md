@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; an OpenAPI 3.0 spec **in JSON** for the OData service you want to expose. |
 | **You'll end with** | The OData service registered as MCP tools, its entity sets and operations available to the agent. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Register an OpenAPI contract**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
 
 > The screenshots use a sample OData spec. Register your own service's spec — the exact entity
 > sets shown here won't match yours.

@@ -78,16 +78,32 @@ The manual is `platform/docs/`, and it follows [Diátaxis](https://diataxis.fr):
 | Reference | Look-up, no narrative | `reference/`, and `definition/` for the contract |
 | Explanation | Why it works this way | `explain/` |
 
-Two mechanical rules the build enforces, so you will hear about them either way:
+### The names
+
+The three surfaces are **ASK Studio**, **ASK Chat** and **ASK Setup**. Studio was called *ASK
+Admin* for most of this repository's life; only the `ask-admin-api` package kept that name. The
+queryable unit is a **Data Product**, not an *entity*.
+
+That last one is a judgement call, not a rule a build can apply: `entity_role` is a YAML key,
+`entity id` and `cross-entity` are load-bearing, and an OData `entity set` belongs to OData. The
+manual uses the word about a hundred times and nearly all of them are right. When you mean the
+thing a reader creates in Studio, write **Data Product**.
+
+### What the build enforces
 
 - **Every page is listed in `platform/docs/README.md`** and carries a link back to it.
 - **Every relative link resolves**, including `#heading-anchors`.
+- **The surface names have not drifted back** to *ASK Admin*, `ask-admin/` or `admin-*.png`.
 
-Check both locally with:
+Check all three locally with:
 
 ```bash
 python scripts/docs_links.py --check
+python scripts/docs_terms.py --check
 ```
+
+Both read only what git tracks, so run them **after** `git add` -- otherwise a new file passes
+locally and fails in CI.
 
 Found something inaccurate or confusing in the docs? That is a bug — open a
 **Documentation** issue. Reporting it is a contribution.
