@@ -35,12 +35,12 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | Key | Required | Type | Description |
 |---|---|---|---|
 | `id` | ✅ | string | Globally unique identifier. Convention: `gold_<system>_[<module>_]<name>` — the module segment is optional, used when a single module owns the data product. Example: `gold_s4h_open_order_tracker`. **The filename is `<id>.yaml`.** |
-| `internal_id` | ⬜ | string | Optional internal/cataloged identifier (often equals `id`). |
-| `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
+| `internal_id` | ✅ | string | Internal/cataloged identifier (often equals `id`). Indexed as a keyword on the entity registry. |
+| `db_table_name` | ⬜ | string | Physical table or view name in the warehouse. **Defaults to `id`** when omitted or empty. Write it as an unquoted scalar. |
 | `layer` | ✅ | string | Must be the literal value `gold`. |
 | `version` | ✅ | string | Spec/version of this data product. Bump on breaking change. |
 | `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo` — see [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
-| `source_system_no` | ⬜ | integer | Specific instance/client number of the source system (SAP MANDT, etc.). |
+| `source_system_no` | ✅ | integer | Specific instance/client number of the source system (SAP MANDT, etc.). |
 | `business_process` | ✅ | string | High-level process the entity supports. Use the **same vocabulary as Silver** so the two layers match: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. Unknown values are accepted and normalised, not rejected. **Do not use short codes here** (`OTC`, `P2P`, `SCM`): those are the `<domain>` segment of a Gold **id**, a different thing — using them in this field is what made Silver and Gold speak different languages. |
 | `module` | ✅ | string \| string[] | One module or a list when the Gold spans modules: `["SD", "MM"]`. UPPERCASE. |
 | `tag1`, `tag2` | ⬜ | string | Optional secondary categorization for catalog faceting. |
@@ -50,10 +50,14 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 | `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`) — you set it directly, and the server does not overwrite it. Most Gold entities are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `fields` | ✅ | object[] | Field definitions. See [§3.3](#33-fields). |
-| `relationships` | ✅ | object[] | Outbound graph edges to other entities. See [§3.4](#34-relationships). |
+| `relationships` | ⬜ | object[] | Outbound graph edges to other entities. Optional in the schema, but a Gold with none is unreachable by traversal — declare them unless the entity is genuinely terminal. See [§3.4](#34-relationships). |
 
 > **A Gold has no `composed_of` and no `join_graph`.** Both are Silver-layer keys and are not
 > part of the Gold schema — see [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
+> An already-authored Gold that still carries them is not rejected: the keys are **dropped on
+> load and never written back**, so they disappear on the next save. The same is true of any
+> unrecognised key at any layer — it is silently discarded, so a misspelt key costs you the
+> value with no error anywhere.
 
 #### 3.1.1 Why Gold has no `composed_of` or `join_graph`
 
@@ -152,7 +156,7 @@ Each field is an object in the `fields` list:
 | `field_role` | ✅ | One of: `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, `status_flag`. See [§3.3.1](#331-field-roles). |
 | `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN` — the same vocabulary as Bronze and Silver. See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system). |
 | `description` | ✅ | The business meaning of the column, and the facts about it that no other key expresses — a sparsity condition, a sentinel value, the value set behind a status. **The agent reads this verbatim**, so anything already carried by a key does not belong here. See [§5.1](#51-write-descriptions-that-carry-only-what-no-key-does). |
-| `aggregation_behavior` | ✅ | **Which** SQL function: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, or `none`. A function name, nothing more. Use `none` for identifiers, dimensions, statuses and timestamps. See [§3.3.4](#334-additive-vs-non-additive-measures). |
+| `aggregation_behavior` | ⬜ | **Which** SQL function: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, or `none`. A function name, nothing more. Use `none` for identifiers, dimensions, statuses and timestamps. **Absence means *not curated***, and an uncurated measure is assumed additive — so leaving it off a measure that is not additive is the one omission that produces a wrong number. Set it on every measure. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 | `additivity` | ⬜ | **Over which dimensions** that function is valid: `additive` (default — omit the key), `semi_additive`, or `non_additive`. Measures only. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 | `non_additive_over` | ⬜ | Grain dimensions to collapse before aggregating. Required when `additivity: semi_additive`; any member of `entity_grain` is accepted. See [§3.3.4](#334-additive-vs-non-additive-measures). |
 
@@ -279,10 +283,12 @@ relationships:
 | `relationship_type` | ✅ | `one_to_one`, `many_to_one`, `one_to_many`, or `many_to_many`. |
 | `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Carried and rendered **verbatim** — write it exactly as it must appear after `ON`, including non-equality terms such as `IN (...)`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
-| `traversal_cost` | ✅ | Numeric heuristic, lower = cheaper — the planner's edge weight when choosing between alternative paths. **Floats, not integers**: fractional values are what make the ranking finer than the four tiers. Rubric in [§5.5](#55-score-traversal_cost-honestly). |
-| `aggregation_safety` | ✅ | `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation — the edge is removed from the traversal graph, so no path is built through it). Defaults to the cardinality; set it explicitly to **override** that default. On the auto-generated reverse edge it is **derived from the inverted cardinality, not copied** — fan-out is directional — except `unsafe`, which propagates both ways. See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
-| `cross_module` | ✅ | Boolean. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
-| `description` | ✅ | What this join means in business terms. |
+| `traversal_cost` | ⬜ | Numeric heuristic, lower = cheaper — the planner's edge weight when choosing between alternative paths. **Floats, not integers**: fractional values are what make the ranking finer than the four tiers. Defaults to `1.0`, which claims the edge is as cheap as a direct key join — set it deliberately rather than inheriting that claim. Rubric in [§5.5](#55-score-traversal_cost-honestly). |
+| `aggregation_safety` | ⬜ | Exactly one of `safe` (join does not multiply rows), `requires_dedup` (the join fans out — `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation — the edge is removed from the traversal graph, so no path is built through it). **A value outside that set is rejected.** Defaults to `safe`, so an un-set fan-out edge silently claims to be safe — set it explicitly on every edge that multiplies rows. On the auto-generated reverse edge it is **derived from the inverted cardinality, not copied** — fan-out is directional — except `unsafe`, which propagates both ways. See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
+| `cross_module` | ⬜ | Boolean, default `false`. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
+| `description` | ⬜ | What this join means in business terms. Carries the grain or dedup caveat a curator wants the SQL generator to see: it is rendered beneath the edge's `ON` clause, so a caveat written here reaches the model even when the entity's own YAML was not retrieved. |
+
+Only the first four are required. The rest carry defaults — and two of those defaults are claims, not neutral values: an edge with no `traversal_cost` asserts it is as cheap as a direct key join, and one with no `aggregation_safety` asserts it does not fan out. Both are wrong on exactly the edges that matter most.
 
 #### 3.4.1 Cross-fact relationships
 
@@ -366,14 +372,16 @@ to repair a predicate that names a table nobody selected from.
 | `id` | `gold_<system>_[<module>_]<name>` | `gold_s4h_open_order_tracker` |
 | `db_table_name` | `GOLD_[<MODULE>_]<NAME>` (UPPER_SNAKE) | `GOLD_SD_OPEN_ORDER_TRACKER` |
 | `name` | Short business label, snake_case | `open_order_tracker` |
-| Field `name` | Business-friendly snake_case, no SAP code | `customer_id`, `order_qty`, `delivery_date` |
+| Field `name` | Business-friendly snake_case preferred; an inherited source code is acceptable when the `description` carries the meaning | `customer_id`, `order_qty`, `delivery_date` |
 | `semantic_label` | Active verb phrase | `ordered_by`, `fulfilled_from`, `material_of` |
 
 **The module segment is optional, and its absence is meaningful.** A Gold that genuinely spans modules — an order-tracking product joining MM, PP and SD — omits it rather than picking one arbitrarily: `GOLD_ORDER_TRACKING_RECEPTION`, not `GOLD_SD_ORDER_TRACKING_RECEPTION`. The real classification lives in the `module` field, which accepts a list. Do not "normalize" an id by forcing a module segment in; besides being less accurate, an `id` is a stable key and renaming it breaks every `target_entity` that points there.
 
 Write `db_table_name` as an unquoted scalar. Quoting it is harmless but inconsistent — it is a plain identifier, not a string that needs protecting.
 
-Avoid leaking source-system column names (`KUNNR`, `MATNR`, `WERKS`) into Gold field names. The whole point of Gold is to expose a business vocabulary.
+Prefer business names over source-system column codes (`KUNNR`, `MATNR`, `WERKS`): the point of Gold is to expose a business vocabulary, and `customer_id` reads better than `kunnr_kna1` to everyone who later maintains the entity.
+
+This is a preference, not a prohibition. A Gold built by flattening a Silver often inherits `<column>_<table>` names, and renaming them buys little: **the business meaning of a Gold field lives in its `description`**, which is what the agent reads and what retrieval embeds. A field named `ovrll_sts` with a description that enumerates its status codes is entirely usable; a field named `order_status` with no description is not. Spend the effort on the description first, and rename when it costs nothing.
 
 ## 5. Best practices
 
@@ -480,7 +488,7 @@ exercise — start with the first if you are reading one:
 not transcribed by hand.
 
 Each `grain` was then checked with the uniqueness query of
-[§3.2](#32-the-grain-is-a-promise-about-the-physical-table) against real rows:
+[§3.2](#32-grain) against real rows:
 
 | Example | Rows | Distinct grain | Unique? |
 |---|---:|---:|---|
@@ -522,4 +530,4 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] Every `field` name is unique within the file.
 - [ ] No `composed_of`, no `join_graph` — neither belongs to a Gold.
       See [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
-- [ ] No SAP/source-system column codes leak into Gold field names.
+- [ ] Any field whose name is an inherited source-system code carries a `description` that supplies the business meaning ([§4](#4-naming-conventions)).

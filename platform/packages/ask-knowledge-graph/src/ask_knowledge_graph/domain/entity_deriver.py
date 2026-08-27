@@ -625,7 +625,7 @@ class EntityDeriver:
         for the same table pair, and **each one alone is a fanning join** (joining
         EKPO to EKET on ``EBELN`` only multiplies by every schedule line of the
         order). Both layer standards require the composite predicate on a single
-        entry: ``docs/semantic-layer/SILVER_LAYER.md`` §3.3 — "Multi-key joins use
+        entry: ``definition/docs/SILVER_LAYER.md`` §3.3 — "Multi-key joins use
         ``AND``".
 
         Grouping key is ``(parent_relation, tabname, sequence)``: ``sequence`` is

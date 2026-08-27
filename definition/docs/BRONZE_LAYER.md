@@ -33,7 +33,7 @@ The ASK intent-resolution priority is:
 3. BRONZE  → skipped (lineage only)
 ```
 
-This is enforced at index time, not left to a runtime filter — see [§6.6](#66-bronze-isolation-is-a-guarantee-not-a-filter).
+A Bronze is never embedded, never given field-registry rows and never chunked into the retrieval collections, so most of that isolation is structural rather than a rule someone has to remember — see [§6.6](#66-what-isolates-bronze-and-how) for the part that is still a filter.
 
 ## 3. Schema
 
@@ -79,7 +79,7 @@ Exactly these ten keys, in this order. Anything else is dropped by catalog valid
 |---|---|---|---|
 | `id` | ✅ | string | Globally unique identifier, **lowercase**. Convention: `bronze_<system>_<table>_<alias>` — see [§5](#5-naming-conventions). Example: `bronze_s4h_mara_master_material`. Validated against that grammar; a non-conforming id is rejected. Treat it as immutable — renaming one is a breaking change. |
 | `layer` | ✅ | string | Must be the literal value `bronze`. Tooling defaults it to `bronze` when omitted. |
-| `version` | ✅ | string | Spec/version of this definition. Tooling defaults it to `'1'` when omitted. |
+| `version` | ⬜ | string | Spec/version of this definition. **Defaults to `'1'`** when omitted — unlike Silver and Gold, where it is required. |
 | `source_system` | ✅ | string | Source-system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo`. **Load-bearing:** it selects the type profile, so a wrong token changes how `type` is read. Use `s4h` for SAP S/4HANA — not `s4hana`, which would produce ids that do not match the rest of the catalog. |
 | `source_system_id` | ✅ | integer | Specific instance/client number (e.g. `100`). **This is the Bronze spelling**; Silver and Gold use `source_system_no`. They are *not* interchangeable — the wrong one is dropped, not translated. Tooling defaults it to `0` when omitted. |
 | `name` | ✅ | string | Source-system table or node name, **uppercase as it appears in the source** (e.g. `MARA`, `VBAK`, `EKKO`). |
@@ -224,20 +224,31 @@ A good `alias` is a stable English noun that survives translation: `material`, `
 
 Three things to be clear about:
 
-- **In-file uniqueness is enforced**, compared case-insensitively. Two fields in one Bronze may not share an alias.
+- **In-file uniqueness is enforced**, compared case-insensitively. Two fields in one Bronze may not share an alias: an authored or imported YAML that does is **rejected**. The one exception is the SAP metadata path, where the parser repairs a collision before the node is built — it appends an ordinal suffix (`_2`, `_3`, …; the first occurrence keeps the bare alias) and records a naming warning. Under `ColumnNamingMode.ALIAS` that repair is load-bearing rather than cosmetic, because the published Silver column takes its name from the alias: the client's physical table must carry the same suffix.
 - **Cross-file drift is not policed, and that is deliberate.** The same source column may carry different aliases in different Bronzes (`KUNNR` as `customer` on a sales table and `competitor` on a competitor table is *correct*). There is no canonical alias dictionary; do not "normalize" aliases across files.
 - **Silver field names are not built from the Bronze alias.** A Silver field is named `<column>_<table>`, lowercased — `VBAK.NETWR` becomes `netwr_vbak`. So an unhelpful Bronze alias never leaks into a Silver field name, and improving one never renames a Silver field or invalidates a `join_graph`.
 
-### 6.6 Bronze isolation is a guarantee, not a filter
+### 6.6 What isolates Bronze, and how
 
-Bronze YAMLs are catalog metadata, not agent-facing context. What the catalog does with a Bronze is enforced at index time:
+Bronze YAMLs are catalog metadata, not agent-facing context. Most of that isolation is structural — a Bronze is never given the representations retrieval needs:
 
 - **No field-registry rows and no edges.** Ingesting a Bronze reports `{"entities": 1, "fields": 0, "edges": 0}` — its columns are kept out of the field registry so they cannot pollute the agent's semantic field search.
 - **No embedding.** Silver and Gold entities get one; Bronze does not.
 - **A terse manifest.** The entity document stores `id`, `layer`, `source_system`, `name`, `alias`, `description`, `primary_keys` and the full `raw_yaml` — nothing else. The whole file is preserved, so a Bronze stays auditable and reconstructible.
-- **Lexical-only reachability.** With no embedding, a Bronze can only be matched by the keyword half of hybrid retrieval, on `name` and `description` — in practice, by its table name — and it earns no layer bonus in re-ranking. It is not hard-excluded from the entity index; the gold-first retrieval priority is what keeps it out of answers.
+- **No RAG chunks.** The publish cascade skips Bronze outright, so the chunk collection the Flash engine searches never contains one.
+- **Lexical-only reachability.** With no embedding, a Bronze can only be matched by the keyword half of hybrid retrieval, on `name` and `description` — in practice, by its table name — and it earns no layer bonus in re-ranking.
 
-The authoring consequence: rich descriptions, synonyms or business phrasing on a Bronze buy **nothing**. There is no embedding to carry them and no field rows to match them. That effort belongs on the Silver or Gold field that consumes the column.
+**A Bronze does stay in the entity registry**, though, so the last step is a filter rather than an absence, and it differs by engine:
+
+| Engine | How Bronze is kept out |
+|---|---|
+| Flash | Structural — Bronze is never indexed into the chunk collection it searches. |
+| Smart | The catalog query itself restricts `layer` to `silver` and `gold`. |
+| Precise | Resolution and path selection filter to `silver` and `gold`, with an explicit opt-in that admits Bronze for schema questions. |
+
+The distinction matters when you change retrieval: the structural half cannot be undone by accident, the filtering half can. Answering a question **from** a Bronze is a `SCHEMA_QUERY` — "what columns does VBAK have" — not a data question, and that is the one path meant to reach it.
+
+The authoring consequence: rich descriptions, synonyms or business phrasing on a Bronze buy **nothing** for data questions. There is no embedding to carry them and no field rows to match them. That effort belongs on the Silver or Gold field that consumes the column.
 
 ### 6.7 Client/tenant columns are excluded from the key
 

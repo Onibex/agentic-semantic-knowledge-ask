@@ -17,7 +17,7 @@ skeleton still builds a VALID entity — descriptions stay empty and roles fall
 to the type-derived defaults, surfacing In Review for enrichment instead of
 failing the import.
 
-Layer contracts honored here (platform/docs/semantic-layer/, the authority):
+Layer contracts honored here (definition/docs/, the normative specification):
 
 * GOLD_LAYER.md §3.1: ``db_table_name`` is stated once, UNQUALIFIED; no
   ``composed_of`` / ``join_graph``; §4: ``fields[].source`` is never authored.

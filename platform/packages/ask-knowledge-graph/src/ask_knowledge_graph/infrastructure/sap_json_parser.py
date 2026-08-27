@@ -464,7 +464,7 @@ class SapJsonParser:
                     # STRING(n) absorbs SAP CHAR, NUMC and TIMS — the CHAR-vs-NUMC
                     # (zero-padding) and time-of-day distinctions are NOT
                     # recoverable from the stored type; see "What canonical drops"
-                    # in docs/semantic-layer/BRONZE_LAYER.md.
+                    # in definition/docs/BRONZE_LAYER.md.
                     type=canonical_type,
                     alias=field_alias,
                     key_field=is_key,
@@ -491,7 +491,7 @@ class SapJsonParser:
                         # while the same Silver produced here was raw SAP. Silver
                         # `raw_yaml` reaches the SQL-generation prompt, so this
                         # changes what the model reads — see the one-vocabulary
-                        # note in docs/semantic-layer/BRONZE_LAYER.md §3.6.
+                        # note in definition/docs/BRONZE_LAYER.md §4 (type system).
                         type=canonical_type,
                         description=description_field,
                     )

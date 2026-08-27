@@ -48,23 +48,27 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 | Key | Required | Type | Description |
 |---|---|---|---|
 | `id` | ✅ | string | Globally unique identifier. Convention: `silver_<system>_<module>_<name>`. Example: `silver_s4h_sd_sales_order`. **The filename is the entity `name`** (`sales_order.yaml`). |
-| `internal_id` | ⬜ | string | Internal/cataloged identifier. Often follows a numbering pattern like `<system>_<sysno>_<seq>`. |
-| `db_table_name` | ✅ | string | Physical table or view name in the warehouse. |
+| `internal_id` | ✅ | string | Internal/cataloged identifier. Often follows a numbering pattern like `<system>_<sysno>_<seq>`. |
+| `db_table_name` | ⬜ | string | Physical table or view name in the warehouse. **Defaults to `id`** when omitted or empty. |
 | `layer` | ✅ | string | Must be the literal value `silver`. |
 | `version` | ✅ | string | Spec/version of this data product. |
 | `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo` — see [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
-| `source_system_no` | ⬜ | integer | Specific instance/client number of the source system. |
+| `source_system_no` | ✅ | integer | Specific instance/client number of the source system. |
 | `business_process` | ✅ | string | Process this artifact participates in. Recommended vocabulary — unknown values are **accepted and normalised** (trimmed, upper-cased), not rejected: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. `ORGANIZATIONAL STRUCTURE` is a legitimate value, not a gap: it marks a **generic, cross-module** artifact belonging to no single process (a plant, a sales office, an org unit). Do not put a module code here, and do not use short codes like `OTC` / `SCM` — those belong to the `<domain>` segment of a Gold **id**, not to this field. |
 | `module` | ✅ | string \| string[] | The source-system module that **owns** this artifact (`SD`, `MM`, `FI`, …). UPPERCASE here; the `id` carries the same token in lowercase. A Silver has one module; an artifact used by several processes is published once per process. A list is meaningful mainly at Gold. |
 | `name` | ✅ | string | Short business name, snake_case (e.g. `sales_order`, `trading_goods`). |
 | `classification` | ✅ | string | `M` = master · `T` = transactional · `C` = configuration. **Required at Silver** — it derives `entity_role` (see below). |
-| `description` | ✅ | string | Narrative business description. State **what artifact this represents**, **what nodes compose it**, **what the grain is**, and **typical use cases**. |
+| `description` | ✅ | string | Narrative business description: **what artifact this represents** and **what it is typically used for**. Do not restate the grain, the composing nodes or the field inventory — `grain`, `composed_of` and `fields[]` already carry those, and a prose copy drifts from them. See [§3.4.3](#343-what-a-description-is-for). |
 | `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Derived, not authored**: the server recomputes it from `classification` on every save, so a hand-written value is overwritten. The rule is `C` → `reference`; `M` → `dimension` (or `reference` when every composed table is a customizing table); `T` → `fact` when the artifact has a currency/quantity measure or is item-level, else `dimension`. To change the role, change `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `composed_of` | ✅ | string[] | Lineage: the Bronze node `id`s that make up this Silver entity. |
-| `join_graph` | ✅ | object[] | How the Bronze nodes are joined. See [§3.3](#33-join_graph). |
+| `join_graph` | ◐ | object[] | How the Bronze nodes are joined. **Required when `composed_of` names more than one node**; a single-table Silver has no `join_graph` at all. See [§3.3](#33-join_graph). |
 | `fields` | ✅ | object[] | Field definitions. See [§3.4](#34-fields). |
 | `relationships` | ⬜ | object[] | Outbound graph edges to other entities (typically other Silver). See [§3.5](#35-relationships). |
+| `tag1` | ⬜ | string | Free catalog facet. Populated from the source export where available; a populated value is usually hand-authored. |
+| `tag2` | ⬜ | string | Second catalog facet, conventionally `<MODULE>-<SUBMODULE>` (`SD-MD`, `MM-PUR`). |
+
+Keys not listed here are **dropped on load**, not rejected: the layer models declare no `extra` policy, so an unknown key is silently discarded and never written back. A typo in a key name therefore costs you the value with no error anywhere — check spelling against this table.
 
 ### 3.2 Grain
 
@@ -203,12 +207,13 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 | Key | Required | Description |
 |---|---|---|
 | `name` | ✅ | Physical column name. Convention: `<source_alias>_<table>` (e.g. `vbeln_vbak`, `matnr_mara`) — preserves source lineage and disambiguates same-named columns from different Bronze nodes. |
-| `source` | ✅ | Lineage: `<TABLE>.<column>` referencing the Bronze node. |
+| `source` | ⬜ | Lineage: `<TABLE>.<column>` referencing the Bronze node. Documentation only — it is never fabricated, so a Silver imported from a single `CREATE TABLE` simply omits it. |
 | `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, or `status_flag`. **`attribute`** is for free-text descriptions or names (a material description, an order text): the agent may filter on it and SELECT it, but never `GROUP BY` it — contrast **`dimension`**, which is a code from a closed set and *is* groupable. A material *description* is an `attribute`; a material *group code* is a `dimension`. **`status_flag`** is a small closed set of business states (open/partial/closed) — groupable, but never arithmetically aggregated. |
 | `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer — source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) |
-| `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. |
-| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
-| `additivity` / `non_additive_over` | ⬜ | Also as at Gold — the dimensions a measure may *not* be aggregated across. **Derived at ingest** for every measure whose own source table's key does not determine the grain, which on a multi-table Silver is most of them: a header amount is restated on every item, partner and document-flow row it joins to. An explicit value authored by a curator wins; absence means additive. |
+| `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. A published entity should carry one on every field, but an *empty* description is better than an invented one: when the meaning of a code set is genuinely unknown, leave it blank rather than guess. See [§3.4.3](#343-what-a-description-is-for). |
+| `synonyms` | ⬜ | Alternative business names for this field, to widen retrieval. Indexed for keyword search and folded into the entity's embedding, so a term users actually say (`"buyer"` for a customer id) becomes findable. Useless on a `status_flag` — leave it `[]`. |
+| `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only — `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, `none`. Absence means *not curated*, and a measure that is not curated is assumed additive. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
+| `additivity` / `non_additive_over` | ⬜ | Also as at Gold — the dimensions a measure may *not* be aggregated across. Allowed values are `additive`, `semi_additive`, `non_additive`. **Derived at ingest** for every measure whose own source table's key does not determine the grain, which on a multi-table Silver is most of them: a header amount is restated on every item, partner and document-flow row it joins to. An explicit value authored by a curator wins; absence means additive. Three pairings are **rejected at ingestion and on save**, not warned about: `additivity` on a non-measure field; `semi_additive` without a non-empty `non_additive_over`; and `non_additive` without `aggregation_behavior: none`. Every `non_additive_over` member must also appear in `grain.entity_grain` *and* resolve to a real field. |
 
 #### 3.4.1 Naming convention: `<column>_<table>`
 
@@ -222,6 +227,33 @@ The standard Silver field name pattern is `<source_column_alias>_<source_table>`
 | `VBAK.GBSTK` | `gbstk_vbak` |
 
 This convention keeps lineage visible in the column name and avoids collisions when multiple Bronze nodes carry the same logical field (e.g. `MATNR` appears in both `VBAP` and `MARA`).
+
+**Which half of the name comes from the source is a deployment setting.** `ASK_COLUMN_NAMING` decides it, resolved as environment variable → `ingestion.column_naming` in settings → `technical`:
+
+| Mode | Silver field name | `VBAK.NETWR` (Bronze alias `net_value`) becomes |
+|---|---|---|
+| `technical` *(default)* | `<column>_<table>` | `netwr_vbak` |
+| `alias` | `<alias>_<table>` | `net_value_vbak` |
+
+The mode is fixed **before the first ingest** — it decides the physical column names minted for the whole corpus, so changing it later renames every Silver column. An unrecognised value raises rather than falling back, precisely because a silent default would mint the wrong names.
+
+#### 3.4.3 What a description is for
+
+A description is **embedded text**: it becomes part of the vector that retrieval matches a question against. That makes it the one field where padding has a measurable cost — every word spent restating something another key already carries displaces business meaning from that vector.
+
+So a description carries what no other key can: what the thing *means* to the business, and when someone would reach for it. It does not carry:
+
+| Do not restate | Because this key owns it |
+|---|---|
+| The grain columns | `grain.entity_grain` |
+| What one row is | `grain.business_grain` |
+| Which nodes compose the entity | `composed_of` |
+| The field inventory | `fields[]` |
+| The join predicates | `join_graph` |
+
+A prose copy of any of those does not merely waste space — it becomes a second source that drifts, and the reader has no way to tell which one is stale.
+
+When the meaning is genuinely unknown, leave the description empty. A guess is worse than a blank: a blank is visibly unfinished, while a plausible invention gets embedded, retrieved and believed.
 
 #### 3.4.2 Document status fields
 
@@ -355,8 +387,8 @@ Joins like `sales_order ↔ inventory_movement` over `(matnr, werks)` are **many
 
 Before publishing a Silver YAML to the catalog, verify:
 
-- [ ] `id`, `db_table_name`, `layer`, `version` are present and consistent.
-- [ ] `description` describes the artifact, the composing nodes, and typical use cases.
+- [ ] `id`, `internal_id`, `layer`, `version`, `source_system`, `source_system_no` are present and consistent; `db_table_name` is present or deliberately left to default to `id`.
+- [ ] `description` says what the artifact represents and what it is used for — and does **not** restate the grain, the composing nodes or the field inventory ([§3.4.3](#343-what-a-description-is-for)).
 - [ ] `composed_of` lists every Bronze node referenced anywhere in `fields` or `join_graph`.
 - [ ] `join_graph` covers every node beyond the anchor table, with **one entry per
       `(left_table, right_table, sequence)`** — a composite key is one `AND`-composed
@@ -369,7 +401,7 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] `grain.entity_grain` reflects the actual finest cardinality of the joined result.
 - [ ] Every `grain.entity_grain` member is a `fields[].name` — a selectable column, not a source-system code ([§3.2](#32-grain)).
 - [ ] The grain is MINIMAL: no member is redundant given the `join_graph` predicates.
-- [ ] Every field follows the `<column_alias>_<table>` naming pattern.
+- [ ] Every field follows the deployment's naming mode consistently — `<column>_<table>` under the default `technical`, `<alias>_<table>` under `alias` ([§3.4.1](#341-naming-convention-column_table)).
 - [ ] Every field `name` appears exactly once. A repeated field block is never meaningful — and
       because the YAML is handed to the model verbatim, a duplicate is paid for on every question.
 - [ ] Status field descriptions enumerate every valid code.
