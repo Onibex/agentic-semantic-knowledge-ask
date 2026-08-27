@@ -80,7 +80,7 @@ Under **Mode** in the sidebar, click one of the three options:
 | Mode | When to use it |
 |---|---|
 | **Flash** | Quick exploration. One LLM call, no join planning, no scope check. Fastest and cheapest; least rigorous. Use when latency matters more than guarantees. |
-| **Precise** *(default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
+| **Precise** *(the Chat's default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
 | **Smart** | The all-rounder. Shows the LLM a compact catalog, lets it pick the relevant Data Products, then resolves joins deterministically. Useful for broad or unusually phrased questions. |
 
 ![Mode selector showing Flash, Precise, and Smart stacked vertically](../images/chat-mode-selector.png)

@@ -64,9 +64,10 @@ costs the most and takes the longest.
 **Reach for it** when someone will ask *"which table did this number come from, and why that
 join?"* — and when the answer has to be the same tomorrow.
 
-## Smart — the default
+## Smart — the default outside the Chat
 
-Smart is the production default because it puts the determinism where it buys the most.
+Smart is what answers when nobody picked an engine, and it earns that place by putting the
+determinism where it buys the most.
 
 It shows the LLM a **condensed catalog** of the Data Products in scope and lets it pick — a
 judgement call that models are genuinely good at, and one that scales to a catalog far larger
@@ -86,7 +87,7 @@ a board deck.
 
 | | **Flash** | **Precise** | **Smart** |
 |---|---|---|---|
-| **In one line** | Fastest — one-shot SQL from schema text | Most rigorous and reproducible | Balanced, production-grade default |
+| **In one line** | Fastest — one-shot SQL from schema text | Most rigorous and reproducible | Balanced and production-grade |
 | **LLM calls per query** | 1 | 3 | 2 |
 | **Schema source** | Free-text chunks | Structured Data Products | Structured Data Products |
 | **Data Products chosen by** | Chunk similarity | Ranking function (deterministic) | LLM, from a scoped catalog |
@@ -96,6 +97,21 @@ a board deck.
 | **Reproducibility** | Low | High | Medium |
 
 *Speed figures are observational and vary with your model provider and question complexity.*
+
+### Which engine runs when nobody chooses
+
+There is no single platform-wide default. Every caller sends a mode, and what happens when
+one is omitted depends on the entry point:
+
+| Entry point | Default when the mode is omitted |
+|---|---|
+| **ASK Chat** — the **Mode** selector in the sidebar | **Precise** |
+| **`/external/ask`** — agent runtimes such as watsonx Orchestrate, n8n and Zapier | **Smart** |
+| **Artifact generation** | **Smart** |
+
+Worth knowing before you compare two answers to the same question: asked through the Chat and
+asked through the agent API, they did not come from the same engine.
+
 
 > **Unsure?** Start with **Smart**. Switch to **Precise** when an answer looks off and you want
 > a validated, reproducible result. Use **Flash** for quick exploration.
