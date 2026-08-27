@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+name: Specification RFC
+description: Propose a change to the ASK specification (definition/).
+title: "[RFC] "
+labels: ["rfc", "specification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `definition/` is a published contract that people have already authored YAML
+        against. A rule that changes meaning invalidates their work, so these move
+        deliberately.
+
+        Adding an **example** under `definition/examples/` needs no RFC — open a PR.
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Which layer
+      options:
+        - Bronze
+        - Silver
+        - Gold
+        - Cross-layer / the contract itself
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What cannot be expressed today
+      description: Start from the modelling problem, not the syntax you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The proposed rule
+      description: State it as it would read in the specification.
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: What existing YAML this affects
+      description: Does it invalidate anything already authored? Is it additive? Would the platform reject files that pass today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you considered and rejected
+    validations:
+      required: false

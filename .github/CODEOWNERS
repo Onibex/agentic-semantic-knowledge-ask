@@ -1,0 +1,32 @@
+# Who has to look at what before it merges.
+#
+# The specification has an owner for a structural reason: it was once forked into
+# two copies that each declared themselves normative, disagreed on concrete rules,
+# and drifted for months because no single person had to approve a change to the
+# contract. That is the failure this file prevents.
+
+# Default — the maintainers.
+*                       @alberthflores95
+
+# The ASK specification. Normative, published, and implemented against by other
+# people: a change here needs the Spec Author's review.
+/definition/            @alberthflores95
+
+# The published manual and the repository's front door.
+/platform/docs/         @alberthflores95
+/README.md              @alberthflores95
+/CONTRIBUTING.md        @alberthflores95
+
+# Licensing, disclosure and the community contract.
+/LICENSE                @alberthflores95
+/COMMERCIAL-LICENSE.md  @alberthflores95
+/SECURITY.md            @alberthflores95
+/CODE_OF_CONDUCT.md     @alberthflores95
+
+# The enrichment prompts are rendered from the specification. They are code, but a
+# change here changes what the model is told, so they follow the same review path.
+/platform/packages/ask-admin-api/src/ask_admin_api/prompts/  @alberthflores95
+
+# CI is what keeps the rest of this honest.
+/.github/               @alberthflores95
+/scripts/               @alberthflores95

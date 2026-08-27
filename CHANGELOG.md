@@ -19,6 +19,113 @@ slowly than the product version.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The semantic-layer authoring standards never reached any container.**
+  `get_standards_excerpt` loaded them from the bare relative path
+  `docs/semantic-layer`, which resolves only when the interpreter starts in
+  `platform/`. The image installs the package non-editably with `WORKDIR /app`
+  and nothing copied or mounted `docs/`, so every Docker deployment ran AI
+  enrichment with **no layer rules at all**. It failed silently three times
+  over: the loader returned `""` behind a warning, the prompt builder drops the
+  section when it is blank, and the guarding test called `pytest.skip` when the
+  excerpt came back empty. The standards now ship as package data, resolve from
+  the module rather than the process directory, and raise instead of degrading —
+  a missing standard is a packaging defect, never a runtime condition to
+  tolerate.
+
+- **Bronze isolation now promises what the code delivers.** The overview claimed
+  Bronze is "not indexed into the retrieval registries" and that the isolation is
+  "structural". Neither was exact: Bronze *is* written to the entity registry —
+  it is the field registry and the RAG collections that exclude it — and only
+  Flash is structurally isolated, because Bronze never enters the chunk
+  collection it searches. Smart restricts the layer in its catalog query and
+  Precise filters during resolution. The conclusion held; the mechanism was
+  overstated, and it is the kind of claim an evaluating architect checks.
+
+- **34 dead links in the published documentation**, every one pointing into a
+  source layout replaced long before, plus a heading anchor left behind by the
+  ASK Admin to ASK Studio rename and a flow missing from the only page that
+  indexes it.
+
+### Changed
+
+- **`definition/` is the single normative contract.** The Bronze/Silver/Gold
+  rules were described in two places that had drifted apart, each claiming
+  authority over the other. The claim itself was misdirected: the appendix that
+  declared the specification superseded lists nine constructs that appear
+  nowhere in `definition/` and cites section numbers it never had — it
+  superseded an older internal document. Where the two genuinely disagreed, the
+  model decided: `internal_id` and `source_system_no` are required at Silver and
+  Gold; `db_table_name` defaults to `id`; Silver's `join_graph` is required only
+  when `composed_of` names more than one node; Gold's `relationships` and
+  `aggregation_behavior` are optional, with absence meaning *not curated*;
+  Bronze's `version` defaults to `'1'`; `non_additive` without
+  `aggregation_behavior: none` is rejected rather than discouraged. Silver ids do
+  require their module segment and Gold ids do not. Adds `synonyms`,
+  `tag1`/`tag2`, the closed `aggregation_safety` set, the `ASK_COLUMN_NAMING`
+  modes, and the rule that unknown keys are dropped rather than rejected — a
+  misspelt key costs the value with no error anywhere.
+
+- **Enrichment prompts carry rules, not documents.** An entire authoring
+  specification was injected into every call — 15,597 tokens for a Silver,
+  15,284 for a Gold, 36,749 when the layer was unknown, and the same payload
+  again to write one field description. Roughly half could not apply: the prompt
+  forbids the model from touching `name`, `type`, `field_role` or any structural
+  key. Scoped to what enrichment actually writes, with the half Silver and Gold
+  share single-sourced and composed per layer instead of duplicated across both
+  files. Bronze 5,868 to 998 tokens; Silver 15,597 to 2,630; Gold 15,284 to 2,732.
+
+- **The manual is organised by genre, with one page per intention.** Signing in
+  was documented in eight files, and the Chat and Studio overviews had already
+  drifted apart — two authentication modes against three, for the same
+  `AUTH_MODE`. It has one home now, covering all three surfaces, because they
+  share one provider and one session model. Three pages claimed to be where you
+  start; Getting Started is now a tutorial and only a tutorial, 291 lines of
+  duplication down to 148 that link rather than restate. The index led with a
+  competing ordered list and reached roughly 40% of the manual by line count —
+  it now reaches every page. Titles start with the verb: `Connect a database`
+  rather than `Database Connections`. Every page opens with a clickable
+  breadcrumb and closes with a link home, where before there were none at all
+  and 27 breadcrumbs of unclickable prose.
+
+- **Screenshots and prose name the product they show.** 41 images were still
+  `admin-*.png` and the runbooks still said "the admin SPA", some time after the
+  rename to ASK Studio.
+
+### Added
+
+- **A page explaining the three chat engines**, framed around the one thing that
+  separates them — which of the three decisions (what to select, how to join,
+  what SQL to emit) is computed and which is judged — and the per-engine account
+  of how raw tables stay out.
+
+- **A documentation check in CI.** A dead relative link or heading anchor fails
+  the build, as does a manual page missing from the index or missing its way
+  back. Relative paths only: external URLs go red for reasons unrelated to the
+  commit under test, and a build that fails when somebody else's site is down is
+  a build people learn to ignore.
+
+- **`CONTRIBUTING.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, issue and
+  pull-request templates, and `CODEOWNERS`.** Three documents already instructed
+  readers to open issues — including one promising that a documentation problem
+  is a bug — with no template to route them. `CODEOWNERS` puts a named owner on
+  `definition/`, which is the structural fix for the fork above: it drifted for
+  months because no single person had to approve a change to the contract.
+
+### Removed
+
+- **The engine internals left the user manual.** `FLASH.md`, `PRECISE.md` and
+  `SMART.md` were 3,023 lines in the manual root, absent from its index, and two
+  of the three opened by disowning themselves — *"Every `src/pipeline/...` path
+  below is dead"*. Between them they held every dead link in the documentation.
+
+- **The forked copy of the specification.** Its two-plane resolution model was
+  the one thing in it not carried elsewhere, and is load-bearing for authors — it
+  explains why relationships live on Silver and not only on Gold — so that moved
+  into `definition/`. The register of deliberate duplication went with the
+  duplication it tracked.
+
 ## [1.1.0] — 2026-08-19
 
 ### Added

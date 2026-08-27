@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+blank_issues_enabled: false
+contact_links:
+  - name: Production use, licensing, or commercial support
+    url: mailto:contact@onibex.com
+    about: ASK is source-available. Production use needs a commercial licence, and that comes with a support channel this tracker is not.
+  - name: Security vulnerability
+    url: https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/SECURITY.md
+    about: Do not open a public issue. Follow the disclosure process instead.
+  - name: How do I…?
+    url: https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/README.md
+    about: The manual, and the troubleshooting page inside it, answer most of these faster than we can.
