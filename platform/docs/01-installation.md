@@ -6,6 +6,10 @@
 > reach each of its user interfaces — **ASK Studio**, the **Chat**, and **ASK Setup** — plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
+>
+> **This page stops at "the stack is up".** To go all the way to an answered question in one
+> pass, follow [Getting Started](GETTING_STARTED.md) instead, and come back here when you need
+> a variable explained or a service will not start.
 
 | | |
 |---|---|
