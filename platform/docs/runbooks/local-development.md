@@ -197,7 +197,7 @@ Two options for making the value visible to uvicorn:
 **Option A — Per-terminal env var (matches the rest of this runbook):**
 Export `$env:ONIBEX_ENCRYPTION_KEY` in every terminal that boots orchestrator or admin-api (see terminals 1 and 2 below).
 
-**Option B — `.env` file at repo root:**
+**Option B — the `.env` file in `platform/`:**
 Add the line to your local `.env`:
 
 ```
@@ -547,7 +547,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | `'charmap' codec can't encode ...` in logs | `$env:PYTHONIOENCODING = "utf-8"` BEFORE starting uvicorn |
 | `Activate.ps1 cannot be loaded because running scripts is disabled` | One-time: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` |
 | `lint-imports.exe` not found | Make sure the venv is active (`.\venv\Scripts\Activate.ps1`) |
-| `config/settings.json not found` on uvicorn boot | Run `uvicorn` from the **repo root**, NOT from `packages\<pkg>\`. Same applies to the integration tests inside each package. |
+| `config/settings.json not found` on uvicorn boot | Run `uvicorn` from **`platform/`**, NOT from `packages\<pkg>\`. Same applies to the integration tests inside each package. |
 | Chat hangs waiting for a response | Verify the orchestrator (T1) is up at `:8080` and that the chat SPA's Vite proxy is running |
 | OpenSearch connection refused | `Test-NetConnection localhost -Port 9200` to confirm it's listening |
 | Setup save doesn't refresh the orchestrator's cached config | The admin-api broadcasts `/v1/internal/reload`; make sure `ASK_ORCHESTRATOR_URL` is exported in the **admin-api** terminal so the broadcast reaches the chat backend |

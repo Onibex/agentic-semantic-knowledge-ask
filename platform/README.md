@@ -34,7 +34,11 @@ opening it.
 
 ## Quick start
 
+Everything runs from this directory, `platform/`, where `docker-compose.yml` lives:
+
 ```bash
+cd platform
+cp .env.example .env      # set ONIBEX_ENCRYPTION_KEY and SEMANTIC_LAYER_HOST_PATH
 docker compose up -d
 ```
 

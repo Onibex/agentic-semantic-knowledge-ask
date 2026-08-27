@@ -24,26 +24,38 @@ name, because it is never shown one it may invent from.
 
 ---
 
-## Works with your data where it already lives
+## Quick start
 
-ASK does not move or copy your data. It connects to the engine you already run and
-compiles to **that engine's dialect** — each of these has its own SQL generator and
-its own execution adapter, not a generic fallback:
+Docker with Compose v2, and a few minutes for the first build.
 
-| | | |
+```bash
+git clone https://github.com/Onibex/agentic-semantic-knowledge-ask.git
+cd agentic-semantic-knowledge-ask/platform
+cp .env.example .env
+```
+
+Two values in `.env` have to be set before the stack will come up:
+
+| | |
+|---|---|
+| **`ONIBEX_ENCRYPTION_KEY`** | Encrypts every credential you are about to enter. Generate it with the one-liner in the file, and **keep it** — lose it and everything stored becomes unreadable. |
+| **`SEMANTIC_LAYER_HOST_PATH`** | An absolute path to a git repository where your semantic layer will live. It must already contain a `.git`, or publishing silently does nothing. |
+
+```bash
+docker compose up -d
+```
+
+| | Where | What you do first |
 |---|---|---|
-| **SAP HANA** | **Snowflake** | **Google BigQuery** |
-| **PostgreSQL** | **Databricks** | **ClickHouse** |
-| **Microsoft SQL Server** | **Microsoft Fabric** | **IBM Db2** |
-| **Presto** | | |
+| ⚙️ **ASK Setup** | `localhost:5175` | **Start here.** Point ASK at a database and a model provider. |
+| 🟣 **ASK Studio** | `localhost:5173` | Author a Data Product and publish it to `dev`. |
+| 🔵 **ASK Chat** | `localhost:5174` | Ask. |
 
-Connections are configured in **[ASK Setup](platform/docs/ask-setup/README.md)** and stored
-encrypted — never in a file in this repository. Adding one is
-[Connect a database](platform/docs/ask-setup/02-database-connections.md). Which drivers ship in your image is one build variable
-(`EXECUTOR_EXTRAS`), so a HANA-only deployment stays small.
+Nothing answers until Setup has a database and a model, and until Studio has published
+something — that order is the whole path.
 
-ASK was forged on SAP ECC and S/4HANA workloads, and that is where its reference
-semantic layer comes from — but nothing in the contract is SAP-specific.
+**→ [Getting Started](platform/docs/GETTING_STARTED.md)** walks it end to end, from an empty
+machine to a real answer, in about 45 minutes.
 
 ---
 
@@ -152,6 +164,31 @@ different Golds, because they run their business differently. The four shipped G
 show the shape; the ones that answer your questions are the ones you author — and
 authoring them in [ASK Studio](platform/docs/ask-studio/README.md) is the everyday work the
 product is built around.
+
+---
+
+## Works with your data where it already lives
+
+ASK does not move or copy your data. It connects to the engine you already run and
+compiles to **that engine's dialect** — each of these has its own SQL generator and
+its own execution adapter, not a generic fallback:
+
+| | | |
+|---|---|---|
+| **SAP HANA** | **Snowflake** | **Google BigQuery** |
+| **PostgreSQL** | **Databricks** | **ClickHouse** |
+| **Microsoft SQL Server** | **Microsoft Fabric** | **IBM Db2** |
+| **Presto** | | |
+
+Connections are configured in **[ASK Setup](platform/docs/ask-setup/README.md)** and stored
+encrypted — never in a file in this repository. Adding one is
+[Connect a database](platform/docs/ask-setup/02-database-connections.md). Which drivers ship in your image is one build variable
+(`EXECUTOR_EXTRAS`), so a HANA-only deployment stays small.
+
+ASK was forged on SAP ECC and S/4HANA workloads, and that is where its reference
+semantic layer comes from — but nothing in the contract is SAP-specific.
+
+---
 
 ---
 

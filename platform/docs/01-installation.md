@@ -11,7 +11,7 @@
 |---|---|
 | **Who** | Administrator / operator standing up an environment |
 | **Time** | ~10 minutes (plus first-build time) |
-| **Prerequisites** | **Docker** (with Docker Compose v2) installed and running; a shell at the repo root. |
+| **Prerequisites** | **Docker** (with Docker Compose v2) installed and running; a shell in `platform/`, where `docker-compose.yml` lives. |
 | **You'll end with** | Every service healthy and each UI reachable in the browser, ready to configure. |
 
 ---
@@ -30,7 +30,7 @@
 - The SPAs are static bundles served by Nginx. Their auth posture and host address are **baked
   into the bundle at build time**, so changing `AUTH_MODE` or `EXTERNAL_HOST` means **rebuilding
   the SPA image** — a restart alone won't pick it up.
-- A small set of **environment variables** in a `.env` file at the repo root parameterizes the
+- A small set of **environment variables** in a `.env` file in `platform/` parameterizes the
   stack — chiefly the encryption key, the semantic-layer repo path, the OpenSearch connection,
   and the auth posture. You set them once before the first `up`.
 
@@ -56,8 +56,9 @@
 
 ## 2. Create your `.env` file
 
-The stack reads a `.env` file at the repo root. Two templates ship with it — copy the one that
-matches where you are running and edit the values in place:
+The stack reads a `.env` file in `platform/`, beside `docker-compose.yml` — not at the top of
+the repository. Two templates ship with it; copy the one that matches where you are running and
+edit the values in place:
 
 | Template | Use it when |
 |---|---|
@@ -101,7 +102,7 @@ version control (`.env` is gitignored). Generate secrets with the one-liners the
 
 ## 3. Start the stack
 
-From the repo root:
+From `platform/`:
 
 ```bash
 docker compose up -d
