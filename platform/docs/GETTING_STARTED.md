@@ -94,8 +94,8 @@ native).
 You need:
 
 - **Access URLs** for the three surfaces (defaults for a local Docker deployment shown below).
-- **Login credentials** — the platform authenticates through an identity provider
-  (Keycloak). Your administrator provides your account.
+- **Login credentials** — the platform authenticates through an identity provider.
+  Your administrator provides your account. See [Sign in to ASK](guides/sign-in.md).
 
 | Surface | Default local URL |
 |---|---|

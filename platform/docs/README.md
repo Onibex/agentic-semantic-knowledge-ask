@@ -41,6 +41,9 @@ mirrors it:
 - [The three chat engines](explain/engines.md) — Flash / Precise / Smart: what each computes rather than guesses, and how to choose
 - [ASK specification](../../definition/README.md) — the normative Bronze / Silver / Gold contract
 
+### Everyday tasks
+- [Sign in to ASK](guides/sign-in.md) — the three authentication modes, the role model, and what 401 / 403 mean
+
 ### ASK Setup (technical configuration)
 - [Overview](ask-setup/00-overview.md) — the ASK Setup home + the config-storage model
 - [Infrastructure (OpenSearch)](ask-setup/01-setup.md)

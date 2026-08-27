@@ -36,18 +36,11 @@
 
 ## 1. Sign in
 
-Open the app URL. If you are not already authenticated you see the Onibex-branded **sign-in**
-screen.
+Every user of the realm gets the **`ask-user`** role automatically, so asking questions needs
+no extra setup.
 
-![ASK Chat sign-in screen with the Onibex logo and the Sign in button](../images/chat-overview-login.png)
-
-| Auth mode | What happens |
-|---|---|
-| **Keycloak (SSO)** | Redirects to your identity provider, then back to the app. Production mode. |
-| **Dev bypass** | A *Continue without authentication* button enters the app directly — local development only. |
-
-> **Warning —** *Continue without authentication* only appears when the deployment is
-> explicitly set to dev-bypass mode. Never run production with the bypass enabled.
+→ **[Sign in to ASK](../guides/sign-in.md)** — the three authentication modes, the role model,
+and what a 401 or a 403 actually means.
 
 ---
 

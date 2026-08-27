@@ -32,24 +32,11 @@
 
 ## 1. Sign in
 
-Open the app URL. If you're not already authenticated you land on the **sign-in** screen —
-the Onibex logo above the title **Agentic Semantic Knowledge**, with **Admin** on the line beneath.
+Authoring needs the **`ask-admin`** role; signing in with **`ask-user`** reaches the Chat but
+not this app.
 
-![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title with the Admin subtitle, and the Sign in button](../images/admin-overview-login.png)
-
-What you see depends on how the deployment is configured:
-
-| Auth mode | Button label | What happens |
-|---|---|---|
-| **Keycloak (SSO)** | **Sign in** | Redirects to your identity provider, then back to the app. The usual on-prem / self-hosted production mode. |
-| **SAP BTP (XSUAA)** | **Sign in** | Redirects to SAP BTP identity (IAS / XSUAA), then back. Used on SAP BTP deployments. |
-| **Dev bypass** | **Continue without authentication** | Enters the app directly with no login — for local development only. |
-
-After you're in, the auth mode is shown as a small chip in the sidebar footer (**SSO** for
-Keycloak, **XSUAA** for SAP BTP, **Dev** for the bypass), next to your email and role.
-
-> **Warning —** *Continue without authentication* only appears when the deployment is
-> explicitly set to the dev-bypass mode. Never run production with the bypass enabled.
+→ **[Sign in to ASK](../guides/sign-in.md)** — the three authentication modes, the role model,
+and what a 401 or a 403 actually means.
 
 ## 2. The navigation sidebar
 
