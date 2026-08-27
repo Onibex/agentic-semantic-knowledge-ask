@@ -1,6 +1,6 @@
-# ASK Setup · Overview
+# Find your way around ASK Setup
 
-> **The configuration home of the Onibex ASK Platform.** **ASK Setup** is where an
+> **Reference page.** **ASK Setup** is where an
 > administrator points the platform at its infrastructure — the OpenSearch store, the databases
 > the agent queries, the language models it uses, the identity provider, and the SAP write-back
 > endpoints — from a single dashboard.
@@ -9,11 +9,10 @@
 |---|---|
 | **Who** | Administrator (**ask-admin** role) |
 | **Time** | ~10 minutes for a first pass; most sections are set once |
-| **Prerequisites** | The platform is installed and running (see [Installation](../01-installation.md)) and you can sign in to **ASK Setup**. |
+| **Prerequisites** | The platform is installed and running (see [Install and run the platform](../01-installation.md)) and you can sign in to **ASK Setup**. |
 | **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Studio and answer in the chat. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Overview**
-
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Find your way around ASK Setup**
 > The screenshots and sample values below use the illustrative demo environment: an **SAP HANA**
 > target (port `443`), OpenSearch at `opensearch:9200`, and a Bedrock model. Substitute your own
 > hosts and credentials — never screenshot a real API key, client secret, or database password.
@@ -70,13 +69,13 @@ this manual:
 
 | # | Section | What you set there |
 |---|---|---|
-| 1 | **Setup** | [Infrastructure (OpenSearch)](01-setup.md) — the read-only, environment-sourced OpenSearch connection, plus a health check. |
-| 2 | **Database** | [Database Connections](02-database-connections.md) — the registry of databases the agent queries; one active per environment. |
-| 3 | **LLM Providers** | [LLM Providers](03-llm-providers.md) — the language models the agent can use, plus the shared embedder. |
-| 4 | **Identity Provider** | [Identity Provider](04-identity-provider.md) — the read-only active sign-in provider and your session. |
-| 5 | **SAP Connection** | [SAP Connection](05-sap-connection.md) — S/4HANA URL, client credentials and OAuth token endpoint. |
-| 6 | **MCP Server** | [MCP Server](06-mcp-server.md) — the Model Context Protocol endpoint for write-back actions to SAP. |
-| 7 | **Contracts** | [Contracts](07-contracts.md) — OpenAPI specs registered as MCP tool contracts for the agent. |
+| 1 | **Setup** | [Check the search index](01-setup.md) — the read-only, environment-sourced OpenSearch connection, plus a health check. |
+| 2 | **Database** | [Connect a database](02-database-connections.md) — the registry of databases the agent queries; one active per environment. |
+| 3 | **LLM Providers** | [Connect an LLM provider](03-llm-providers.md) — the language models the agent can use, plus the shared embedder. |
+| 4 | **Identity Provider** | [Review the identity provider](04-identity-provider.md) — the read-only active sign-in provider and your session. |
+| 5 | **SAP Connection** | [Connect to SAP](05-sap-connection.md) — S/4HANA URL, client credentials and OAuth token endpoint. |
+| 6 | **MCP Server** | [Enable the MCP server](06-mcp-server.md) — the Model Context Protocol endpoint for write-back actions to SAP. |
+| 7 | **Contracts** | [Register an OpenAPI contract](07-contracts.md) — OpenAPI specs registered as MCP tool contracts for the agent. |
 
 ## 3. Recommended order of operations
 
@@ -129,9 +128,9 @@ If you are looking for either, switch to ASK Studio.
 
 ## What's next
 
-→ **[Infrastructure (OpenSearch)](01-setup.md)** — confirm the store the whole platform runs on.
-→ **[Database Connections](02-database-connections.md)** — register the databases the agent queries.
-→ **[Installation](../01-installation.md)** — the environment variables and services behind these pages.
+→ **[Check the search index](01-setup.md)** — confirm the store the whole platform runs on.
+→ **[Connect a database](02-database-connections.md)** — register the databases the agent queries.
+→ **[Install and run the platform](../01-installation.md)** — the environment variables and services behind these pages.
 
 ---
 

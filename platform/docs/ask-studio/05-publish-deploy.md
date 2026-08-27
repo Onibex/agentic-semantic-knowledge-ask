@@ -1,6 +1,6 @@
-# ASK Studio · Publish & Deploy (dev → prod)
+# ASK Studio · Publish and deploy
 
-> **Flow 5 of the ASK Studio manual.** Nothing you author is queryable until it is
+> **How to.** Nothing you author is queryable until it is
 > **published**. This page covers how a Data Product moves from your **Working** draft to
 > **dev**, then is promoted to **prod** — one Data Product at a time, or a whole domain at once.
 
@@ -8,11 +8,10 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~2 minutes per Data Product; a domain publish streams in the background |
-| **Prerequisites** | At least one Data Product exists ([Flow 2](02-add-data-products.md)) and is assigned to a domain ([Flow 1](01-workspaces-domains.md)). |
+| **Prerequisites** | At least one Data Product exists ([Add Data Products](02-add-data-products.md)) and is assigned to a domain ([Create workspaces and business domains](01-workspaces-domains.md)). |
 | **You'll end with** | Data Products **Released** and answerable in the chat for the target environment. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Publish & Deploy (dev → prod)**
-
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Publish and deploy**
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
@@ -36,7 +35,7 @@
 
 | | Per Data Product | Per Business Domain |
 |---|---|---|
-| **Where** | The **Deployment & Versions** panel in the [DetailPanel](03-edit-enrich.md) | The **Publish → dev / prod** buttons on a domain card ([Flow 1](01-workspaces-domains.md)) |
+| **Where** | The **Deployment & Versions** panel in the [Edit and enrich Data Products](03-edit-enrich.md) | The **Publish → dev / prod** buttons on a domain card ([Create workspaces and business domains](01-workspaces-domains.md)) |
 | **Scope** | One entity | Every member of the domain that has pending changes |
 | **Best for** | Reviewing and shipping a single definition | Rolling out a whole domain in one pass |
 
@@ -99,7 +98,7 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 ## 3. Publish a whole Business Domain
 
 When a domain's Data Products are ready, publish them together. On the workspace screen, each
-domain card has a **Publish →** label with **dev** and **prod** buttons ([Flow 1](01-workspaces-domains.md)).
+domain card has a **Publish →** label with **dev** and **prod** buttons ([Create workspaces and business domains](01-workspaces-domains.md)).
 Click **dev** (blue) or **prod** (green) for the domain you want. The **Publish domain** dialog
 opens in two phases.
 
@@ -164,18 +163,18 @@ rows tell you which version each environment holds. When dev is ahead of prod, t
 reads **"N versions behind"** so you know the size of the gap before you promote.
 
 > The chat scopes its answers to the environment it targets (dev or prod) — see
-> [the chat manual](../ask-chat/00-overview.md). Publishing to **dev** makes a Data Product
+> [Find your way around ASK Chat](../ask-chat/00-overview.md). Publishing to **dev** makes a Data Product
 > answerable in the dev-targeted chat; promoting to **prod** makes it answerable in production.
 
 ---
 
 ## What's next
 
-→ **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — the domain cards whose
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — the domain cards whose
 **Publish →** buttons launch the domain publish.
-→ **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — where the Deployment & Versions panel lives,
+→ **[Edit and enrich Data Products](03-edit-enrich.md)** — where the Deployment & Versions panel lives,
 alongside the editor that produces the working draft.
-→ **[Flow 2 · Add Data Products](02-add-data-products.md)** — create the entities you publish here.
+→ **[Add Data Products](02-add-data-products.md)** — create the entities you publish here.
 
 ---
 

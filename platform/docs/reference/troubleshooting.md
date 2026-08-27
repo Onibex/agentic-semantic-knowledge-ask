@@ -9,11 +9,10 @@
 |---|---|
 | **Who** | Business users and administrators |
 | **Time** | Look up your symptom — most fixes are one action |
-| **Prerequisites** | The platform is deployed and running (see [Installation](../01-installation.md)). |
+| **Prerequisites** | The platform is deployed and running (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A resolved symptom, or a clear next step for your administrator or ops team. |
 
 [Manual](../README.md) › [Reference](../README.md#reference) › **Troubleshooting & FAQ**
-
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
@@ -39,7 +38,7 @@ fixes need the person who set up the platform.
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
-| **"No workspaces configured"** in chat | No workspace exists yet, or none is published. | *Administrator:* create one in **ASK Studio → Workspaces** and publish a business domain into the environment. See [Workspaces & Business Domains](../ask-studio/01-workspaces-domains.md). |
+| **"No workspaces configured"** in chat | No workspace exists yet, or none is published. | *Administrator:* create one in **ASK Studio → Workspaces** and publish a business domain into the environment. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
 | Chat returns **empty results** | Nothing is published to the selected environment. | Switch the environment selector to **dev**; if still empty, ask the administrator to publish the business domain (e.g. *Production Orders*) to that environment. |
 | **`prod` returns nothing, `dev` works** | Data Products are published to **dev** only. | *Administrator:* promote them to **prod** in ASK Studio — the prod publish becomes available only once **dev is current** (the dev → prod gate). |
 | Answer uses the **wrong column** (e.g. picks scrap instead of yield) | Missing synonyms, or an ambiguous business term. | *Administrator:* enrich the Data Product's field descriptions/synonyms, or add the term to the **semantic dictionary** (e.g. map *good quantity / yield* → `AFRU.LMNGA`). |
@@ -119,9 +118,9 @@ identity-provider wiring may be off; that's an administrator/ops check in the Co
 
 ## What's next
 
-→ **[Flow 1 · Workspaces & Business Domains](../ask-studio/01-workspaces-domains.md)** — create and
+→ **[Create workspaces and business domains](../ask-studio/01-workspaces-domains.md)** — create and
 publish the containers the chat scopes to.
-→ **[Flow 2 · Add Data Products](../ask-studio/02-add-data-products.md)** — author and enrich the
+→ **[Add Data Products](../ask-studio/02-add-data-products.md)** — author and enrich the
 entities the agent maps questions to.
 → **Deep ops diagnostics** — handled by your platform / ops team (health checks, auth wiring,
 `trace_id` lookups in the orchestrator logs).

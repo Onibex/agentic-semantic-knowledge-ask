@@ -1,6 +1,6 @@
 # ASK Setup · Check the search index
 
-> **The store the whole platform runs on.** The **Setup** page shows the **OpenSearch** connection
+> **How to.** The **Setup** page shows the **OpenSearch** connection
 > ASK Platform uses for its semantic index and its encrypted secret store. It is **read-only** —
 > the connection is supplied by the environment — and gives you a one-click **health check** to
 > confirm the cluster is reachable.
@@ -9,11 +9,10 @@
 |---|---|
 | **Who** | Administrator (**ask-admin** role) |
 | **Time** | ~1 minute to review; changes are made outside the UI |
-| **Prerequisites** | The platform is installed with OpenSearch running (see [Installation](../01-installation.md)). |
+| **Prerequisites** | The platform is installed with OpenSearch running (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | Confidence that the platform is pointed at the right OpenSearch cluster and that it responds. |
 
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Check the search index**
-
 > The screenshots and sample values below use the illustrative demo environment: OpenSearch at host
 > `opensearch`, port `9200`, SSL off. Substitute your own host — never screenshot a real password.
 
@@ -111,9 +110,9 @@ Set these variables in your `.env` file (development) or a **Kubernetes Secret**
 
 ## What's next
 
-→ **[Database Connections](02-database-connections.md)** — register the databases the agent queries.
-→ **[ASK Setup · Overview](00-overview.md)** — the storage model behind the source chips.
-→ **[Installation](../01-installation.md)** — where the `OPENSEARCH_*` variables are defined.
+→ **[Connect a database](02-database-connections.md)** — register the databases the agent queries.
+→ **[Find your way around ASK Setup](00-overview.md)** — the storage model behind the source chips.
+→ **[Install and run the platform](../01-installation.md)** — where the `OPENSEARCH_*` variables are defined.
 
 ---
 

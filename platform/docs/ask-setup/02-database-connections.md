@@ -1,6 +1,6 @@
 # ASK Setup · Connect a database
 
-> **The databases the agent can query.** The **Database** page is a registry: you can hold as many
+> **How to.** The **Database** page is a registry: you can hold as many
 > named connections as you like, across nine SQL engines, and mark **one active per environment**
 > (Development and Production). The chat runs its generated SQL against whichever connection is
 > active for the environment it targets.
@@ -9,11 +9,10 @@
 |---|---|
 | **Who** | Administrator (**ask-admin** role) |
 | **Time** | ~2 minutes per connection |
-| **Prerequisites** | The platform is running ([Installation](../01-installation.md)) and reachable network access to your database. |
+| **Prerequisites** | The platform is running ([Install and run the platform](../01-installation.md)) and reachable network access to your database. |
 | **You'll end with** | At least one registered connection, marked active for **Development** and/or **Production**, so the chat can answer data questions. |
 
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect a database**
-
 > The screenshots and sample values below use the illustrative demo target: an **SAP HANA**
 > connection (host shown, port `443`, schema `US_ONEC_TECH`). Substitute your own engine and
 > credentials — never screenshot a real database password or service-account key.
@@ -153,9 +152,9 @@ credentials. A toast reports success with the round-trip latency, or the error i
 
 ## What's next
 
-→ **[LLM Providers](03-llm-providers.md)** — register the language model the agent uses to write SQL.
-→ **[Infrastructure (OpenSearch)](01-setup.md)** — the store where these encrypted credentials live.
-→ **[Publish & Deploy](../ask-studio/05-publish-deploy.md)** — how the chat's dev / prod environments map to the active connections here.
+→ **[Connect an LLM provider](03-llm-providers.md)** — register the language model the agent uses to write SQL.
+→ **[Check the search index](01-setup.md)** — the store where these encrypted credentials live.
+→ **[Publish and deploy](../ask-studio/05-publish-deploy.md)** — how the chat's dev / prod environments map to the active connections here.
 
 ---
 

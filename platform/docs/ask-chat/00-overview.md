@@ -1,6 +1,6 @@
-# ASK Chat · Overview & Navigation
+# Find your way around ASK Chat
 
-> **Flow 0 of the ASK Chat manual — the map.** Get oriented in **ASK Chat**: how you sign
+> **Reference page.** Get oriented in **ASK Chat**: how you sign
 > in, what each sidebar section controls, and which flow doc to open next. Every other flow
 > (01–03) is reachable from here.
 
@@ -8,11 +8,10 @@
 |---|---|
 | **Who** | Business user / analyst — anyone who queries enterprise data in plain language |
 | **Time** | ~2 minutes to read |
-| **Prerequisites** | The SPA is installed and reachable (see [Installation](../01-installation.md)). |
+| **Prerequisites** | The SPA is installed and reachable (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A clear picture of the navigation and where every task lives. |
 
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Overview & Navigation**
-
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Find your way around ASK Chat**
 > The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
 > example (Sales Orders). Substitute your own Data Products — the exact demo names and
 > questions won't exist in your system.
@@ -25,7 +24,7 @@
   from the governed semantic layer — a written answer, a results table, an auto-generated chart,
   and optionally the SQL behind it.
 - It is one of two user surfaces. ASK Chat is for **querying**. **ASK Setup**
-  (see [ASK Setup](../ask-setup/00-overview.md)) is for technical setup by admins.
+  (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) is for technical setup by admins.
 - Three controls in the sidebar scope every query: **Workspace** (what data the agent sees),
   **Environment** (`dev` or `prod` database), and **Mode** (`Flash` / `Precise` / `Smart` SQL
   strategy).
@@ -81,15 +80,15 @@ Opening the app takes you to the **Home** page. It shows:
 
 From here, follow the flows in order:
 
-1. [Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md) — configure the three sidebar controls before asking anything.
-2. [Flow 2 · Using the Chat](02-chat.md) — ask questions and read governed SQL answers.
-3. [Flow 3 · Artifacts](03-artifacts.md) — generate and download business documents.
+1. [Scope a question](01-workspace-environment-mode.md) — configure the three sidebar controls before asking anything.
+2. [Using the Chat](02-chat.md) — ask questions and read governed SQL answers.
+3. [Generate a report or brief](03-artifacts.md) — generate and download business documents.
 
 ---
 
 ## What's next
 
-→ **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — set up the
+→ **[Scope a question](01-workspace-environment-mode.md)** — set up the
 three controls that scope every query.
 
 ---

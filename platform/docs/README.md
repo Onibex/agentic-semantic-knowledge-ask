@@ -24,8 +24,8 @@ that needs to be read in a particular order.
 ## Every page, by area
 
 ### Foundations
-- [Installation & Running the Platform](01-installation.md)
-- [Concepts & Architecture](02-concepts.md)
+- [Install and run the platform](01-installation.md)
+- [Concepts and architecture](02-concepts.md)
 
 ### Understanding how it works
 - [The three chat engines](explain/engines.md) — Flash / Precise / Smart: what each computes rather than guesses, and how to choose
@@ -48,7 +48,7 @@ required; the rest are optional or read-only.
 - [Register an OpenAPI contract](ask-setup/07-contracts.md) — turn a spec into MCP tools
 - [Review the identity provider](ask-setup/04-identity-provider.md) — read-only: the active provider and your session
 - [Check the search index](ask-setup/01-setup.md) — read-only: the OpenSearch connection
-- [Where ASK Setup keeps configuration](ask-setup/00-overview.md) — the dashboard and the storage model
+- [Find your way around ASK Setup](ask-setup/00-overview.md) — the dashboard and the storage model
 
 ### Author the semantic layer · ASK Studio
 - [Create workspaces and business domains](ask-studio/01-workspaces-domains.md) — the containers everything else lives in

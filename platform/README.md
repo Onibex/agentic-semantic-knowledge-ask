@@ -10,7 +10,7 @@ The agent never invents columns or guesses joins — it can only use Data Produc
 administrator has defined and **published**. That is what makes answers reproducible and
 trustworthy.
 
-> **New here? Start with the [Getting Started guide](docs/GETTING_STARTED.md)** — it takes
+> **New here? Start with the [Getting Started](docs/GETTING_STARTED.md)** — it takes
 > you from zero to your first answered question, for both administrators and business users.
 
 ## Surfaces
@@ -40,16 +40,16 @@ Then open:
 | Login (Keycloak) | http://localhost:8180 |
 
 Full setup and environment variables are in
-[`docs/runbooks/local-development.md`](docs/runbooks/local-development.md).
+[Local development](docs/runbooks/local-development.md).
 
 ## Documentation
 
 | For… | Read |
 |---|---|
-| **Getting started (everyone)** | [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) |
+| **Getting started (everyone)** | [Getting Started](docs/GETTING_STARTED.md) |
 | **Authoring the semantic layer** | [`definition/docs/`](../definition/docs/) — the normative Bronze / Silver / Gold specification |
-| **How the SQL engines work** | [`docs/explain/engines.md`](docs/explain/engines.md) |
-| **Architecture & developer overview** | [`docs/02-concepts.md`](docs/02-concepts.md) |
+| **How the SQL engines work** | [The three chat engines](docs/explain/engines.md) |
+| **Architecture & developer overview** | [Concepts and architecture](docs/02-concepts.md) |
 | **Install & deploy** | [`docs/runbooks/`](docs/runbooks/) |
 
 ## Technology
@@ -64,8 +64,8 @@ Full setup and environment variables are in
   (`EXECUTOR_EXTRAS`).
 - **UIs:** three React SPAs (ASK Studio, ASK Chat, ASK Setup) served by Nginx.
 
-See [`docs/02-concepts.md`](docs/02-concepts.md) for the architecture, and
-[`docs/explain/engines.md`](docs/explain/engines.md) for how the three SQL engines differ.
+See [Concepts and architecture](docs/02-concepts.md) for the architecture, and
+[The three chat engines](docs/explain/engines.md) for how the three SQL engines differ.
 
 ## License
 

@@ -1,6 +1,6 @@
 # ASK Setup · Connect to SAP
 
-> **Configuration flow.** Store the **S/4HANA OData API credentials** the platform uses to read from
+> **How to.** Store the **S/4HANA OData API credentials** the platform uses to read from
 > and write to SAP. It is a small form — host, service path, username, password — with a **Test**
 > button to confirm the platform can reach the service.
 
@@ -8,11 +8,10 @@
 |---|---|
 | **Who** | Administrator |
 | **Time** | ~2 minutes |
-| **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have an S/4HANA OData user (host, user, password) for the service you want to expose. |
+| **Prerequisites** | You can sign in to **ASK Setup** (see [Install and run the platform](../01-installation.md)), and you have an S/4HANA OData user (host, user, password) for the service you want to expose. |
 | **You'll end with** | Saved S/4HANA OData credentials, verified with a live **Test Connection**. |
 
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect to SAP**
-
 > The screenshots below use an illustrative host and username. Substitute your own — and never type
 > or screenshot a real S/4HANA password (the page masks it once saved).
 
@@ -85,11 +84,11 @@ banner shows the failure reason. The button is disabled until a configuration ha
 
 ## What's next
 
-→ **[ASK Setup · MCP Server](06-mcp-server.md)** — the internal MCP endpoint that carries SAP write
+→ **[Enable the MCP server](06-mcp-server.md)** — the internal MCP endpoint that carries SAP write
 actions.
-→ **[ASK Setup · Contracts](07-contracts.md)** — register an OpenAPI contract as MCP tools the agent
+→ **[Register an OpenAPI contract](07-contracts.md)** — register an OpenAPI contract as MCP tools the agent
 can call against SAP.
-→ **[ASK Setup · Identity Provider](04-identity-provider.md)** — who signs in, and how.
+→ **[Review the identity provider](04-identity-provider.md)** — who signs in, and how.
 
 ---
 

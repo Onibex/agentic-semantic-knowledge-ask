@@ -1,7 +1,6 @@
-# ASK Orchestrator — Troubleshooting Runbook
+# Orchestrator troubleshooting
 
-[Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **ASK Orchestrator — Troubleshooting Runbook**
-
+[Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Orchestrator troubleshooting**
 > **Audience:** ops / on-call.
 > **Scope:** the `ask-orchestrator` deployment.
 

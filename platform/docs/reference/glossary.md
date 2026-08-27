@@ -1,4 +1,4 @@
-# ASK Platform · Glossary
+# Glossary
 
 > **Reference page.** Every user-facing term the manual uses, defined once, in one place.
 > Definitions here match the [ASK specification](../../../definition/README.md) —
@@ -13,7 +13,6 @@
 | **You'll end with** | A shared vocabulary for the ASK Studio flows, ASK Setup, and the chat. |
 
 [Manual](../README.md) › [Reference](../README.md#reference) › **Glossary**
-
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
@@ -32,7 +31,7 @@
 | Term | Meaning |
 |---|---|
 | **Agent Mode (Flash / Precise / Smart)** | The engine the chat uses to turn a data question into SQL. **Flash** is fastest: it searches your schema as text and writes SQL in one shot, with no deep validation. **Precise** is the **default** — the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. **Smart** is balanced: it uses the Data Product catalog as context, picks Data Products naturally, and resolves joins through the relationship graph. The chat opens on **Precise**; switch to **Smart** or **Flash** when speed matters more than full validation. |
-| **Artifacts** | The chat's document-generation surface: a guided wizard (Name → Purpose → Data focus → Format) that turns query results into a downloadable document. See [Artifacts](../ask-chat/03-artifacts.md). |
+| **Artifacts** | The chat's document-generation surface: a guided wizard (Name → Purpose → Data focus → Format) that turns query results into a downloadable document. See [Generate a report or brief](../ask-chat/03-artifacts.md). |
 | **ASK Studio** | The administration application where you author and publish the semantic layer — workspaces, business domains, and Data Products. Distinct from **ASK Setup** (technical setup) and the **chat** (where users ask questions). |
 | **ASK Setup** | The administrator application for **technical setup** (formerly "Configuration app"). It hosts a multi-engine **Database connection registry** (the nine supported SQL engines, one active per environment), an **LLM Provider registry** (one active), and the **Identity Provider** configuration. The **OpenSearch** search index is **env-sourced and read-only** here. Separate from **ASK Studio**, which handles the semantic layer. |
 | **Alias** | A human-readable label for a field, shown instead of the technical column name — e.g. `AFKO.AUFNR` aliased as *Order Number*. Aliases help both people and the agent recognize a column. |
@@ -43,7 +42,7 @@
 | Term | Meaning |
 |---|---|
 | **Bronze** | The layer for a **raw source table** — its columns and keys, and nothing else. A Bronze Data Product carries **no join logic**. In the demo, `afko_order_header` (AFKO) and `afpo_order_item` (AFPO) are Bronze. See [Add Data Products](../ask-studio/02-add-data-products.md). |
-| **Business Domain** | A group of Data Products inside a workspace that answer a related business question — e.g. *Production Orders*. A domain's description is fed into the agent's prompt context, so it should describe what the domain covers in business terms. The **same Data Product can be reused across several domains**. See [Workspaces & Business Domains](../ask-studio/01-workspaces-domains.md). |
+| **Business Domain** | A group of Data Products inside a workspace that answer a related business question — e.g. *Production Orders*. A domain's description is fed into the agent's prompt context, so it should describe what the domain covers in business terms. The **same Data Product can be reused across several domains**. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
 | **Business grain** | The human-readable label for an entity's grain — e.g. *production order item*. See **Grain**. |
 
 ## C
@@ -119,7 +118,7 @@
 
 | Term | Meaning |
 |---|---|
-| **OneConnect** | An Onibex tool that produces a SAP metadata export (a JSON payload). The **From OneConnect** creation mode runs that export through the platform's merge engine: new content is applied as a draft and any differences against an existing Data Product surface as **conflicts** to resolve. See [Add Data Products · Mode D](../ask-studio/02-add-data-products.md). |
+| **OneConnect** | An Onibex tool that produces a SAP metadata export (a JSON payload). The **From OneConnect** creation mode runs that export through the platform's merge engine: new content is applied as a draft and any differences against an existing Data Product surface as **conflicts** to resolve. See [Add Data Products](../ask-studio/02-add-data-products.md). |
 | **Organization profile** | Organization-level settings such as company name and default **source system** — e.g. *Pinnacle Industrial Manufacturing* on *SAP S/4HANA*. The source system pre-fills AI-assisted modes such as DDL + AI. |
 | **OpenSearch** | The search index that powers the platform's semantic (hybrid) search over your Data Products. It is **env-sourced and read-only** in **ASK Setup** (set via environment variables, not edited in the UI); it is **not** your transactional database. |
 
@@ -164,13 +163,13 @@
 
 | Term | Meaning |
 |---|---|
-| **Workspace** | The top-level container the chat scopes to; it backs a deployment (`dev` / `prod`) and holds **business domains**. In the demo, *Manufacturing Operations* is the workspace. Deleting a workspace removes its grouping but does **not** delete your entity YAMLs. See [Workspaces & Business Domains](../ask-studio/01-workspaces-domains.md). |
+| **Workspace** | The top-level container the chat scopes to; it backs a deployment (`dev` / `prod`) and holds **business domains**. In the demo, *Manufacturing Operations* is the workspace. Deleting a workspace removes its grouping but does **not** delete your entity YAMLs. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
 
 ---
 
 ## See also
 
-→ **[Workspaces & Business Domains](../ask-studio/01-workspaces-domains.md)** — where Workspace,
+→ **[Create workspaces and business domains](../ask-studio/01-workspaces-domains.md)** — where Workspace,
 Business Domain, and Data Product come to life.
 → **[Add Data Products](../ask-studio/02-add-data-products.md)** — Bronze / Silver / Gold and the
 four creation modes.

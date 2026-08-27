@@ -1,6 +1,6 @@
 # ASK Chat · Generate a report or brief
 
-> **Flow 3 of the ASK Chat manual.** Generate shareable business documents — reports,
+> **How to.** Generate shareable business documents — reports,
 > executive briefs, and data tables — from your governed semantic layer without writing SQL.
 > View, download, edit, and regenerate them at any time.
 
@@ -8,11 +8,10 @@
 |---|---|
 | **Who** | Business user / analyst |
 | **Time** | ~3 minutes per artifact |
-| **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Flow 1](01-workspace-environment-mode.md)). |
+| **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Scope a question](01-workspace-environment-mode.md)). |
 | **You'll end with** | A downloadable business document built from live data, saved in your browser for later review. |
 
 [Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Generate a report or brief**
-
 > The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
 > example (Sales Orders). Substitute your own Data Products — the exact demo names and
 > questions won't exist in your system.
@@ -165,9 +164,9 @@ Use this when the underlying data has changed and you want a fresh document.
 
 ## What's next
 
-→ **[Flow 2 · Using the Chat](02-chat.md)** — ask follow-up questions whose answers feed your next artifact.
-→ **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — switch workspace or environment before generating an artifact for a different domain.
-→ **[ASK Setup](../ask-setup/00-overview.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.
+→ **[Using the Chat](02-chat.md)** — ask follow-up questions whose answers feed your next artifact.
+→ **[Scope a question](01-workspace-environment-mode.md)** — switch workspace or environment before generating an artifact for a different domain.
+→ **[Find your way around ASK Setup](../ask-setup/00-overview.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.
 
 ---
 

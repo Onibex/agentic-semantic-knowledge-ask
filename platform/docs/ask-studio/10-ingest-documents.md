@@ -1,6 +1,6 @@
 # ASK Studio · Ingest documents the agent can cite
 
-> **Flow 10 of the ASK Studio manual.** Upload documentation into the RAG index so the agent
+> **How to.** Upload documentation into the RAG index so the agent
 > can answer questions from your written material, not only from your tables.
 
 | | |
@@ -11,7 +11,6 @@
 | **You'll end with** | A document indexed and citable by the agent's documentation mode. |
 
 [Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Ingest documents the agent can cite**
-
 ---
 
 ## Concepts (30-second version)
