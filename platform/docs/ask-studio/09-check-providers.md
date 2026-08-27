@@ -14,7 +14,7 @@
 | **Prerequisites** | Signed in to ASK Studio ([Sign in to ASK](../guides/sign-in.md)); embedder credentials to hand if you intend to edit it. |
 | **You'll end with** | A verified Embedder connection, and a green Test on every card. |
 
-> Provider, model, database and identity configuration live in **ASK Setup** — see [Find your way around ASK Setup](../ask-setup/00-overview.md),
+> Provider, model, database and identity configuration live in **ASK Setup** — see [ASK Setup](../ask-setup/README.md),
 > not here. Use a **real** provider when editing the Embedder, and redact every credential field
 > before capturing a screenshot.
 

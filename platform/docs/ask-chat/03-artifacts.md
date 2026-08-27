@@ -163,7 +163,7 @@ Use this when the underlying data has changed and you want a fresh document.
 
 → **[Using the Chat](02-chat.md)** — ask follow-up questions whose answers feed your next artifact.
 → **[Scope a question](01-workspace-environment-mode.md)** — switch workspace or environment before generating an artifact for a different domain.
-→ **[Find your way around ASK Setup](../ask-setup/00-overview.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.
+→ **[ASK Setup](../ask-setup/README.md)** — if the workspace list is empty or the orchestrator is unreachable, an administrator needs to configure the platform.
 
 ---
 

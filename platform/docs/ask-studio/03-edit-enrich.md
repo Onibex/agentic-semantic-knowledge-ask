@@ -10,7 +10,7 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 3–10 minutes per Data Product |
-| **Prerequisites** | At least one Data Product exists (see [Add Data Products](02-add-data-products.md)); a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for AI Assist. |
+| **Prerequisites** | At least one Data Product exists (see [Add Data Products](02-add-data-products.md)); a provider configured (see [ASK Setup](../ask-setup/README.md)) for AI Assist. |
 | **You'll end with** | A cleaned-up Data Product — correct fields, join topology and descriptions — back in **In Review**, ready to publish. |
 
 ---

@@ -109,7 +109,7 @@ Set these variables in your `.env` file (development) or a **Kubernetes Secret**
 ## What's next
 
 → **[Connect a database](02-database-connections.md)** — register the databases the agent queries.
-→ **[Find your way around ASK Setup](00-overview.md)** — the storage model behind the source chips.
+→ **[ASK Setup](README.md)** — the storage model behind the source chips.
 → **[Install and run the platform](../01-installation.md)** — where the `OPENSEARCH_*` variables are defined.
 
 ---

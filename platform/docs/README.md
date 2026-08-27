@@ -49,7 +49,6 @@ required; the rest are optional or read-only.
 - [Register an OpenAPI contract](ask-setup/07-contracts.md) — turn a spec into MCP tools
 - [Review the identity provider](ask-setup/04-identity-provider.md) — read-only: the active provider and your session
 - [Check the search index](ask-setup/01-setup.md) — read-only: the OpenSearch connection
-- [Find your way around ASK Setup](ask-setup/00-overview.md) — the dashboard and the storage model
 
 ### [Author the semantic layer · ASK Studio](ask-studio/README.md)
 - [Create workspaces and business domains](ask-studio/01-workspaces-domains.md) — the containers everything else lives in
@@ -62,13 +61,11 @@ required; the rest are optional or read-only.
 - [Set the organization profile](ask-studio/08-organization.md) — defaults that pre-fill authoring
 - [Check the embedder and search index](ask-studio/09-check-providers.md) — the one provider you edit here
 - [Ingest documents the agent can cite](ask-studio/10-ingest-documents.md) — a corpus separate from the semantic layer
-- [Find your way around ASK Studio](ask-studio/00-overview.md) — the sidebar and the page chrome
 
 ### [Ask questions · ASK Chat](ask-chat/README.md)
 - [Scope a question](ask-chat/01-workspace-environment-mode.md) — workspace, environment and mode
 - [Using the Chat](ask-chat/02-chat.md) — ask, read the answer, see the SQL
 - [Generate a report or brief](ask-chat/03-artifacts.md) — shareable documents, no SQL required
-- [Find your way around ASK Chat](ask-chat/00-overview.md) — the sidebar and the home dashboard
 
 ### [Operating the platform](runbooks/README.md)
 - [Local development](runbooks/local-development.md) — running the services natively instead of in Docker
