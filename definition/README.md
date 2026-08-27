@@ -81,7 +81,6 @@ The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`, `target_
 When an agent receives a natural-language question, the layers are ranked in this order:
 
 ```
-
 1. GOLD    → "Is there a Business Logic Data Product that already answers this?"
 2. SILVER  → "Is there a Foundational Data Product I can compose an answer from?"
 3. BRONZE  → (skipped by default — not good agent context)
