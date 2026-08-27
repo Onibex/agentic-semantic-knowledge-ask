@@ -12,7 +12,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; the MCP service is deployed in your cluster. |
 | **You'll end with** | A saved MCP endpoint the agent uses for SAP OData actions, verified reachable with a health check. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Enable the MCP server**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
 
 > The screenshots and values below use the platform's default in-cluster endpoint
 > (`http://ask-mcp-service:4004`). Substitute your own deployment's service name and

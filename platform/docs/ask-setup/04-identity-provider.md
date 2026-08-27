@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A clear view of the active identity provider, its OIDC configuration, and the roles carried in your token. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Review the identity provider**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Review the identity provider**
 
 > The screenshots below show illustrative issuer and client values. Substitute your own — none of it
 > is editable here, so there is nothing secret to type in.

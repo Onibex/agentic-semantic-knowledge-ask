@@ -1,7 +1,8 @@
 # Concepts & Architecture
 
 > **The mental model for the whole platform.** Read this once and the rest of the manual
-> falls into place: the three surfaces you work in, the two roles that use them, how the
+> falls into place: the two surfaces you work in and the one you configure first, the two
+> roles that use them, how the
 > **semantic layer** is organized, why the SQL is **governed**, and how the three chat
 > engines differ.
 
@@ -34,19 +35,21 @@
 
 ## 1. Three surfaces, two roles
 
-The platform is three applications, used by two kinds of people.
+The platform is three applications, used by two kinds of people — but they are not three peers.
+**ASK Setup is the precondition for the other two**, which is why it is listed first here and
+first in the manual.
 
 | Surface | Who uses it | What it's for |
 |---|---|---|
+| **ASK Setup** | Administrator | The technical prerequisite: database connections, LLM / embeddings provider, search index. Set once; nothing else functions before it. |
 | **ASK Studio** | Administrator / data steward | Author and publish the **semantic layer**: workspaces, business domains, Data Products. |
-| **ASK Setup** | Administrator | Technical setup: database connections, LLM/embeddings provider, search index. |
-| **Chat** | Business user | Ask questions in natural language and read the answers. |
+| **ASK Chat** | Business user | Ask questions in natural language and read the answers. |
 
 The two roles map cleanly onto the surfaces:
 
-- The **administrator** (or data steward) works in **ASK Setup** and **ASK
-  Admin**. They connect the database, pick the model provider, model the SAP tables into
-  business entities, and publish them.
+- The **administrator** (or data steward) configures **ASK Setup** once, then works in **ASK
+  Studio**. They connect the database, pick the model provider, model the SAP tables into
+  business Data Products, and publish them.
 - The **business user** works only in the **Chat**. They pick a workspace, ask a question
   in plain language, and read the answer — no SQL, no schema knowledge required.
 

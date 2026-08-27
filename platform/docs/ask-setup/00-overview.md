@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is installed and running (see [Installation](../01-installation.md)) and you can sign in to **ASK Setup**. |
 | **You'll end with** | Every configuration section reviewed and green — a platform ready to author in ASK Studio and answer in the chat. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Overview**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Overview**
 
 > The screenshots and sample values below use the illustrative demo environment: an **SAP HANA**
 > target (port `443`), OpenSearch at `opensearch:9200`, and a Bedrock model. Substitute your own
@@ -22,9 +22,11 @@
 
 ## Concepts (30-second version)
 
-- **ASK Setup is one of three apps.** The platform ships three separate front-ends: **ASK Setup**
-  (this configuration app), **ASK Studio** (authoring the semantic layer), and the **chat** (asking
-  questions). This section of the manual documents ASK Setup only.
+- **ASK Setup comes first, and then you leave it alone.** It is the prerequisite for the other
+  two surfaces, not a peer of them: **ASK Studio** has nothing to publish against and **ASK Chat**
+  has nothing to answer from until this app holds a database connection and a model provider. It is
+  configured once, by whoever owns the infrastructure. This section of the manual documents ASK
+  Setup only.
 - **Two kinds of section.** Some sections are **read-only** mirrors of what the environment already
   provides (**Setup** / OpenSearch, **Identity Provider**). Others are **editable registries**
   (**Database**, **LLM Providers**) or small credential forms (**SAP Connection**, **MCP Server**,

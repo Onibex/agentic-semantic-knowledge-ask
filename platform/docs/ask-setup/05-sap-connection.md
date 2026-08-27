@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have an S/4HANA OData user (host, user, password) for the service you want to expose. |
 | **You'll end with** | Saved S/4HANA OData credentials, verified with a live **Test Connection**. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Connect to SAP**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect to SAP**
 
 > The screenshots below use an illustrative host and username. Substitute your own — and never type
 > or screenshot a real S/4HANA password (the page masks it once saved).

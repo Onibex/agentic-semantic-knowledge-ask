@@ -22,10 +22,14 @@ question is not, and pretending otherwise would make this noise:
     is a YAML key, `entity id` and `cross-entity` are load-bearing, and an
     OData `entity set` is somebody else's vocabulary. The manual uses the word
     ~100 times and nearly all of them are correct. No regex separates the few
-    that are not, so that rule stays a human one, in `_authoring/AUTHORING.md`.
+    that are not, so that rule stays a human one, written down in CONTRIBUTING.md.
 
 Fenced blocks and inline code are exempt: they quote the system, and the
 system is allowed to disagree with the style guide.
+
+Matching runs on the prose with its line wrapping removed, because this
+repository wraps at about 95 characters and *ASK Admin* survived the rename
+by being split across two lines.
 
     python scripts/docs_terms.py --check
 """
@@ -40,10 +44,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Working areas nobody reads, and the one file whose job is to record that the
-# rename happened -- flagging the history of a rename is not a finding.
+# Working areas nobody reads, and the two files whose job is to talk *about* the
+# names rather than use them: the changelog records that the rename happened, and
+# the contributing guide has to print the old name in order to forbid it.
 SKIP_PARTS = {"_internal", "_authoring", "node_modules"}
-SKIP_FILES = {"CHANGELOG.md"}
+SKIP_FILES = {"CHANGELOG.md", "CONTRIBUTING.md"}
 
 FENCE = re.compile(r"^\s*(```|~~~)")
 INLINE_CODE = re.compile(r"`[^`]*`")
@@ -128,17 +133,34 @@ def prose_lines(text: str) -> list[tuple[int, str]]:
     return lines
 
 
+def joined(lines: list[tuple[int, str]]) -> tuple[str, list[int]]:
+    """One string of prose, plus the source line for every character in it.
+
+    A two-word name broken by a line wrap is still that name to a reader, and
+    was how *ASK Admin* survived the rename. Matching a single line at a time
+    cannot see it.
+    """
+    text: list[str] = []
+    origin: list[int] = []
+    for number, line in lines:
+        for char in line + " ":
+            text.append(char)
+            origin.append(number)
+    return "".join(text), origin
+
+
 def check() -> list[str]:
     problems: list[str] = []
     for path in tracked_markdown():
         rel = path.relative_to(ROOT).as_posix()
-        for number, line in prose_lines(path.read_text(encoding="utf-8")):
-            for label, pattern, instead in RULES:
-                match = pattern.search(line)
-                if match:
-                    problems.append(
-                        f"{rel}:{number}: {label} -> {match.group(0)!r}, write {instead}"
-                    )
+        text, origin = joined(prose_lines(path.read_text(encoding="utf-8")))
+        for label, pattern, instead in RULES:
+            for match in pattern.finditer(text):
+                number = origin[match.start()]
+                found = " ".join(match.group(0).split())
+                problems.append(
+                    f"{rel}:{number}: {label} -> {found!r}, write {instead}"
+                )
     return problems
 
 

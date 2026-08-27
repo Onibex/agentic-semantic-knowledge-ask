@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is installed with OpenSearch running (see [Installation](../01-installation.md)). |
 | **You'll end with** | Confidence that the platform is pointed at the right OpenSearch cluster and that it responds. |
 
-[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Check the search index**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Check the search index**
 
 > The screenshots and sample values below use the illustrative demo environment: OpenSearch at host
 > `opensearch`, port `9200`, SSL off. Substitute your own host — never screenshot a real password.
