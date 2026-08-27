@@ -6,7 +6,7 @@
 
 **"How many sales orders are still open for trading goods in plant 1000?"**
 
-A business user types that into **ASK Chat**. ASK resolves *open*, *sales order*,
+A business user types that into **[ASK Chat](platform/docs/ask-chat/README.md)**. ASK resolves *open*, *sales order*,
 *trading goods* and *plant* against a curated semantic layer, computes the join path
 deterministically, compiles SQL in your database's own dialect, runs it, and answers
 with the numbers and the citations behind them.
@@ -29,8 +29,9 @@ its own execution adapter, not a generic fallback:
 | **Microsoft SQL Server** | **Microsoft Fabric** | **IBM Db2** |
 | **Presto** | | |
 
-Connections are configured in **ASK Setup** and stored encrypted — never in a file in
-this repository. Which drivers ship in your image is one build variable
+Connections are configured in **[ASK Setup](platform/docs/ask-setup/README.md)** and stored
+encrypted — never in a file in this repository. Adding one is
+[Connect a database](platform/docs/ask-setup/02-database-connections.md). Which drivers ship in your image is one build variable
 (`EXECUTOR_EXTRAS`), so a HANA-only deployment stays small.
 
 ASK was forged on SAP ECC and S/4HANA workloads, and that is where its reference
@@ -38,23 +39,23 @@ semantic layer comes from — but nothing in the contract is SAP-specific.
 
 ---
 
-## Two surfaces you work in, and one you configure first
+## Two surfaces, and what has to exist before either works
 
 | | For | What you do there |
 |---|---|---|
-| ⚙️ **ASK Setup** | Platform engineers | **Configure once, before anything else works.** Point ASK at the database it queries, the LLM provider and the embedder it uses, and your identity provider. Everything encrypted at rest. |
-| 🟣 **ASK Studio** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod. |
-| 🔵 **ASK Chat** | Business users | Ask questions in any language. Get answers with the SQL, the sources, and a per-request token breakdown. |
+| 🟣 **[ASK Studio](platform/docs/ask-studio/README.md)** | Data & business analysts | Author the semantic layer: workspaces, business domains, Data Products. Import from DDL or SAP metadata, enrich with AI, publish dev → prod. |
+| 🔵 **[ASK Chat](platform/docs/ask-chat/README.md)** | Business users | Ask questions in any language. Get answers with the SQL, the sources, and a per-request token breakdown. |
 
-**ASK Setup is a prerequisite, not a third product.** Until it holds a database connection and
-a model provider, Studio has nothing to publish against and Chat has nothing to answer from.
-Whoever owns the infrastructure configures it once; after that most of it is read-only, and the
-people who author and ask never open it again.
+**Before either does anything, [ASK Setup](platform/docs/ask-setup/README.md) has to hold a
+database connection and a model provider.** It is the platform's precondition, not a third
+product: Studio has nothing to publish against and Chat has nothing to answer from until it is
+configured. Whoever owns the infrastructure does it once, and the people who author and ask
+never open it again.
 
-All three run from one `docker compose up`, on the same backend, behind the same
-identity provider. There is also an [MCP server](platform/services/) for SAP write
-operations and a `/external/ask` API for agent runtimes such as watsonx Orchestrate,
-n8n and Zapier.
+All of it runs from one `docker compose up`, on the same backend, behind the same identity
+provider — [Sign in to ASK](platform/docs/guides/sign-in.md). There is also an
+[MCP server](platform/services/ask-mcp-server/README.md) for SAP write operations and a
+`/external/ask` API for agent runtimes such as watsonx Orchestrate, n8n and Zapier.
 
 ---
 
@@ -74,6 +75,12 @@ ASK removes the guessing from the part that must be exact:
 - **Retrieval is hybrid and ranked** — kNN + BM25 + RRF over a curated vocabulary.
 - **Everything is scoped** — a workspace allowlist decides what any question can reach.
 
+Each of those is a decision the product makes rather than a claim it asserts, and
+[The three chat engines](platform/docs/explain/engines.md) is where they are set out — what
+each engine computes, what it concedes to the model, and why that trade is the one worth
+making. The scope itself is a workspace:
+[Create workspaces and business domains](platform/docs/ask-studio/01-workspaces-domains.md).
+
 ---
 
 ## The semantic layer
@@ -82,8 +89,8 @@ Two layers face the agent, and they answer different kinds of question:
 
 | Layer | What it is | When the agent uses it |
 |---|---|---|
-| 🥇 **Gold** | A **business definition** — pre-joined and semantically resolved. "Open Sales Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
-| 🥈 **Silver** | A **reusable enterprise entity** — Customer, Product, Sales Order — with declared grain, measures and relationships. | **Fallback**, when no Gold fits. Also the building blocks Gold is composed from. |
+| 🥇 **[Gold](definition/docs/GOLD_LAYER.md)** | A **business definition** — pre-joined and semantically resolved. "Open Sales Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
+| 🥈 **[Silver](definition/docs/SILVER_LAYER.md)** | A **reusable enterprise entity** — Customer, Product, Sales Order — with declared grain, measures and relationships. | **Fallback**, when no Gold fits. Also the building blocks Gold is composed from. |
 
 > **Bronze is lineage, and in the usual path you never write it.** When SAP metadata is
 > ingested — the way Onibex OneConnect feeds ASK — one Bronze node per source table is
@@ -112,9 +119,10 @@ The [`definition/`](definition/README.md) folder holds the normative rules; the
 
 ## What ships, and what you write
 
-`definition/examples/` contains **4 Gold, 12 Silver and 15 Bronze** data products drawn
-from SAP SD and MM. They are **reference examples — a shape to copy, not a catalog to
-deploy.** Reading one teaches the contract faster than the spec does.
+[`definition/examples/`](definition/examples/README.md) contains **4 Gold, 12 Silver and 15
+Bronze** data products drawn from SAP SD and MM. They are **reference examples — a shape to
+copy, not a catalog to deploy.** Reading one teaches the contract faster than the spec does,
+and [the index says which to open first](definition/examples/README.md#where-to-start).
 
 So where does the line fall in practice?
 
@@ -127,7 +135,8 @@ what your company counts as an open order, which exclusions your controllers app
 which measures your board reviews. Two companies on identical S/4HANA schemas need
 different Golds, because they run their business differently. The four shipped Golds
 show the shape; the ones that answer your questions are the ones you author — and
-authoring them in ASK Studio is the everyday work the product is built around.
+authoring them in [ASK Studio](platform/docs/ask-studio/README.md) is the everyday work the
+product is built around.
 
 ---
 
@@ -164,7 +173,9 @@ agentic-semantic-knowledge-ask/
 | **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md) — what is computed rather than guessed |
 | **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md) — one guided path, empty machine to a real answer, ~45 min |
 | **Installing it** | [Install and run the platform](platform/docs/01-installation.md) — every variable, the startup order, the gotchas |
-| **Authoring a semantic layer** | [Find your way around ASK Studio](platform/docs/ask-studio/00-overview.md) |
+| **Configuring it** | [Configure the platform first · ASK Setup](platform/docs/ask-setup/README.md) — the database, the model provider, identity |
+| **Authoring a semantic layer** | [Author the semantic layer · ASK Studio](platform/docs/ask-studio/README.md) — the eleven flows, and the order to read them in |
+| **Reading the whole manual** | [The manual](platform/docs/README.md) — every page, grouped by what you are trying to do |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |
 | **An AI agent** | [`llms.txt`](llms.txt) |
 

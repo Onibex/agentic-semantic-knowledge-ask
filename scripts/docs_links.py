@@ -234,7 +234,9 @@ def check_names() -> list[str]:
     page they landed on is the page they were sent to.
 
     A link into a specific section keeps its own label: it names the section,
-    not the page.
+    not the page. So does a link that names a surface -- "ASK Chat" for the page
+    titled "Ask questions · ASK Chat" -- which is the product being named, not
+    the page being renamed.
     """
     titles = index_titles()
     if not titles:
@@ -255,10 +257,14 @@ def check_names() -> list[str]:
                 continue
             if label.startswith("\u2190"):  # the way back, which names the index
                 continue
-            if label != titles[destination]:
+            # A section is titled "<task> · <surface>" -- "Ask questions · ASK Chat".
+            # Linking a surface by its own name is not a second name for the page;
+            # it is the product being named on a page that is selling it.
+            title = titles[destination]
+            if label != title and ("· " + label) not in title:
                 problems.append(
                     f"{rel}: {label!r} is not what this page is called -- "
-                    f"the index calls it {titles[destination]!r}"
+                    f"the index calls it {title!r}"
                 )
     return problems
 
