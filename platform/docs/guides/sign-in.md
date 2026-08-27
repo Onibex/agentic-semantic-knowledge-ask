@@ -25,7 +25,7 @@ covers them together. Signing in is not a per-app procedure.
 
 If you are not already authenticated you land on the Onibex-branded sign-in screen.
 
-![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title, and the Sign in button](../images/admin-overview-login.png)
+![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title, and the Sign in button](../images/studio-overview-login.png)
 
 ## 2. Pick the mode your deployment uses
 

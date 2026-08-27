@@ -20,7 +20,7 @@
 ## Concepts (30-second version)
 
 - **ASK Studio** is the semantic-layer curator app. Its sign-in screen shows the title
-  **Agentic Semantic Knowledge** with **Admin** on a subtitle line (short: **ASK Studio**).
+  **Agentic Semantic Knowledge** (short: **ASK Studio**).
   This is where you author and publish the business meaning the chat agent maps questions to.
 - It is one of two admin surfaces. ASK Studio owns the **semantic layer** (workspaces,
   domains, Data Products). Technical/system configuration — database, providers, MCP —
@@ -43,7 +43,7 @@ and what a 401 or a 403 actually means.
 Once signed in, the left sidebar is your permanent map. It's grouped into five labelled
 sections; the current page is highlighted in Onibex blue.
 
-![ASK Studio sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/admin-overview-sidebar.png)
+![ASK Studio sidebar showing the five sections — Help, Semantic Layer, Organization, Curator, System — with the Onibex logo on top and the user footer below](../images/studio-overview-sidebar.png)
 
 | Section | Item | What the page does | Flow |
 |---|---|---|---|
@@ -72,7 +72,7 @@ Signing in takes you to **Workspaces** — the app's home. It's a split screen: 
 all workspaces on the left and the selected workspace's business domains on the right. This is
 where the authoring journey begins.
 
-![ASK Studio landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/admin-overview-workspaces.png)
+![ASK Studio landing on the Workspaces page: the sidebar, the workspaces rail, and the selected workspace with its business-domain cards](../images/studio-overview-workspaces.png)
 
 From here, follow the flows in order:
 

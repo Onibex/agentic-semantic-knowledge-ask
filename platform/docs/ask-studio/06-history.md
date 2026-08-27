@@ -39,7 +39,7 @@ The screen is split: a **YAML Files** rail on the left (the entity picker), and 
 Data Product's timeline on the right. Until you pick one you'll see a **"Pick a YAML on the
 left to see its version history"** empty state.
 
-![History page: YAML Files rail on the left, empty-state prompt on the right](../images/admin-history-home.png)
+![History page: YAML Files rail on the left, empty-state prompt on the right](../images/studio-history-home.png)
 
 > **Tip — deep link.** You usually arrive here already scoped. The **History** action on a
 > Data Product (from the canvas inspector or a **Semantic Knowledge** row) opens
@@ -61,7 +61,7 @@ Select **`production_order`** (the demo Silver). The right pane now shows a head
 | **working v`N`** chip | The working version (with **· draft** when In Review). |
 | **dev v`N`** / **prod v`N`** chips | The versions currently published to each environment (shown only when published). |
 
-![History header for a selected Data Product: id, commit count, status pill and version chips](../images/admin-history-header.png)
+![History header for a selected Data Product: id, commit count, status pill and version chips](../images/studio-history-header.png)
 
 ## 3. Choose a branch
 
@@ -78,7 +78,7 @@ When you're on **Deployed to dev** or **Deployed to prod**, a note appears on th
 never deployed to that environment you'll see a **"Not deployed to `<env>` yet"** message
 instead of a timeline.
 
-![History branch tabs: Working, Deployed to dev, Deployed to prod](../images/admin-history-tabs.png)
+![History branch tabs: Working, Deployed to dev, Deployed to prod](../images/studio-history-tabs.png)
 
 ## 4. Read the commit timeline
 
@@ -98,7 +98,7 @@ Each commit row shows:
 If there are more commits than are loaded, a **Load more…** link at the bottom fetches the next
 page.
 
-![Commit timeline: legend, then rows with dot, short SHA, message, author email and date](../images/admin-history-timeline.png)
+![Commit timeline: legend, then rows with dot, short SHA, message, author email and date](../images/studio-history-timeline.png)
 
 > **Tip — author = login.** The **author email** on each commit is taken from the signed-in
 > user. That's your audit trail: it answers *who* changed the model, not just *what* changed.
@@ -118,7 +118,7 @@ read-only). When only a unified diff is available it falls back to a line-by-lin
 **added** lines green, **removed** lines red. Either way the header reads
 **Changes from `<from-sha>` → `<to-sha>`**.
 
-![Diff viewer: FROM/TO selection banner above, line-by-line YAML diff below](../images/admin-history-diff.png)
+![Diff viewer: FROM/TO selection banner above, line-by-line YAML diff below](../images/studio-history-diff.png)
 
 > **Tip — pick order doesn't matter for reading.** FROM is the left (earlier) pane and TO is
 > the right (later) pane. If you set them the wrong way round, just re-click the intended

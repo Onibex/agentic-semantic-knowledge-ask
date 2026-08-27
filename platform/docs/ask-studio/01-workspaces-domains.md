@@ -33,7 +33,7 @@
 In the left sidebar, under **Organization**, click **Workspaces**. The screen is split: a
 **rail** of all workspaces on the left, and the selected workspace's detail on the right.
 
-![Workspaces screen: rail of workspaces on the left, detail on the right](../images/admin-workspaces-home.png)
+![Workspaces screen: rail of workspaces on the left, detail on the right](../images/studio-workspaces-home.png)
 
 If no workspace is selected yet you'll see a **Pick a workspace** empty state with a
 **New workspace** button.
@@ -49,7 +49,7 @@ Click **New workspace** (in the rail header, or on the empty state). Fill the di
 | **Objective** | No | One-line summary shown under the workspace title. |
 | **Description** | No | Longer context (optional). |
 
-![New workspace dialog with Name, Slug, Objective and Description fields](../images/admin-workspace-create-dialog.png)
+![New workspace dialog with Name, Slug, Objective and Description fields](../images/studio-workspace-create-dialog.png)
 
 Click **Create workspace**. You're taken straight into the new workspace.
 
@@ -66,11 +66,11 @@ Inside the workspace, find the **Business Domains** section and click **New busi
 | **Slug** | Yes | Auto-derived; used in the domain URL. |
 | **Description** | No | One paragraph — **this is fed into the agent's prompt context**, so describe what the domain covers in business terms. |
 
-![New business domain dialog](../images/admin-domain-create-dialog.png)
+![New business domain dialog](../images/studio-domain-create-dialog.png)
 
 Click **Create business domain**. The new domain appears as a card in the workspace.
 
-![A business domain card showing data-product chips and the Open / Manage / Publish actions](../images/admin-domain-card.png)
+![A business domain card showing data-product chips and the Open / Manage / Publish actions](../images/studio-domain-card.png)
 
 Each card shows the domain's Data Products as **chips** (colour = layer, dot = lifecycle
 status), a count, and actions: **Open domain** (the canvas), **Edit**, **Manage**, and
@@ -84,7 +84,7 @@ A new domain is empty. To fill it you assign **existing** Data Products (create 
 Click **Manage** on the domain card (or the dashed **+ data product** button). In the dialog,
 search the catalog and select the Data Products this domain should expose, then confirm.
 
-![Manage data products dialog: search the catalog and select entities to add to the domain](../images/admin-domain-manage.png)
+![Manage data products dialog: search the catalog and select entities to add to the domain](../images/studio-domain-manage.png)
 
 The chosen Data Products now appear as chips on the card. A chip marked **reused** belongs to
 more than one domain — that's expected and encouraged.

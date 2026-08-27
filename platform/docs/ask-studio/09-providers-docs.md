@@ -52,7 +52,7 @@ A slate **info banner** below the header reminds you that OpenSearch credentials
 environment variables (a K8s Secret in production), bootstrap the encrypted store, and cannot
 be edited from the SPA.
 
-![System Setup: provider cards for LLM (read-only), Embedder (editable) and OpenSearch, each with a Test button](../images/admin-setup-cards.png)
+![System Setup: provider cards for LLM (read-only), Embedder (editable) and OpenSearch, each with a Test button](../images/studio-setup-cards.png)
 
 ### 2. Read the LLM card (read-only)
 
@@ -125,7 +125,7 @@ then a coloured result strip appears at the bottom of the card:
   override) via the secrets test endpoint.
 - **OpenSearch** tests probe the live cluster directly.
 
-![A green Test result strip showing the connection is OK with latency in milliseconds](../images/admin-setup-test-result.png)
+![A green Test result strip showing the connection is OK with latency in milliseconds](../images/studio-setup-test-result.png)
 
 > **Warning — a failing Test is a real signal.** If a Test fails, the agent's corresponding
 > capability (SQL generation, embeddings, or retrieval) will fail too. Fix the Embedder here,
@@ -155,7 +155,7 @@ Pick a file, confirm (or change) the **Collection name**, then click **Ingest Do
 button shows **Indexing…** with a spinner while the file is chunked, embedded and written to
 the index.
 
-![Docs page: document file picker, Collection name field (rag_docs), and the Ingest Document button](../images/admin-setup-docs-upload.png)
+![Docs page: document file picker, Collection name field (rag_docs), and the Ingest Document button](../images/studio-setup-docs-upload.png)
 
 On success a green **Document indexed** panel reports:
 

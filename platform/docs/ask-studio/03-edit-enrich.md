@@ -49,7 +49,7 @@ The inspector is the read-only summary of the selected entity — layer / module
 the description, **Info** (ID, file, sources), **Join conditions**, and the **Fields** list. Its
 action row is where you launch every refinement.
 
-![Entity inspector (DetailPanel) with the Edit, AI Assist and Lineage actions and the fields list](../images/admin-edit-detailpanel.png)
+![Entity inspector (DetailPanel) with the Edit, AI Assist and Lineage actions and the fields list](../images/studio-edit-detailpanel.png)
 
 | Inspector action | What it does |
 |---|---|
@@ -108,7 +108,7 @@ Each row has a **Advanced** expander for the less-common props — type dimensio
 **aggregation** behavior and **synonyms** — and a **trash** icon to remove the column. Use
 **+ Add field** at the bottom to append a new column.
 
-![Edit panel showing the entity-level fields on top and the editable field list below](../images/admin-edit-fields.png)
+![Edit panel showing the entity-level fields on top and the editable field list below](../images/studio-edit-fields.png)
 
 > **Warning — on a Silver, `entity_role` and the Context block are auto-derived.** You can't
 > type them directly. To change the role, set **classification** (and mark the right fields as
@@ -145,7 +145,7 @@ The **Join on** control is the **JoinConditionEditor**. It has two modes:
   multi-table joins. The editor opens in Expert mode automatically when it can't parse the
   existing SQL as simple AND-ed equalities; **Try compact mode** switches back when possible.
 
-![Join condition editor in compact mode: this.field = target.field pairs with the live SQL preview](../images/admin-edit-joincondition.png)
+![Join condition editor in compact mode: this.field = target.field pairs with the live SQL preview](../images/studio-edit-joincondition.png)
 
 > **Silver Join graph vs. Relationships.** On a Silver the editor also shows a **Join graph**
 > block — how the composed *Bronze* tables join *during assembly* (build/lineage, not a runtime
@@ -186,7 +186,7 @@ listed under **Excluded technical fields**.
 For the demo, enrich a **measure that has only a terse description** — the scope checklist
 pre-selects it as **SHORT**, flagging that it needs work.
 
-![AI Assist scope step: entity-level checkbox and the per-field checklist with priority badges](../images/admin-edit-enrich-scope.png)
+![AI Assist scope step: entity-level checkbox and the per-field checklist with priority badges](../images/studio-edit-enrich-scope.png)
 
 Optionally click **Show full prompt** (bottom-left) to inspect the exact **SYSTEM** and **USER**
 messages the model will receive — no LLM call, no tokens spent. When ready, click
@@ -207,7 +207,7 @@ You should see each terse description rewritten into a richer one — what the c
 unit, and how it should be aggregated — plus a list of suggested **synonyms** that help the agent
 map users' words to that field.
 
-![AI Assist diff step: before/after for description and synonyms with the token/model header](../images/admin-edit-enrich-diff.png)
+![AI Assist diff step: before/after for description and synonyms with the token/model header](../images/studio-edit-enrich-diff.png)
 
 Review, then click **Apply changes** (disabled when the model proposed nothing). The dialog:
 

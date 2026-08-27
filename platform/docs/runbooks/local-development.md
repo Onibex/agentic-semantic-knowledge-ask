@@ -38,7 +38,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
              (the chat SPA also calls the admin API for the workspace list)
 ```
 
-**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. The **admin SPA** is the write path for Workspaces / Organization / Data Products / AI Enrichment; the **setup SPA** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
+**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. The **Studio SPA** is the write path for Workspaces / Organization / Data Products / AI Enrichment; the **setup SPA** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
 
 | Service | Module | Port | What it does |
 |---|---|---|---|
@@ -553,7 +553,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2 + that `VITE_API_BASE_URL` (if set in `.env.local`) matches `http://127.0.0.1:8081` |
 | SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio-spa/.env.local` |
 | Chat SPA (`ask-chat-spa`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for the chat SPA only works while `npm run dev` is running — the proxy is not active in the production build. |
-| Chat SPA workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via the admin SPA at `:5173`. |
+| Chat SPA workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via ASK Studio at `:5173`. |
 | Port 5174 already in use | `Get-NetTCPConnection -LocalPort 5174 -State Listen \| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }` |
 | `npm install` fails in `ask-chat-spa` with peer-dep errors | Run `npm install --legacy-peer-deps` instead of plain `npm install`. |
 | `&&` doesn't work in PowerShell 5.1 | Use `;` for unconditional chain or `if ($?) { ... }` for conditional |

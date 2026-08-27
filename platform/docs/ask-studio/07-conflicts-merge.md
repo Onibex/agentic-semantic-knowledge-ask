@@ -48,7 +48,7 @@ Go to the sidebar → **Semantic Layer** → **Semantic Knowledge**. Two things 
 
 Click **Conflicts (N)** to narrow the table to just the entities that need reconciling.
 
-![Semantic Knowledge with the Conflicts (N) filter pill and a row carrying a warning badge](../images/admin-conflict-filter.png)
+![Semantic Knowledge with the Conflicts (N) filter pill and a row carrying a warning badge](../images/studio-conflict-filter.png)
 
 > **Tip — the badge is the shortcut.** You don't have to switch filters. Clicking the **warning badge**
 > on a row opens that entity's conflict resolver directly.
@@ -68,7 +68,7 @@ Every conflict block presents a **side-by-side comparison**:
 | **vs** | Divider between the two sides. |
 | **SAP version** | The incoming value from the OneConnect export. |
 
-![Conflict resolver dialog: per-field Your version vs SAP version comparison with Keep yours / Accept SAP buttons](../images/admin-conflict-resolver.png)
+![Conflict resolver dialog: per-field Your version vs SAP version comparison with Keep yours / Accept SAP buttons](../images/studio-conflict-resolver.png)
 
 ## 3. Resolve each field
 

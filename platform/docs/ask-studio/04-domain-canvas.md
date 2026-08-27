@@ -45,7 +45,7 @@ domain's deployment state (`N data products · M ready for prod · K need dev fi
 buttons. Publishing is covered in [Flow 5 · Publish & Deploy](05-publish-deploy.md); this page
 is about the canvas itself.
 
-![Domain canvas: breadcrumb header, left rail, and the interactive graph of the domain's nodes](../images/admin-canvas-overview.png)
+![Domain canvas: breadcrumb header, left rail, and the interactive graph of the domain's nodes](../images/studio-canvas-overview.png)
 
 ### Reading the graph
 
@@ -79,7 +79,7 @@ If any Data Product in the domain has an unresolved merge conflict, a **Pending 
 inbox appears at the top of the rail — click an entry to jump straight to that node (resolve it
 in [Flow 7 · Conflicts & Merge](07-conflicts-merge.md)).
 
-![Filters rail: View presets, Roles, the expandable per-layer entity tree, Modules](../images/admin-canvas-filters.png)
+![Filters rail: View presets, Roles, the expandable per-layer entity tree, Modules](../images/studio-canvas-filters.png)
 
 > **Tip — focus a lineage.** Selecting a node and choosing **Lineage** in the inspector
 > isolates just that entity's ancestors and descendants; a violet **Lineage of *name*** pill
@@ -100,7 +100,7 @@ Either way the Data Product is added to the domain (membership only), the node a
 canvas, and — because a Silver arrives **with its source bronzes** — you'll also see its
 `composed_of` tables show up as context.
 
-![Knowledge rail: searchable list of addable Data Products, each with a drag handle and a + button](../images/admin-canvas-knowledge.png)
+![Knowledge rail: searchable list of addable Data Products, each with a drag handle and a + button](../images/studio-canvas-knowledge.png)
 
 > **Warning — membership, not creation.** The Knowledge rail only *adds existing* Data
 > Products to the domain. Create new entities first in
@@ -122,7 +122,7 @@ Click any node to open the **inspector** on the right. It shows:
 - The **description**, **Info** (ID, file path, sources), **Join conditions**, and the full
   **Fields** table.
 
-![Selected node inspector: badges, actions, Environments panel, description, join conditions, fields](../images/admin-canvas-detail.png)
+![Selected node inspector: badges, actions, Environments panel, description, join conditions, fields](../images/studio-canvas-detail.png)
 
 ## 5. Remove a Data Product from the domain
 
