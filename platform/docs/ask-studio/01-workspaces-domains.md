@@ -10,7 +10,7 @@
 | **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
 | **You'll end with** | A workspace containing at least one business domain, ready to hold Data Products. |
 
-**Where this fits:** Configure → **Author — containers (you are here)** → Add Data Products → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -106,3 +106,7 @@ more than one domain — that's expected and encouraged.
 
 → **[Flow 2 · Add Data Products](02-add-data-products.md)** — create the entities that fill
 your domains (Manual / Upload YAML / DDL + AI / From OneConnect).
+
+---
+
+[← Back to the manual](../README.md)

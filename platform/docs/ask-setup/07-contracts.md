@@ -11,7 +11,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; an OpenAPI 3.0 spec **in JSON** for the OData service you want to expose. |
 | **You'll end with** | The OData service registered as MCP tools, its entity sets and operations available to the agent. |
 
-**Where this fits:** **Configure — Contracts (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Configure the platform](../README.md#configure-the-platform--ask-setup) › **Register an OpenAPI contract**
 
 > The screenshots use a sample OData spec. Register your own service's spec — the exact entity
 > sets shown here won't match yours.
@@ -97,3 +97,7 @@ you to confirm — *"Remove contract `<name>`?"* — first.
 → **[MCP Server](06-mcp-server.md)** — confirm the MCP endpoint that serves these contracts is
 reachable.
 → Once contracts are registered, the agent can invoke them as SAP actions from chat.
+
+---
+
+[← Back to the manual](../README.md)

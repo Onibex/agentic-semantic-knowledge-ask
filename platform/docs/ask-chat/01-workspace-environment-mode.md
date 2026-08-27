@@ -10,7 +10,7 @@
 | **Prerequisites** | You are signed in to ASK Chat (see [Overview](00-overview.md)). |
 | **You'll end with** | A workspace selected, an environment chosen, and a query mode set — the chat is ready to use. |
 
-**Where this fits:** Configure → Author → Publish → **Ask — set controls (you are here)** → Chat → Artifacts
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
 
 > The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
 > example (Sales Orders). Substitute your own Data Products — the exact demo names and
@@ -99,3 +99,7 @@ data queries that produce SQL.
 
 → **[Flow 2 · Using the Chat](02-chat.md)** — ask your first question and read the answer.
 → **[Flow 3 · Artifacts](03-artifacts.md)** — generate business documents from your data.
+
+---
+
+[← Back to the manual](../README.md)

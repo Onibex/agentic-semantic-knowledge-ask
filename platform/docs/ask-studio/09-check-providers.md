@@ -12,7 +12,7 @@
 | **Prerequisites** | Signed in to ASK Studio ([Sign in to ASK](../guides/sign-in.md)); embedder credentials to hand if you intend to edit it. |
 | **You'll end with** | A verified Embedder connection, and a green Test on every card. |
 
-**Where this fits:** **Configure — check the providers (you are here)** → Author → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Check the embedder and search index**
 
 > Provider, model, database and identity configuration live in [ASK Setup](../ask-setup/00-overview.md),
 > not here. Use a **real** provider when editing the Embedder, and redact every credential field
@@ -117,3 +117,7 @@ the live cluster directly.
 ASK Studio.
 → **[Workspaces & Business Domains](01-workspaces-domains.md)** — start authoring once your
 Embedder is green.
+
+---
+
+[← Back to the manual](../README.md)

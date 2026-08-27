@@ -11,7 +11,7 @@
 | **Prerequisites** | At least one Data Product exists (see [Flow 2 · Add Data Products](02-add-data-products.md)); a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for AI Assist. |
 | **You'll end with** | A cleaned-up Data Product — correct fields, join topology and descriptions — back in **In Review**, ready to publish. |
 
-**Where this fits:** Configure → **Author — refine (you are here)** → Organize → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Edit & Enrich Data Products**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -233,3 +233,7 @@ Review, then click **Apply changes** (disabled when the model proposed nothing).
 `dev` / `prod` so the chat can answer against it.
 → **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — assign it to a domain.
 → **[Flow 2 · Add Data Products](02-add-data-products.md)** — create more entities.
+
+---
+
+[← Back to the manual](../README.md)

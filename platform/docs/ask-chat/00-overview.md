@@ -11,7 +11,7 @@
 | **Prerequisites** | The SPA is installed and reachable (see [Installation](../01-installation.md)). |
 | **You'll end with** | A clear picture of the navigation and where every task lives. |
 
-**Where this fits:** Configure → Author → Publish → **Ask — get oriented (you are here)**
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Overview & Navigation**
 
 > The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
 > example (Sales Orders). Substitute your own Data Products — the exact demo names and
@@ -91,3 +91,7 @@ From here, follow the flows in order:
 
 → **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — set up the
 three controls that scope every query.
+
+---
+
+[← Back to the manual](../README.md)

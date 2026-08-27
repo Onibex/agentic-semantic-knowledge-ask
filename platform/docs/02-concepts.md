@@ -12,7 +12,7 @@
 | **Prerequisites** | None. This is the orientation page; no login required. |
 | **You'll end with** | A clear picture of how a natural-language question becomes a governed SQL answer, and where each task in this manual fits. |
 
-**Where this fits:** **Concepts (you are here)** → Configure → Author → Publish → Ask
+[Manual](README.md) › [Foundations](README.md#foundations) › **Concepts & Architecture**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -286,3 +286,7 @@ entities the agent maps questions to.
 authoring rules behind governed SQL.
 → **[The three chat engines](explain/engines.md)** — what each one computes rather than
 guesses, and how to choose between them.
+
+---
+
+[← Back to the manual](README.md)

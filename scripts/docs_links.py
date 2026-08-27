@@ -6,13 +6,17 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""Every relative link in the published documentation must resolve.
+"""The published documentation must resolve, and the manual must navigate.
 
 A dead link is the cheapest possible signal that documentation is not
 maintained, and it is the one a reader hits before any of the prose. This
 checks the two kinds a repository can verify without a network: a link to a
 path that does not exist, and a link to a `#heading-anchor` that no heading
 produces.
+
+It also checks that the manual can be walked: every page listed in the index,
+and every page carrying a way back to it. On a forge there is no sidebar to
+supply either, so both live in the pages themselves and decay in silence.
 
 External `http(s)` links are out of scope on purpose — they fail for reasons
 that have nothing to do with this commit, and a build that goes red when
@@ -28,7 +32,9 @@ nothing in them reaches a reader.
 from __future__ import annotations
 
 import argparse
+import functools
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -120,6 +126,64 @@ def check() -> list[str]:
     return problems
 
 
+MANUAL = ROOT / "platform" / "docs"
+MANUAL_INDEX = MANUAL / "README.md"
+
+
+@functools.lru_cache(maxsize=1)
+def tracked_files() -> frozenset[str] | None:
+    """Paths git is tracking, or None when that cannot be determined."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--", "platform/docs"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return frozenset(line.strip() for line in result.stdout.splitlines() if line.strip())
+
+
+def check_navigation() -> list[str]:
+    """Every manual page is reachable from the index, and can get back.
+
+    Plain Markdown on a forge has no chrome: no sidebar, no breadcrumb bar,
+    nothing that says where you are. Whatever navigation exists is written into
+    the pages, so it decays silently unless something watches it. Readers arrive
+    in the middle — from a search result or a shared link — far more often than
+    they arrive at the index, which is what makes the way *back* matter as much
+    as the way in.
+    """
+    if not MANUAL_INDEX.exists():
+        return [f"{MANUAL_INDEX.relative_to(ROOT).as_posix()}: the manual index is missing"]
+
+    index_text = MANUAL_INDEX.read_text(encoding="utf-8")
+    listed = {
+        (MANUAL / target.partition("#")[0]).resolve()
+        for _, target in LINK.findall(index_text)
+        if not target.startswith(("http://", "https://", "mailto:", "#")) and target.partition("#")[0]
+    }
+
+    problems: list[str] = []
+    for path in sorted(MANUAL.rglob("*.md")):
+        if "_authoring" in path.relative_to(ROOT).parts or path == MANUAL_INDEX:
+            continue
+        rel = path.relative_to(ROOT).as_posix()
+        # Only what the repository actually publishes. A file someone has not
+        # committed yet is their business, and flagging it would make a local
+        # run disagree with CI -- which is how a check earns its way into being
+        # ignored.
+        if tracked_files() is not None and rel not in tracked_files():
+            continue
+        if path.resolve() not in listed:
+            problems.append(f"{rel}: not linked from the manual index")
+        if "Back to the manual" not in path.read_text(encoding="utf-8"):
+            problems.append(f"{rel}: no way back to the index")
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -129,19 +193,19 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    problems = check()
+    problems = check() + check_navigation()
     total = len(markdown_files())
 
     if problems:
         for problem in problems:
             print(problem, file=sys.stderr)
         print(
-            f"\n{len(problems)} unresolved link(s) across {total} documents.",
+            f"\n{len(problems)} problem(s) across {total} documents.",
             file=sys.stderr,
         )
         return 1 if args.check else 0
 
-    print(f"All relative links resolve across {total} documents.")
+    print(f"Links resolve and the manual navigates, across {total} documents.")
     return 0
 
 

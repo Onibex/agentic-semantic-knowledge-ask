@@ -12,7 +12,7 @@
 | **Prerequisites** | **Docker** (with Docker Compose v2) installed and running; a shell at the repo root. |
 | **You'll end with** | Every service healthy and each UI reachable in the browser, ready to configure. |
 
-**Where this fits:** **Install — bring the stack up (you are here)** → Configure → Author → Publish → Ask
+[Manual](README.md) › [Foundations](README.md#foundations) › **Installation & Running the Platform**
 
 > This page only needs environment-variable **names**, never their secret values. The rest of
 > the manual uses an illustrative **SAP Production Planning** example — substitute your own data.
@@ -238,3 +238,7 @@ containers your data lives in.
 agent maps questions to.
 → **Deployment runbook** (maintained by your platform / ops team) — the full per-service
 procedure (native ports, venv setup, troubleshooting).
+
+---
+
+[← Back to the manual](README.md)

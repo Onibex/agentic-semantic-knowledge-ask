@@ -12,7 +12,7 @@
 | **Prerequisites** | The platform is deployed and running (see [Installation](../01-installation.md)). |
 | **You'll end with** | A resolved symptom, or a clear next step for your administrator or ops team. |
 
-**Where this fits:** Configure → Author → Publish → Ask → **Reference — troubleshooting (you are here)**
+[Manual](../README.md) › [Reference](../README.md#reference) › **Troubleshooting & FAQ**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -130,3 +130,7 @@ entities the agent maps questions to.
 
 *Found something inaccurate or confusing? That's a documentation bug — open an issue or ping the
 platform team so the next person doesn't hit it.*
+
+---
+
+[← Back to the manual](../README.md)

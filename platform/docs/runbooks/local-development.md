@@ -1,5 +1,7 @@
 # Local Development — Bring Up the Stack on Windows
 
+[Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Local Development — Bring Up the Stack on Windows**
+
 > **Audience:** developers running the platform locally on Windows (PowerShell), without Docker.
 > **Source of truth:** [`docker-compose.yml`](../../docker-compose.yml) — this guide reproduces the same multi-service topology (2 Python services + 3 React SPAs + OpenSearch + optional Keycloak), but with each service booted natively instead of in a container.
 > **Linux/macOS:** bash equivalents at the end. **Docker fallback:** `docker compose up -d` if you'd rather skip the venv setup (see [`docker-compose.yml`](../../docker-compose.yml)).
@@ -719,3 +721,7 @@ ASK_ORCHESTRATOR_URL=http://127.0.0.1:8080 ASK_ORCHESTRATOR_TIMEOUT=300 \
 - **Benchmark suite:** `tests/benchmark/test_full_benchmark.py` (run with `ASK_RUN_BENCHMARK=1`).
 - **Orchestrator troubleshooting (auth, deployment):** [`orchestrator-troubleshooting.md`](orchestrator-troubleshooting.md).
 - **Container deploy:** [`docker-compose.yml`](../../docker-compose.yml) (local) and `deploy/` (Kubernetes manifests).
+
+---
+
+[← Back to the manual](../README.md)

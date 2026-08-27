@@ -11,7 +11,7 @@
 | **Prerequisites** | Signed in to **ASK Studio**; at least one Data Product with a change or two (create one in [Flow 2 · Add Data Products](02-add-data-products.md)). |
 | **You'll end with** | Confidence in what changed, when, and by whom — plus a restored version if you needed one. |
 
-**Where this fits:** Configure → **Author — History (you are here)** → Publish → Ask
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Audit, compare and restore versions**
 
 > The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
@@ -155,3 +155,7 @@ or prod.
 here.
 → **[Flow 7 · Conflicts & Merge](07-conflicts-merge.md)** — how **merge** commits get into the
 timeline.
+
+---
+
+[← Back to the manual](../README.md)

@@ -11,7 +11,7 @@
 | **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Flow 1](01-workspace-environment-mode.md)). |
 | **You'll end with** | Answers to your questions — text, tables, charts — in one or more named conversations you can return to. |
 
-**Where this fits:** Configure → Author → Publish → Set controls → **Ask — chat (you are here)**
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Using the Chat**
 
 > The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
 > example (Sales Orders). Substitute your own Data Products — the exact demo names and
@@ -171,3 +171,7 @@ back down and re-enable auto-scroll.
 briefs, and data tables.
 → **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — change the
 workspace or switch to the `prod` environment.
+
+---
+
+[← Back to the manual](../README.md)
