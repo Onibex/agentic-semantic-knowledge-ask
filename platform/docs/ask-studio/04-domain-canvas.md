@@ -1,6 +1,8 @@
 # ASK Studio · Inspect a domain as a graph
 
-> **Flow 4 of the ASK Studio manual.** Open a single **Business Domain** to see its
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Inspect a domain as a graph**
+
+> **How to.** Open a single **Business Domain** to see its
 > **canvas** — the scoped graph of the Data Products it contains and how they relate.
 > This is where you visually curate a domain: add or remove Data Products, inspect any
 > node, and read the layer topology at a glance.
@@ -9,16 +11,12 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~5 minutes |
-| **Prerequisites** | A workspace with at least one **Business Domain** that has a few Data Products assigned (see [Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)). |
+| **Prerequisites** | A workspace with at least one **Business Domain** that has a few Data Products assigned (see [Create workspaces and business domains](01-workspaces-domains.md)). |
 | **You'll end with** | A clear picture of one domain's entities and relationships, and the ability to add / remove Data Products from it. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Inspect a domain as a graph**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **The canvas *is* the graph.** There is no separate global graph tab — opening a domain
   lands you on its scoped canvas.
@@ -37,12 +35,12 @@
 ## 1. Open the domain
 
 From a workspace, find the domain's card and click **Open domain** (see
-[Flow 1](01-workspaces-domains.md)). You land on the canvas, scoped to that one domain.
+[Create workspaces and business domains](01-workspaces-domains.md)). You land on the canvas, scoped to that one domain.
 
 The header shows a breadcrumb — **Workspace → Domain** — followed by a small summary of the
 domain's deployment state (`N data products · M ready for prod · K need dev first`, plus a
 `queryable — dev / prod` count) and the two **Publish domain → dev** / **Publish domain → prod**
-buttons. Publishing is covered in [Flow 5 · Publish & Deploy](05-publish-deploy.md); this page
+buttons. Publishing is covered in [Publish and deploy](05-publish-deploy.md); this page
 is about the canvas itself.
 
 ![Domain canvas: breadcrumb header, left rail, and the interactive graph of the domain's nodes](../images/studio-canvas-overview.png)
@@ -77,7 +75,7 @@ membership — it only changes the view.
 
 If any Data Product in the domain has an unresolved merge conflict, a **Pending conflicts**
 inbox appears at the top of the rail — click an entry to jump straight to that node (resolve it
-in [Flow 7 · Conflicts & Merge](07-conflicts-merge.md)).
+in [Resolve conflicts on a OneConnect merge](07-conflicts-merge.md)).
 
 ![Filters rail: View presets, Roles, the expandable per-layer entity tree, Modules](../images/studio-canvas-filters.png)
 
@@ -104,7 +102,7 @@ canvas, and — because a Silver arrives **with its source bronzes** — you'll 
 
 > **Warning — membership, not creation.** The Knowledge rail only *adds existing* Data
 > Products to the domain. Create new entities first in
-> [Flow 2 · Add Data Products](02-add-data-products.md); adding to a domain never edits or
+> [Add Data Products](02-add-data-products.md); adding to a domain never edits or
 > publishes a YAML.
 
 ## 4. Inspect a node
@@ -118,7 +116,7 @@ Click any node to open the **inspector** on the right. It shows:
   it's shared), **AI Assist** (AI-assisted enrichment), and **Lineage** (isolate this entity's
   ancestors/descendants).
 - The **Environments** panel (per-env publish / diff / version history — see
-  [Flow 5](05-publish-deploy.md)).
+  [Publish and deploy](05-publish-deploy.md)).
 - The **description**, **Info** (ID, file path, sources), **Join conditions**, and the full
   **Fields** table.
 
@@ -141,11 +139,11 @@ environment.
 
 ## What's next
 
-→ **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — publish the domain (or a single Data
+→ **[Publish and deploy](05-publish-deploy.md)** — publish the domain (or a single Data
 Product) to **dev** / **prod** so the chat can answer over it.
-→ **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — refine a node's fields, relationships, and
+→ **[Edit and enrich Data Products](03-edit-enrich.md)** — refine a node's fields, relationships, and
 descriptions from the inspector's **Edit** action.
-→ **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — the workspace view
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — the workspace view
 where you first open a domain.
 
 ---

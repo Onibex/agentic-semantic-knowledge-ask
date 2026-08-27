@@ -1,6 +1,8 @@
-# ASK Studio · Conflicts & OneConnect Merge
+# ASK Studio · Resolve conflicts on a OneConnect merge
 
-> **Flow 7 of the ASK Studio manual.** When a fresh **OneConnect** export disagrees
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Resolve conflicts on a OneConnect merge**
+
+> **How to.** When a fresh **OneConnect** export disagrees
 > with a Data Product you already curated, the platform records the differences as
 > **conflicts**. This page shows how to find them and resolve them, field by field.
 
@@ -8,16 +10,12 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~2 minutes per conflicted entity |
-| **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Flow 2 · Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
+| **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
 | **You'll end with** | A reconciled Data Product — every field either keeps your enriched value or accepts the incoming SAP value. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Conflicts & OneConnect Merge**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **conflict** is a field where a re-imported **OneConnect** JSON differs from the
   **working** Data Product you already have. The merge engine applies everything that
@@ -89,7 +87,7 @@ each block until none remain. When the entity is fully reconciled the dialog sho
 
 > **Warning — resolving does not re-publish.** Reconciling conflicts updates the **working** copy
 > of the Data Product. To make the reconciled version queryable in the chat, publish it to `dev` /
-> `prod` — see [Flow 5 · Publish & Deploy](05-publish-deploy.md).
+> `prod` — see [Publish and deploy](05-publish-deploy.md).
 
 ---
 
@@ -117,11 +115,11 @@ already edited. In practice:
 
 ## What's next
 
-→ **[Flow 2 · Add Data Products](02-add-data-products.md)** — where the **From OneConnect** merge
+→ **[Add Data Products](02-add-data-products.md)** — where the **From OneConnect** merge
 that produces conflicts is triggered.
-→ **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — publish the reconciled Data Product so
+→ **[Publish and deploy](05-publish-deploy.md)** — publish the reconciled Data Product so
 the chat sees it.
-→ **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — the enrichments that a conflict asks you to
+→ **[Edit and enrich Data Products](03-edit-enrich.md)** — the enrichments that a conflict asks you to
 preserve or discard.
 
 ---

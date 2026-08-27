@@ -9,7 +9,7 @@
 |---|---|
 | **Who** | Everyone — business users, authors and platform engineers |
 | **Time** | ~3 minutes to read |
-| **Prerequisites** | The platform is running and reachable ([Installation](../01-installation.md)). |
+| **Prerequisites** | The platform is running and reachable ([Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A session in the surface you need, and the vocabulary to describe an access problem accurately. |
 
 All three surfaces share one identity provider and one session model, which is why this page
@@ -79,17 +79,17 @@ which is a different conversation with your administrator.
 You do not configure authentication from the sign-in screen. The active provider, its OIDC
 configuration and your session details are visible — read-only — in ASK Setup:
 
-→ **[ASK Setup · Identity Provider](../ask-setup/04-identity-provider.md)**
+→ **[Review the identity provider](../ask-setup/04-identity-provider.md)**
 
 The mode itself is fixed at deployment time through environment variables, covered in
-[Installation](../01-installation.md).
+[Install and run the platform](../01-installation.md).
 
 ---
 
 ## What's next
 
 → **[Using the Chat](../ask-chat/02-chat.md)** — ask your first question.
-→ **[ASK Studio · Overview & Navigation](../ask-studio/00-overview.md)** — start authoring.
+→ **[Find your way around ASK Studio](../ask-studio/00-overview.md)** — start authoring.
 
 ---
 

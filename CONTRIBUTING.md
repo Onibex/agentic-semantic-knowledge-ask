@@ -78,6 +78,12 @@ The manual is `platform/docs/`, and it follows [Diátaxis](https://diataxis.fr):
 | Reference | Look-up, no narrative | `reference/`, and `definition/` for the contract |
 | Explanation | Why it works this way | `explain/` |
 
+**One exception, taken deliberately.** A how-to page may carry a short **What you need to know
+first** section. It is explanation on a task page, and it stays: the alternative is sending a
+reader who is mid-task to another page for four sentences they need in order to follow the
+next one. Keep it dense and decision-shaped — *"a registry, not a single connection"*, *"no
+active connection blocks the chat"* — and keep it short. Anything longer belongs in `explain/`.
+
 ### The names
 
 The three surfaces are **ASK Studio**, **ASK Chat** and **ASK Setup**. Studio was called *ASK

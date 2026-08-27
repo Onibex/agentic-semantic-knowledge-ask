@@ -1,6 +1,8 @@
 # ASK Studio · Check the embedder and search index
 
-> **Flow 9 of the ASK Studio manual.** The **System Setup** page is what remains in ASK Studio
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Check the embedder and search index**
+
+> **How to.** The **System Setup** page is what remains in ASK Studio
 > now that provider, database and identity configuration moved to ASK Setup: three read-only
 > cards showing what the platform is actually using, and one editable provider — the shared
 > **Embedder**.
@@ -12,15 +14,13 @@
 | **Prerequisites** | Signed in to ASK Studio ([Sign in to ASK](../guides/sign-in.md)); embedder credentials to hand if you intend to edit it. |
 | **You'll end with** | A verified Embedder connection, and a green Test on every card. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Check the embedder and search index**
-
-> Provider, model, database and identity configuration live in [ASK Setup](../ask-setup/00-overview.md),
+> Provider, model, database and identity configuration live in **ASK Setup** — see [Find your way around ASK Setup](../ask-setup/00-overview.md),
 > not here. Use a **real** provider when editing the Embedder, and redact every credential field
 > before capturing a screenshot.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **System Setup** shows one **card per system concern** — **LLM**, **Embedder** and
   **OpenSearch**. Only the **Embedder** is editable here, and it is a **single shared config**
@@ -46,7 +46,7 @@ line** — the configured model id — rather than credential rows. On the right
 **Manage in ASK Setup** link and a **Test** button; there is **no Edit** button.
 
 To change the LLM provider, model or credentials, follow that link to
-[LLM Providers](../ask-setup/03-llm-providers.md) in ASK Setup. This page only reflects what is
+[Connect an LLM provider](../ask-setup/03-llm-providers.md) in ASK Setup. This page only reflects what is
 configured there.
 
 ## 3. Edit the Embedder
@@ -106,7 +106,7 @@ the live cluster directly.
 
 > **Warning — a failing Test is a real signal.** If a Test fails, the agent's corresponding
 > capability — SQL generation, embeddings, or retrieval — will fail too. Fix the Embedder here,
-> the LLM in [ASK Setup](../ask-setup/03-llm-providers.md), or OpenSearch on the deployment,
+> the LLM in [Connect an LLM provider](../ask-setup/03-llm-providers.md), or OpenSearch on the deployment,
 > before publishing a workspace.
 
 ---
@@ -115,7 +115,7 @@ the live cluster directly.
 
 → **[Ingest documents the agent can cite](10-ingest-documents.md)** — the other curator tool in
 ASK Studio.
-→ **[Workspaces & Business Domains](01-workspaces-domains.md)** — start authoring once your
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — start authoring once your
 Embedder is green.
 
 ---

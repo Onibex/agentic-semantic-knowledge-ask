@@ -1,6 +1,8 @@
-# ASK Studio · Edit & Enrich Data Products
+# ASK Studio · Edit and enrich Data Products
 
-> **Flow 3 of the ASK Studio manual.** Refine a Data Product after you've created it — fix its
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Edit and enrich Data Products**
+
+> **How to.** Refine a Data Product after you've created it — fix its
 > **fields**, **relationships** and **join conditions** by hand, then let **AI Assist** improve
 > descriptions and synonyms. Everything here happens *before* you publish.
 
@@ -8,16 +10,12 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 3–10 minutes per Data Product |
-| **Prerequisites** | At least one Data Product exists (see [Flow 2 · Add Data Products](02-add-data-products.md)); a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for AI Assist. |
+| **Prerequisites** | At least one Data Product exists (see [Add Data Products](02-add-data-products.md)); a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for AI Assist. |
 | **You'll end with** | A cleaned-up Data Product — correct fields, join topology and descriptions — back in **In Review**, ready to publish. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Edit & Enrich Data Products**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **Editing is global.** A Data Product's YAML is shared across every Business Domain that
   reuses it. When you change a field here, the change lands in **all** of those domains — the
@@ -41,7 +39,7 @@ There are two entry points, and both land on the same editor:
 
 - **From Semantic Knowledge** — the global catalog. On a row, open the **actions menu** and
   click **Edit**. This opens the full-screen **Edit** panel directly.
-- **From the Domain Canvas** — open a domain (Flow 1) and click an entity node. The **inspector**
+- **From the Domain Canvas** — open a domain from [Create workspaces and business domains](01-workspaces-domains.md) and click an entity node. The **inspector**
   (DetailPanel) slides in on the right; from there you click **Edit** to open the same editor, or
   **AI Assist** to enrich.
 
@@ -229,10 +227,10 @@ Review, then click **Apply changes** (disabled when the model proposed nothing).
 
 ## What's next
 
-→ **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — promote the refined Data Product to
+→ **[Publish and deploy](05-publish-deploy.md)** — promote the refined Data Product to
 `dev` / `prod` so the chat can answer against it.
-→ **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — assign it to a domain.
-→ **[Flow 2 · Add Data Products](02-add-data-products.md)** — create more entities.
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — assign it to a domain.
+→ **[Add Data Products](02-add-data-products.md)** — create more entities.
 
 ---
 

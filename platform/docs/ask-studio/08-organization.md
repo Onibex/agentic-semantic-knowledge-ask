@@ -1,6 +1,8 @@
 # ASK Studio · Set the organization profile
 
-> **Flow 8 of the ASK Studio manual.** Set the singleton **Organization profile** — the
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Set the organization profile**
+
+> **How to.** Set the singleton **Organization profile** — the
 > customer's identity (company name, source system, portal URL) that is prepended to the
 > agent's system prompt so every answer is framed in your environment.
 
@@ -8,16 +10,12 @@
 |---|---|
 | **Who** | Administrator |
 | **Time** | ~1 minute |
-| **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
+| **Prerequisites** | You can sign in to **ASK Studio** (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A saved Organization profile the agent uses on every query, and a source system that pre-fills new Data Products. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Set the organization profile**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The Organization profile is a **singleton** — there is exactly one per deployment. Saving it
   again **overwrites** the previous values (an idempotent upsert), it does not create a second
@@ -26,7 +24,7 @@
   framed in the customer's context (e.g. "for *Pinnacle Industrial Manufacturing* running
   *SAP S/4HANA 2023 FPS01* …").
 - The **Source system** value also becomes the **default `source_system`** for new Data
-  Products, including the pre-filled source in [Flow 2 · DDL + AI](02-add-data-products.md).
+  Products, including the pre-filled source in [Add Data Products](02-add-data-products.md).
 
 ---
 
@@ -79,16 +77,16 @@ After saving, a small line shows **who** last changed the profile and **when** �
 - **Agent prompt** — the orchestrator reads the profile on every query and prepends the
   company name, source system and version to the system prompt.
 - **New Data Products** — the **Source system** value defaults the `source_system` of entities
-  you create, and pre-fills the source in [Flow 2 · DDL + AI](02-add-data-products.md) (where
+  you create, and pre-fills the source in [Add Data Products](02-add-data-products.md) (where
   you can override it per import).
 
 ---
 
 ## What's next
 
-→ **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — create the containers
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — create the containers
 your data lives in.
-→ **[Flow 2 · Add Data Products](02-add-data-products.md)** — the **Source system** you set here
+→ **[Add Data Products](02-add-data-products.md)** — the **Source system** you set here
 pre-fills DDL + AI imports.
 
 ---

@@ -1,6 +1,8 @@
 # ASK Setup · Register an OpenAPI contract
 
-> **ASK Setup configuration — Contracts.** Register a SAP OData service — described by an
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
+
+> **How to.** Register a SAP OData service — described by an
 > **OpenAPI 3.0** specification — so the agent can call it. Each registered contract turns the
 > service's entity sets and operations into MCP tools the agent uses for SAP actions.
 
@@ -11,18 +13,16 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; an OpenAPI 3.0 spec **in JSON** for the OData service you want to expose. |
 | **You'll end with** | The OData service registered as MCP tools, its entity sets and operations available to the agent. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
-
 > The screenshots use a sample OData spec. Register your own service's spec — the exact entity
 > sets shown here won't match yours.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **contract** is an **OpenAPI 3.0 specification** describing a SAP OData service.
   Registering it turns each **entity set** and its **operations** (list, get, create, update,
-  delete) into MCP tools the agent can call through the [MCP Server](06-mcp-server.md).
+  delete) into MCP tools the agent can call through the [Enable the MCP server](06-mcp-server.md).
 - **JSON only.** The spec is parsed in your browser to preview what it exposes; only JSON is
   accepted. **Convert YAML to JSON first.**
 - Registering is **non-destructive to review** — you see a parsed preview of the entity sets
@@ -94,7 +94,7 @@ you to confirm — *"Remove contract `<name>`?"* — first.
 
 ## What's next
 
-→ **[MCP Server](06-mcp-server.md)** — confirm the MCP endpoint that serves these contracts is
+→ **[Enable the MCP server](06-mcp-server.md)** — confirm the MCP endpoint that serves these contracts is
 reachable.
 → Once contracts are registered, the agent can invoke them as SAP actions from chat.
 

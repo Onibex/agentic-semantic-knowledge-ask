@@ -15,8 +15,9 @@ path that does not exist, and a link to a `#heading-anchor` that no heading
 produces.
 
 It also checks that the manual can be walked: every page listed in the index,
-and every page carrying a way back to it. On a forge there is no sidebar to
-supply either, so both live in the pages themselves and decay in silence.
+every page carrying a way back to it, and every page called by one name. On a
+forge there is no sidebar to supply any of the three, so all of them live in
+the pages themselves and decay in silence.
 
 External `http(s)` links are out of scope on purpose — they fail for reasons
 that have nothing to do with this commit, and a build that goes red when
@@ -128,6 +129,7 @@ def check() -> list[str]:
 
 MANUAL = ROOT / "platform" / "docs"
 MANUAL_INDEX = MANUAL / "README.md"
+SPEC = ROOT / "definition" / "docs"
 
 
 @functools.lru_cache(maxsize=1)
@@ -184,6 +186,83 @@ def check_navigation() -> list[str]:
     return problems
 
 
+def check_specification() -> list[str]:
+    """The other half of the repository can be left, too.
+
+    The manual links into `definition/` eighteen times and, until this check
+    existed, `definition/` linked back zero. Someone evaluating ASK as a
+    standard -- the audience half this repository exists for -- could reach the
+    contract and never find the product that implements it. The layer
+    specifications ended on the last bullet of a checklist.
+    """
+    problems: list[str] = []
+    for path in sorted(SPEC.glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        if "Back to the ASK specification" not in text:
+            rel = path.relative_to(ROOT).as_posix()
+            problems.append(f"{rel}: no way back to the specification")
+    return problems
+
+
+NAME_LINK = re.compile(
+    r"\[(?P<label>[^\]\[]+)\]\((?P<target>[^)\s]+\.md)(?P<anchor>#[^)]*)?\)"
+)
+
+
+def index_titles() -> dict[Path, str]:
+    """The name the index gives each page, which is the page's only name."""
+    titles: dict[Path, str] = {}
+    if not MANUAL_INDEX.exists():
+        return titles
+    for match in NAME_LINK.finditer(MANUAL_INDEX.read_text(encoding="utf-8")):
+        target = match.group("target")
+        if target.startswith(("http", "../../")):
+            continue
+        destination = (MANUAL / target).resolve()
+        if destination.exists() and MANUAL.resolve() in destination.parents:
+            titles[destination] = match.group("label").strip()
+    return titles
+
+
+def check_names() -> list[str]:
+    """A page is called the same thing everywhere it is referred to.
+
+    The manual accumulated four naming schemes at once -- an abandoned "Flow N"
+    sequence, superseded titles, path-shaped labels and the index's own
+    wording -- and one page answered to six names. Nothing about that breaks a
+    link, so nothing caught it; the reader is simply left unsure whether the
+    page they landed on is the page they were sent to.
+
+    A link into a specific section keeps its own label: it names the section,
+    not the page.
+    """
+    titles = index_titles()
+    if not titles:
+        return []
+
+    problems: list[str] = []
+    for path in sorted(ROOT.rglob("*.md")):
+        parts = set(path.relative_to(ROOT).parts)
+        if parts & SKIP_PARTS or path == MANUAL_INDEX:
+            continue
+        rel = path.relative_to(ROOT).as_posix()
+        if tracked_files() is not None and rel not in tracked_files() and rel.startswith("platform/docs/"):
+            continue
+        for match in NAME_LINK.finditer(path.read_text(encoding="utf-8")):
+            destination = (path.parent / match.group("target")).resolve()
+            label = match.group("label").strip()
+            if destination not in titles or match.group("anchor"):
+                continue
+            if label.startswith("\u2190"):  # the way back, which names the index
+                continue
+            if label != titles[destination]:
+                problems.append(
+                    f"{rel}: {label!r} is not what this page is called -- "
+                    f"the index calls it {titles[destination]!r}"
+                )
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -193,7 +272,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    problems = check() + check_navigation()
+    problems = check() + check_navigation() + check_names() + check_specification()
     total = len(markdown_files())
 
     if problems:
@@ -205,7 +284,7 @@ def main() -> int:
         )
         return 1 if args.check else 0
 
-    print(f"Links resolve and the manual navigates, across {total} documents.")
+    print(f"Links resolve, the manual navigates and every page has one name, across {total} documents.")
     return 0
 
 

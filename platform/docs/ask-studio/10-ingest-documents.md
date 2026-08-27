@@ -1,6 +1,8 @@
 # ASK Studio · Ingest documents the agent can cite
 
-> **Flow 10 of the ASK Studio manual.** Upload documentation into the RAG index so the agent
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Ingest documents the agent can cite**
+
+> **How to.** Upload documentation into the RAG index so the agent
 > can answer questions from your written material, not only from your tables.
 
 | | |
@@ -10,11 +12,9 @@
 | **Prerequisites** | Signed in to ASK Studio, and a **green Embedder** ([Check the embedder and search index](09-check-providers.md)) — ingestion embeds every chunk. |
 | **You'll end with** | A document indexed and citable by the agent's documentation mode. |
 
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Ingest documents the agent can cite**
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 This is a **separate corpus from the semantic layer**. The YAML layer describes your *data*;
 this describes your *documentation*. They answer different question types:

@@ -1,6 +1,8 @@
 # ASK Setup · Enable the MCP server
 
-> **ASK Setup configuration — MCP Server.** Point the platform at the internal **MCP
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
+
+> **How to.** Point the platform at the internal **MCP
 > Server** — the tool bridge the agent uses to make SAP OData write and action calls. This
 > page stores the endpoint (URL + port) the orchestrator uses to reach that service and lets
 > you verify it is live.
@@ -12,15 +14,13 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; the MCP service is deployed in your cluster. |
 | **You'll end with** | A saved MCP endpoint the agent uses for SAP OData actions, verified reachable with a health check. |
 
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
-
 > The screenshots and values below use the platform's default in-cluster endpoint
 > (`http://ask-mcp-service:4004`). Substitute your own deployment's service name and
 > port if they differ.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **MCP** (Model Context Protocol) is the **tool bridge** the agent uses to call SAP OData
   services — for example, to create or update a sales order. It runs as a separate internal
@@ -28,7 +28,7 @@
 - The endpoint is stored as **configuration** (an MCP URL and port). Saving it takes effect
   for the next query — there is no pod restart or container rebuild involved.
 - The **tools** the MCP server exposes are defined by the OpenAPI specs you register on the
-  [Contracts](07-contracts.md) page. This page is the address; Contracts is the catalog.
+  [Register an OpenAPI contract](07-contracts.md) page. This page is the address; Contracts is the catalog.
 - **Test** sends a health check to the **saved** URL, so save your changes before you test.
 
 ---
@@ -78,9 +78,9 @@ strip appears below it:
 
 ## What's next
 
-→ **[Contracts](07-contracts.md)** — register the OpenAPI specs that turn SAP OData services
+→ **[Register an OpenAPI contract](07-contracts.md)** — register the OpenAPI specs that turn SAP OData services
 into the tools this MCP server exposes.
-→ **[SAP Connection](05-sap-connection.md)** — set the S/4HANA OData credentials the MCP
+→ **[Connect to SAP](05-sap-connection.md)** — set the S/4HANA OData credentials the MCP
 server uses to reach SAP.
 
 ---

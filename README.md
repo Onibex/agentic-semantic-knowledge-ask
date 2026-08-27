@@ -159,12 +159,12 @@ agentic-semantic-knowledge-ask/
 
 | You are… | Start here |
 |---|---|
-| **Evaluating ASK** | This page, then [Concepts & Architecture](platform/docs/02-concepts.md) |
-| **Here to see the product** | [Using ASK Chat](platform/docs/ask-chat/02-chat.md) — ask a question, read the answer, see the SQL behind it |
+| **Evaluating ASK** | This page, then [Concepts and architecture](platform/docs/02-concepts.md) |
+| **Here to see the product** | [Using the Chat](platform/docs/ask-chat/02-chat.md) — ask a question, read the answer, see the SQL behind it |
 | **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md) — what is computed rather than guessed |
 | **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md) — one guided path, empty machine to a real answer, ~45 min |
-| **Installing it** | [Installation](platform/docs/01-installation.md) — every variable, the startup order, the gotchas |
-| **Authoring a semantic layer** | [ASK Studio flows](platform/docs/ask-studio/00-overview.md) |
+| **Installing it** | [Install and run the platform](platform/docs/01-installation.md) — every variable, the startup order, the gotchas |
+| **Authoring a semantic layer** | [Find your way around ASK Studio](platform/docs/ask-studio/00-overview.md) |
 | **Adopting the specification** | [`definition/README.md`](definition/README.md) |
 | **An AI agent** | [`llms.txt`](llms.txt) |
 

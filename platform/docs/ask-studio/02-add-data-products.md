@@ -1,6 +1,8 @@
 # ASK Studio · Add Data Products
 
-> **Flow 2 of the ASK Studio manual.** Create the entities that make up your semantic layer —
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
+
+> **How to.** Create the entities that make up your semantic layer —
 > the **Data Products** the agent maps questions to. There are **four ways** to add one;
 > this page covers when to use each and how.
 
@@ -8,12 +10,8 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | 2–10 minutes depending on the mode |
-| **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
+| **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [Find your way around ASK Setup](../ask-setup/00-overview.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
@@ -28,7 +26,7 @@ A **Data Product** is one entity definition (a YAML). Every Data Product sits in
 | **Gold** | A denormalized analytics table you can query directly. | Manual, DDL + AI, Upload |
 
 Don't worry about getting every field perfect on creation — everything lands **In Review** so
-you can refine it in [Flow 3 · Edit & Enrich](03-edit-enrich.md) before publishing.
+you can refine it in [Edit and enrich Data Products](03-edit-enrich.md) before publishing.
 
 ---
 
@@ -59,7 +57,7 @@ system), then **fields** (name, type, role, alias), and optionally **relationshi
 ![Manual authoring form for a Silver entity: the header fields, then its composed-of tables and join graph](../images/studio-dp-manual.png)
 
 Field roles and authoring rules are covered in
-[Flow 3 · Edit & Enrich](03-edit-enrich.md) and the
+[Edit and enrich Data Products](03-edit-enrich.md) and the
 [ASK specification](../../../definition/README.md) (Bronze / Silver / Gold layer definitions).
 
 ## Mode B — Upload files
@@ -96,7 +94,7 @@ guaranteed unique — verify it against the physical table before publishing.
 
 Pick **DDL + AI**, then:
 
-1. **Source system** — defaults from your [Organization](08-organization.md) profile (e.g.
+1. **Source system** — defaults from your [Set the organization profile](08-organization.md) profile (e.g.
    `s4h`). Click **change** to override with another profile; this tunes the AI prompt.
 2. **Provide the DDL** — either:
    - **Upload `.sql` / `.ddl` / `.txt` files** (multiple allowed). The **layer is
@@ -141,7 +139,7 @@ Pick **From OneConnect**, paste the SAP JSON, and click **Merge from OneConnect*
 
 The result summary shows the entity id, how many changes were **auto-applied**, and how many
 **conflicts** need manual resolution. Resolve conflicts in
-[Flow 7 · Conflicts & Merge](07-conflicts-merge.md) (the **Conflicts** filter in Semantic
+[Resolve conflicts on a OneConnect merge](07-conflicts-merge.md) (the **Conflicts** filter in Semantic
 Knowledge).
 
 ---
@@ -158,11 +156,11 @@ catalog filters to **In Review** so you can find it. From a row you can **Edit**
 
 ## What's next
 
-→ **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — refine fields, relationships, and let AI
+→ **[Edit and enrich Data Products](03-edit-enrich.md)** — refine fields, relationships, and let AI
 improve descriptions and synonyms.
-→ **[Flow 1 · Workspaces & Business Domains](01-workspaces-domains.md)** — assign this Data
+→ **[Create workspaces and business domains](01-workspaces-domains.md)** — assign this Data
 Product to a domain.
-→ **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — make it queryable in the chat.
+→ **[Publish and deploy](05-publish-deploy.md)** — make it queryable in the chat.
 
 ---
 

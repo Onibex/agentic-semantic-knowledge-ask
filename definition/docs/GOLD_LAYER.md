@@ -531,3 +531,7 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] No `composed_of`, no `join_graph` — neither belongs to a Gold.
       See [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
 - [ ] Any field whose name is an inherited source-system code carries a `description` that supplies the business meaning ([§4](#4-naming-conventions)).
+
+---
+
+[← Back to the ASK specification](../README.md) · [The layer specifications](README.md)

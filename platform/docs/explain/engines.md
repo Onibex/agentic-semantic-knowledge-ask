@@ -1,10 +1,10 @@
-# The three chat engines — Flash, Precise, Smart
+# The three chat engines
 
-[Manual](../README.md) › [Understanding how it works](../README.md#understanding-how-it-works) › **The three chat engines — Flash, Precise, Smart**
+[Manual](../README.md) › [Understanding how it works](../README.md#understanding-how-it-works) › **The three chat engines**
 
 > **Explanation.** Why ASK ships three ways to answer the same question, what each one
 > makes deterministic, and how to choose. No procedure here — to switch engines in the
-> chat, see [Workspace, Environment & Mode](../ask-chat/01-workspace-environment-mode.md).
+> chat, see [Scope a question](../ask-chat/01-workspace-environment-mode.md).
 
 | | |
 |---|---|
@@ -144,9 +144,9 @@ semantic layer is enforced.
 
 ## What's next
 
-→ **[Workspace, Environment & Mode](../ask-chat/01-workspace-environment-mode.md)** — switch
+→ **[Scope a question](../ask-chat/01-workspace-environment-mode.md)** — switch
 engines in the chat.
-→ **[Concepts & Architecture](../02-concepts.md)** — how the whole platform fits together.
+→ **[Concepts and architecture](../02-concepts.md)** — how the whole platform fits together.
 
 ---
 

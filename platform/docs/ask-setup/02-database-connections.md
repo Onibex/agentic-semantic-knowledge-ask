@@ -1,7 +1,9 @@
 # ASK Setup · Connect a database
 
-> **The databases the agent can query.** The **Database** page is a registry: you can hold as many
-> named connections as you like, across nine SQL engines, and mark **one active per environment**
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect a database**
+
+> **How to.** The **Database** page is a registry: you can hold as many
+> named connections as you like, across ten SQL engines, and mark **one active per environment**
 > (Development and Production). The chat runs its generated SQL against whichever connection is
 > active for the environment it targets.
 
@@ -9,18 +11,12 @@
 |---|---|
 | **Who** | Administrator (**ask-admin** role) |
 | **Time** | ~2 minutes per connection |
-| **Prerequisites** | The platform is running ([Installation](../01-installation.md)) and reachable network access to your database. |
+| **Prerequisites** | The platform is running ([Install and run the platform](../01-installation.md)) and reachable network access to your database. |
 | **You'll end with** | At least one registered connection, marked active for **Development** and/or **Production**, so the chat can answer data questions. |
-
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect a database**
-
-> The screenshots and sample values below use the illustrative demo target: an **SAP HANA**
-> connection (host shown, port `443`, schema `US_ONEC_TECH`). Substitute your own engine and
-> credentials — never screenshot a real database password or service-account key.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **A registry, not a single connection.** You register any number of connections; each has a
   **Display name** and an engine. Registering one does not make it live.
@@ -75,7 +71,7 @@ If nothing is registered yet, an empty state invites you to **Add connection**.
 Click **Add connection**. A drawer slides in from the right titled **Add connection**, with two
 steps.
 
-![Add connection drawer: the Engine picker grid (nine engines) in step 1 and the engine-specific Connection details in step 2](../images/setup-database-drawer.png)
+![Add connection drawer: the Engine picker grid in step 1 and the engine-specific Connection details in step 2](../images/setup-database-drawer.png)
 
 ### Step 1 — Engine
 
@@ -153,9 +149,9 @@ credentials. A toast reports success with the round-trip latency, or the error i
 
 ## What's next
 
-→ **[LLM Providers](03-llm-providers.md)** — register the language model the agent uses to write SQL.
-→ **[Infrastructure (OpenSearch)](01-setup.md)** — the store where these encrypted credentials live.
-→ **[Publish & Deploy](../ask-studio/05-publish-deploy.md)** — how the chat's dev / prod environments map to the active connections here.
+→ **[Connect an LLM provider](03-llm-providers.md)** — register the language model the agent uses to write SQL.
+→ **[Check the search index](01-setup.md)** — the store where these encrypted credentials live.
+→ **[Publish and deploy](../ask-studio/05-publish-deploy.md)** — how the chat's dev / prod environments map to the active connections here.
 
 ---
 

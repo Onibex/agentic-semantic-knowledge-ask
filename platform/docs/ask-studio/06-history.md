@@ -1,6 +1,8 @@
 # ASK Studio · Audit, compare and restore versions
 
-> **Flow 6 of the ASK Studio manual.** Every Data Product is Git-backed. This page shows how to
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Audit, compare and restore versions**
+
+> **How to.** Every Data Product is Git-backed. This page shows how to
 > **audit** the changes to a Data Product over time, **diff** any two versions side by side, and
 > **restore** an earlier version — all keyed to the person who made each change.
 
@@ -8,16 +10,12 @@
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~2 minutes |
-| **Prerequisites** | Signed in to **ASK Studio**; at least one Data Product with a change or two (create one in [Flow 2 · Add Data Products](02-add-data-products.md)). |
+| **Prerequisites** | Signed in to **ASK Studio**; at least one Data Product with a change or two (create one in [Add Data Products](02-add-data-products.md)). |
 | **You'll end with** | Confidence in what changed, when, and by whom — plus a restored version if you needed one. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Audit, compare and restore versions**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - Every **Publish**, manual edit and AI Assist accept becomes a **commit** — a point-in-time
   snapshot of the Data Product's YAML, stamped with an author and a timestamp.
@@ -143,17 +141,17 @@ and the version chips refresh automatically.
 > **Warning — restore lands on Working, not on an environment.** A restore always writes to
 > **Working (main)**, even if you triggered it from the **dev** or **prod** tab. To put the
 > restored version back into an environment, **re-publish** it — see
-> [Flow 5 · Publish & Deploy](05-publish-deploy.md).
+> [Publish and deploy](05-publish-deploy.md).
 
 ---
 
 ## What's next
 
-→ **[Flow 5 · Publish & Deploy](05-publish-deploy.md)** — re-publish a restored version to dev
+→ **[Publish and deploy](05-publish-deploy.md)** — re-publish a restored version to dev
 or prod.
-→ **[Flow 3 · Edit & Enrich](03-edit-enrich.md)** — the edits that become the commits you see
+→ **[Edit and enrich Data Products](03-edit-enrich.md)** — the edits that become the commits you see
 here.
-→ **[Flow 7 · Conflicts & Merge](07-conflicts-merge.md)** — how **merge** commits get into the
+→ **[Resolve conflicts on a OneConnect merge](07-conflicts-merge.md)** — how **merge** commits get into the
 timeline.
 
 ---

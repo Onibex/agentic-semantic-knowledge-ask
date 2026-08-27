@@ -1,22 +1,20 @@
 # ASK Studio · Create workspaces and business domains
 
-> **Flow 1 of the ASK Studio manual.** Create the containers your data lives in — a
+[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
+
+> **How to.** Create the containers your data lives in — a
 > **Workspace** and the **Business Domains** inside it — and assign Data Products to a domain.
 
 | | |
 |---|---|
 | **Who** | Administrator / data steward |
 | **Time** | ~3 minutes |
-| **Prerequisites** | You can sign in to **ASK Studio** (see [Installation](../01-installation.md)). |
+| **Prerequisites** | You can sign in to **ASK Studio** (see [Install and run the platform](../01-installation.md)). |
 | **You'll end with** | A workspace containing at least one business domain, ready to hold Data Products. |
-
-[Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
-
-> The screenshots and sample values below use an illustrative **SAP Production Planning** example (Production Orders). Substitute your own Data Products — the exact demo names and questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - A **Workspace** is the top-level container the chat scopes to — it backs a deployment
   (`dev` / `prod`). Think "Manufacturing Operations".
@@ -24,7 +22,7 @@
   business question — e.g. "Production Orders". The same Data Product can be reused in several
   domains.
 - A **Data Product** is one entity definition (a Bronze/Silver/Gold YAML). You create those
-  in [Flow 2 · Add Data Products](02-add-data-products.md); here you just organize them.
+  in [Add Data Products](02-add-data-products.md); here you just organize them.
 
 ---
 
@@ -79,7 +77,7 @@ status), a count, and actions: **Open domain** (the canvas), **Edit**, **Manage*
 ## 4. Assign Data Products to the domain
 
 A new domain is empty. To fill it you assign **existing** Data Products (create them first in
-[Flow 2](02-add-data-products.md)).
+[Add Data Products](02-add-data-products.md)).
 
 Click **Manage** on the domain card (or the dashed **+ data product** button). In the dialog,
 search the catalog and select the Data Products this domain should expose, then confirm.
@@ -91,7 +89,7 @@ more than one domain — that's expected and encouraged.
 
 > **Order of operations.** You can create the workspace and domain first and assign Data
 > Products later. Nothing is queryable until the domain is **published** — see
-> [Flow 5 · Publish & Deploy](05-publish-deploy.md).
+> [Publish and deploy](05-publish-deploy.md).
 
 ## Editing & deleting
 
@@ -104,7 +102,7 @@ more than one domain — that's expected and encouraged.
 
 ## What's next
 
-→ **[Flow 2 · Add Data Products](02-add-data-products.md)** — create the entities that fill
+→ **[Add Data Products](02-add-data-products.md)** — create the entities that fill
 your domains (Manual / Upload YAML / DDL + AI / From OneConnect).
 
 ---

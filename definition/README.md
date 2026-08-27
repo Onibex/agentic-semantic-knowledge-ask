@@ -7,7 +7,9 @@
 
 ---
 
-> **New here?** Start with the [repository overview](../README.md) for the big picture and the companion **Onibex ASK Platform** manual. This document is the normative specification.
+> **New here?** Start with the [repository overview](../README.md) for the big picture, or go
+> straight to the [Onibex ASK Platform manual](../platform/docs/README.md) to see the contract
+> authored and queried in a running product. This document is the normative specification.
 
 > **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
 > Onibex ASK Platform derives its AI-enrichment prompts from these rules and ships them as
@@ -17,32 +19,29 @@
 
 ## What is ASK?
 
-**Agentic Semantic Knowledge (ASK)** is a YAML specification that describes enterprise data in a way AI agents can actually understand, reason over, and act on.
+**Agentic Semantic Knowledge (ASK)** is a YAML specification that describes enterprise data in the terms an agent has to reason in: what an entity is, at what grain, which measures it carries, and which joins are legitimate.
 
 LLMs and agents are good at generating SQL, calling tools, and chaining steps. They are bad at knowing *which* table answers *which* business question, what `MATNR` means, why `VBAK.GBSTK = 'C'` means an order is closed, or which join path is the cheapest one to traverse. Without that context, agents either hallucinate or refuse.
 
-ASK fixes this by formalizing the **business semantics** of data — entities, grains, measures, statuses, relationships, and intent — into a layered specification that any agent runtime can consume.
+ASK closes that gap by declaring the **business semantics** of the data — entities, grains, measures, statuses, relationships and intent — in a layered specification any agent runtime can read.
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                        AGENT / LLM RUNTIME                         │
-│              (Claude, GPT, Llama, custom orchestrators)            │
-└────────────────────────────────────────────────────────────────────┘
-                                  ▲
-                                  │ resolves intent against
-                                  │
-┌────────────────────────────────────────────────────────────────────┐
-│                      ASK YAML SPECIFICATION                        │
-│                                                                    │
-│   ┌─────────┐   relationships   ┌─────────┐    composed_of    ┌──┐ │
-│   │  GOLD   │ ───────────────►  │ SILVER  │ ◄───────────────  │BR│ │
-│   │ Business│                   │  Found. │                   │ON│ │
-│   │  Logic  │   (drill / enrich)│  Data   │                   │ZE│ │
-│   │   DPs   │                   │  Prods  │                   │  │ │
-│   └─────────┘                   └─────────┘                   └──┘ │
-│   ▲ priority                    ▲ fallback                  ▲ raw  │
-│   1st                           2nd                         skip   │
-└────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    AGENT["<b>Agent / LLM runtime</b><br/>Claude, GPT, Llama, custom orchestrators"]
+    AGENT -- "resolves intent against" --> GOLD
+
+    subgraph SPEC["ASK YAML specification"]
+        direction LR
+        GOLD["<b>GOLD</b><br/>Business Logic<br/>Data Products<br/><br/><i>1st &mdash; preferred</i>"]
+        SILVER["<b>SILVER</b><br/>Foundational<br/>Data Products<br/><br/><i>2nd &mdash; fallback</i>"]
+        BRONZE["<b>BRONZE</b><br/>raw source tables<br/><br/><i>never agent context</i>"]
+        GOLD -- "relationships<br/><i>drill / enrich</i>" --> SILVER
+        SILVER -- "composed_of" --> BRONZE
+    end
+
+    style GOLD fill:#fef3c7,stroke:#b45309,color:#111
+    style SILVER fill:#f1f5f9,stroke:#64748b,color:#111
+    style BRONZE fill:#f5f0e8,stroke:#a16207,color:#111
 ```
 
 ASK is **declarative**, **runtime-agnostic**, and **business-vocabulary-first**. It does not generate the data products — it describes them so agents know what they are.
@@ -96,24 +95,23 @@ This is a **priority, not a sequence of passes.** A resolver is free to search t
 That priority produces two resolution planes, and knowing which one a question lands in is
 what makes the authoring rules make sense:
 
-```
-request → intent (measures, dimensions, filters, grain)
-   │
-   ▼
-retrieval, gold-first
-   │
-   ├─ a Gold COVERS it — measures, dimensions, grain and filters, already denormalized
-   │      → SQL from the Gold alone, no joins. Cheapest and most deterministic.
-   │
-   ├─ a Gold has the fact but one attribute is not flattened into it
-   │      → traverse the GOLD's relationships to enrich or drill out
-   │
-   └─ no Gold applies
-          → the SILVER plane:
-              anchor on the fact Silver that owns the measures
-              shortest path over silver→silver relationships, weighted by traversal_cost
-              resolve composed_of to the physical tables
-              honour aggregation_safety so a fan-out does not double-count
+```mermaid
+flowchart TB
+    REQ["Request"] --> INTENT["<b>Intent</b><br/>measures &middot; dimensions &middot; filters &middot; grain"]
+    INTENT --> RETRIEVAL{"Retrieval,<br/>gold-first"}
+
+    RETRIEVAL -- "a Gold <b>covers</b> it: measures, dimensions,<br/>grain and filters, already denormalized" --> COVER["SQL from the Gold alone, no joins.<br/><b>Cheapest and most deterministic.</b>"]
+    RETRIEVAL -- "a Gold has the fact, but one attribute<br/>is not flattened into it" --> ENRICH["Traverse the <b>Gold's</b> relationships<br/>to enrich or drill out"]
+    RETRIEVAL -- "no Gold applies" --> PLANE
+
+    subgraph PLANE["The Silver plane"]
+        direction TB
+        S1["Anchor on the fact Silver<br/>that owns the measures"]
+        S2["Shortest path over silver &rarr; silver relationships,<br/>weighted by traversal_cost"]
+        S3["Resolve composed_of to the physical tables"]
+        S4["Honour aggregation_safety,<br/>so a fan-out does not double-count"]
+        S1 --> S2 --> S3 --> S4
+    end
 ```
 
 Two consequences bind the author:
@@ -200,6 +198,7 @@ That is enough context for a Gold-quality SQL plan. No raw schema needed.
 ## Repository structure
 
 ```
+
 definition/               # (this folder inside agentic-semantic-knowledge-ask)
 ├── README.md                          ← you are here
 ├── docs/
@@ -338,6 +337,16 @@ If ASK is useful in your research or product, please cite it:
 ```
 
 ---
+
+## Where this is implemented
+
+The [Onibex ASK Platform](../platform/README.md) is Onibex's implementation of this
+specification. Its manual covers
+[Author the semantic layer · ASK Studio](../platform/docs/ask-studio/README.md), where a layer
+is written against these rules, and
+[The three chat engines](../platform/docs/explain/engines.md), where the resolution model above
+becomes a query. The specification is runtime-neutral: any vendor can adopt it, and the platform
+is not the only possible reader.
 
 ## License
 

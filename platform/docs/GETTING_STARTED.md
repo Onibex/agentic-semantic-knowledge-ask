@@ -1,6 +1,6 @@
-# Getting Started — from zero to your first answered question
+# Getting Started
 
-[Manual](README.md) › [Foundations](README.md#foundations) › **Getting Started — from zero to your first answered question**
+[Manual](README.md) › [Foundations](README.md#foundations) › **Getting Started**
 
 > **Tutorial.** One path, end to end: bring the platform up, describe a slice of your data,
 > publish it, and ask a question in plain language. Roughly 45 minutes on a clean machine.
@@ -42,7 +42,7 @@ every service reports healthy:
 docker compose ps
 ```
 
-→ [Installation & Running the Platform](01-installation.md) — every variable, the startup
+→ [Install and run the platform](01-installation.md) — every variable, the startup
 order, and what to do when a service stays unhealthy.
 
 ## Step 2 — Point ASK at a database and a model
@@ -59,7 +59,7 @@ Configure two things, in this order, testing each before you save:
 
 Saving reloads the affected services. The ASK Setup home page should now show both as active.
 
-→ [Sign in to ASK](guides/sign-in.md) · [Database Connections](ask-setup/02-database-connections.md) · [LLM Providers](ask-setup/03-llm-providers.md)
+→ [Sign in to ASK](guides/sign-in.md) · [Connect a database](ask-setup/02-database-connections.md) · [Connect an LLM provider](ask-setup/03-llm-providers.md)
 
 ## Step 3 — Create somewhere to put your data products
 
@@ -74,7 +74,7 @@ A **business domain** groups the Data Products that get queried together.
 
 Create one of each. Names are yours; *Sales* is a fine first domain.
 
-→ [Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)
+→ [Create workspaces and business domains](ask-studio/01-workspaces-domains.md)
 
 ## Step 4 — Describe one table
 
@@ -91,7 +91,7 @@ Whatever you use, the result lands in **In Review**. Open it and read the field 
 anything else on the page. The **Enrich** action drafts them with AI and shows you a diff
 before anything is applied.
 
-→ [Add Data Products](ask-studio/02-add-data-products.md) · [Edit & Enrich](ask-studio/03-edit-enrich.md)
+→ [Add Data Products](ask-studio/02-add-data-products.md) · [Edit and enrich Data Products](ask-studio/03-edit-enrich.md)
 
 ## Step 5 — Publish it to dev
 
@@ -101,7 +101,7 @@ reaching the environment your business reads.
 
 Publish your Data Product, or the whole business domain at once, to **dev**.
 
-→ [Publish & Deploy](ask-studio/05-publish-deploy.md)
+→ [Publish and deploy](ask-studio/05-publish-deploy.md)
 
 ## Step 6 — Ask something
 
@@ -123,7 +123,7 @@ more than one row, and — if you expand it — **the SQL that produced the numb
 SQL. It is the whole argument of the product: the model chose among fields you defined, it
 did not invent a table name.
 
-→ [Workspace, Environment & Mode](ask-chat/01-workspace-environment-mode.md) · [Using the Chat](ask-chat/02-chat.md)
+→ [Scope a question](ask-chat/01-workspace-environment-mode.md) · [Using the Chat](ask-chat/02-chat.md)
 
 ---
 
@@ -144,7 +144,7 @@ You now have the whole loop working on one table. Where to go depends on what yo
 
 | You want to… | Read |
 |---|---|
-| Understand what just happened | [Concepts & Architecture](02-concepts.md) |
+| Understand what just happened | [Concepts and architecture](02-concepts.md) |
 | Know why the answer is trustworthy | [The three chat engines](explain/engines.md) |
 | Author a real semantic layer | [The ASK specification](../../definition/README.md) |
 | Look up a term | [Glossary](reference/glossary.md) |

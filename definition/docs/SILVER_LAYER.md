@@ -407,3 +407,7 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] Status field descriptions enumerate every valid code.
 - [ ] Relationships have `traversal_cost` and `aggregation_safety` set; many-to-many edges are marked `requires_dedup`.
 - [ ] Field types match the Bronze source types.
+
+---
+
+[← Back to the ASK specification](../README.md) · [The layer specifications](README.md)

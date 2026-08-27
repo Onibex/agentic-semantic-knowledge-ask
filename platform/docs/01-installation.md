@@ -1,6 +1,8 @@
-# Installation & Running the Platform
+# Install and run the platform
 
-> **Getting started.** Bring the full ASK Platform up on one machine with Docker and
+[Manual](README.md) › [Foundations](README.md#foundations) › **Install and run the platform**
+
+> **How to.** Bring the full ASK Platform up on one machine with Docker and
 > reach each of its user interfaces — **ASK Studio**, the **Chat**, and **ASK Setup** — plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
@@ -12,14 +14,9 @@
 | **Prerequisites** | **Docker** (with Docker Compose v2) installed and running; a shell at the repo root. |
 | **You'll end with** | Every service healthy and each UI reachable in the browser, ready to configure. |
 
-[Manual](README.md) › [Foundations](README.md#foundations) › **Installation & Running the Platform**
-
-> This page only needs environment-variable **names**, never their secret values. The rest of
-> the manual uses an illustrative **SAP Production Planning** example — substitute your own data.
-
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The platform is a **multi-service stack** started as one unit with **Docker Compose**. The
   compose file (`docker-compose.yml`) is the source of truth for the topology.
@@ -230,11 +227,11 @@ through the Keycloak login before landing on the UI.
 
 ## What's next
 
-→ **[ASK Setup](ask-setup/00-overview.md)** — set up the database connections, LLM providers, and
+→ **[Find your way around ASK Setup](ask-setup/00-overview.md)** — set up the database connections, LLM providers, and
 identity.
-→ **[ASK Studio · Workspaces & Business Domains](ask-studio/01-workspaces-domains.md)** — create the
+→ **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)** — create the
 containers your data lives in.
-→ **[ASK Studio · Add Data Products](ask-studio/02-add-data-products.md)** — author the entities the
+→ **[Add Data Products](ask-studio/02-add-data-products.md)** — author the entities the
 agent maps questions to.
 → **Deployment runbook** (maintained by your platform / ops team) — the full per-service
 procedure (native ports, venv setup, troubleshooting).

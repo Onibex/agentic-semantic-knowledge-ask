@@ -1,24 +1,20 @@
 # ASK Chat · Scope a question
 
-> **Flow 1 of the ASK Chat manual.** Configure the three sidebar controls that scope every
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
+
+> **How to.** Configure the three sidebar controls that scope every
 > query — **Workspace**, **Environment**, and **Mode** — before you ask your first question.
 
 | | |
 |---|---|
 | **Who** | Business user / analyst |
 | **Time** | ~2 minutes |
-| **Prerequisites** | You are signed in to ASK Chat (see [Overview](00-overview.md)). |
+| **Prerequisites** | You are signed in to ASK Chat (see [Find your way around ASK Chat](00-overview.md)). |
 | **You'll end with** | A workspace selected, an environment chosen, and a query mode set — the chat is ready to use. |
-
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
-
-> The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
-> example (Sales Orders). Substitute your own Data Products — the exact demo names and
-> questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - **Workspace** is the hard scope — the agent can only see Data Products that belong to the
   workspace you pick. Without one selected, every query is refused.
@@ -69,7 +65,7 @@ Under **Environment** in the sidebar, click one of the two pill buttons:
 
 > **Warning —** If the `prod` database is not configured, prod queries return a clear error
 > rather than silently falling back to dev. See
-> [ASK Setup · Database Connections](../ask-setup/02-database-connections.md).
+> [Connect a database](../ask-setup/02-database-connections.md).
 
 ---
 
@@ -97,8 +93,8 @@ data queries that produce SQL.
 
 ## What's next
 
-→ **[Flow 2 · Using the Chat](02-chat.md)** — ask your first question and read the answer.
-→ **[Flow 3 · Artifacts](03-artifacts.md)** — generate business documents from your data.
+→ **[Using the Chat](02-chat.md)** — ask your first question and read the answer.
+→ **[Generate a report or brief](03-artifacts.md)** — generate business documents from your data.
 
 ---
 

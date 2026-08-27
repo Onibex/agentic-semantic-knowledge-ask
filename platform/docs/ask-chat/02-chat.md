@@ -1,6 +1,8 @@
 # ASK Chat · Using the Chat
 
-> **Flow 2 of the ASK Chat manual.** Ask questions in plain language and read governed SQL
+[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Using the Chat**
+
+> **How to.** Ask questions in plain language and read governed SQL
 > answers — written summaries, results tables, auto-generated charts, and optionally the SQL
 > and token trace behind each answer.
 
@@ -8,18 +10,12 @@
 |---|---|
 | **Who** | Business user / analyst |
 | **Time** | Seconds per question |
-| **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Flow 1](01-workspace-environment-mode.md)). |
+| **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Scope a question](01-workspace-environment-mode.md)). |
 | **You'll end with** | Answers to your questions — text, tables, charts — in one or more named conversations you can return to. |
-
-[Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Using the Chat**
-
-> The screenshots and sample values below use an illustrative **SAP Sales & Distribution**
-> example (Sales Orders). Substitute your own Data Products — the exact demo names and
-> questions won't exist in your system.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - Each conversation is an independent **chat session** with its own history. You can have
   multiple sessions per workspace and switch between them freely.
@@ -52,7 +48,7 @@ first exchange — derived from the content of your opening question.
 > existing one.
 
 > **Warning —** If no workspace is selected, **New Chat** is disabled and an amber banner
-> appears at the top of the page. Select a workspace first (see [Flow 1](01-workspace-environment-mode.md)).
+> appears at the top of the page. Select a workspace first (see [Scope a question](01-workspace-environment-mode.md)).
 
 ---
 
@@ -167,9 +163,9 @@ back down and re-enable auto-scroll.
 
 ## What's next
 
-→ **[Flow 3 · Artifacts](03-artifacts.md)** — turn your data into shareable reports, executive
+→ **[Generate a report or brief](03-artifacts.md)** — turn your data into shareable reports, executive
 briefs, and data tables.
-→ **[Flow 1 · Workspace, Environment & Mode](01-workspace-environment-mode.md)** — change the
+→ **[Scope a question](01-workspace-environment-mode.md)** — change the
 workspace or switch to the `prod` environment.
 
 ---

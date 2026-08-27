@@ -1,6 +1,8 @@
 # ASK Setup · Connect an LLM provider
 
-> **Configuration flow.** Register the language models the agent may use. The page holds a
+[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect an LLM provider**
+
+> **How to.** Register the language models the agent may use. The page holds a
 > **registry** of LLM connections, of which exactly **one is active** at any time, plus the
 > single **shared embedder** that builds the platform's vector space.
 
@@ -8,23 +10,17 @@
 |---|---|
 | **Who** | Administrator |
 | **Time** | ~2 minutes to add and activate a model |
-| **Prerequisites** | You can sign in to **ASK Setup** (see [Installation](../01-installation.md)), and you have the provider's credentials to hand (API key, or cloud access keys). |
+| **Prerequisites** | You can sign in to **ASK Setup** (see [Install and run the platform](../01-installation.md)), and you have the provider's credentials to hand (API key, or cloud access keys). |
 | **You'll end with** | One **active** LLM the agent uses for chat and SQL generation, and a configured **embedder** shared with ASK Studio. |
-
-[Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Connect an LLM provider**
-
-> The screenshots and sample values below use illustrative, non-secret settings (an **AWS Bedrock**
-> model). Substitute your own provider and model — and never type or screenshot a real API key,
-> access key, or secret.
 
 ---
 
-## Concepts (30-second version)
+## What you need to know first
 
 - The page is a **registry**: you can store many LLM connections (one per provider/model/account),
   but **exactly one is active** at a time. The active model is what chat and SQL generation call.
 - The active model is **global — not per environment**. This is deliberately different from
-  [Database Connections](02-database-connections.md), where one connection is active *per* dev and
+  [Connect a database](02-database-connections.md), where one connection is active *per* dev and
   prod. There is one LLM for the whole deployment.
 - **Secrets are encrypted at rest.** Every credential field marked **encrypted** is stored
   encrypted in the platform's secret store, never in `settings.json`. When you edit a connection,
@@ -145,10 +141,10 @@ the provider and model as in step 2 — demo: **AWS Bedrock** · `amazon.titan-e
 
 ## What's next
 
-→ **[ASK Setup · Identity Provider](04-identity-provider.md)** — who signs in, and how.
-→ **[ASK Setup · Database Connections](02-database-connections.md)** — the peer registry, where the
+→ **[Review the identity provider](04-identity-provider.md)** — who signs in, and how.
+→ **[Connect a database](02-database-connections.md)** — the peer registry, where the
 active connection is chosen **per environment** (contrast the global active model here).
-→ **[ASK Studio · Check the embedder and search index](../ask-studio/09-check-providers.md)** — the ASK Studio side that
+→ **[Check the embedder and search index](../ask-studio/09-check-providers.md)** — the ASK Studio side that
 shares this embedder and ingests documents.
 
 ---
