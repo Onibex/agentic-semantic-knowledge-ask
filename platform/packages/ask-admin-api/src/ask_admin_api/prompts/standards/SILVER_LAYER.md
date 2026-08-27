@@ -13,7 +13,7 @@
 > in the `agentic-semantic-knowledge-ask` repo. **When the two disagree, this file wins and
 > the counterpart is corrected to match.**
 >
-> Sibling layer standards: [./BRONZE_LAYER.md](./BRONZE_LAYER.md) · [./GOLD_LAYER.md](./GOLD_LAYER.md) · index: [./README.md](./README.md)
+> Sibling layer standards: [./BRONZE_LAYER.md](./BRONZE_LAYER.md) · [./GOLD_LAYER.md](./GOLD_LAYER.md)
 
 ---
 
@@ -931,4 +931,5 @@ Do **not** author these on a Silver — they are deprecated spec constructs with
 - Standalone `layer: metric` YAMLs → **removed**; ingestion raises. A measure is a
   `field_role: measure` field with `aggregation_behavior` on its owning Silver/Gold.
 
-The full deprecation register lives in [./README.md](./README.md).
+The `metric` layer was removed: a measure is a `field_role: measure` field with an
+`aggregation_behavior` on the Silver or Gold that owns it.

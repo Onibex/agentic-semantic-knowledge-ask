@@ -19,7 +19,7 @@
 > counterpart is corrected to match.
 >
 > Sibling layer standards: [./BRONZE_LAYER.md](./BRONZE_LAYER.md) ·
-> [./SILVER_LAYER.md](./SILVER_LAYER.md) · [./README.md](./README.md)
+> [./SILVER_LAYER.md](./SILVER_LAYER.md)
 
 ---
 

@@ -307,7 +307,7 @@ not a runtime recommendation:
   of hybrid retrieval, matching `name` / `description` — i.e. by its table name — and it
   earns a `0.00` layer bonus in re-ranking (Silver `0.15`, Gold `0.40`). It is *not*
   hard-excluded from the entity index: the gold-first retrieval priority of the two-plane
-  resolution model ([`./README.md`](./README.md)) is what keeps Bronze out of answers.
+  resolution model is what keeps Bronze out of answers.
 
 > **Suppression by ranking is weaker than the published contract, deliberately, for now.** The
 > spec says Bronze is *skipped* on the agent surface, and Smart enforces exactly that
