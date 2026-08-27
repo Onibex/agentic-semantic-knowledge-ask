@@ -83,16 +83,18 @@ ASK removes the guessing from the part that must be exact:
 - **Retrieval is hybrid and ranked** — kNN + BM25 + RRF over a curated vocabulary.
 - **Everything is scoped** — a workspace allowlist decides what any question can reach.
 
-![The domain canvas filtered to five nodes: two Gold Data Products, two Silver, and the labelled relationships between them](platform/docs/images/studio-canvas-filtered.png)
-
-That graph is the one the join above was computed over. It is declared, not inferred — every
-edge carries a join predicate, a cardinality and a traversal cost.
-
 Each of those is a decision the product makes rather than a claim it asserts, and
 [The three chat engines](platform/docs/explain/engines.md) is where they are set out — what
 each engine computes, what it concedes to the model, and why that trade is the one worth
 making. The scope itself is a workspace:
 [Create workspaces and business domains](platform/docs/ask-studio/01-workspaces-domains.md).
+
+![The domain canvas: the Data Products of one business domain across Gold, Silver and Bronze, and the labelled relationships declared between them](platform/docs/images/studio-canvas-domain.png)
+
+That is one business domain — thirty-one Data Products, and every line between them a
+relationship somebody declared. Each carries a join predicate, a cardinality, a traversal cost
+and an aggregation-safety hint, which is what lets a path be **computed** rather than chosen.
+Point an LLM at the raw schema and this graph does not exist; it has to guess its way across.
 
 ---
 
