@@ -72,7 +72,7 @@ The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`, `target_
 
 | Layer | Concept | Purpose | Agent visibility |
 |-------|---------|---------|------------------|
-| **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Sales Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary** — agents prefer Gold |
+| **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary** — agents prefer Gold |
 | **🥈 Silver** | Foundational Data Product | Encodes a real-world enterprise artifact (Customer, Product, Sales Order). Composed of one or more Bronze nodes joined into a coherent business entity. Reusable across many Gold products. | **Fallback** — agents use Silver when no Gold matches |
 | **🥉 Bronze** | Raw node / table | A faithful, mostly-uninterpreted representation of a source system table or node. | **Avoid** — not recommended as agent context |
 

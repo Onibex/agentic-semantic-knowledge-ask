@@ -16,9 +16,9 @@
 
 ## The question all three answer
 
-A business user types *"how many sales orders are still open for trading goods in plant
-1000?"*. Something has to decide **which Data Products answer that**, **how they join**, and
-**what SQL to emit**. Those are three separate decisions, and the three engines differ in
+A business user types *"based on open sales orders for material ID TG12, do we have enough
+stock to cover that demand?"*. Something has to decide **which Data Products answer that**,
+**how they join**, and **what SQL to emit**. Those are three separate decisions, and the three engines differ in
 exactly one thing: **how many of them the LLM makes, and how many are computed.**
 
 That framing is the whole story. Everything below is detail.

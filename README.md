@@ -4,21 +4,23 @@
 > SQL back — compiled from a business-vocabulary semantic layer, never guessed from
 > raw schema.
 
-**"How many sales orders are still open for trading goods in plant 1000?"**
+**"Based on open sales orders for material ID TG12, do we have enough stock to cover that
+demand?"**
 
-A business user types that into **[ASK Chat](platform/docs/ask-chat/README.md)**. ASK resolves *open*, *sales order*,
-*trading goods* and *plant* against a curated semantic layer, computes the join path
-deterministically, compiles SQL in your database's own dialect, runs it, and answers
-with the numbers and the citations behind them.
+A business user types that into **[ASK Chat](platform/docs/ask-chat/README.md)**. That question
+names no table, and answering it takes two things the business tracks separately: what has been
+ordered, and what is on the shelf. ASK resolves *open sales orders*, *material* and *stock*
+against a curated semantic layer, works out that both are needed, computes the join between them
+deterministically, compiles SQL in your database's own dialect, runs it, and answers — starting
+with **"No, we do not have enough stock"**, then the figures, then the query it ran.
 
 The LLM maps language to a contract you control. It never invents a table or a column
 name, because it is never shown one it may invent from.
 
 ![ASK Chat answering a stock-coverage question: the written answer, the key figures, the results table, and the generated SQL joining two Gold Data Products](platform/docs/images/ask-chat-answer.gif)
 
-> The question above spans two Data Products — open sales orders and inventory position.
-> ASK resolves both, computes the join between them, and shows you the SQL it ran. Nothing in
-> that query was guessed.
+> The two Data Products are **Open Order Tracker** and **Inventory Position**. The join between
+> them was computed, not written — and the SQL is on screen, so you can check.
 
 ---
 
@@ -100,7 +102,7 @@ Two layers face the agent, and they answer different kinds of question:
 
 | Layer | What it is | When the agent uses it |
 |---|---|---|
-| 🥇 **[Gold](definition/docs/GOLD_LAYER.md)** | A **business definition** — pre-joined and semantically resolved. "Open Sales Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
+| 🥇 **[Gold](definition/docs/GOLD_LAYER.md)** | A **business definition** — pre-joined and semantically resolved. "Open Order Tracker", "Inventory Position". | **Preferred.** If a Gold answers the question, it wins. |
 | 🥈 **[Silver](definition/docs/SILVER_LAYER.md)** | A **reusable enterprise entity** — Customer, Product, Sales Order — with declared grain, measures and relationships. | **Fallback**, when no Gold fits. Also the building blocks Gold is composed from. |
 
 > **Bronze is lineage, and in the usual path you never write it.** When SAP metadata is
