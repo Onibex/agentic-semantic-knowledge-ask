@@ -58,6 +58,12 @@ relationship graph, so the cheapest correct path wins rather than the most plaus
 one. Finally it audits the emitted SQL against the entities it authorised, and retries once if
 the SQL reached for something outside that set.
 
+![The same canvas filtered to the five Data Products one question needed: two Gold, two Silver, and the relationships between them](../images/studio-canvas-filtered.png)
+
+That is the graph a path is computed over, filtered here to the five Data Products one question
+needed. Every edge is declared, and every one carries the cost that decides which way Dijkstra
+goes.
+
 That last step is what makes Precise the engine to reach for in an audit. It is also why it
 costs the most and takes the longest.
 
