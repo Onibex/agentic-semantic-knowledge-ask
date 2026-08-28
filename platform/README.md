@@ -1,4 +1,4 @@
-# Onibex ASK Platform
+# Onibex Agentic Semantic Knowledge Platform
 
 Turn a question in plain language into **governed SQL** over the data you already have. Ask
 *"total net sales by region last quarter"*; the platform resolves your business terms against a
@@ -7,7 +7,7 @@ database's own dialect, runs it, and returns a written answer with a table, an a
 and the query behind it.
 
 The agent never invents a column or guesses a join. It can only use Data Products an author has
-defined and **published** — which is what makes an answer reproducible, and what makes it
+defined and **published**. That is what makes an answer reproducible, and what makes it
 auditable when someone asks where a number came from.
 
 ![ASK Chat answering a stock-coverage question: the written answer, the key figures, the results table, and the generated SQL joining two Gold Data Products](docs/images/ask-chat-answer.gif)
@@ -50,7 +50,7 @@ docker compose up -d
 | Keycloak (sign-in) | `http://localhost:8180` |
 
 First boot builds images and bootstraps OpenSearch, so give it a few minutes. Two environment
-variables must be set before that command gets you anywhere — `ONIBEX_ENCRYPTION_KEY` and
+variables must be set before that command gets you anywhere: `ONIBEX_ENCRYPTION_KEY` and
 `SEMANTIC_LAYER_HOST_PATH`. Both, and the startup order, are in
 [Install and run the platform](docs/01-installation.md).
 
@@ -58,54 +58,54 @@ variables must be set before that command gets you anywhere — `ONIBEX_ENCRYPTI
 
 | You want to… | Read |
 |---|---|
-| **See everything** | **[The manual](docs/README.md)** — every page, grouped by what you are trying to do |
-| **Try it for the first time** | [Getting Started](docs/GETTING_STARTED.md) — one guided path, empty machine to a real answer |
-| **Install it** | [Install and run the platform](docs/01-installation.md) — every variable, the startup order, the gotchas |
-| **Understand the shape of it** | [Concepts and architecture](docs/02-concepts.md) — the mental model, with diagrams |
+| **See everything** | **[The manual](docs/README.md)**. Every page, grouped by what you are trying to do |
+| **Try it for the first time** | [Getting Started](docs/GETTING_STARTED.md). one guided path, empty machine to a real answer |
+| **Install it** | [Install and run the platform](docs/01-installation.md). every variable, the startup order, the gotchas |
+| **Understand the shape of it** | [Concepts and architecture](docs/02-concepts.md). the mental model, with diagrams |
 | **Configure it** | [Configure the platform first · ASK Setup](docs/ask-setup/README.md) |
 | **Author a semantic layer** | [Author the semantic layer · ASK Studio](docs/ask-studio/README.md) |
 | **Ask questions** | [Ask questions · ASK Chat](docs/ask-chat/README.md) |
-| **Know how governed the answers are** | [The three chat engines](docs/explain/engines.md) — what is computed rather than guessed |
+| **Know how governed the answers are** | [The three chat engines](docs/explain/engines.md). what is computed rather than guessed |
 | **Run it in production** | [Operating the platform](docs/runbooks/README.md) |
 
 The normative Bronze / Silver / Gold rules are not here. They are the
-[ASK specification](../definition/README.md) — a separate track of this repository, with its own
+[ASK specification](../definition/README.md), a separate track of this repository with its own
 licence and its own version policy.
 
 ## Technology
 
-- **Orchestration:** LangGraph — intent resolution → SQL generation → execution, with three
+- **Orchestration:** LangGraph. Intent resolution → SQL generation → execution, with three
   engines that differ in what they compute rather than guess.
 - **LLM and embeddings:** pluggable. SAP AI Core for managed models, or any LiteLLM provider
   (Anthropic, OpenAI, AWS Bedrock, Databricks and others), chosen in ASK Setup.
 - **Semantic search:** OpenSearch, hybrid kNN + BM25 with reciprocal rank fusion.
 - **Target databases:** SAP HANA, PostgreSQL, Snowflake, Databricks, Google BigQuery,
-  ClickHouse, Microsoft SQL Server, Microsoft Fabric, IBM Db2 and Presto — each with its own SQL
+  ClickHouse, Microsoft SQL Server, Microsoft Fabric, IBM Db2 and Presto. Each has its own SQL
   generator and its own execution adapter, not a generic fallback. Which drivers ship in your
   image is one build variable, `EXECUTOR_EXTRAS`.
-- **Backend:** typed Python packages with enforced boundaries — see
+- **Backend:** typed Python packages with enforced boundaries. See
   [`packages/`](packages/README.md).
 - **Frontends:** three React SPAs served by Nginx.
 
 ## License
 
-The Onibex ASK Platform is source-available and dual-licensed — see
+The Onibex Agentic Semantic Knowledge Platform is source-available and dual-licensed. See
 [`LICENSE.md`](LICENSE.md): **PolyForm Strict License 1.0.0** (noncommercial use, research,
 evaluation, and personal study, indefinitely) or **PolyForm Free Trial License 1.0.0**
-(evaluate for your business for up to 32 consecutive calendar days — for example via
+(evaluate for your business for up to 32 consecutive calendar days, for example via
 `docker compose up`), at your option. Production or any other commercial use requires a
-commercial license from [Onibex](https://onibex.com) — see
+commercial license from [Onibex](https://onibex.com). See
 [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
 
 "Onibex", "ASK", and the Onibex logos are trademarks of Onibex, LLC and are excluded from the
 license. This platform also references, without redistributing under this license, third-party
 software including SAP HANA, SAP BTP, and SAP AI Core (trademarks of SAP SE), OpenSearch (a
-registered trademark of Amazon Web Services), and Keycloak (a trademark of Red Hat, Inc.) — see
+registered trademark of Amazon Web Services), and Keycloak (a trademark of Red Hat, Inc.). See
 [`../THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md).
 
 ## Support
 
 Found something inaccurate or confusing in the documentation? That is a bug, and reporting it is
-a contribution — [`SUPPORT.md`](../SUPPORT.md) says where each kind of question goes, and
+a contribution. [`SUPPORT.md`](../SUPPORT.md) says where each kind of question goes, and
 [`CONTRIBUTING.md`](../CONTRIBUTING.md) how a change is reviewed. Vulnerabilities go through
 [`SECURITY.md`](../SECURITY.md), never a public issue.

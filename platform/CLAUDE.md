@@ -1,4 +1,4 @@
-# Onibex ASK Platform — Project Context
+# Onibex Agentic Semantic Knowledge Platform — Project Context
 
 > **Read this file FIRST before making any changes.**
 

@@ -15,7 +15,7 @@ Which one you are touching decides how a change is handled:
 | You are changing | Track | Reviewed as |
 |---|---|---|
 | `definition/` | The **ASK specification** (`ask-spec 1.0`) — a published, vendor-neutral contract | A change to a contract other people have already implemented against. Slower, and deliberately so. |
-| `platform/` | The **Onibex ASK Platform** — the runtime and its manual | An ordinary code or documentation change. |
+| `platform/` | The **Onibex Agentic Semantic Knowledge Platform** — the runtime and its manual | An ordinary code or documentation change. |
 
 ## Before you open a pull request
 

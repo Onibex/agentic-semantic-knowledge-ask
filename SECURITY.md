@@ -1,6 +1,6 @@
 # Security Policy
 
-The Onibex ASK Platform connects to enterprise systems (SAP, databases, identity
+The Onibex Agentic Semantic Knowledge Platform connects to enterprise systems (SAP, databases, identity
 providers). We take vulnerability reports seriously and appreciate responsible
 disclosure.
 
