@@ -71,39 +71,47 @@ issues, not usage issues, hand them to whoever installed the platform.
 ## FAQ
 
 **Why do I get empty answers when the platform is clearly running?**
+
 Because the chat only sees Data Products **published to the environment you selected**. Confirm
 your administrator has published the relevant business domain to that environment (dev or prod),
 and that your environment selector matches.
 
 **Why does `dev` have data but `prod` is empty?**
+
 Publishing is gated **dev → prod**. New content is published to **dev** first and only promoted
 to **prod** once dev is current. An empty `prod` usually just means the promotion hasn't happened
 yet, ask your administrator to promote it.
 
 **The agent answered with the wrong field. How do I fix it going forward?**
+
 That's a semantic-layer signal, not a one-off. Have the administrator improve the Data Product's
 field **descriptions and synonyms**, or add the business term to the **semantic dictionary** so
 the mapping is pinned (for example, *good quantity* / *yield* → `AFRU.LMNGA`, and *scrap* →
 `AFRU.XMNGA`).
 
 **Which agent mode should I use if answers look off?**
-Start with **Smart** (the balanced default). If you need a more rigorously validated,
+
+Start with **Smart**, the balanced option. If you need a more rigorously validated,
 reproducible result, or you want the agent to justify exactly which tables and joins it used,
 switch to **Precise**.
 
 **The first question of the day is slow, is something wrong?**
+
 No. That's a normal **cold start** while the provider warms up. Subsequent questions are faster.
 
 **Publishing seems stuck. Should I refresh?**
+
 No, watch the streamed per-Data-Product progress. Large domains take a moment. If it truly
 stalls, use **Stop** to halt the run and then **retry** the publish; don't reload mid-publish.
 
 **I merged a OneConnect export and nothing changed, why the "conflict"?**
+
 When a merged field differs from what already exists, the platform surfaces a **conflict** rather
 than overwrite hand-authored content. Resolve it under the **Conflicts** filter in Semantic
 Knowledge; auto-applied (non-conflicting) changes land immediately.
 
 **I get 401 Unauthorized even after logging in.**
+
 Your session likely expired: sign in again. If it recurs, the provider credentials or the
 identity-provider wiring may be off; that's an administrator/ops check in the Config app
 (orchestrator logs and auth wiring).

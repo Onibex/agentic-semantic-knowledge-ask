@@ -141,17 +141,20 @@ are trying to do.
 ## FAQ
 
 **Is my data sent to the model?**
+
 To write SQL, the agent is shown your **semantic layer**, the Data Products you authored, never
 the raw schema. Query **results** are sent: once the SQL has run, the rows go to the model to be
 written up as the answer you read. The model is whichever one you configured in ASK Setup, and
 it can be a self-hosted one.
 
 **Do I need SAP?**
+
 No. Nothing in the specification is SAP-specific. The reference examples are SAP SD and MM
 because that is where ASK was built, and it is where a semantic layer earns the most, but a
 `CREATE TABLE` on PostgreSQL is a valid starting point.
 
 **Which databases does it work with?**
+
 Ten, each with its own SQL generator and its own execution adapter rather than a generic
 fallback: **SAP HANA**, **PostgreSQL**, **Snowflake**, **Databricks**, **Google BigQuery**,
 **ClickHouse**, **Microsoft SQL Server**, **Microsoft Fabric**, **IBM Db2** and **Presto**. ASK
@@ -160,26 +163,31 @@ engine's dialect. Adding one is
 [Connect a database](platform/docs/ask-setup/02-database-connections.md).
 
 **Which models can I use?**
+
 SAP AI Core for managed models, or any LiteLLM provider: Anthropic, OpenAI, AWS Bedrock,
 Databricks and others. Chosen in ASK Setup; changing one reloads the affected services rather
 than needing a redeploy.
 
 **Do I have to write the YAML by hand?**
+
 No, and mostly you should not. Import a `CREATE TABLE` and let AI draft the layer, ingest SAP
 metadata through OneConnect, or author in the UI, then review the diff. See
 [Add Data Products](platform/docs/ask-studio/02-add-data-products.md).
 
 **Do I have to author a semantic layer at all?**
+
 Yes, and it is the one honest condition. ASK's determinism comes from the contract: if nobody
 authors one, there is nothing for it to compile against. The drafting is assisted, the review
 is not.
 
 **Is this open source?**
+
 **No. Source-available.** Read it, evaluate it, study it, build against it. Production use
 needs a commercial licence. The distinction is real and we would rather you learn it here than
 after a procurement review.
 
 **How long does an answer take?**
+
 Between roughly fifteen and sixty seconds, depending on the engine. That is a real trade, and
 [The three chat engines](platform/docs/explain/engines.md) is where it is laid out rather than
 hidden.
