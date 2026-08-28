@@ -7,7 +7,7 @@
 
 ---
 
-## ⚠️ XSUAA dev bypass — DO NOT TOUCH IN PRODUCTION
+## ⚠️ XSUAA dev bypass: DO NOT TOUCH IN PRODUCTION
 
 The orchestrator implements a **dual-flag** bypass for local development:
 
@@ -15,8 +15,8 @@ The orchestrator implements a **dual-flag** bypass for local development:
 bypass_active == True    iff    ENVIRONMENT == "local"  AND  DEV_BYPASS_AUTH == "true"
 ```
 
-In any other combination — including `ENVIRONMENT=production` with
-`DEV_BYPASS_AUTH=true` — the bypass is **ignored** and real XSUAA validation
+In any other combination, including `ENVIRONMENT=production` with
+`DEV_BYPASS_AUTH=true`. The bypass is **ignored** and real XSUAA validation
 runs. This is enforced by a unit test (`test_production_with_bypass_flag_set_still_validates`)
 that fails the build if regressed.
 
@@ -37,7 +37,7 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
 
 | Check                         | Expected                                          |
 |-------------------------------|---------------------------------------------------|
-| `GET /v1/health`              | `{"status":"ok"}` — unauthenticated, used by probes |
+| `GET /v1/health`              | `{"status":"ok"}`: unauthenticated, used by probes |
 | `GET /openapi.json`           | OpenAPI 3.x JSON                                  |
 | `POST /v1/query`              | `QueryResponse` with valid `mode_used`            |
 | `kubectl get pods -n onibex-ask -l app=ask-orchestrator` | All replicas Ready |
@@ -59,7 +59,7 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
 
 ### Validating JWT forwarding end-to-end
 
-Manual procedure — run after deploying the orchestrator + chat SPA:
+Manual procedure, run after deploying the orchestrator + chat SPA:
 
 1. Deploy: `kubectl apply -f deploy/ask-orchestrator-deploy/`
 2. Open the chat SPA and log in.
@@ -84,7 +84,7 @@ Manual procedure — run after deploying the orchestrator + chat SPA:
 - **Cause:** the deployment is missing one of `XSUAA_CLIENT_ID`,
   `XSUAA_CLIENT_SECRET`, `XSUAA_URL`, `XSUAA_UAA_DOMAIN`,
   `XSUAA_VERIFICATION_KEY`, `XSUAA_XSAPPNAME`.
-- **Fix:** check the deployment binding to the XSUAA secret — every field above
+- **Fix:** check the deployment binding to the XSUAA secret, every field above
   must be present in the Secret the Deployment mounts.
 
 ### 3. `/v1/query` returns 500 "PIPELINE_ERROR"

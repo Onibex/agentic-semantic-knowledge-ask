@@ -16,5 +16,5 @@ licenses; **production or any other commercial use requires a commercial
 license from Onibex.**
 
 Third-party components used by the platform and the ASK specification keep
-their own licenses and are not covered by the Onibex commercial license —
+their own licenses and are not covered by the Onibex commercial license,
 see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

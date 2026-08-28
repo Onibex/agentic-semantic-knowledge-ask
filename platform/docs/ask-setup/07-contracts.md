@@ -2,8 +2,8 @@
 
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Register an OpenAPI contract**
 
-> **How to.** Register a SAP OData service — described by an
-> **OpenAPI 3.0** specification — so the agent can call it. Each registered contract turns the
+> **How to.** Register a SAP OData service, described by an
+> **OpenAPI 3.0** specification, so the agent can call it. Each registered contract turns the
 > service's entity sets and operations into MCP tools the agent uses for SAP actions.
 
 | | |
@@ -13,7 +13,7 @@
 | **Prerequisites** | You can sign in to **ASK Setup**; an OpenAPI 3.0 spec **in JSON** for the OData service you want to expose. |
 | **You'll end with** | The OData service registered as MCP tools, its entity sets and operations available to the agent. |
 
-> The screenshots use a sample OData spec. Register your own service's spec — the exact entity
+> The screenshots use a sample OData spec. Register your own service's spec, the exact entity
 > sets shown here won't match yours.
 
 ---
@@ -25,7 +25,7 @@
   delete) into MCP tools the agent can call through the [Enable the MCP server](06-mcp-server.md).
 - **JSON only.** The spec is parsed in your browser to preview what it exposes; only JSON is
   accepted. **Convert YAML to JSON first.**
-- Registering is **non-destructive to review** — you see a parsed preview of the entity sets
+- Registering is **non-destructive to review**. You see a parsed preview of the entity sets
   and operations **before** you commit it.
 - The built-in **`salesorder`** contract ships with the platform and **cannot be removed**.
   Your own contracts can be registered, replaced and deleted freely.
@@ -50,23 +50,23 @@ The file is parsed immediately in the browser:
 
 | Result | What happens |
 |---|---|
-| Parsed successfully | A preview panel opens showing the spec's **title**, the number of **entity sets**, and the filename. A toast confirms *"Parsed `<title>` — N entity set(s)"*. |
-| Not valid JSON | A toast — *"Only JSON files are supported. Convert YAML to JSON first."* — and nothing is registered. |
-| No entity sets found | A toast — *"No entity sets could be extracted from this OpenAPI spec."* |
+| Parsed successfully | A preview panel opens showing the spec's **title**, the number of **entity sets**, and the filename. A toast confirms *"Parsed `<title>`. N entity set(s)"*. |
+| Not valid JSON | A toast, *"Only JSON files are supported. Convert YAML to JSON first."*. And nothing is registered. |
+| No entity sets found | A toast, *"No entity sets could be extracted from this OpenAPI spec."* |
 
-The preview lists each entity set in a table with three columns — **Entity Set**,
+The preview lists each entity set in a table with three columns: **Entity Set**,
 **Operations**, and **Description**. The operation badges reflect the HTTP methods the spec
 declares: **LIST** and **GET** (read), **POST** (create), **PATCH** (update), **DEL**
 (delete). If a contract with the same name is already registered, a **Will replace existing**
 badge appears in the preview header.
 
-> **Tip — the preview is your check.** Confirm the entity sets and operations match what you
+> **Tip. The preview is your check.** Confirm the entity sets and operations match what you
 > expect before registering. What you see in this table is exactly what becomes available to
 > the agent as tools.
 
 ## 3. Register the contract
 
-Click **Register Contract** to save it. A toast — *"`<title>` registered"* — confirms, and the
+Click **Register Contract** to save it. A toast, *"`<title>` registered"*: confirms, and the
 contract appears in the list below. Click **Cancel** to discard the preview without
 registering.
 
@@ -83,10 +83,10 @@ The **Registered Contracts (N)** card lists everything currently registered. Eac
 | Delete (trash) | Removes a **custom** contract after a confirmation prompt. |
 
 The built-in **`salesorder`** contract carries the **built-in** tag and has **no delete
-button** — it is part of the platform and stays registered. Removing a custom contract asks
-you to confirm — *"Remove contract `<name>`?"* — first.
+button**. It is part of the platform and stays registered. Removing a custom contract asks
+you to confirm, *"Remove contract `<name>`?"*, first.
 
-> **Warning — registering replaces by name.** Uploading a spec whose name matches an existing
+> **Warning, registering replaces by name.** Uploading a spec whose name matches an existing
 > contract **replaces** it (the preview flags this with **Will replace existing**). To keep
 > both, ensure their OpenAPI **titles** differ before converting to JSON.
 
@@ -94,7 +94,7 @@ you to confirm — *"Remove contract `<name>`?"* — first.
 
 ## What's next
 
-→ **[Enable the MCP server](06-mcp-server.md)** — confirm the MCP endpoint that serves these contracts is
+→ **[Enable the MCP server](06-mcp-server.md)**, confirm the MCP endpoint that serves these contracts is
 reachable.
 → Once contracts are registered, the agent can invoke them as SAP actions from chat.
 

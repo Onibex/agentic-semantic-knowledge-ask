@@ -14,8 +14,8 @@ Which one you are touching decides how a change is handled:
 
 | You are changing | Track | Reviewed as |
 |---|---|---|
-| `definition/` | The **ASK specification** (`ask-spec 1.0`) — a published, vendor-neutral contract | A change to a contract other people have already implemented against. Slower, and deliberately so. |
-| `platform/` | The **Onibex Agentic Semantic Knowledge Platform** — the runtime and its manual | An ordinary code or documentation change. |
+| `definition/` | The **ASK specification** (`ask-spec 1.0`): a published, vendor-neutral contract | A change to a contract other people have already implemented against. Slower, and deliberately so. |
+| `platform/` | The **Onibex Agentic Semantic Knowledge Platform**, the runtime and its manual | An ordinary code or documentation change. |
 
 ## Before you open a pull request
 
@@ -29,7 +29,7 @@ is two reviews wearing one hat, and the second one gets less attention than it
 deserves.
 
 **Say what changes for a reader or a caller.** A commit message that explains why is
-worth more than one that lists what — the diff already lists what.
+worth more than one that lists what, the diff already lists what.
 
 ## Changing the specification
 
@@ -38,7 +38,7 @@ rendered from these rules; they are never a second authority. So:
 
 - **The code decides questions of fact.** Where the specification and the platform's
   behaviour disagree, one of them is defective. Say which, in the issue.
-- **Open an RFC issue** — put `[RFC]` in the title — for anything that changes a rule,
+- **Open an RFC issue.** Put `[RFC]` in the title: for anything that changes a rule,
   a type, or whether a key is required.
 - **New examples are especially welcome**, and non-SAP sources most of all. A PR adding
   a YAML under `definition/examples/` needs no RFC.
@@ -55,15 +55,15 @@ pytest tests/boundary/
 lint-imports
 ```
 
-Package tests live with their package — `cd packages/ask-admin-api && pytest`.
+Package tests live with their package, `cd packages/ask-admin-api && pytest`.
 
 House rules that reviewers will hold you to:
 
-- **User-facing output is in English** — UI strings, documentation, commit messages.
+- **User-facing output is in English.** UI strings, documentation, commit messages.
 - **ASK YAML goes through ruamel** (`load_yaml_text` / `dump_yaml`), never `import yaml`.
 - **Documentation declares what is**, and never narrates what changed. The changelog is
   where change belongs.
-- **Package boundaries are enforced**, not conventional — `.importlinter` contracts fail
+- **Package boundaries are enforced**, not conventional, `.importlinter` contracts fail
   the build.
 
 ## Changing the documentation
@@ -73,7 +73,7 @@ The manual is `platform/docs/`, and it follows [Diátaxis](https://diataxis.fr):
 
 | Genre | Job | Lives in |
 |---|---|---|
-| Tutorial | One guided path, learner chooses nothing | `GETTING_STARTED.md` — there is exactly one |
+| Tutorial | One guided path, learner chooses nothing | `GETTING_STARTED.md`. There is exactly one |
 | How-to | One task, titled with a verb | `ask-setup/`, `ask-studio/`, `ask-chat/`, `guides/` |
 | Reference | Look-up, no narrative | `reference/`, and `definition/` for the contract |
 | Explanation | Why it works this way | `explain/` |
@@ -81,8 +81,8 @@ The manual is `platform/docs/`, and it follows [Diátaxis](https://diataxis.fr):
 **One exception, taken deliberately.** A how-to page may carry a short **What you need to know
 first** section. It is explanation on a task page, and it stays: the alternative is sending a
 reader who is mid-task to another page for four sentences they need in order to follow the
-next one. Keep it dense and decision-shaped — *"a registry, not a single connection"*, *"no
-active connection blocks the chat"* — and keep it short. Anything longer belongs in `explain/`.
+next one. Keep it dense and decision-shaped: *"a registry, not a single connection"*, *"no
+active connection blocks the chat"*, and keep it short. Anything longer belongs in `explain/`.
 
 ### The names
 
@@ -111,7 +111,7 @@ python scripts/docs_terms.py --check
 Both read only what git tracks, so run them **after** `git add` -- otherwise a new file passes
 locally and fails in CI.
 
-Found something inaccurate or confusing in the docs? That is a bug — open a
+Found something inaccurate or confusing in the docs? That is a bug. Open a
 **Documentation** issue. Reporting it is a contribution.
 
 ## Security
@@ -122,7 +122,7 @@ Do not open a public issue for a vulnerability. See [`SECURITY.md`](SECURITY.md)
 
 By submitting a contribution you confirm that it is yours to give, and you grant
 Onibex, LLC permission to include it in this repository and distribute it under the
-terms of the applicable licence — [`definition/LICENSE`](definition/LICENSE) or
+terms of the applicable licence, [`definition/LICENSE`](definition/LICENSE) or
 [`platform/LICENSE.md`](platform/LICENSE.md).
 
 Tooling you build *around* the specification is yours. The licence covers this

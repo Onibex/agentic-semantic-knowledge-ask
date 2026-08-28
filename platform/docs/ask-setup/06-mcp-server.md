@@ -3,7 +3,7 @@
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Enable the MCP server**
 
 > **How to.** Point the platform at the internal **MCP
-> Server** — the tool bridge the agent uses to make SAP OData write and action calls. This
+> Server**, the tool bridge the agent uses to make SAP OData write and action calls. This
 > page stores the endpoint (URL + port) the orchestrator uses to reach that service and lets
 > you verify it is live.
 
@@ -23,10 +23,10 @@
 ## What you need to know first
 
 - **MCP** (Model Context Protocol) is the **tool bridge** the agent uses to call SAP OData
-  services — for example, to create or update a sales order. It runs as a separate internal
+  services: for example, to create or update a sales order. It runs as a separate internal
   service in the cluster; this page only tells the orchestrator **where** to reach it.
 - The endpoint is stored as **configuration** (an MCP URL and port). Saving it takes effect
-  for the next query — there is no pod restart or container rebuild involved.
+  for the next query. There is no pod restart or container rebuild involved.
 - The **tools** the MCP server exposes are defined by the OpenAPI specs you register on the
   [Register an OpenAPI contract](07-contracts.md) page. This page is the address; Contracts is the catalog.
 - **Test** sends a health check to the **saved** URL, so save your changes before you test.
@@ -47,13 +47,13 @@ The **Connection Settings** card holds two fields:
 
 | Field | Notes |
 |---|---|
-| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://ask-mcp-service:4004` — the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
+| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://ask-mcp-service:4004`, the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
 | **Port** | The MCP service port. Defaults to `4004`. |
 
-Enter your values, then click **Save**. A confirmation toast — *"MCP Server configuration
-saved"* — reports success.
+Enter your values, then click **Save**. A confirmation toast, *"MCP Server configuration
+saved"*, reports success.
 
-> **Tip — internal address, not a public URL.** The default host
+> **Tip: internal address, not a public URL.** The default host
 > (`ask-mcp-service`) is a cluster-internal service name resolved by Kubernetes DNS. It
 > is reached by the orchestrator inside the cluster, not from your browser, so it does not
 > need to be publicly routable.
@@ -66,10 +66,10 @@ strip appears below it:
 
 | Outcome | What you see |
 |---|---|
-| Success | A green strip — *"MCP server responded"* (with the HTTP status when returned) — and a toast *"MCP server is reachable"*. |
+| Success | A green strip, *"MCP server responded"* (with the HTTP status when returned). And a toast *"MCP server is reachable"*. |
 | Failure | A red strip with the error message, and a toast *"MCP unreachable: …"*. |
 
-> **Warning — a failing test only affects actions.** If the MCP server is unreachable, the
+> **Warning: a failing test only affects actions.** If the MCP server is unreachable, the
 > agent's **action-execution** capability (SAP OData writes) will fail. Read-only questions
 > that generate and run SQL are unaffected. Save the correct endpoint and confirm the test is
 > green before relying on write actions.
@@ -78,9 +78,9 @@ strip appears below it:
 
 ## What's next
 
-→ **[Register an OpenAPI contract](07-contracts.md)** — register the OpenAPI specs that turn SAP OData services
+→ **[Register an OpenAPI contract](07-contracts.md)**, register the OpenAPI specs that turn SAP OData services
 into the tools this MCP server exposes.
-→ **[Connect to SAP](05-sap-connection.md)** — set the S/4HANA OData credentials the MCP
+→ **[Connect to SAP](05-sap-connection.md)**, set the S/4HANA OData credentials the MCP
 server uses to reach SAP.
 
 ---

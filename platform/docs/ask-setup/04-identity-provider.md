@@ -3,7 +3,7 @@
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Review the identity provider**
 
 > **How to.** See who signs in to the platform, and how. This page is **read-only by
-> design**: the identity provider is chosen at deploy time and baked into the build — the page
+> design**: the identity provider is chosen at deploy time and baked into the build, the page
 > exists to show you the active configuration and your own session, not to edit them.
 
 | | |
@@ -18,11 +18,11 @@
 ## What you need to know first
 
 - Authentication is configured **at deploy time**, not in the UI. Everything on this page is
-  **read-only** — there are no editable fields by design.
+  **read-only**. There are no editable fields by design.
 - The platform supports three modes:
-  - **Keycloak** — a self-hosted OIDC realm; the default for local and on-prem deployments.
-  - **SAP BTP — Cloud Identity (IAS / XSUAA)** — managed identity for SAP BTP deployments.
-  - **Dev bypass (no authentication)** — local development only; requests are **not** authenticated.
+  - **Keycloak.** A self-hosted OIDC realm; the default for local and on-prem deployments.
+  - **SAP BTP. Cloud Identity (IAS / XSUAA).** Managed identity for SAP BTP deployments.
+  - **Dev bypass (no authentication).** Local development only; requests are **not** authenticated.
     Never use it in production.
 - Sign-in uses **OIDC with PKCE**. The SPA reads its provider from a build-time variable and the
   backend validates tokens with matching environment variables.
@@ -50,8 +50,8 @@ and a small **mode:** chip shows the raw mode value (`keycloak`, `xsuaa` or `non
 | Mode | Card shows |
 |---|---|
 | **Keycloak** | The **realm** and **client** id decoded from the issuer. |
-| **SAP BTP — Cloud Identity (IAS / XSUAA)** | The bound **client** id. |
-| **Dev bypass (no authentication)** | *"no identity provider bound"* — authentication is off. |
+| **SAP BTP. Cloud Identity (IAS / XSUAA)** | The bound **client** id. |
+| **Dev bypass (no authentication)** | *"no identity provider bound"*, authentication is off. |
 
 ## 3. Review the OIDC configuration (read-only)
 
@@ -70,9 +70,9 @@ When a real provider is active, the **OIDC configuration** card lists the connec
 An information note under the table explains the wiring: the SPA reads the provider from
 **`VITE_AUTH_MODE`** (compiled into the bundle at build), and the backend validates tokens using
 **`AUTH_MODE`** plus **`KEYCLOAK_JWKS_URL`** / **`XSUAA_*`**. *"To switch providers, change the env
-vars and rebuild — there is nothing to edit here by design."*
+vars and rebuild. There is nothing to edit here by design."*
 
-> **Note — dev bypass looks different.** When the platform runs with authentication bypassed
+> **Note, dev bypass looks different.** When the platform runs with authentication bypassed
 > (`VITE_AUTH_MODE` unset), this card is replaced by an amber notice telling you to set the mode to
 > `keycloak` or `xsuaa` and rebuild to enable a real identity provider. There is no session panel in
 > that mode.
@@ -84,18 +84,18 @@ The **Your session** panel (*"decoded from your token"*) shows the identity you 
 **`ask-admin`** and **`ask-user`** are highlighted; any other roles appear muted. If your token
 carries no roles, the panel says *"no roles in token."*
 
-> **Tip — roles gate what you can do.** `ask-admin` and `ask-user` are the RBAC roles the platform
+> **Tip, roles gate what you can do.** `ask-admin` and `ask-user` are the RBAC roles the platform
 > recognises (see [Concepts and architecture](../02-concepts.md)). If an action returns a permission error, confirm
-> the expected role appears here — your identity provider assigns it, not this page.
+> the expected role appears here: your identity provider assigns it, not this page.
 
 ## 5. Understand the supported providers
 
-The **Supported providers** list shows the two production identity providers — **Keycloak** and
-**SAP BTP — Cloud Identity (IAS / XSUAA)** — each with its mode id, a short description, and an
+The **Supported providers** list shows the two production identity providers, **Keycloak** and
+**SAP BTP. Cloud Identity (IAS / XSUAA)**. Each with its mode id, a short description, and an
 **Active** or **Available** badge. Because switching is a deploy-time change, this list is
 informational: it tells you what the platform can be built against, not a menu you select from.
 
-> **Warning — switching providers is an operations task.** Changing the identity provider means
+> **Warning, switching providers is an operations task.** Changing the identity provider means
 > updating the build-time and backend environment variables (`VITE_AUTH_MODE` / `AUTH_MODE` and the
 > matching `KEYCLOAK_*` or `XSUAA_*` values), **rebuilding the SPA**, and restarting the backend. It
 > cannot be done from this page.
@@ -104,9 +104,9 @@ informational: it tells you what the platform can be built against, not a menu y
 
 ## What's next
 
-→ **[Connect to SAP](05-sap-connection.md)** — S/4HANA OData credentials.
-→ **[Connect an LLM provider](03-llm-providers.md)** — the model registry and shared embedder.
-→ **[Concepts and architecture](../02-concepts.md)** — how the `ask-admin` / `ask-user` roles map to what each person
+→ **[Connect to SAP](05-sap-connection.md)**. S/4HANA OData credentials.
+→ **[Connect an LLM provider](03-llm-providers.md)**, the model registry and shared embedder.
+→ **[Concepts and architecture](../02-concepts.md)**, how the `ask-admin` / `ask-user` roles map to what each person
 can do.
 
 ---

@@ -1,11 +1,11 @@
 # Third-Party Notices
 
-**Onibex ASK — Agentic Semantic Knowledge**
+**Onibex ASK. Agentic Semantic Knowledge**
 Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This repository is source-available under [LICENSE](LICENSE) (PolyForm
 Strict License 1.0.0 / PolyForm Free Trial License 1.0.0). That license
-covers **only Onibex's own material** in this repository — the code under
+covers **only Onibex's own material** in this repository, the code under
 `platform/packages/ask-*`, the three SPAs, and the ASK specification under
 `definition/`.
 
@@ -13,11 +13,11 @@ This document lists the direct third-party dependencies pulled in at build
 or install time. Each keeps its own license, listed below; nothing in
 `LICENSE` relicenses them, and when you build or deploy the platform you are
 responsible for complying with those licenses. Audited on 2026-08-13 and re-audited on 2026-08-19 over the real
-transitive closure — every `package-lock.json` plus the declared Python
+transitive closure, every `package-lock.json` plus the declared Python
 dependencies resolved through PyPI. Versions and licenses are current as of
 that date; re-audit before a release with `python scripts/dependency_licenses.py`.
 
-## Python — `platform/packages/*`, `platform/requirements.txt`
+## Python: `platform/packages/*`, `platform/requirements.txt`
 
 | Component | License |
 |---|---|
@@ -37,24 +37,24 @@ that date; re-audit before a release with `python scripts/dependency_licenses.py
 | NetworkX | BSD-3-Clause |
 | PyYAML | MIT |
 | python-jose | MIT |
-| SAP AI Core SDK (`ai-core-sdk`), `ai-api-client-sdk`, `generative-ai-hub-sdk` | SAP-published, **Other/Proprietary License** ⚠ — not OSI-approved; see each package's own terms |
+| SAP AI Core SDK (`ai-core-sdk`), `ai-api-client-sdk`, `generative-ai-hub-sdk` | SAP-published, **Other/Proprietary License** ⚠, not OSI-approved; see each package's own terms |
 | `sap-xssec` | Apache-2.0 |
-| **`psycopg2-binary`** (PostgreSQL driver) | **GNU LGPL, with psycopg's linking exception** ⚠ — the exception permits use from proprietary applications; see the package's `LICENSE` for the exact exception text |
-| **`hdbcli`** (SAP HANA client) | **SAP Developer License Agreement** ⚠ — not an OSI-approved open-source license; governs redistribution of the HANA client separately from this repository's license |
-| `ibm-db` (IBM Db2 client) | Apache-2.0 wrapper over IBM's Db2 CLI driver — the underlying driver carries IBM's own distribution terms |
+| **`psycopg2-binary`** (PostgreSQL driver) | **GNU LGPL, with psycopg's linking exception** ⚠, the exception permits use from proprietary applications; see the package's `LICENSE` for the exact exception text |
+| **`hdbcli`** (SAP HANA client) | **SAP Developer License Agreement** ⚠, not an OSI-approved open-source license; governs redistribution of the HANA client separately from this repository's license |
+| `ibm-db` (IBM Db2 client) | Apache-2.0 wrapper over IBM's Db2 CLI driver, the underlying driver carries IBM's own distribution terms |
 | `presto-python-client`, `snowflake-connector-python`, `databricks-sql-connector`, `clickhouse-connect`, `google-cloud-bigquery` | Apache-2.0 |
 | `pyodbc` | MIT |
-| `certifi` (CA bundle, transitive) | MPL-2.0 — used unmodified, so the MPL's source-disclosure obligation is not triggered |
+| `certifi` (CA bundle, transitive) | MPL-2.0: used unmodified, so the MPL's source-disclosure obligation is not triggered |
 | `orjson`, `tqdm` (transitive) | dual: MPL-2.0 AND (Apache-2.0 OR MIT) / MPL-2.0 AND MIT |
 
-## JavaScript/TypeScript — `ask-chat-spa/`, `ask-studio-spa/`, `ask-setup-spa/`
+## JavaScript/TypeScript: `ask-chat-spa/`, `ask-studio-spa/`, `ask-setup-spa/`
 
 Direct `dependencies` (audited via `license-checker`): React, React DOM,
 React Router, Zustand, Axios, Zod, React Hook Form, TanStack Query, Radix UI
 (`@radix-ui/*`), `lucide-react`, `sonner`, `clsx`, `tailwind-merge`,
 `class-variance-authority`, Monaco Editor (`@monaco-editor/react`,
-`monaco-editor` — admin SPA only), React Flow (`reactflow`, `dagre` — admin
-SPA only), `plotly.js-dist-min` (chat SPA only) — **all MIT**.
+`monaco-editor`: admin SPA only), React Flow (`reactflow`, `dagre`, admin
+SPA only), `plotly.js-dist-min` (chat SPA only), **all MIT**.
 
 Build-time-only tooling (Vite, Rolldown, TypeScript, `lightningcss`) pulls in
 a handful of non-MIT licenses (Apache-2.0, BSD-3-Clause, 0BSD, and MPL-2.0 for
@@ -66,20 +66,20 @@ One runtime dependency is not MIT: **`dompurify`**, pulled in by
 It does ship in that bundle. Onibex elects **Apache-2.0** for it, so no MPL
 obligation attaches; the library is used unmodified in either case.
 
-## JavaScript — `platform/services/ask-mcp-server/`
+## JavaScript: `platform/services/ask-mcp-server/`
 
 This service wraps a published proxy rather than implementing the MCP protocol
 itself. Its dependency tree is now pinned and locked so that it can be audited;
 before that it resolved `latest` on every install, which left the set of
-components — and their licenses — unpredictable.
+components, and their licenses, unpredictable.
 
 | Component | License |
 |---|---|
 | `odata-mcp-proxy` (the proxy this service runs) | MIT |
 | `@hono/node-server`, `@modelcontextprotocol/*`, `winston` and the rest of the tree (189 packages) | MIT, ISC, BSD-2-Clause, BSD-3-Clause |
 | `@mcp-ui/server`, `@sap-cloud-sdk/*` | Apache-2.0 |
-| **`@sap/xssec`** (SAP XSUAA security) | **SAP Developer License Agreement** ⚠ — not an OSI-approved license; governs redistribution separately from this repository's license |
-| **`@sap/xsenv`** (SAP service bindings) | **SAP-published**, terms in the package's own LICENSE file ⚠ — not OSI-approved |
+| **`@sap/xssec`** (SAP XSUAA security) | **SAP Developer License Agreement** ⚠, not an OSI-approved license; governs redistribution separately from this repository's license |
+| **`@sap/xsenv`** (SAP service bindings) | **SAP-published**, terms in the package's own LICENSE file ⚠, not OSI-approved |
 | `node-forge` | dual **BSD-3-Clause OR GPL-2.0**; Onibex elects **BSD-3-Clause**, so no GPL obligation attaches |
 
 The npm `@sap/xssec` above is a different package from the Python `sap-xssec`
@@ -88,7 +88,7 @@ listed earlier, which is Apache-2.0.
 ## Notes
 
 - Any DB driver you enable via `EXECUTOR_EXTRAS` beyond the ones listed above
-  is your own addition and carries its own license — check it before enabling.
+  is your own addition and carries its own license. Check it before enabling.
 - SAP HANA, SAP BTP, and SAP AI Core are trademarks of SAP SE. Apache, Apache
   Kafka, and the Apache feather logo are trademarks of the Apache Software
   Foundation. OpenSearch is a registered trademark of Amazon Web Services.
@@ -100,11 +100,11 @@ listed earlier, which is Apache-2.0.
 
 Third-party components retain their own licenses; nothing in `LICENSE`
 relicenses them. The Onibex license applies only to Onibex's own material in
-this repository — the code under the `ask-*` packages/SPAs and the ASK
+this repository, the code under the `ask-*` packages/SPAs and the ASK
 specification under `definition/`.
 
 ================================================================================
-Apache License 2.0 — full text (applies to the Apache-2.0-licensed components above)
+Apache License 2.0, full text (applies to the Apache-2.0-licensed components above)
 ================================================================================
 
 

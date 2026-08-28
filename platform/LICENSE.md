@@ -1,18 +1,18 @@
-Onibex ASK Platform — PolyForm Strict License 1.0.0 / PolyForm Free Trial License 1.0.0
+Onibex ASK Platform. PolyForm Strict License 1.0.0 / PolyForm Free Trial License 1.0.0
 Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 This software is source-available. You may use it under EITHER of the
 following licenses, at your option:
 
-1. **PolyForm Strict License 1.0.0** (default) — permits any noncommercial
+1. **PolyForm Strict License 1.0.0** (default), permits any noncommercial
    use; does NOT permit distribution, changes, or new works based on the
    software. Full text: https://polyformproject.org/licenses/strict/1.0.0
-2. **PolyForm Free Trial License 1.0.0** — permits evaluation of the
+2. **PolyForm Free Trial License 1.0.0**, permits evaluation of the
    software for your business for less than 32 consecutive calendar days
    (e.g. via `docker compose up`). Full text: https://polyformproject.org/licenses/free-trial/1.0.0
 
 For production or any commercial use beyond the free trial, a commercial
-license is required — see [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
+license is required. See [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
 
 Third-party components used by the platform keep their own licenses; nothing
 here relicenses them. See [`../THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md).

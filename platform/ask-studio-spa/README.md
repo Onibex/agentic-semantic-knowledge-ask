@@ -1,6 +1,6 @@
 # ask-studio-spa
 
-ASK Studio SPA — React 18 + Vite + TypeScript + Tailwind CSS 3 + React Router v6 + Zustand 4 + React Flow 11.
+ASK Studio SPA. React 18 + Vite + TypeScript + Tailwind CSS 3 + React Router v6 + Zustand 4 + React Flow 11.
 
 This SPA provides the YAML graph visualizer and admin management interfaces for the ASK Semantic Layer platform.
 

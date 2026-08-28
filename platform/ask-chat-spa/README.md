@@ -19,5 +19,5 @@ npm run dev
 It talks to `ask-orchestrator` only. Nothing here reaches a database directly, and the mode
 selector (Flash / Precise / Smart) is forwarded on every `/query` and `/artifact` call.
 
-**Documentation:** [Ask questions · ASK Chat](../docs/ask-chat/README.md) — how the surface is
-used. [The three chat engines](../docs/explain/engines.md) — what the mode selector changes.
+**Documentation:** [Ask questions · ASK Chat](../docs/ask-chat/README.md). How the surface is
+used. [The three chat engines](../docs/explain/engines.md). What the mode selector changes.

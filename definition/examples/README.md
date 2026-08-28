@@ -1,13 +1,13 @@
 # Reference examples
 
 Thirty-one Data Products drawn from SAP SD and MM. They are **a shape to copy, not a catalog
-to deploy** — reading one teaches the contract faster than the specification does.
+to deploy**, reading one teaches the contract faster than the specification does.
 
 | Layer | Count | What is here |
 |---|---|---|
 | [`gold/`](gold/) | 4 | Open Order Tracker, Inventory Position, Inventory Situation, Order Tracking Reception |
 | [`silver/`](silver/) | 12 | Sales Order, Customer Master, Plant, Material Group and Hierarchy, Trading Goods, the sales organisation dimensions, Inventory Movement |
-| [`bronze/`](bronze/) | 15 | The raw SAP tables the Silvers compose — VBAK, VBAP, MARA, MARC, MSEG and the rest |
+| [`bronze/`](bronze/) | 15 | The raw SAP tables the Silvers compose. VBAK, VBAP, MARA, MARC, MSEG and the rest |
 
 ## Where to start
 
@@ -15,7 +15,7 @@ to deploy** — reading one teaches the contract faster than the specification d
 is a business definition end to end: what *open* means, which measures matter, what it joins to.
 
 **Then the Silver underneath it.** [`silver/sales_order.yaml`](silver/sales_order.yaml) shows
-the part that is genuinely reusable — declared grain, measures, relationships, and the join
+the part that is genuinely reusable: declared grain, measures, relationships, and the join
 graph that stitches VBAK, VBAP and VBKD into one entity.
 
 **Bronze last, if at all.** [`bronze/vbak.yaml`](bronze/vbak.yaml) is what ingestion generates

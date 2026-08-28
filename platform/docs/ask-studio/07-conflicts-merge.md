@@ -11,7 +11,7 @@
 | **Who** | Administrator / data steward |
 | **Time** | ~2 minutes per conflicted entity |
 | **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
-| **You'll end with** | A reconciled Data Product — every field either keeps your enriched value or accepts the incoming SAP value. |
+| **You'll end with** | A reconciled Data Product, every field either keeps your enriched value or accepts the incoming SAP value. |
 
 ---
 
@@ -20,7 +20,7 @@
 - A **conflict** is a field where a re-imported **OneConnect** JSON differs from the
   **working** Data Product you already have. The merge engine applies everything that
   matches, and parks each disagreement as a conflict instead of silently overwriting your work.
-- Conflicts are **not a lifecycle status** — they're an orthogonal flag. A Data Product can be
+- Conflicts are **not a lifecycle status**. They're an orthogonal flag. A Data Product can be
   **In Review** or **Released** *and* carry unresolved conflicts at the same time.
 - There are three kinds the engine reports:
 
@@ -48,7 +48,7 @@ Click **Conflicts (N)** to narrow the table to just the entities that need recon
 
 ![Semantic Knowledge with the Conflicts (N) filter pill and a row carrying a warning badge](../images/studio-conflict-filter.png)
 
-> **Tip — the badge is the shortcut.** You don't have to switch filters. Clicking the **warning badge**
+> **Tip. The badge is the shortcut.** You don't have to switch filters. Clicking the **warning badge**
 > on a row opens that entity's conflict resolver directly.
 
 ## 2. Open the conflict resolver
@@ -61,7 +61,7 @@ Every conflict block presents a **side-by-side comparison**:
 
 | Region | What it shows |
 |---|---|
-| **Conflict — `<field>`** | The field name and which kind of change it is (one of the three types above). |
+| **Conflict, `<field>`** | The field name and which kind of change it is (one of the three types above). |
 | **Your version** | The current working value. Properties you enriched are highlighted in **amber**, with an *"Amber = enriched properties"* note listing them. |
 | **vs** | Divider between the two sides. |
 | **SAP version** | The incoming value from the OneConnect export. |
@@ -74,20 +74,20 @@ For each conflict, click one of the two buttons:
 
 | Button | Effect |
 |---|---|
-| **Keep yours — preserve enrichments** | Retains your current value; the SAP change is discarded for this field. |
+| **Keep yours, preserve enrichments** | Retains your current value; the SAP change is discarded for this field. |
 | **Accept SAP update** | Replaces your value with the incoming SAP value for this field. |
 
 A choice resolves that one conflict immediately and drops it from the pending list. Work through
 each block until none remain. When the entity is fully reconciled the dialog shows
-**No pending conflicts — this entity is reconciled.** Click **Done** to close.
+**No pending conflicts. This entity is reconciled.** Click **Done** to close.
 
 > **Partial resolution is fine.** Each decision is saved on its own. You can resolve some fields,
-> close with **Done**, and come back later — the **warning badge** and the **Conflicts (N)** count update
+> close with **Done**, and come back later, the **warning badge** and the **Conflicts (N)** count update
 > live to reflect what's left.
 
-> **Warning — resolving does not re-publish.** Reconciling conflicts updates the **working** copy
+> **Warning, resolving does not re-publish.** Reconciling conflicts updates the **working** copy
 > of the Data Product. To make the reconciled version queryable in the chat, publish it to `dev` /
-> `prod` — see [Publish and deploy](05-publish-deploy.md).
+> `prod`. See [Publish and deploy](05-publish-deploy.md).
 
 ---
 
@@ -99,7 +99,7 @@ already edited. In practice:
 1. Import a SAP export via **Semantic Knowledge → New data product → From OneConnect** and
    click **Merge from OneConnect**. This creates the Data Product.
 2. (Optional, to make the conflict meaningful) enrich the `total_order_quantity` field
-   (`AFKO.GAMNG`) — for example give it a richer description — so it counts as an enriched property.
+   (`AFKO.GAMNG`), for example give it a richer description, so it counts as an enriched property.
 3. Edit the same JSON: change the `description_field` for `AFKO.GAMNG` to
    `"Planned build quantity (header)"`, **keep the same `id` (4101)**, and run
    **Merge from OneConnect** again.
@@ -115,11 +115,11 @@ already edited. In practice:
 
 ## What's next
 
-→ **[Add Data Products](02-add-data-products.md)** — where the **From OneConnect** merge
+→ **[Add Data Products](02-add-data-products.md)**, where the **From OneConnect** merge
 that produces conflicts is triggered.
-→ **[Publish and deploy](05-publish-deploy.md)** — publish the reconciled Data Product so
+→ **[Publish and deploy](05-publish-deploy.md)**, publish the reconciled Data Product so
 the chat sees it.
-→ **[Edit and enrich Data Products](03-edit-enrich.md)** — the enrichments that a conflict asks you to
+→ **[Edit and enrich Data Products](03-edit-enrich.md)**, the enrichments that a conflict asks you to
 preserve or discard.
 
 ---

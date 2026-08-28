@@ -5,7 +5,7 @@ designed to be consumed by [Apache Kafka](https://kafka.apache.org/) Connect HTT
 Lenses, Aiven) and similar agents such as IBM Watson X webhooks. The
 endpoint accepts an SAP metadata JSON payload, parses it into Bronze +
 Silver ASK YAMLs, writes them to the workspace, and indexes the catalog
-in OpenSearch — exactly the same operation ASK Studio performs,
+in OpenSearch: exactly the same operation ASK Studio performs,
 just behind a different auth dependency.
 
 ## Endpoint
@@ -34,7 +34,7 @@ Response (200):
 | Status | Meaning |
 |---|---|
 | 200 | Ingestion succeeded; counts in body. |
-| 401 | `X-API-Key` missing or wrong. **Do NOT retry — fix the secret.** |
+| 401 | `X-API-Key` missing or wrong. **Do NOT retry, fix the secret.** |
 | 503 | Server has no API key configured. **Safe to retry**; Kafka Connect will redeliver until the secret is mounted. |
 | 500 | Server-side ingestion error. Retryable. |
 
@@ -43,7 +43,7 @@ Response (200):
 The endpoint compares the inbound `X-API-Key` header against the
 `ASK_INGEST_API_KEY` environment variable using a constant-time compare
 (`hmac.compare_digest`). There is no token exchange, no OAuth2 flow, no
-JWT validation — that is the entire point: Kafka Connect cannot perform
+JWT validation. That is the entire point: Kafka Connect cannot perform
 those flows reliably.
 
 ### Generating a key
@@ -167,7 +167,7 @@ curl -i -X POST http://localhost:8081/v1/ingest/sap-json \
 ## Operational notes
 
 - **TLS in production.** API key auth is only safe over HTTPS. Terminate
-  TLS at your ingress / reverse proxy — never expose the endpoint over
+  TLS at your ingress / reverse proxy, never expose the endpoint over
   plain HTTP outside `localhost`.
 - **Rotation.** Update the Kubernetes Secret + restart the deployment, then
   switch the consumer-side credential. Two-step rollover is not yet
