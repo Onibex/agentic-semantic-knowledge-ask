@@ -3,25 +3,25 @@
 [Manual](../README.md) › [Ask questions](../README.md#ask-questions--ask-chat) › **Scope a question**
 
 > **How to.** Configure the three sidebar controls that scope every
-> query — **Workspace**, **Environment**, and **Mode** — before you ask your first question.
+> query: **Workspace**, **Environment**, and **Mode**, before you ask your first question.
 
 | | |
 |---|---|
 | **Who** | Business user / analyst |
 | **Time** | ~2 minutes |
 | **Prerequisites** | You are signed in to ASK Chat (see [ASK Chat](README.md)). |
-| **You'll end with** | A workspace selected, an environment chosen, and a query mode set — the chat is ready to use. |
+| **You'll end with** | A workspace selected, an environment chosen, and a query mode set. The chat is ready to use. |
 
 ---
 
 ## What you need to know first
 
-- **Workspace** is the hard scope — the agent can only see Data Products that belong to the
+- **Workspace** is the hard scope. The agent can only see Data Products that belong to the
   workspace you pick. Without one selected, every query is refused.
 - **Environment** picks the database: `dev` for the development connection, `prod` for production.
   A Data Product that has only been ingested for `dev` is invisible when the chat is set to `prod`.
 - **Mode** decides how thoroughly the agent plans the SQL. It never changes *what* data you
-  can access — only *how* the agent resolves your question to a query.
+  can access, only *how* the agent resolves your question to a query.
 - All three settings persist to local storage, so you only need to configure them once per
   browser.
 
@@ -39,11 +39,11 @@ query. Workspaces are loaded from the admin API and listed by name.
 | **Workspace** (dropdown) | Scopes the agent to a specific collection of Data Products. Shows each workspace as its display name. |
 | Workspace count (Home page) | The Home dashboard shows how many workspaces are available as a quick reference. |
 
-> **Warning —** If the dropdown is empty, no workspace has been configured yet or the admin API
+> **Warning:** If the dropdown is empty, no workspace has been configured yet or the admin API
 > is unreachable. Ask an administrator to create a workspace in ASK Studio, then refresh
 > the page.
 
-> **Warning —** Until a workspace is selected, the Chat page shows an amber banner and refuses
+> **Warning:** Until a workspace is selected, the Chat page shows an amber banner and refuses
 > to send messages. The Artifacts page similarly requires a workspace before generating a document.
 
 ---
@@ -59,11 +59,11 @@ Under **Environment** in the sidebar, click one of the two pill buttons:
 
 ![Environment toggle showing the dev and prod pill buttons with dev selected](../images/chat-environment-toggle.png)
 
-> **Tip —** start in `dev` while the semantic layer is being built or reviewed. Switch to
+> **Tip:** start in `dev` while the semantic layer is being built or reviewed. Switch to
 > `prod` once an administrator has confirmed the production database is connected and the
 > semantic layer is validated.
 
-> **Warning —** If the `prod` database is not configured, prod queries return a clear error
+> **Warning:** If the `prod` database is not configured, prod queries return a clear error
 > rather than silently falling back to dev. See
 > [Connect a database](../ask-setup/02-database-connections.md).
 
@@ -76,16 +76,16 @@ Under **Mode** in the sidebar, click one of the three options:
 | Mode | When to use it |
 |---|---|
 | **Flash** | Quick exploration. One LLM call, no join planning, no scope check. Fastest and cheapest; least rigorous. Use when latency matters more than guarantees. |
-| **Precise** *(the Chat's default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables — retrying once if needed. The default for everyday, auditable use. |
+| **Precise** *(the Chat's default)* | Auditable, reproducible answers. Extracts a semantic plan, ranks Data Products deterministically, plans joins with Dijkstra, and validates the SQL against allowed tables: retrying once if needed. The default for everyday, auditable use. |
 | **Smart** | The all-rounder. Shows the LLM a compact catalog, lets it pick the relevant Data Products, then resolves joins deterministically. Useful for broad or unusually phrased questions. |
 
 ![Mode selector showing Flash, Precise, and Smart stacked vertically](../images/chat-mode-selector.png)
 
 The mode is forwarded as a parameter on every `/query` and `/artifact` call. It does not
-affect **Schema** questions, **Documentation** questions, or **Action** questions — only
+affect **Schema** questions, **Documentation** questions, or **Action** questions, only
 data queries that produce SQL.
 
-> **Tip —** Leave the mode on **Precise** for normal, auditable answers. Use **Flash** for
+> **Tip:** Leave the mode on **Precise** for normal, auditable answers. Use **Flash** for
 > fast, exploratory lookups where you will validate the result yourself, and **Smart** when a
 > question is broad or unusually phrased and you want the agent to pick the Data Products.
 
@@ -93,8 +93,8 @@ data queries that produce SQL.
 
 ## What's next
 
-→ **[Using the Chat](02-chat.md)** — ask your first question and read the answer.
-→ **[Generate a report or brief](03-artifacts.md)** — generate business documents from your data.
+→ **[Using the Chat](02-chat.md)**, ask your first question and read the answer.
+→ **[Generate a report or brief](03-artifacts.md)**, generate business documents from your data.
 
 ---
 

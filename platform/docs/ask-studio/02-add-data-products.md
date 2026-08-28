@@ -2,7 +2,7 @@
 
 [Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
 
-> **How to.** Create the entities that make up your semantic layer —
+> **How to.** Create the entities that make up your semantic layer,
 > the **Data Products** the agent maps questions to. There are **four ways** to add one;
 > this page covers when to use each and how.
 
@@ -21,11 +21,11 @@ A **Data Product** is one entity definition (a YAML). Every Data Product sits in
 
 | Layer | What it is | You typically create it by… |
 |---|---|---|
-| **Bronze** | A raw source table — columns and keys, no join logic. | DDL + AI, OneConnect, Upload |
+| **Bronze** | A raw source table: columns and keys, no join logic. | DDL + AI, OneConnect, Upload |
 | **Silver** | A curated business entity that **owns the join topology** (how tables connect). | Manual, Upload, OneConnect |
 | **Gold** | A denormalized analytics table you can query directly. | Manual, DDL + AI, Upload |
 
-Don't worry about getting every field perfect on creation — everything lands **In Review** so
+Don't worry about getting every field perfect on creation. Everything lands **In Review** so
 you can refine it in [Edit and enrich Data Products](03-edit-enrich.md) before publishing.
 
 ---
@@ -46,7 +46,7 @@ The dialog opens with four tabs:
 
 ---
 
-## Mode A — Manual
+## Mode A: Manual
 
 **Use when:** you're authoring from scratch and want full control, or defining a Silver/Gold
 by hand.
@@ -60,7 +60,7 @@ Field roles and authoring rules are covered in
 [Edit and enrich Data Products](03-edit-enrich.md) and the
 [ASK specification](../../../definition/README.md) (Bronze / Silver / Gold layer definitions).
 
-## Mode B — Upload files
+## Mode B: Upload files
 
 **Use when:** you already have hand-authored ASK YAML files.
 
@@ -69,7 +69,7 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 
 ![Upload files tab: drag-and-drop area for .yaml files](../images/studio-dp-upload.png)
 
-## Mode C — DDL + AI
+## Mode C: DDL + AI
 
 **Use when:** you have SQL DDL and want it mapped into ASK YAML for you.
 
@@ -77,26 +77,26 @@ The importer is **dialect-tolerant across all nine supported engines** (PostgreS
 ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
 Fabric) and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VIEW`**, as well
 as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold**
-entities too — not just Bronze — with guardrails: it will not fabricate joins from a bare
+entities too, not just Bronze, with guardrails: it will not fabricate joins from a bare
 `CREATE TABLE`, and it never guesses a layer (see the note below).
 
 **How the mapping works.** A `CREATE TABLE` with a typed column list is parsed
 **deterministically**: every column name, its canonical type, the physical table name
 (unqualified) and the declared key (`PRIMARY KEY`, or the ClickHouse `ORDER BY` sorting key)
-come straight from the DDL, byte-exact — the AI never transcribes or renames columns. The AI
+come straight from the DDL, byte-exact, the AI never transcribes or renames columns. The AI
 contributes only the **semantics** the DDL cannot express (business name, descriptions, field
 roles, Silver classification) through a schema-enforced structured call. When the AI is
 unavailable or its annotation fails, the entity still imports with mechanical defaults and
 surfaces **In Review** for enrichment. Views, `CREATE TABLE … AS SELECT`, and statements
 without a typed column list are mapped by the full AI path (their columns live in a query
 body). A grain proposed from a ClickHouse `ORDER BY` carries a warning: a sorting key is not
-guaranteed unique — verify it against the physical table before publishing.
+guaranteed unique, verify it against the physical table before publishing.
 
 Pick **DDL + AI**, then:
 
-1. **Source system** — defaults from your [Set the organization profile](08-organization.md) profile (e.g.
+1. **Source system**, defaults from your [Set the organization profile](08-organization.md) profile (e.g.
    `s4h`). Click **change** to override with another profile; this tunes the AI prompt.
-2. **Provide the DDL** — either:
+2. **Provide the DDL**. Either:
    - **Upload `.sql` / `.ddl` / `.txt` files** (multiple allowed). The **layer is
      auto-detected per file** from the `CREATE TABLE` name (the `SILVER_` / `GOLD_` naming
      convention). Files that can't be detected show **pick layer** and you must choose
@@ -105,7 +105,7 @@ Pick **DDL + AI**, then:
      falls to a manual **pick layer**.
    - **…or paste a single DDL script** in the text box. If the layer can't be detected from
      the name, a **Layer** selector appears and is **required**.
-3. **Context for all files (optional)** — a sentence about what these tables are for; it
+3. **Context for all files (optional)**, a sentence about what these tables are for; it
    enriches the AI annotation. Per-file notes can be added too.
 4. Optionally tick **Overwrite if it exists**.
 5. Click **Map + import**.
@@ -113,7 +113,7 @@ Pick **DDL + AI**, then:
 There is **no Module field**: for Silver and Gold the `module` is detected from the physical
 table name (`SILVER_SD_SALES_ORDER` → `sd`) against the list of known business modules, and
 falls back to **`gen`** (generic / cross-module) when the name carries no recognizable module.
-Adjust it in the editor if needed — every import lands **In Review** anyway.
+Adjust it in the editor if needed, every import lands **In Review** anyway.
 
 ![DDL + AI tab: source-system selector, file list with per-file layer, paste box, context, Map + import](../images/studio-dp-ddl.png)
 
@@ -123,11 +123,11 @@ preview per file.
 
 ![DDL import progress: per-file rows with ok/failed counts and a Generated YAML preview](../images/studio-dp-ddl-progress.png)
 
-> **No silent assumptions.** The importer never guesses Bronze — if it can't detect a layer
+> **No silent assumptions.** The importer never guesses Bronze, if it can't detect a layer
 > it blocks import until you pick one. If the AI returns malformed YAML it's surfaced as a
 > per-file error so one bad file never hides the rest.
 
-## Mode D — From OneConnect
+## Mode D: From OneConnect
 
 **Use when:** you have a SAP metadata export produced by **OneConnect** (a JSON payload). The
 platform runs it through the **merge engine**: new content is applied as a draft and any
@@ -156,11 +156,11 @@ catalog filters to **In Review** so you can find it. From a row you can **Edit**
 
 ## What's next
 
-→ **[Edit and enrich Data Products](03-edit-enrich.md)** — refine fields, relationships, and let AI
+→ **[Edit and enrich Data Products](03-edit-enrich.md)**: refine fields, relationships, and let AI
 improve descriptions and synonyms.
-→ **[Create workspaces and business domains](01-workspaces-domains.md)** — assign this Data
+→ **[Create workspaces and business domains](01-workspaces-domains.md)**, assign this Data
 Product to a domain.
-→ **[Publish and deploy](05-publish-deploy.md)** — make it queryable in the chat.
+→ **[Publish and deploy](05-publish-deploy.md)**, make it queryable in the chat.
 
 ---
 

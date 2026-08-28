@@ -13,7 +13,7 @@ exists because something decayed silently once.
 | `docs_links.py` | Every relative link and `#anchor` resolves; every manual page is in the index, carries a way back, and is called by one name. |
 | `docs_terms.py` | The surfaces keep the names the product gives them, including across a line wrap. |
 | `license_headers.py` | Every source file carries its SPDX header. |
-| `versions.py` | One repository, one version — fifteen files agree, and a release tag matches. |
+| `versions.py` | One repository, one version: fifteen files agree, and a release tag matches. |
 | `dependency_licenses.py` | No dependency arrives with a licence the two tracks cannot ship. |
 
 ```bash

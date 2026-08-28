@@ -29,6 +29,7 @@ that needs to be read in a particular order.
 - [Concepts and architecture](02-concepts.md)
 
 ### [Understanding how it works](explain/README.md)
+- [Why not just point an LLM at the schema?](explain/why-not-raw-schema.md). What a curated semantic layer computes that a schema cannot say
 - [The three chat engines](explain/engines.md). Flash / Precise / Smart: what each computes rather than guesses, and how to choose
 - [ASK specification](../../definition/README.md). The normative Bronze / Silver / Gold contract
 

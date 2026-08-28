@@ -1,6 +1,6 @@
 # ask-setup-spa
 
-ASK Platform Setup SPA — React + Vite + TypeScript. This is the technical-configuration
+ASK Platform Setup SPA. React + Vite + TypeScript. This is the technical-configuration
 surface of the platform: database connections, LLM / embedding providers, identity provider,
 SAP connection, MCP server and OpenAPI contracts. Under Docker Compose it is published on
 port `5175` and its Nginx proxies `/api/admin/*` to `ask-admin-api`.

@@ -1,4 +1,4 @@
-# Onibex Agentic Semantic Knowledge Platform — Project Context
+# Onibex Agentic Semantic Knowledge Platform: Project Context
 
 > **Read this file FIRST before making any changes.**
 
@@ -11,7 +11,7 @@ A **deterministic Text-to-SQL agent** that:
 3. Resolves business terms against a curated **semantic layer** (ASK YAML corpus)
    via OpenSearch hybrid search (kNN + BM25 + RRF)
 4. Calculates JOIN paths deterministically (Dijkstra over an entity-relationship graph)
-5. Compiles SQL (HANA or PostgreSQL dialect) from the resolved plan — the LLM maps
+5. Compiles SQL (HANA or PostgreSQL dialect) from the resolved plan, the LLM maps
    to the semantic layer, it never invents tables or columns
 6. Executes, formats the result with an LLM, and returns it with citations and
    a per-request token breakdown
@@ -36,7 +36,7 @@ in `.env` (see `.env.example` / `.env.remote.example`, `redeploy.sh`, `scripts/p
 
 - `/v1/health` (unauthenticated), `/v1/query` (chat), `/v1/profile`, `/v1/title`,
   `/v1/artifact*`, `/v1/internal/*` (ops: cache reload)
-- `/external/ask` — isolated B2B sub-app with its own OpenAPI at `/external/openapi.json`
+- `/external/ask`, isolated B2B sub-app with its own OpenAPI at `/external/openapi.json`
   (watsonx Orchestrate, n8n, Zapier; Keycloak `client_credentials`)
 
 ## Typed packages (`packages/`)
@@ -46,8 +46,8 @@ in `.env` (see `.env.example` / `.env.remote.example`, `redeploy.sh`, `scripts/p
 | `ask-orchestrator` | Macro-intent classifier + routing; chains `ResolveIntent → SqlGen → SqlExecutor` for SQL_EXECUTION; per-request `TokenTracker` |
 | `ask-intent-resolution` | `IntentResolver` Protocol + 3 self-contained mode sub-packages: `flash/` (chunk-RAG), `precise/` (IR → entity resolution → Dijkstra path selection), `smart/` (catalog-driven Graph RAG; stops at path resolution) |
 | `ask-sql-generation` | Freeform SQL generator + scope validator + per-dialect prompt registry (HANA, PostgreSQL, + lite multi-DB dialects) |
-| `ask-sql-executor` | HANA + PostgreSQL adapters + LLM result formatter — the single home for SQL execution/formatting |
-| `ask-knowledge-graph` | KG read/write, DictionaryWriter, ingestion (SAP JSON → YAML → OpenSearch), `EntityDeriver`, YAML parse/serialize (ruamel only — never `import yaml`) |
+| `ask-sql-executor` | HANA + PostgreSQL adapters + LLM result formatter, the single home for SQL execution/formatting |
+| `ask-knowledge-graph` | KG read/write, DictionaryWriter, ingestion (SAP JSON → YAML → OpenSearch), `EntityDeriver`, YAML parse/serialize (ruamel only, never `import yaml`) |
 | `ask-schema-service` | Handles SCHEMA_QUERY (metadata answers, workspace-scoped) |
 | `ask-docs-service` | Handles DOCS_QUERY (own retriever; must NOT import ask-knowledge-graph) |
 | `ask-llm-gateway` | LLM + embedder abstract factory: SAP AI Core (managed) or any LiteLLM provider; encrypted secrets store (Fernet, OpenSearch-backed); TokenTracker |
@@ -75,7 +75,7 @@ Chat is workspace-scoped: an entity-id allowlist plus dev/prod index environment
 The corpus lives in an **external git repo** mounted at `SEMANTIC_LAYER_HOST_PATH`
 (reference corpus: the public `agentic-semantic-knowledge-ask` repo,
 `definition/examples/{bronze,silver,gold}/`, flat per layer). Runtime reads the git
-repo — never in-tree copies.
+repo, never in-tree copies.
 
 ### Bronze (raw SAP table)
 
@@ -132,7 +132,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 
 ## Configuration
 
-- `config/settings.json` (gitignored; template: `config/settings.example.json`) —
+- `config/settings.json` (gitignored; template: `config/settings.example.json`),
   minimal file config. Env vars override.
 - **DB connections and LLM providers are NOT in files**: they live Fernet-encrypted
   in OpenSearch, managed through the Setup SPA (N connections, one active per env;
@@ -142,13 +142,13 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 
 ## Key design decisions
 
-1. **LLM as compiler, not generator** — SQL only from resolved fields, never invented names.
-2. **Determinism over creativity** — the semantic layer is the only source of truth.
-3. **Medallion re-ranking** — Gold > Silver > Bronze in entity resolution.
-4. **Bronze is schema-docs plane** — never enters text-to-SQL retrieval.
+1. **LLM as compiler, not generator**. SQL only from resolved fields, never invented names.
+2. **Determinism over creativity**, the semantic layer is the only source of truth.
+3. **Medallion re-ranking**. Gold > Silver > Bronze in entity resolution.
+4. **Bronze is schema-docs plane**, never enters text-to-SQL retrieval.
 5. **3-level disambiguation** via the global semantic dictionary (L1 auto-resolve,
    L2 multi-module options, L3 "contact the trainer"); no HiTL in chat.
-6. **Additivity contract** — `aggregation_behavior` = function; `additivity` /
+6. **Additivity contract**, `aggregation_behavior` = function; `additivity` /
    `non_additive_over` = scope, derived at ingest.
 
 ## Entry points
@@ -181,7 +181,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 ## House rules
 
 - User-facing output (UI, docs, commits) in **English**.
-- ASK YAML always through ruamel (`load_yaml_text` / `dump_yaml`) — never `import yaml`.
+- ASK YAML always through ruamel (`load_yaml_text` / `dump_yaml`), never `import yaml`.
 - Docs declare what IS; never narrate what changed.
 - SPAs pin Vite + Rolldown exactly (`vite 8.1.3`, override `rolldown 1.1.4`);
-  regenerate lockfiles when bumping — admin/setup builds use `npm ci`.
+  regenerate lockfiles when bumping, admin/setup builds use `npm ci`.

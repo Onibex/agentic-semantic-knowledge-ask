@@ -6,19 +6,19 @@
 
 <!-- Delete the ones that do not apply. -->
 
-- [ ] `definition/` — the **specification**. A rule that changes meaning invalidates YAML
+- [ ] `definition/`, the **specification**. A rule that changes meaning invalidates YAML
       somebody has already authored. Link the `[RFC]` issue, or say why none was needed.
-- [ ] `platform/` — the runtime or its manual.
+- [ ] `platform/`, the runtime or its manual.
 
 ## Documentation
 
 - [ ] **This change alters something a reader was told.** The docs are updated in this PR.
-- [ ] It does not — nothing documented behaves differently.
+- [ ] It does not. Nothing documented behaves differently.
 
 <!--
 Not a formality. The audit that produced the current manual found 34 dead links, a
 specification forked in two places, and AI enrichment running with no rules at all in
-every container — none of it noticed, because each change was individually reasonable
+every container: none of it noticed, because each change was individually reasonable
 and nobody checked what it made untrue.
 -->
 

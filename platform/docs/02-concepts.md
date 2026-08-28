@@ -10,7 +10,7 @@
 
 | | |
 |---|---|
-| **Who** | Everyone — administrators, data stewards, and business users. |
+| **Who** | Everyone: administrators, data stewards, and business users. |
 | **Time** | ~8 minutes to read. |
 | **Prerequisites** | None. This is the orientation page; no login required. |
 | **You'll end with** | A clear picture of how a natural-language question becomes a governed SQL answer, and where each task in this manual fits. |
@@ -33,7 +33,7 @@
 
 ## 1. Three surfaces, two roles
 
-The platform is three applications, used by two kinds of people — but they are not three peers.
+The platform is three applications, used by two kinds of people, but they are not three peers.
 **ASK Setup is the precondition for the other two**, which is why it is listed first here and
 first in the manual.
 
@@ -49,10 +49,10 @@ The two roles map cleanly onto the surfaces:
   Studio**. They connect the database, pick the model provider, model the SAP tables into
   business Data Products, and publish them.
 - The **business user** works only in the **Chat**. They pick a workspace, ask a question
-  in plain language, and read the answer — no SQL, no schema knowledge required.
+  in plain language, and read the answer: no SQL, no schema knowledge required.
 
 > **How the two roles are enforced.** Access is governed by two platform roles: **ask-admin**
-> (full authoring and configuration — ASK Studio and ASK Setup) and **ask-user** (the chat).
+> (full authoring and configuration. ASK Studio and ASK Setup) and **ask-user** (the chat).
 > Every user of the realm is auto-granted **ask-user**, so business users can ask questions
 > without extra setup; **ask-admin** is assigned deliberately to the people who author and
 > configure the platform.
@@ -70,7 +70,7 @@ flowchart LR
     ADM -->|publish| CHAT
 ```
 
-> **Tip —** If you are here to *ask questions*, you only need the Chat. The rest of this
+> **Tip:** If you are here to *ask questions*, you only need the Chat. The rest of this
 > page explains what an administrator set up on your behalf so you understand why an answer
 > looks the way it does.
 
@@ -98,7 +98,7 @@ flowchart LR
     P -->|published Data Products<br/>become queryable| Q
 ```
 
-> **Warning — the dependency that trips people up.** The chat only sees Data Products that
+> **Warning, the dependency that trips people up.** The chat only sees Data Products that
 > have been **published to the environment it is querying** (`dev` or `prod`). If nothing is
 > published, the user gets empty answers even though the platform is otherwise working.
 > Always publish before asking.
@@ -129,24 +129,24 @@ Products in [Add Data Products](ask-studio/02-add-data-products.md).
 
 ### 3.2 The three layers (Bronze / Silver / Gold)
 
-Every Data Product sits in a **layer**. The layers form a medallion model — raw at the
+Every Data Product sits in a **layer**. The layers form a medallion model, raw at the
 bottom, analytics-ready at the top.
 
 | Layer | What it is | Demo example |
 |---|---|---|
-| **Bronze** | A raw source table — columns and keys, **no join logic**. | `afko_order_header` (AFKO), `afpo_order_item` (AFPO), `aufk_order_master` (AUFK), `afru_order_confirmation` (AFRU) |
-| **Silver** | A curated business entity that **owns the join topology** — how tables connect. This is the single source of truth for joins. | `production_order` (AFKO + AFPO + AUFK + AFRU, at order-item grain) |
+| **Bronze** | A raw source table: columns and keys, **no join logic**. | `afko_order_header` (AFKO), `afpo_order_item` (AFPO), `aufk_order_master` (AUFK), `afru_order_confirmation` (AFRU) |
+| **Silver** | A curated business entity that **owns the join topology**, how tables connect. This is the single source of truth for joins. | `production_order` (AFKO + AFPO + AUFK + AFRU, at order-item grain) |
 | **Gold** | A denormalized analytics table you can query directly, with dimensions flattened in as columns. | `production_performance` (planned vs confirmed, scrap/yield by plant / order type / material / month) |
 
 ```mermaid
 flowchart TD
-    subgraph GOLD["Gold — query-ready analytics"]
+    subgraph GOLD["Gold: query-ready analytics"]
         PP["production_performance<br/><i>planned vs confirmed · scrap · yield</i>"]
     end
-    subgraph SILVER["Silver — curated entity, owns joins"]
+    subgraph SILVER["Silver: curated entity, owns joins"]
         PO["production_order<br/><i>order-item grain</i>"]
     end
-    subgraph BRONZE["Bronze — raw SAP tables"]
+    subgraph BRONZE["Bronze: raw SAP tables"]
         AFKO["AFKO<br/>header"]
         AFPO["AFPO<br/>item"]
         AUFK["AUFK<br/>order master"]
@@ -166,7 +166,7 @@ knowing even at the concept level, because they explain how the agent chooses wh
   own* relationships. This "Silver plane" is the fallback the agent uses when no Gold covers
   a question.
 - **The agent resolves gold-first.** If a Gold table already covers the metrics, dimensions
-  and grain a question needs, the agent answers from that Gold alone — the cheapest, most
+  and grain a question needs, the agent answers from that Gold alone: the cheapest, most
   deterministic path. Otherwise it falls back to the Silver plane and computes the joins.
 
 ### 3.3 Environments and publish (dev → prod)
@@ -200,7 +200,7 @@ Three consequences follow, and they are why answers are trustworthy:
 
 1. **Every field maps to a real, selectable column.** The `source` of a field is a physical
    `TABLE.COLUMN` (for example `production_order.confirmed_yield` → `AFRU.LMNGA`).
-2. **Every relationship is a real JOIN.** Relationships are not documentation — they are the
+2. **Every relationship is a real JOIN.** Relationships are not documentation. They are the
    exact join predicates the agent is allowed to emit.
 3. **The agent maps your words to the layer; it does not go beyond it.** If a term isn't in
    the layer (or the semantic dictionary), the agent asks for clarification rather than
@@ -216,7 +216,7 @@ flowchart LR
 ```
 
 Field **descriptions** and **synonyms** are what let the agent map a user's words to the
-right column — for example mapping "good output" or "yield" to `AFRU.LMNGA`. Good
+right column, for example mapping "good output" or "yield" to `AFRU.LMNGA`. Good
 descriptions therefore directly improve answer quality; see the
 [ASK specification](../../definition/README.md) for the authoring rules.
 
@@ -228,11 +228,11 @@ For data questions, the chat offers three engines that trade **speed**, **cost**
 **rigor** differently. They all return the same shape of answer (SQL + rows + written
 answer + chart); they differ in *how* they decide which tables and joins to use.
 
-- **Flash** — one LLM call, straight from free-text schema chunks to SQL. Fastest and
+- **Flash.** One LLM call, straight from free-text schema chunks to SQL. Fastest and
   cheapest; no computed join planning.
-- **Precise** — selection *and* joins computed, then the emitted SQL is audited against the
+- **Precise.** Selection *and* joins computed, then the emitted SQL is audited against the
   entities it was allowed to touch. Most reproducible; slowest.
-- **Smart** — the default. The LLM picks Data Products from a scoped catalog; the joins are
+- **Smart.** The default. The LLM picks Data Products from a scoped catalog; the joins are
   computed. Balanced and production-grade.
 
 The difference that matters is **where determinism lives**: Precise computes the selection,
@@ -269,23 +269,23 @@ flowchart TD
 - The chosen engine resolves it to the relevant Data Products (the Gold
   `production_performance` if it covers the question, otherwise the Silver
   `production_order` with its joins).
-- Business terms map to real columns — "confirmed yield" → `AFRU.LMNGA`, "scrap" →
+- Business terms map to real columns: "confirmed yield" → `AFRU.LMNGA`, "scrap" →
   `AFRU.XMNGA`, "plant" → `AFPO.DWERK`.
 - The agent emits governed SQL (a grouped aggregate by plant, filtered to this year),
-  executes it against the database, and returns a written answer, a results table, and —
-  because the result has multiple rows — an automatic bar chart.
+  executes it against the database, and returns a written answer, a results table, and,
+  because the result has multiple rows, an automatic bar chart.
 
 ---
 
 ## What's next
 
-→ **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)** —
+→ **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)**,
 create the containers your data lives in.
-→ **[Add Data Products](ask-studio/02-add-data-products.md)** — create the
+→ **[Add Data Products](ask-studio/02-add-data-products.md)**, create the
 entities the agent maps questions to.
-→ **[ASK specification](../../definition/README.md)** — the Bronze / Silver / Gold layer definitions and the
+→ **[ASK specification](../../definition/README.md)**, the Bronze / Silver / Gold layer definitions and the
 authoring rules behind governed SQL.
-→ **[The three chat engines](explain/engines.md)** — what each one computes rather than
+→ **[The three chat engines](explain/engines.md)**, what each one computes rather than
 guesses, and how to choose between them.
 
 ---

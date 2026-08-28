@@ -29,11 +29,11 @@ code review and any channel where you are here as a participant in ASK.
 ## Scope and enforcement
 
 Maintainers are responsible for what this space is like, and will edit, hide or delete
-contributions that do not meet the standard above — and will say why. Repeated or
+contributions that do not meet the standard above, and will say why. Repeated or
 serious breaches lead to a block.
 
 Report a problem to **contact@onibex.com**. Reports are read by the maintainers, kept
-confidential, and answered. If your report concerns a maintainer, say so — it will be
+confidential, and answered. If your report concerns a maintainer, say so. It will be
 handled by someone else.
 
 Onibex, LLC stewards this repository, and enforcement decisions are ultimately ours. We

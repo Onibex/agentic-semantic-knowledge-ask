@@ -7,7 +7,7 @@ Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
 Runtime services that are not Python packages.
 
-- **[`ask-mcp-server`](ask-mcp-server/README.md)** — a Model Context Protocol server exposing SAP write operations as
+- **[`ask-mcp-server`](ask-mcp-server/README.md).** A Model Context Protocol server exposing SAP write operations as
   tools the agent can call. It is what turns *"create a purchase requisition"* from a
   description into an action.
 

@@ -3,8 +3,8 @@
 [Manual](../README.md) › [Configure the platform first](../README.md#configure-the-platform-first--ask-setup) › **Check the search index**
 
 > **How to.** The **Setup** page shows the **OpenSearch** connection
-> ASK Platform uses for its semantic index and its encrypted secret store. It is **read-only** —
-> the connection is supplied by the environment — and gives you a one-click **health check** to
+> ASK Platform uses for its semantic index and its encrypted secret store. It is **read-only**,
+> the connection is supplied by the environment, and gives you a one-click **health check** to
 > confirm the cluster is reachable.
 
 | | |
@@ -20,9 +20,9 @@
 
 - **OpenSearch is the platform's bootstrap store.** It holds the semantic index *and* the encrypted
   secret store that every other Setup page writes to. Because the secret store lives inside
-  OpenSearch, OpenSearch's own credentials cannot be stored there — they come from the environment.
+  OpenSearch, OpenSearch's own credentials cannot be stored there. They come from the environment.
 - **This page is a read-only mirror.** You cannot edit the connection here. It reflects what the
-  running services were given, so you can verify it and test it — nothing more.
+  running services were given, so you can verify it and test it. Nothing more.
 - **Source chips tell you where each value came from.** Every field carries a small chip:
   **env**, **file**, **encrypted**, **config** or **default**.
 
@@ -44,10 +44,10 @@ the fields the platform is using:
 
 | Field | Notes |
 |---|---|
-| **Host** | The OpenSearch host — demo: `opensearch`. |
-| **Port** | The port — demo: `9200`. |
+| **Host** | The OpenSearch host, demo: `opensearch`. |
+| **Port** | The port, demo: `9200`. |
 | **SSL** | Whether TLS is used for the connection. |
-| **Embedding dimension** | The vector width the index expects — the platform uses `1024`. |
+| **Embedding dimension** | The vector width the index expects, the platform uses `1024`. |
 | **Username** | The OpenSearch user, when authentication is enabled. |
 | **Password** | Never displayed; a stored value shows as set, never in clear text. |
 
@@ -65,25 +65,25 @@ Each field carries a chip showing where its live value originated:
 | **config** | A plain (non-secret) config value. |
 | **default** | No value was supplied; the platform's built-in default is in effect. |
 
-> **Tip — the chips reveal precedence.** When a value could come from more than one place, an
+> **Tip: the chips reveal precedence.** When a value could come from more than one place, an
 > environment variable wins. If a field reads **env**, that is the value in force regardless of what
 > a file or the store may also contain.
 
 ## 3. Test the connection
 
 The **Health check** card pings the cluster with the active configuration. As its note says, it is
-**read-only — this never changes settings**.
+**read-only. This never changes settings**.
 
 Click **Test connection**. The button shows **Testing…** while it runs, then a result banner:
 
 - **Success (green):** the cluster name, its status and the round-trip latency, for example
   *Cluster 'docker-cluster' is green · 12 ms*.
-- **Failure (red):** the error returned — typically an unreachable host, a refused port, or bad
+- **Failure (red):** the error returned: typically an unreachable host, a refused port, or bad
   credentials.
 
 A matching toast appears in the top-right corner.
 
-![The Health check card with its Test connection button — a successful test reports the cluster status and latency](../images/setup-setup.png)
+![The Health check card with its Test connection button, a successful test reports the cluster status and latency](../images/setup-setup.png)
 
 ---
 
@@ -100,7 +100,7 @@ Set these variables in your `.env` file (development) or a **Kubernetes Secret**
 | `OPENSEARCH_USER` | Username, when authentication is enabled. |
 | `OPENSEARCH_PASSWORD` | Password for that user. |
 
-> **Warning — restart to apply.** Environment changes are read at startup. After editing `.env` or
+> **Warning, restart to apply.** Environment changes are read at startup. After editing `.env` or
 > the Secret, **restart the services** for the new connection to take effect, then return here and
 > click **Refresh**, then **Test connection**, to confirm.
 
@@ -108,9 +108,9 @@ Set these variables in your `.env` file (development) or a **Kubernetes Secret**
 
 ## What's next
 
-→ **[Connect a database](02-database-connections.md)** — register the databases the agent queries.
-→ **[ASK Setup](README.md)** — the storage model behind the source chips.
-→ **[Install and run the platform](../01-installation.md)** — where the `OPENSEARCH_*` variables are defined.
+→ **[Connect a database](02-database-connections.md)**, register the databases the agent queries.
+→ **[ASK Setup](README.md)**, the storage model behind the source chips.
+→ **[Install and run the platform](../01-installation.md)**, where the `OPENSEARCH_*` variables are defined.
 
 ---
 

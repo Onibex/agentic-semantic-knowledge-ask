@@ -3,7 +3,7 @@
 [Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Local development**
 
 > **How to.** Run the services natively instead of in Docker, on Windows and PowerShell.
-> **Source of truth:** [`docker-compose.yml`](../../docker-compose.yml) — this guide reproduces the same multi-service topology (2 Python services + 3 React SPAs + OpenSearch + optional Keycloak), but with each service booted natively instead of in a container.
+> **Source of truth:** [`docker-compose.yml`](../../docker-compose.yml). This guide reproduces the same multi-service topology (2 Python services + 3 React SPAs + OpenSearch + optional Keycloak), but with each service booted natively instead of in a container.
 > **Linux/macOS:** bash equivalents at the end. **Docker fallback:** `docker compose up -d` if you'd rather skip the venv setup (see [`docker-compose.yml`](../../docker-compose.yml)).
 
 ---
@@ -48,9 +48,9 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 | `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `VITE_AUTH_MODE=keycloak`. Skip in pure dev. |
 | `ask-orchestrator` | `ask_orchestrator.main:app` | 8080 | Chat backend (intent → SQL → exec) |
 | `ask-admin-api` | `ask_admin_api.main:app` | 8081 | Admin backend (dictionary, KG ingestion, embeddings, secrets, prompts, enrichment, workspaces, organization) |
-| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | ASK Studio — Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
-| `ask-chat-spa` | `ask-chat-spa/` (Vite dev or Nginx) | 5174 | React chat UI — Chat (streaming), Artifacts gallery + creator |
-| `ask-setup-spa` | `ask-setup-spa/` (Vite dev or Nginx) | 5175 | React setup UI — database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
+| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | ASK Studio. Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
+| `ask-chat-spa` | `ask-chat-spa/` (Vite dev or Nginx) | 5174 | React chat UI. Chat (streaming), Artifacts gallery + creator |
+| `ask-setup-spa` | `ask-setup-spa/` (Vite dev or Nginx) | 5175 | React setup UI: database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
 
 ---
 
@@ -82,7 +82,7 @@ PLATFORM=/c/src/agentic-semantic-knowledge-ask/platform
 ```
 
 One more path is yours to choose: the **semantic-layer git repo** the platform reads
-and commits to. It is a separate repository from this one — create it wherever you
+and commits to. It is a separate repository from this one, create it wherever you
 like and refer to it as `$SEMANTIC_LAYER` below.
 
 ```powershell
@@ -157,7 +157,7 @@ them up.
 
 > The admin-api **refuses to boot** if `REPO_ROOT` or `WORKSPACE_PATH` is
 > empty (`SEMANTIC_LAYER_PATHS_MISSING`). If the directory has no `.git`,
-> it warns and continues — commits become no-ops.
+> it warns and continues, commits become no-ops.
 >
 > **Pending decisions** around this manual step (auto-`git init` on a from-zero
 > docker-compose? + clarifying that commit authorship comes from the logged-in
@@ -183,7 +183,7 @@ silently mounting an empty volume.
 
 ### Encrypted-secrets master key (required)
 
-Both `ask-orchestrator` and `ask-admin-api` fail-closed at boot if `ONIBEX_ENCRYPTION_KEY` is missing or malformed — the new Fernet-encrypted secrets store (`ask-system-settings-v1` in OpenSearch) is the canonical home for LLM + Embedder credentials.
+Both `ask-orchestrator` and `ask-admin-api` fail-closed at boot if `ONIBEX_ENCRYPTION_KEY` is missing or malformed, the new Fernet-encrypted secrets store (`ask-system-settings-v1` in OpenSearch) is the canonical home for LLM + Embedder credentials.
 
 Generate it once:
 
@@ -194,10 +194,10 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 Two options for making the value visible to uvicorn:
 
-**Option A — Per-terminal env var (matches the rest of this runbook):**
+**Option A. Per-terminal env var (matches the rest of this runbook):**
 Export `$env:ONIBEX_ENCRYPTION_KEY` in every terminal that boots orchestrator or admin-api (see terminals 1 and 2 below).
 
-**Option B — the `.env` file in `platform/`:**
+**Option B, the `.env` file in `platform/`:**
 Add the line to your local `.env`:
 
 ```
@@ -214,17 +214,17 @@ Get-Content .env | ForEach-Object {
 }
 ```
 
-> **Save the key somewhere safe.** If you lose it, every encrypted api_key in OpenSearch becomes unrecoverable and you have to re-enter every provider's credentials via the SPA. `.env` is gitignored — don't commit it.
+> **Save the key somewhere safe.** If you lose it, every encrypted api_key in OpenSearch becomes unrecoverable and you have to re-enter every provider's credentials via the SPA. `.env` is gitignored, don't commit it.
 
 ### (Optional) Migrate existing `settings.json` secrets
 
-If your current `config/settings.json` has `llm` / `embedder` sections with provider credentials, run the one-shot migration to move them into the encrypted OpenSearch doc (skip this on a fresh dev machine — you can configure everything via the SPA's Setup page instead):
+If your current `config/settings.json` has `llm` / `embedder` sections with provider credentials, run the one-shot migration to move them into the encrypted OpenSearch doc (skip this on a fresh dev machine. You can configure everything via the SPA's Setup page instead):
 
 ```powershell
 python scripts\migrate_secrets_to_opensearch.py
 ```
 
-Idempotent — re-runs are no-ops once the doc exists.
+Idempotent, re-runs are no-ops once the doc exists.
 
 ---
 
@@ -352,18 +352,18 @@ npm run dev
 → Browser: **http://localhost:5174**
 
 **Dependencies:**
-- Orchestrator (Terminal 1, port 8080) **must** be running — the chat page and artifact generator both call `/v1/query` and `/v1/artifact`.
+- Orchestrator (Terminal 1, port 8080) **must** be running, the chat page and artifact generator both call `/v1/query` and `/v1/artifact`.
 - Admin API (Terminal 2, port 8081) is needed for the workspace dropdown in the sidebar (fetches `/v1/admin/workspaces`). The app still loads without it, but workspace selection will fail.
 
-**No `.env.local` needed** in pure dev — the Vite proxy handles all API routing and there is no auth mode to configure for the chat SPA.
+**No `.env.local` needed** in pure dev, the Vite proxy handles all API routing and there is no auth mode to configure for the chat SPA.
 
 Pages available:
 
 | Route | What it does |
 |---|---|
-| `/` | Home — orchestrator health, active workspace/env/mode status, navigation |
-| `/chat` | Chat — streaming responses, auto-charts, per-workspace conversation history (persisted in `localStorage`) |
-| `/artifacts` | Artifacts — chat-based creator (name → purpose → data focus → format), gallery, viewer with inline edit panel + SQL override |
+| `/` | Home: orchestrator health, active workspace/env/mode status, navigation |
+| `/chat` | Chat: streaming responses, auto-charts, per-workspace conversation history (persisted in `localStorage`) |
+| `/artifacts` | Artifacts: chat-based creator (name → purpose → data focus → format), gallery, viewer with inline edit panel + SQL override |
 
 **TypeScript check (no build needed):**
 
@@ -407,7 +407,7 @@ Pages available:
 |---|---|
 | `/getting-started` | In-product on-ramp for a fresh install |
 | `/workspaces` | Workspaces + Business Domains + Data Products (rail + cards home) |
-| `/workspaces/:slug/domains/:bdSlug` | Domain canvas — the per-Business-Domain graph |
+| `/workspaces/:slug/domains/:bdSlug` | Domain canvas, the per-Business-Domain graph |
 | `/semantic-knowledge` | Global Data Product catalog with **AI Assist** enrichment (per-entity diff preview) |
 | `/organization` | Singleton Organization profile (company name, SAP version, core modules) |
 | `/history` | Git history per YAML (Monaco DiffEditor) |
@@ -416,7 +416,7 @@ Pages available:
 | `/admin/docs` | Documentation ingestion into the RAG index |
 | `/admin/setup` | Read-only effective config (LLM / Embedder / OpenSearch) |
 
-> Regenerating the OpenAPI-typed client: `cd ask-studio-spa && npm run generate-api:file` — reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
+> Regenerating the OpenAPI-typed client: `cd ask-studio-spa && npm run generate-api:file`, reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
 
 ---
 
@@ -537,10 +537,10 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 
 | Problem | Fix |
 |---|---|
-| `ENCRYPTION_KEY_MISSING: set ONIBEX_ENCRYPTION_KEY in the environment` at boot | Set `$env:ONIBEX_ENCRYPTION_KEY` BEFORE uvicorn. Generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. The same key MUST be exported in every terminal that boots orchestrator or admin-api — they share the encrypted store. |
+| `ENCRYPTION_KEY_MISSING: set ONIBEX_ENCRYPTION_KEY in the environment` at boot | Set `$env:ONIBEX_ENCRYPTION_KEY` BEFORE uvicorn. Generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. The same key MUST be exported in every terminal that boots orchestrator or admin-api. They share the encrypted store. |
 | `ENCRYPTION_KEY_INVALID_FORMAT` at boot | The value isn't a Fernet key (32-byte urlsafe-b64). Regenerate with the one-liner above and re-export. |
 | `ENCRYPTION_KEY_MISMATCH` on `/v1/query` | The OpenSearch doc was encrypted with a different master key than the current one. Either restore the previous key, or wipe the `ask-system-settings-v1` index and re-enter credentials via the SPA. |
-| `SEMANTIC_LAYER_PATHS_MISSING` at admin-api boot | Set `REPO_ROOT` and `WORKSPACE_PATH` in the admin-api terminal (typically the same value — see §Pre-requisites → Semantic-layer repo). |
+| `SEMANTIC_LAYER_PATHS_MISSING` at admin-api boot | Set `REPO_ROOT` and `WORKSPACE_PATH` in the admin-api terminal (typically the same value. See §Pre-requisites → Semantic-layer repo). |
 | `SEMANTIC_LAYER_PATHS_INVALID` at admin-api boot | The path is set but doesn't exist or isn't a directory. Verify it on disk; remember forward slashes are fine on Windows. |
 | `SEMANTIC_LAYER_NO_GIT` warning + commits look no-op | `git init` inside the directory `REPO_ROOT` points to. Until then YAML writes still persist to disk but no history is recorded. |
 | Docker fails with `SEMANTIC_LAYER_HOST_PATH variable is not set` | Add `SEMANTIC_LAYER_HOST_PATH=$SEMANTIC_LAYER` to host `.env` before `docker compose up`. |
@@ -554,7 +554,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | Port already in use after killed run | Use the `Get-NetTCPConnection` one-liner above to free 8080/8081/5173/5174/5175 |
 | SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2 + that `VITE_API_BASE_URL` (if set in `.env.local`) matches `http://127.0.0.1:8081` |
 | SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio-spa/.env.local` |
-| Chat SPA (`ask-chat-spa`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for the chat SPA only works while `npm run dev` is running — the proxy is not active in the production build. |
+| Chat SPA (`ask-chat-spa`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for the chat SPA only works while `npm run dev` is running. The proxy is not active in the production build. |
 | Chat SPA workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via ASK Studio at `:5173`. |
 | Port 5174 already in use | `Get-NetTCPConnection -LocalPort 5174 -State Listen \| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }` |
 | `npm install` fails in `ask-chat-spa` with peer-dep errors | Run `npm install --legacy-peer-deps` instead of plain `npm install`. |
@@ -565,7 +565,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 
 ## Tip: launch all services with a single Windows Terminal command
 
-If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed — each lives in its own working directory (`ask-chat-spa/` at :5174, `ask-studio-spa/` at :5173, `ask-setup-spa/` at :5175).
+If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed. Each lives in its own working directory (`ask-chat-spa/` at :5174, `ask-studio-spa/` at :5173, `ask-setup-spa/` at :5175).
 
 Set the master key + semantic-layer paths once before running the one-liner:
 
@@ -597,21 +597,21 @@ docker compose logs -f ask-orchestrator    # tail any service
 docker compose down                         # tear it all down
 ```
 
-The compose file is the canonical source for local topology — env vars, volumes, healthchecks, and dependencies all match the per-service instructions above.
+The compose file is the canonical source for local topology: env vars, volumes, healthchecks, and dependencies all match the per-service instructions above.
 
 ---
 
-## Optional — local HuggingFace embedder (off by default)
+## Optional: local HuggingFace embedder (off by default)
 
 The `huggingface` embedder provider runs **sentence-transformers locally** (offline, no
 embedding API). Its dependency, `sentence-transformers`, pulls **`torch` + CUDA wheels (several
-GB)**, so it is **not installed by default** — it would dominate every `pip install` and Docker
+GB)**, so it is **not installed by default**. It would dominate every `pip install` and Docker
 build. The gateway imports it lazily, only when the embedder provider is `huggingface`, so
 nothing breaks when it's absent. Turn it on in **two steps**: (1) install the heavy deps,
-(2) point the embedder config at the `huggingface` provider. Both are required — installing the
+(2) point the embedder config at the `huggingface` provider. Both are required, installing the
 package alone does nothing until a provider selects it.
 
-### Step 1 — install the deps (`[huggingface]` extra)
+### Step 1: install the deps (`[huggingface]` extra)
 
 The deps live in the `ask-llm-gateway` `[huggingface]` optional extra (`langchain-huggingface` +
 `sentence-transformers`).
@@ -622,7 +622,7 @@ The deps live in the `ask-llm-gateway` `[huggingface]` optional extra (`langchai
 uv pip install -e "packages/ask-llm-gateway[huggingface]"
 ```
 
-**Docker** — pass the `GATEWAY_EXTRAS` build arg (compose forwards it to the orchestrator +
+**Docker**, pass the `GATEWAY_EXTRAS` build arg (compose forwards it to the orchestrator +
 admin-api images; default is empty = no torch):
 ```powershell
 $env:GATEWAY_EXTRAS = "[huggingface]"
@@ -633,11 +633,11 @@ GATEWAY_EXTRAS="[huggingface]" docker compose up -d --build
 ```
 Leave `GATEWAY_EXTRAS` unset to go back to the slim (no-torch) images on the next build.
 
-### Step 2 — select the `huggingface` embedder provider
+### Step 2: select the `huggingface` embedder provider
 
 Installing the package is inert until the embedder config chooses it. Pick ONE:
 
-- **Env vars** (set on the processes that build embeddings — `ask-orchestrator` + `ask-admin-api`):
+- **Env vars** (set on the processes that build embeddings, `ask-orchestrator` + `ask-admin-api`):
   ```
   EMBEDDER_PROVIDER=huggingface
   EMBEDDER_MODEL=sentence-transformers/all-mpnet-base-v2   # optional; this is the default
@@ -659,7 +659,7 @@ python -c "from ask_llm_gateway.application.factory import build_embedder; e = b
 > ⚠️ **Embedding dimension must match the index.** Switching embedder models changes the vector
 > dimension (e.g. `all-mpnet-base-v2` = 768, SAP AI Core text-embedding-3-large = 3072). The
 > OpenSearch indices are created for a fixed dimension, so changing the embedder requires
-> **re-indexing** the entity/field/docs registries — existing vectors are not comparable across
+> **re-indexing** the entity/field/docs registries, existing vectors are not comparable across
 > dimensions.
 
 ---

@@ -2,8 +2,8 @@
 
 [Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Create workspaces and business domains**
 
-> **How to.** Create the containers your data lives in — a
-> **Workspace** and the **Business Domains** inside it — and assign Data Products to a domain.
+> **How to.** Create the containers your data lives in, a
+> **Workspace** and the **Business Domains** inside it, and assign Data Products to a domain.
 
 | | |
 |---|---|
@@ -16,10 +16,10 @@
 
 ## What you need to know first
 
-- A **Workspace** is the top-level container the chat scopes to — it backs a deployment
+- A **Workspace** is the top-level container the chat scopes to. It backs a deployment
   (`dev` / `prod`). Think "Manufacturing Operations".
 - A **Business Domain** is a group of Data Products inside a workspace that answer a related
-  business question — e.g. "Production Orders". The same Data Product can be reused in several
+  business question, e.g. "Production Orders". The same Data Product can be reused in several
   domains.
 - A **Data Product** is one entity definition (a Bronze/Silver/Gold YAML). You create those
   in [Add Data Products](02-add-data-products.md); here you just organize them.
@@ -43,7 +43,7 @@ Click **New workspace** (in the rail header, or on the empty state). Fill the di
 | Field | Required | Notes |
 |---|---|---|
 | **Name** | Yes | What your team sees, e.g. *Manufacturing Operations*. |
-| **Slug** | Yes | Auto-derived from the name. Lowercase letters, digits, hyphens. **Used in URLs and API calls** — pick well, it identifies the workspace. |
+| **Slug** | Yes | Auto-derived from the name. Lowercase letters, digits, hyphens. **Used in URLs and API calls**: pick well, it identifies the workspace. |
 | **Objective** | No | One-line summary shown under the workspace title. |
 | **Description** | No | Longer context (optional). |
 
@@ -51,7 +51,7 @@ Click **New workspace** (in the rail header, or on the empty state). Fill the di
 
 Click **Create workspace**. You're taken straight into the new workspace.
 
-> **Tip — the slug is the identity.** It appears in the URL (`/workspaces/<slug>`) and in
+> **Tip. The slug is the identity.** It appears in the URL (`/workspaces/<slug>`) and in
 > API calls. The server enforces uniqueness and rejects reserved words with a clear message.
 
 ## 3. Create a Business Domain
@@ -62,7 +62,7 @@ Inside the workspace, find the **Business Domains** section and click **New busi
 |---|---|---|
 | **Name** | Yes | e.g. *Production Orders*. |
 | **Slug** | Yes | Auto-derived; used in the domain URL. |
-| **Description** | No | One paragraph — **this is fed into the agent's prompt context**, so describe what the domain covers in business terms. |
+| **Description** | No | One paragraph: **this is fed into the agent's prompt context**, so describe what the domain covers in business terms. |
 
 ![New business domain dialog](../images/studio-domain-create-dialog.png)
 
@@ -85,10 +85,10 @@ search the catalog and select the Data Products this domain should expose, then 
 ![Manage data products dialog: search the catalog and select entities to add to the domain](../images/studio-domain-manage.png)
 
 The chosen Data Products now appear as chips on the card. A chip marked **reused** belongs to
-more than one domain — that's expected and encouraged.
+more than one domain. That's expected and encouraged.
 
 > **Order of operations.** You can create the workspace and domain first and assign Data
-> Products later. Nothing is queryable until the domain is **published** — see
+> Products later. Nothing is queryable until the domain is **published**. See
 > [Publish and deploy](05-publish-deploy.md).
 
 ## Editing & deleting
@@ -96,13 +96,13 @@ more than one domain — that's expected and encouraged.
 - **Edit** (on the workspace header or a domain card) changes name / slug / description.
   Changing a slug updates its URL.
 - **Delete** a workspace removes it and its business domains. **Your entity YAMLs are not
-  touched** — they stay in the semantic-layer repo on disk; only the grouping is removed.
+  touched**. They stay in the semantic-layer repo on disk; only the grouping is removed.
 
 ---
 
 ## What's next
 
-→ **[Add Data Products](02-add-data-products.md)** — create the entities that fill
+→ **[Add Data Products](02-add-data-products.md)**, create the entities that fill
 your domains (Manual / Upload YAML / DDL + AI / From OneConnect).
 
 ---

@@ -12,18 +12,18 @@
 | **You'll end with** | A running stack, one published Data Product, and a real answer with the SQL behind it. |
 
 This page makes the choices for you. Where a step has options worth understanding, it links
-to the page that covers them — follow those **after** you have an answer on screen, not
+to the page that covers them. Follow those **after** you have an answer on screen, not
 during.
 
 **Not the same page as [Install and run the platform](01-installation.md).** That one is the
-reference for the stack itself — every environment variable, the startup order, the health
-checks, what to do when a service will not come up — and it stops once the stack is running.
+reference for the stack itself: every environment variable, the startup order, the health
+checks, what to do when a service will not come up, and it stops once the stack is running.
 This one walks past all of that with the choices already made, and does not stop until a
 question has been answered.
 
 ---
 
-## Step 1 — Bring the stack up
+## Step 1: Bring the stack up
 
 The stack lives in `platform/`, next to its `docker-compose.yml`. From your clone:
 
@@ -35,10 +35,10 @@ docker compose up -d
 
 Two values in `.env` must be set before that second command will get you anywhere:
 
-- **`ONIBEX_ENCRYPTION_KEY`** — encrypts the credentials you are about to enter. Generate it
+- **`ONIBEX_ENCRYPTION_KEY`.** Encrypts the credentials you are about to enter. Generate it
   with the one-liner in the file. **Save it somewhere safe**: lose it and every stored
   credential becomes unreadable.
-- **`SEMANTIC_LAYER_HOST_PATH`** — an absolute path to a git repository where your semantic
+- **`SEMANTIC_LAYER_HOST_PATH`.** An absolute path to a git repository where your semantic
   layer will live. It must already contain a `.git`, or publishing silently does nothing.
   `git init` an empty directory if you have none.
 
@@ -49,17 +49,17 @@ every service reports healthy:
 docker compose ps
 ```
 
-→ [Install and run the platform](01-installation.md) — every variable, the startup
+→ [Install and run the platform](01-installation.md). Every variable, the startup
 order, and what to do when a service stays unhealthy.
 
-## Step 2 — Point ASK at a database and a model
+## Step 2: Point ASK at a database and a model
 
 Open **ASK Setup** at `http://localhost:5175` and sign in.
 
 Configure two things, in this order, testing each before you save:
 
 1. **A database connection** for the **dev** environment. This is the database ASK will
-   query — it is your data, wherever it already lives.
+   query. It is your data, wherever it already lives.
 2. **An LLM provider**. Either a direct provider through LiteLLM (OpenAI, Anthropic, Bedrock,
    and others) or SAP AI Core if you run managed models. The same page configures the
    embedder that powers semantic search.
@@ -68,7 +68,7 @@ Saving reloads the affected services. The ASK Setup home page should now show bo
 
 → [Sign in to ASK](guides/sign-in.md) · [Connect a database](ask-setup/02-database-connections.md) · [Connect an LLM provider](ask-setup/03-llm-providers.md)
 
-## Step 3 — Create somewhere to put your data products
+## Step 3: Create somewhere to put your data products
 
 Open **ASK Studio** at `http://localhost:5173`. Two containers come before any content:
 
@@ -76,21 +76,21 @@ Open **ASK Studio** at `http://localhost:5173`. Two containers come before any c
 Workspace  ─►  Business Domain  ─►  Data Products
 ```
 
-A **workspace** is what the chat scopes to — it decides what a question can reach at all.
+A **workspace** is what the chat scopes to. It decides what a question can reach at all.
 A **business domain** groups the Data Products that get queried together.
 
 Create one of each. Names are yours; *Sales* is a fine first domain.
 
 → [Create workspaces and business domains](ask-studio/01-workspaces-domains.md)
 
-## Step 4 — Describe one table
+## Step 4: Describe one table
 
-Add a single Data Product. Do not model your whole landscape yet — one table you know well is
+Add a single Data Product. Do not model your whole landscape yet. One table you know well is
 enough to reach an answer, and the shape of the work will be obvious once you have.
 
 The fastest route from nothing is **DDL + AI**: paste a `CREATE TABLE` statement and let the
-platform derive a Data Product from it. Three other routes exist — a manual form, uploading
-YAML you already have, and importing SAP metadata from OneConnect — and the page below covers
+platform derive a Data Product from it. Three other routes exist: a manual form, uploading
+YAML you already have, and importing SAP metadata from OneConnect, and the page below covers
 when each fits.
 
 Whatever you use, the result lands in **In Review**. Open it and read the field descriptions:
@@ -100,17 +100,17 @@ before anything is applied.
 
 → [Add Data Products](ask-studio/02-add-data-products.md) · [Edit and enrich Data Products](ask-studio/03-edit-enrich.md)
 
-## Step 5 — Publish it to dev
+## Step 5: Publish it to dev
 
 Nothing you author is visible to the chat until it is published, and publishing is gated:
-**dev first, then prod**. That gate is deliberate — it is what stops an untested definition
+**dev first, then prod**. That gate is deliberate. It is what stops an untested definition
 reaching the environment your business reads.
 
 Publish your Data Product, or the whole business domain at once, to **dev**.
 
 → [Publish and deploy](ask-studio/05-publish-deploy.md)
 
-## Step 6 — Ask something
+## Step 6: Ask something
 
 Open **ASK Chat** at `http://localhost:5174`.
 
@@ -120,13 +120,13 @@ agent will answer:
 | Control | Set it to |
 |---|---|
 | **Workspace** | The one you created in Step 3. |
-| **Environment** | **dev** — that is where you published. |
+| **Environment** | **dev**. That is where you published. |
 | **Mode** | **Smart**, the default. |
 
 Now ask a question about the table you described, in ordinary language. Any language works.
 
 You should get a written answer, the rows behind it, an automatic chart when the result has
-more than one row, and — if you expand it — **the SQL that produced the number**. Read that
+more than one row, and, if you expand it, **the SQL that produced the number**. Read that
 SQL. It is the whole argument of the product: the model chose among fields you defined, it
 did not invent a table name.
 
@@ -138,12 +138,12 @@ did not invent a table name.
 
 Two failures account for most first runs:
 
-- **"No workspaces configured"** in the Chat — the workspace exists but nothing is published
+- **"No workspaces configured"** in the Chat, the workspace exists but nothing is published
   to the environment you selected. Go back to Step 5, or switch the environment to `dev`.
-- **An answer that finds no data** — the Data Product is published, but the underlying table
+- **An answer that finds no data.** The Data Product is published, but the underlying table
   is empty or the connection points at the wrong schema. Check the connection in ASK Setup.
 
-→ [Troubleshooting & FAQ](reference/troubleshooting.md) — symptoms, causes and fixes.
+→ [Troubleshooting & FAQ](reference/troubleshooting.md). Symptoms, causes and fixes.
 
 ## What to read next
 

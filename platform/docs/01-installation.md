@@ -3,7 +3,7 @@
 [Manual](README.md) › [Foundations](README.md#foundations) › **Install and run the platform**
 
 > **How to.** Bring the full ASK Platform up on one machine with Docker and
-> reach each of its user interfaces — **ASK Studio**, the **Chat**, and **ASK Setup** — plus the
+> reach each of its user interfaces: **ASK Studio**, the **Chat**, and **ASK Setup**, plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
 >
@@ -29,13 +29,13 @@
   LLM providers). **Keycloak** is the identity provider.
 - The three interfaces you use are separate **React single-page apps**, each on **its own host
   port**: **ASK Studio** (semantic-layer authoring), the **Chat** (natural-language querying), and
-  **ASK Setup** (technical configuration). There is no shared login proxy and no path-routing —
-  each app runs its own Keycloak sign-in.
+  **ASK Setup** (technical configuration). There is no shared login proxy and no path-routing.
+  Each app runs its own Keycloak sign-in.
 - The SPAs are static bundles served by Nginx. Their auth posture and host address are **baked
   into the bundle at build time**, so changing `AUTH_MODE` or `EXTERNAL_HOST` means **rebuilding
-  the SPA image** — a restart alone won't pick it up.
+  the SPA image**, a restart alone won't pick it up.
 - A small set of **environment variables** in a `.env` file in `platform/` parameterizes the
-  stack — chiefly the encryption key, the semantic-layer repo path, the OpenSearch connection,
+  stack: chiefly the encryption key, the semantic-layer repo path, the OpenSearch connection,
   and the auth posture. You set them once before the first `up`.
 
 ---
@@ -54,20 +54,20 @@
   and for your target database (e.g. SAP HANA Cloud). These are configured **after** first boot
   in **ASK Setup**, not here.
 
-> **Tip — Docker vs native.** This page uses the Docker path (one command, everything in
+> **Tip. Docker vs native.** This page uses the Docker path (one command, everything in
 > containers). If you'd rather run each service natively for active development, follow your
-> platform's native-development runbook instead — it covers the venv setup and the native ports.
+> platform's native-development runbook instead. It covers the venv setup and the native ports.
 
 ## 2. Create your `.env` file
 
-The stack reads a `.env` file in `platform/`, beside `docker-compose.yml` — not at the top of
+The stack reads a `.env` file in `platform/`, beside `docker-compose.yml`, not at the top of
 the repository. Two templates ship with it; copy the one that matches where you are running and
 edit the values in place:
 
 | Template | Use it when |
 |---|---|
 | [`.env.example`](../.env.example) | Running on your own machine. |
-| [`.env.remote.example`](../.env.remote.example) | Serving from a remote host — the same variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. |
+| [`.env.remote.example`](../.env.remote.example) | Serving from a remote host: the same variables, with `EXTERNAL_HOST` and the host-port remaps pre-filled. |
 
 ```bash
 cp .env.example .env          # or: cp .env.remote.example .env
@@ -76,30 +76,30 @@ cp .env.example .env          # or: cp .env.remote.example .env
 **There is no separate remote compose file:** the remote deploy is this same `docker-compose.yml`
 plus a filled-in `.env`; only the values differ.
 
-Set the following variables **by name** — never paste real secret values into the manual or into
+Set the following variables **by name**, never paste real secret values into the manual or into
 version control (`.env` is gitignored). Generate secrets with the one-liners the file documents.
 
 | Variable | Required | What it is |
 |---|---|---|
-| **`ONIBEX_ENCRYPTION_KEY`** | Yes | Fernet master key (32-byte urlsafe-base64) that encrypts the **configuration store** in OpenSearch — database connections and LLM-provider credentials. Both backends **fail-closed at boot** if it's missing or malformed. Keep it **stable** — rotating it makes previously-stored secrets undecryptable. |
-| **`SEMANTIC_LAYER_HOST_PATH`** | Yes | Absolute host path to your semantic-layer git repo. It is bind-mounted into `ask-admin-api` at `/app/semantic-layer`. **The directory must contain a `.git`** — without it, YAML commits become silent no-ops and publish-to-environment can't work. |
-| **`AUTH_MODE`** | Yes | Auth backend: `keycloak` (local IdP), `xsuaa` (SAP BTP), or `none` (open dev). **Baked into the SPA bundles at build time** — changing it requires a SPA rebuild (see Step 6). |
+| **`ONIBEX_ENCRYPTION_KEY`** | Yes | Fernet master key (32-byte urlsafe-base64) that encrypts the **configuration store** in OpenSearch, database connections and LLM-provider credentials. Both backends **fail-closed at boot** if it's missing or malformed. Keep it **stable**, rotating it makes previously-stored secrets undecryptable. |
+| **`SEMANTIC_LAYER_HOST_PATH`** | Yes | Absolute host path to your semantic-layer git repo. It is bind-mounted into `ask-admin-api` at `/app/semantic-layer`. **The directory must contain a `.git`**: without it, YAML commits become silent no-ops and publish-to-environment can't work. |
+| **`AUTH_MODE`** | Yes | Auth backend: `keycloak` (local IdP), `xsuaa` (SAP BTP), or `none` (open dev). **Baked into the SPA bundles at build time**, changing it requires a SPA rebuild (see Step 6). |
 | **`DEV_BYPASS_AUTH`** | Yes | `true` disables authentication (local convenience, honored only when `ENVIRONMENT=local`); `false` enforces `AUTH_MODE`. |
 | **`CHAT_AUTH_MODE`** | No | Overrides the **Chat** SPA's auth independently of `AUTH_MODE` (unset = follows `AUTH_MODE`). Set `dev` on a plain-HTTP remote box: browser PKCE needs a secure context that `http://<ip>` can't provide (`localhost` is exempt). Also baked at build time. |
-| **`OPENSEARCH_HOST`** | Yes | Host of the OpenSearch cluster. **Env-first** (the store's own connection can't live inside the store it holds). Inside the compose network this is the service name **`opensearch`** (the default) — no `settings.json` edit needed. It is shown **read-only** in ASK Setup. |
-| **`OPENSEARCH_PORT`** | Yes | OpenSearch port — default `9200`. |
+| **`OPENSEARCH_HOST`** | Yes | Host of the OpenSearch cluster. **Env-first** (the store's own connection can't live inside the store it holds). Inside the compose network this is the service name **`opensearch`** (the default), no `settings.json` edit needed. It is shown **read-only** in ASK Setup. |
+| **`OPENSEARCH_PORT`** | Yes | OpenSearch port, default `9200`. |
 | **`OPENSEARCH_USE_SSL`** | Yes | `false` for the single-node dev cluster (its security plugin is disabled). |
 | **`OPENSEARCH_USER` / `OPENSEARCH_PASSWORD`** | If secured | Credentials for a secured cluster; leave blank for the dev cluster. |
-| **`EXTERNAL_HOST`** | For remote hosts | The host address the **browser** uses to reach the stack (no scheme, no port). Baked into the SPAs (their Keycloak URL and cross-app links) at build time; **defaults to `localhost`**. Set it — and rebuild the SPAs — when serving from a remote box. |
+| **`EXTERNAL_HOST`** | For remote hosts | The host address the **browser** uses to reach the stack (no scheme, no port). Baked into the SPAs (their Keycloak URL and cross-app links) at build time; **defaults to `localhost`**. Set it, and rebuild the SPAs, when serving from a remote box. |
 | **`EXECUTOR_EXTRAS`** | No (has default) | Which SQL drivers are baked into the `ask-orchestrator` and `ask-admin-api` images for multi-database support. Default `[snowflake,databricks,clickhouse,bigquery]`. Add `sqlserver` / `db2` only if the images carry the system ODBC/CLI libs. **Must match** across both services so a green connection Test means chat can actually connect. |
 | `ASK_INGEST_API_KEY` | For M2M ingest | API key for the machine ingest endpoint (`POST /v1/ingest/*`). |
 | `KC_ADMIN_USER` / `KC_ADMIN_PASSWORD` | If Keycloak | Keycloak admin-console login (compose defaults to `admin` / `admin`; change them on any shared box). |
 
-> **Warning — the encryption key is not recoverable.** If you lose `ONIBEX_ENCRYPTION_KEY`, every
+> **Warning: the encryption key is not recoverable.** If you lose `ONIBEX_ENCRYPTION_KEY`, every
 > encrypted credential in OpenSearch becomes unreadable and you must re-enter every provider and
 > database secret. Save it somewhere safe the moment you generate it.
 
-> **Warning — the semantic-layer path needs a real git repo.** If `SEMANTIC_LAYER_HOST_PATH`
+> **Warning, the semantic-layer path needs a real git repo.** If `SEMANTIC_LAYER_HOST_PATH`
 > points at a directory with **no `.git`**, writes still land on disk but no history is recorded
 > and publish-to-environment can't work. `git init` the directory first. See
 > [Common gotchas](#common-gotchas) below.
@@ -113,22 +113,22 @@ docker compose up -d
 ```
 
 Compose builds the images on first run, then starts every service in the background. It brings
-them up **in dependency order** — the backing services first, then the backends, then the SPAs:
+them up **in dependency order**: the backing services first, then the backends, then the SPAs:
 
-1. **`opensearch`** — knowledge-graph / vector store **and** the encrypted config store.
-   Everything with data depends on its healthcheck. **`keycloak`** — the identity provider —
+1. **`opensearch`**, knowledge-graph / vector store **and** the encrypted config store.
+   Everything with data depends on its healthcheck. **`keycloak`**, the identity provider,
    starts alongside it.
-2. **`ask-orchestrator`** and **`ask-admin-api`** — the FastAPI backends; each waits for
+2. **`ask-orchestrator`** and **`ask-admin-api`**, the FastAPI backends; each waits for
    OpenSearch to report healthy.
 3. **`ask-studio-spa`** (waits on the admin API), **`ask-chat-spa`** (waits on the orchestrator
-   and the admin API), and **`ask-setup-spa`** (waits on the admin API) — the three React UIs.
+   and the admin API), and **`ask-setup-spa`** (waits on the admin API), the three React UIs.
    They are static Nginx bundles and talk to Keycloak from the **browser**, so they do **not**
    gate on Keycloak's healthcheck.
-4. **`mcp-server`** — the internal endpoint for SAP write actions (port `4004`). **`teams-bot`**
+4. **`mcp-server`**, the internal endpoint for SAP write actions (port `4004`). **`teams-bot`**
    is opt-in and only wires a real channel once its Azure Bot credentials are set.
 
-> **Tip — first boot is slow.** The image build and OpenSearch's initial cluster bootstrap take a
-> few minutes. Services show `starting` until their healthchecks pass — that's expected.
+> **Tip, first boot is slow.** The image build and OpenSearch's initial cluster bootstrap take a
+> few minutes. Services show `starting` until their healthchecks pass. That's expected.
 
 ## 4. Confirm everything is healthy
 
@@ -138,14 +138,14 @@ Check the container status:
 docker compose ps
 ```
 
-Every service publishes a healthcheck — wait until they report **healthy**. Tail a service's logs
+Every service publishes a healthcheck, wait until they report **healthy**. Tail a service's logs
 if one stays unhealthy:
 
 ```bash
 docker compose logs -f ask-orchestrator
 ```
 
-You should see every service report **Up (healthy)** — something like:
+You should see every service report **Up (healthy)**, something like:
 
 ```text
 NAME               SERVICE            STATUS          PORTS
@@ -164,7 +164,7 @@ credentials are set.)
 The FastAPI backends also publish on host ports for their `/v1/health` endpoints and external
 traffic: **`ask-orchestrator`** on `:8083` and **`ask-admin-api`** on `:8081` by default. Each SPA
 reaches its backend by **container name** (not host port), so remapping these does **not** affect
-the browser flow — they only matter for external / machine callers (watsonx, [Apache Kafka](https://kafka.apache.org/) ingest) and
+the browser flow. They only matter for external / machine callers (watsonx, [Apache Kafka](https://kafka.apache.org/) ingest) and
 health probes. Remap with `ORCH_HOST_PORT` / `ADMIN_API_HOST_PORT` in `.env` to coexist with a
 co-located Confluent stack (which takes `8083` for Kafka Connect and `8081` for the Schema Registry).
 
@@ -180,7 +180,7 @@ mappings in `docker-compose.yml`:
 | **ASK Setup** (React SPA) | `http://localhost:5175` | `ask-setup-spa` (Nginx) | Technical configuration: OpenSearch, database connections, LLM providers, identity. |
 | **Keycloak** (admin console) | `http://localhost:8180` | `keycloak` | Identity-provider admin console (only relevant when auth is on). |
 
-Each SPA runs its own Keycloak sign-in — there is no shared login proxy routing several apps
+Each SPA runs its own Keycloak sign-in. There is no shared login proxy routing several apps
 behind one port. Substitute your `EXTERNAL_HOST` for `localhost` when serving from a remote box.
 
 If authentication is enabled (`DEV_BYPASS_AUTH=false`), the first visit to any SPA redirects
@@ -197,16 +197,16 @@ through the Keycloak login before landing on the UI.
 
 - **Rebuild** after a change. The backend packages are baked into the images at build time (there
   is no source bind-mount), and the SPAs bake their auth/host config (`AUTH_MODE`, `EXTERNAL_HOST`)
-  into the bundle at build time — so a restart alone reuses the old image. Use the helper script:
+  into the bundle at build time, so a restart alone reuses the old image. Use the helper script:
 
   ```bash
   ./redeploy.sh
   ```
 
   It builds the images, force-recreates the containers, and prints `docker compose ps`. It does
-  **not** touch volumes — for a destructive wipe run `docker compose down -v` yourself.
+  **not** touch volumes, for a destructive wipe run `docker compose down -v` yourself.
 
-> **Tip — rebuild one service.** To rebuild just the SPA whose config you changed, scope the
+> **Tip: rebuild one service.** To rebuild just the SPA whose config you changed, scope the
 > script: `ONLY=ask-setup-spa ./redeploy.sh` (or `ask-studio-spa` / `ask-chat-spa`). This is the
 > step that makes an `AUTH_MODE` or `EXTERNAL_HOST` change take effect in the browser.
 
@@ -216,15 +216,15 @@ through the Keycloak login before landing on the UI.
 
 | Symptom | Cause & fix |
 |---|---|
-| First query returns nothing / OpenSearch connection refused inside a container | `OPENSEARCH_HOST` is wrong for the runtime. Inside Docker the store is reachable as the service name **`opensearch`** (the default) — not `localhost`. If you set `OPENSEARCH_HOST=localhost` in `.env` while running in containers, revert it to `opensearch` and restart. The value is **read-only** in ASK Setup; change it in `.env` (or a K8s Secret), not in the UI. |
+| First query returns nothing / OpenSearch connection refused inside a container | `OPENSEARCH_HOST` is wrong for the runtime. Inside Docker the store is reachable as the service name **`opensearch`** (the default), not `localhost`. If you set `OPENSEARCH_HOST=localhost` in `.env` while running in containers, revert it to `opensearch` and restart. The value is **read-only** in ASK Setup; change it in `.env` (or a K8s Secret), not in the UI. |
 | Backend aborts at boot with an encryption-key error | `ONIBEX_ENCRYPTION_KEY` is missing or malformed. The backends **fail-closed** by design. Generate a valid Fernet key, put it in `.env`, and restart. The **same** key must be used everywhere the encrypted store is read. |
 | `docker compose up` fails with `SEMANTIC_LAYER_HOST_PATH variable is not set` | Add `SEMANTIC_LAYER_HOST_PATH=<absolute path>` to your `.env` before `up`. Compose fails fast so the mistake surfaces immediately instead of silently mounting an empty volume. |
-| YAML edits save but never appear in history; publish-to-environment fails | The directory `SEMANTIC_LAYER_HOST_PATH` points at has **no `.git`**, or it has no `dev` / `prod` branches yet. On a from-zero deploy the repo isn't auto-initialized: `git init` it, make an initial commit, and ensure the `dev` and `prod` branches exist — publish-to-environment writes to those branches. |
-| `AUTH_MODE` change has no effect in the browser | The SPAs bake `AUTH_MODE` (and `EXTERNAL_HOST`) into their bundle at build time. Rebuild the SPA image — `./redeploy.sh` (or `ONLY=<spa> ./redeploy.sh`) — a restart alone reuses the old bundle. |
+| YAML edits save but never appear in history; publish-to-environment fails | The directory `SEMANTIC_LAYER_HOST_PATH` points at has **no `.git`**, or it has no `dev` / `prod` branches yet. On a from-zero deploy the repo isn't auto-initialized: `git init` it, make an initial commit, and ensure the `dev` and `prod` branches exist, publish-to-environment writes to those branches. |
+| `AUTH_MODE` change has no effect in the browser | The SPAs bake `AUTH_MODE` (and `EXTERNAL_HOST`) into their bundle at build time. Rebuild the SPA image, `./redeploy.sh` (or `ONLY=<spa> ./redeploy.sh`), a restart alone reuses the old bundle. |
 | A database connection Test is green but chat can't query it | `EXECUTOR_EXTRAS` differs between `ask-admin-api` (which runs the Test) and `ask-orchestrator` (which runs chat), or the engine's driver isn't baked in. Set the **same** `EXECUTOR_EXTRAS` on both and rebuild. |
-| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port — ASK Studio `5173`, Chat `5174`, ASK Setup `5175`. |
+| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port. ASK Studio `5173`, Chat `5174`, ASK Setup `5175`. |
 
-> **Warning — first-boot config.** The database connections and provider credentials are **not**
+> **Warning, first-boot config.** The database connections and provider credentials are **not**
 > set by this install step. Configure them after the stack is up, in **ASK Setup**. Until a
 > database connection is active and a provider is configured, chat queries won't resolve.
 
@@ -232,13 +232,13 @@ through the Keycloak login before landing on the UI.
 
 ## What's next
 
-→ **[ASK Setup](ask-setup/README.md)** — set up the database connections, LLM providers, and
+→ **[ASK Setup](ask-setup/README.md)**: set up the database connections, LLM providers, and
 identity.
-→ **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)** — create the
+→ **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)**, create the
 containers your data lives in.
-→ **[Add Data Products](ask-studio/02-add-data-products.md)** — author the entities the
+→ **[Add Data Products](ask-studio/02-add-data-products.md)**, author the entities the
 agent maps questions to.
-→ **Deployment runbook** (maintained by your platform / ops team) — the full per-service
+→ **Deployment runbook** (maintained by your platform / ops team), the full per-service
 procedure (native ports, venv setup, troubleshooting).
 
 ---

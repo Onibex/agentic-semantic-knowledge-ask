@@ -10,7 +10,7 @@ The write half of ASK. Everything else in this repository reads: this service is
 SAP actually performs.
 
 It is a **Model Context Protocol** server in front of SAP S/4HANA OData services. Each entity
-set declared in `api-config.json` becomes a set of MCP tools — list, get, create, update — that
+set declared in `api-config.json` becomes a set of MCP tools: list, get, create, update. That
 the agent may call once an administrator has enabled them.
 
 ## What is here
@@ -21,7 +21,7 @@ the agent may call once an administrator has enabled them.
 | `patch.js` | Patches `odata-mcp-proxy` for Basic Auth and readable OData V4 errors. Runs on `postinstall`, and is safe to re-run. |
 | `start.sh` | Reads `api-config.json` from the mounted config volume if one is there, otherwise seeds the default. SAP credentials come from the environment; `settings.json` only fills the gaps. |
 
-The proxy itself is the `odata-mcp-proxy` dependency — this service is the configuration,
+The proxy itself is the `odata-mcp-proxy` dependency. This service is the configuration,
 the patches and the startup contract around it, not a reimplementation.
 
 ## Running it
@@ -40,9 +40,9 @@ npm start
 
 ## Documentation
 
-- [Enable the MCP server](../../docs/ask-setup/06-mcp-server.md) — pointing the platform at
+- [Enable the MCP server](../../docs/ask-setup/06-mcp-server.md). Pointing the platform at
   this endpoint.
-- [Register an OpenAPI contract](../../docs/ask-setup/07-contracts.md) — turning a spec into
+- [Register an OpenAPI contract](../../docs/ask-setup/07-contracts.md). Turning a spec into
   the tools the agent sees.
-- [Connect to SAP](../../docs/ask-setup/05-sap-connection.md) — the credentials this service
+- [Connect to SAP](../../docs/ask-setup/05-sap-connection.md). The credentials this service
   authenticates with.

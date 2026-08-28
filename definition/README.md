@@ -1,4 +1,4 @@
-# ASK — Agentic Semantic Knowledge Definition
+# ASK: Agentic Semantic Knowledge Definition
 
 > A YAML specification for AI-ready data products. The semantic foundation for Agentic AI on enterprise data.
 
@@ -13,7 +13,7 @@
 
 > **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
 > Onibex Agentic Semantic Knowledge Platform derives its AI-enrichment prompts from these rules and ships them as
-> code assets, but the prompt is a rendering of the specification — never a second authority.
+> code assets, but the prompt is a rendering of the specification, never a second authority.
 > Where the platform's behaviour and this text disagree, that is a defect in one of them, to be
 > reconciled here rather than forked.
 
@@ -23,7 +23,7 @@
 
 LLMs and agents are good at generating SQL, calling tools, and chaining steps. They are bad at knowing *which* table answers *which* business question, what `MATNR` means, why `VBAK.GBSTK = 'C'` means an order is closed, or which join path is the cheapest one to traverse. Without that context, agents either hallucinate or refuse.
 
-ASK closes that gap by declaring the **business semantics** of the data — entities, grains, measures, statuses, relationships and intent — in a layered specification any agent runtime can read.
+ASK closes that gap by declaring the **business semantics** of the data: entities, grains, measures, statuses, relationships and intent, in a layered specification any agent runtime can read.
 
 ```mermaid
 flowchart TB
@@ -44,7 +44,7 @@ flowchart TB
     style BRONZE fill:#f5f0e8,stroke:#a16207,color:#111
 ```
 
-ASK is **declarative**, **runtime-agnostic**, and **business-vocabulary-first**. It does not generate the data products — it describes them so agents know what they are.
+ASK is **declarative**, **runtime-agnostic**, and **business-vocabulary-first**. It does not generate the data products. It describes them so agents know what they are.
 
 ---
 
@@ -60,21 +60,21 @@ Most enterprises sit on top of decades of OLTP systems (SAP, Oracle, Salesforce,
 
 You cannot point an LLM at this and expect it to act reliably. Even Retrieval-Augmented Generation (RAG) over schema descriptions fails, because the model still needs to *resolve a question to the right entity, the right grain, and the right join path*.
 
-ASK exists to provide the missing semantic layer between the agent and the warehouse — encoding not just *what the data is* but *what business question it answers*, *how safe it is to aggregate*, and *which path to traverse first*.
+ASK exists to provide the missing semantic layer between the agent and the warehouse: encoding not just *what the data is* but *what business question it answers*, *how safe it is to aggregate*, and *which path to traverse first*.
 
 ---
 
 ## The three layers
 
-ASK organizes data products into three layers. **Entities, Business Objects, and Data Products are equivalent terms** — ASK uses "Data Product" throughout.
+ASK organizes data products into three layers. **Entities, Business Objects, and Data Products are equivalent terms**. ASK uses "Data Product" throughout.
 
 The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`, `target_entity`). That split is deliberate and stable: "Data Product" is the term for humans, `entity_` is the machine vocabulary, and renaming the keys would break every catalog and reference that points at them.
 
 | Layer | Concept | Purpose | Agent visibility |
 |-------|---------|---------|------------------|
-| **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary** — agents prefer Gold |
-| **🥈 Silver** | Foundational Data Product | Encodes a real-world enterprise artifact (Customer, Product, Sales Order). Composed of one or more Bronze nodes joined into a coherent business entity. Reusable across many Gold products. | **Fallback** — agents use Silver when no Gold matches |
-| **🥉 Bronze** | Raw node / table | A faithful, mostly-uninterpreted representation of a source system table or node. | **Avoid** — not recommended as agent context |
+| **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary**, agents prefer Gold |
+| **🥈 Silver** | Foundational Data Product | Encodes a real-world enterprise artifact (Customer, Product, Sales Order). Composed of one or more Bronze nodes joined into a coherent business entity. Reusable across many Gold products. | **Fallback**, agents use Silver when no Gold matches |
+| **🥉 Bronze** | Raw node / table | A faithful, mostly-uninterpreted representation of a source system table or node. | **Avoid**, not recommended as agent context |
 
 ### Intent Resolution priority
 
@@ -86,9 +86,9 @@ When an agent receives a natural-language question, the layers are ranked in thi
 3. BRONZE  → (skipped by default — not good agent context)
 ```
 
-This is a **priority, not a sequence of passes.** A resolver is free to search the whole catalog at once and then rank what it found — what the contract fixes is the *outcome*: a Gold that answers the question outranks a Silver that could compose one, and Bronze is not an answer surface at all. Expressing the priority as re-ranking rather than a layer-by-layer walk is what makes a single retrieval pass sufficient.
+This is a **priority, not a sequence of passes.** A resolver is free to search the whole catalog at once and then rank what it found, what the contract fixes is the *outcome*: a Gold that answers the question outranks a Silver that could compose one, and Bronze is not an answer surface at all. Expressing the priority as re-ranking rather than a layer-by-layer walk is what makes a single retrieval pass sufficient.
 
-**Why Bronze is skipped:** A raw table like `VBAK` has no notion that `GBSTK='C'` means "closed", that `VDATU` is the *requested* delivery date (not actual), or how it joins to `VBAP`. Giving agents Bronze leaks raw schema noise and almost always produces wrong SQL. Bronze exists to be **lineage** for Silver and Gold — not the agent surface.
+**Why Bronze is skipped:** A raw table like `VBAK` has no notion that `GBSTK='C'` means "closed", that `VDATU` is the *requested* delivery date (not actual), or how it joins to `VBAP`. Giving agents Bronze leaks raw schema noise and almost always produces wrong SQL. Bronze exists to be **lineage** for Silver and Gold, not the agent surface.
 
 ### The two planes
 
@@ -117,7 +117,7 @@ flowchart TB
 Two consequences bind the author:
 
 - **The Silver plane must be self-sufficient.** A Silver fact has to reach its dimensions
-  through *its own* `relationships`. Strip those and the fallback has no graph to walk —
+  through *its own* `relationships`. Strip those and the fallback has no graph to walk,
   which is why relationships live on Silver and not only on Gold.
 - **The two planes are parallel, not layered.** On fallback the agent uses the *Silver's*
   relationships, never a Gold's: the Gold was not selected, and its join keys differ. Gold
@@ -139,7 +139,7 @@ ASK is the **structural and semantic contract** of a data product, not its **bui
 - ✅ The **business meaning** of that structure
 - ✅ The **relationships** between entities
 
-If your Gold "Available-to-Sell" data product is built by a 400-line dbt model, ASK does not care about the 400 lines. ASK cares about the columns, grains, measures, statuses, and joins that come *out* of those 400 lines — because that is what the agent needs to reason about.
+If your Gold "Available-to-Sell" data product is built by a 400-line dbt model, ASK does not care about the 400 lines. ASK cares about the columns, grains, measures, statuses, and joins that come *out* of those 400 lines, because that is what the agent needs to reason about.
 
 ---
 
@@ -187,8 +187,8 @@ relationships:
 An agent reading this knows:
 
 - This data product answers questions about **open sales orders** in the **OTC** process.
-- Its grain is **one row per sales-order item** — safe to count, safe to sum `order_qty`.
-- `order_status` is already derived — no need to re-implement the `GBSTK` rule.
+- Its grain is **one row per sales-order item**: safe to count, safe to sum `order_qty`.
+- `order_status` is already derived, no need to re-implement the `GBSTK` rule.
 - Customer details are one cheap join away (`traversal_cost: 1`, `aggregation_safety: safe`).
 
 That is enough context for a Gold-quality SQL plan. No raw schema needed.
@@ -218,9 +218,9 @@ definition/               # (this folder inside agentic-semantic-knowledge-ask)
 
 Each layer has its own normative specification:
 
-- **[Gold Layer Specification](docs/GOLD_LAYER.md)** — Business Logic Data Products. Pre-joined, semantically resolved, agent-first.
-- **[Silver Layer Specification](docs/SILVER_LAYER.md)** — Foundational Data Products. Reusable enterprise artifacts (Customer, Product, Sales Order).
-- **[Bronze Layer Specification](docs/BRONZE_LAYER.md)** — Raw nodes and tables. Lineage substrate, not agent context.
+- **[Gold Layer Specification](docs/GOLD_LAYER.md).** Business Logic Data Products. Pre-joined, semantically resolved, agent-first.
+- **[Silver Layer Specification](docs/SILVER_LAYER.md).** Foundational Data Products. Reusable enterprise artifacts (Customer, Product, Sales Order).
+- **[Bronze Layer Specification](docs/BRONZE_LAYER.md).** Raw nodes and tables. Lineage substrate, not agent context.
 
 ---
 
@@ -237,15 +237,15 @@ This is intentional. **A composable AI Data Strategy depends on the data practit
 
 ## How ASK compares to other specs
 
-ASK is influenced by — and complementary to — other open semantic-modeling efforts:
+ASK is influenced by, and complementary to, other open semantic-modeling efforts:
 
 | Project | Focus | Relationship to ASK |
 |---------|-------|---------------------|
 | [AtScale SML](https://github.com/semanticdatalayer/SML) | Universal semantic-model spec for BI/analytics tools | ASK shares the layered, YAML-first, BI-friendly approach. ASK adds explicit Bronze/Silver/Gold layering and an **agent-resolution priority** for LLMs. |
 | [Snowflake Semantic Model Generator](https://github.com/Snowflake-Labs/semantic-model-generator) | YAML semantic model for Snowflake Cortex Analyst (text-to-SQL) | ASK shares the goal of grounding LLM SQL generation in business semantics. ASK is platform-agnostic and adds layered composition, relationship costing, and aggregation safety. |
-| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST/GraphQL/SQL APIs | Cube is a runtime; ASK is a spec. ASK can describe entities that a Cube schema serves, and vice versa — they are complementary. |
+| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST/GraphQL/SQL APIs | Cube is a runtime; ASK is a spec. ASK can describe entities that a Cube schema serves, and vice versa. They are complementary. |
 
-ASK is deliberately **runtime-neutral**. You can serve an ASK catalog from Cube, dbt, Snowflake, Databricks Unity Catalog, SAP HANA, or a custom resolver — the YAML does not care.
+ASK is deliberately **runtime-neutral**. You can serve an ASK catalog from Cube, dbt, Snowflake, Databricks Unity Catalog, SAP HANA, or a custom resolver. The YAML does not care.
 
 ---
 
@@ -275,11 +275,11 @@ Two digits, no patch level: a contract does not get bugfixes, it gets changes.
 
 | | When it moves |
 |---|---|
-| **MAJOR** — `2.0` | A document valid under the previous version stops being valid: a required field is removed or renamed, or resolution semantics change. |
-| **MINOR** — `1.1` | Additions that leave existing documents valid: a new optional field, a new layer of documentation, clarified wording. |
+| **MAJOR.** `2.0` | A document valid under the previous version stops being valid: a required field is removed or renamed, or resolution semantics change. |
+| **MINOR.** `1.1` | Additions that leave existing documents valid: a new optional field, a new layer of documentation, clarified wording. |
 
 Not to be confused with the `version:` field inside each data product, which
-belongs to that artifact — it tracks the evolution of one entity, not of the
+belongs to that artifact. It tracks the evolution of one entity, not of the
 contract that describes it.
 
 ---
@@ -297,14 +297,14 @@ contract that describes it.
 ## Contributing
 
 ASK is a **published, vendor-neutral specification**: anyone can read it, adopt
-it, and describe their data products with it. It is not open source — the text
+it, and describe their data products with it. It is not open source, the text
 is source-available under [LICENSE](LICENSE), and Onibex stewards it.
 Contributions are welcome on that footing:
 
-- **Specification proposals** — open an issue with `[RFC]` in the title.
-- **New examples** — submit a PR adding a YAML under `examples/`.
-- **Source-system coverage** — non-SAP examples are especially valuable.
-- **Tooling** — validators, generators, linters, IDE plugins. Tooling you build
+- **Specification proposals.** Open an issue with `[RFC]` in the title.
+- **New examples.** Submit a PR adding a YAML under `examples/`.
+- **Source-system coverage.** Non-SAP examples are especially valuable.
+- **Tooling.** Validators, generators, linters, IDE plugins. Tooling you build
   around the specification is yours; the licence covers this repository's own
   material, not what you write against the contract.
 
@@ -350,10 +350,10 @@ is not the only possible reader.
 
 ## License
 
-The ASK specification is source-available and dual-licensed — see
+The ASK specification is source-available and dual-licensed. See
 [`LICENSE`](LICENSE): **PolyForm Strict License 1.0.0** (noncommercial use,
 research, evaluation, and personal study, indefinitely) or **PolyForm Free
 Trial License 1.0.0** (evaluate for your business for up to 32 consecutive
 calendar days), at your option. Production or any other commercial use
-requires a commercial license from [Onibex](https://onibex.com) — see
+requires a commercial license from [Onibex](https://onibex.com). See
 [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).

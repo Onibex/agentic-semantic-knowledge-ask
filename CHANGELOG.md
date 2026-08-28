@@ -6,12 +6,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 One version covers the whole repository. What each number means here:
 
-- **MAJOR** — a contract someone already depends on breaks: the semantic-layer
+- **MAJOR.** A contract someone already depends on breaks: the semantic-layer
   YAML contract, an existing `/v1` endpoint, a required environment variable,
   or an index change that forces a reindex.
-- **MINOR** — backward-compatible capability: a new SQL-generation mode, a new
+- **MINOR.** Backward-compatible capability: a new SQL-generation mode, a new
   connector, an optional YAML field, a new flow in the UI.
-- **PATCH** — a fix that changes no contract: bug fixes, security patches,
+- **PATCH.** A fix that changes no contract: bug fixes, security patches,
   documentation, dependency bumps.
 
 The `/v1` in the HTTP routes is the API contract version and moves far more
@@ -30,14 +30,14 @@ slowly than the product version.
   over: the loader returned `""` behind a warning, the prompt builder drops the
   section when it is blank, and the guarding test called `pytest.skip` when the
   excerpt came back empty. The standards now ship as package data, resolve from
-  the module rather than the process directory, and raise instead of degrading —
+  the module rather than the process directory, and raise instead of degrading,
   a missing standard is a packaging defect, never a runtime condition to
   tolerate.
 
 - **Bronze isolation now promises what the code delivers.** The overview claimed
   Bronze is "not indexed into the retrieval registries" and that the isolation is
-  "structural". Neither was exact: Bronze *is* written to the entity registry —
-  it is the field registry and the RAG collections that exclude it — and only
+  "structural". Neither was exact: Bronze *is* written to the entity registry.
+  It is the field registry and the RAG collections that exclude it, and only
   Flash is structurally isolated, because Bronze never enters the chunk
   collection it searches. Smart restricts the layer in its catalog query and
   Precise filters during resolution. The conclusion held; the mechanism was
@@ -54,7 +54,7 @@ slowly than the product version.
   rules were described in two places that had drifted apart, each claiming
   authority over the other. The claim itself was misdirected: the appendix that
   declared the specification superseded lists nine constructs that appear
-  nowhere in `definition/` and cites section numbers it never had — it
+  nowhere in `definition/` and cites section numbers it never had. It
   superseded an older internal document. Where the two genuinely disagreed, the
   model decided: `internal_id` and `source_system_no` are required at Silver and
   Gold; `db_table_name` defaults to `id`; Silver's `join_graph` is required only
@@ -64,11 +64,11 @@ slowly than the product version.
   `aggregation_behavior: none` is rejected rather than discouraged. Silver ids do
   require their module segment and Gold ids do not. Adds `synonyms`,
   `tag1`/`tag2`, the closed `aggregation_safety` set, the `ASK_COLUMN_NAMING`
-  modes, and the rule that unknown keys are dropped rather than rejected — a
+  modes, and the rule that unknown keys are dropped rather than rejected, a
   misspelt key costs the value with no error anywhere.
 
 - **Enrichment prompts carry rules, not documents.** An entire authoring
-  specification was injected into every call — 15,597 tokens for a Silver,
+  specification was injected into every call: 15,597 tokens for a Silver,
   15,284 for a Gold, 36,749 when the layer was unknown, and the same payload
   again to write one field description. Roughly half could not apply: the prompt
   forbids the model from touching `name`, `type`, `field_role` or any structural
@@ -78,13 +78,13 @@ slowly than the product version.
 
 - **The manual is organised by genre, with one page per intention.** Signing in
   was documented in eight files, and the Chat and Studio overviews had already
-  drifted apart — two authentication modes against three, for the same
+  drifted apart: two authentication modes against three, for the same
   `AUTH_MODE`. It has one home now, covering all three surfaces, because they
   share one provider and one session model. Three pages claimed to be where you
   start; Getting Started is now a tutorial and only a tutorial, 291 lines of
   duplication down to 148 that link rather than restate. The index led with a
-  competing ordered list and reached roughly 40% of the manual by line count —
-  it now reaches every page. Titles start with the verb: `Connect a database`
+  competing ordered list and reached roughly 40% of the manual by line count.
+  It now reaches every page. Titles start with the verb: `Connect a database`
   rather than `Database Connections`. Every page opens with a clickable
   breadcrumb and closes with a link home, where before there were none at all
   and 27 breadcrumbs of unclickable prose.
@@ -96,8 +96,8 @@ slowly than the product version.
 ### Added
 
 - **A page explaining the three chat engines**, framed around the one thing that
-  separates them — which of the three decisions (what to select, how to join,
-  what SQL to emit) is computed and which is judged — and the per-engine account
+  separates them: which of the three decisions (what to select, how to join,
+  what SQL to emit) is computed and which is judged, and the per-engine account
   of how raw tables stay out.
 
 - **A documentation check in CI.** A dead relative link or heading anchor fails
@@ -108,8 +108,8 @@ slowly than the product version.
 
 - **`CONTRIBUTING.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, issue and
   pull-request templates, and `CODEOWNERS`.** Three documents already instructed
-  readers to open issues — including one promising that a documentation problem
-  is a bug — with no template to route them. `CODEOWNERS` puts a named owner on
+  readers to open issues, including one promising that a documentation problem
+  is a bug, with no template to route them. `CODEOWNERS` puts a named owner on
   `definition/`, which is the structural fix for the fork above: it drifted for
   months because no single person had to approve a change to the contract.
 
@@ -117,16 +117,16 @@ slowly than the product version.
 
 - **The engine internals left the user manual.** `FLASH.md`, `PRECISE.md` and
   `SMART.md` were 3,023 lines in the manual root, absent from its index, and two
-  of the three opened by disowning themselves — *"Every `src/pipeline/...` path
+  of the three opened by disowning themselves, *"Every `src/pipeline/...` path
   below is dead"*. Between them they held every dead link in the documentation.
 
 - **The forked copy of the specification.** Its two-plane resolution model was
-  the one thing in it not carried elsewhere, and is load-bearing for authors — it
-  explains why relationships live on Silver and not only on Gold — so that moved
+  the one thing in it not carried elsewhere, and is load-bearing for authors. It
+  explains why relationships live on Silver and not only on Gold, so that moved
   into `definition/`. The register of deliberate duplication went with the
   duplication it tracked.
 
-## [1.1.0] — 2026-08-19
+## [1.1.0]: 2026-08-19
 
 ### Added
 
@@ -136,7 +136,7 @@ slowly than the product version.
   specification version says which contract your YAML is written against. The
   platform iterates far more often than the contract, and a breaking change in
   the platform should not signal to everyone who adopted the specification that
-  their files need revisiting. Two digits, no patch — a contract does not get
+  their files need revisiting. Two digits, no patch, a contract does not get
   bugfixes, it gets changes. The README badge, which gestured at "Spec v1" with
   an empty label and a dead link, now says it properly.
 
@@ -146,8 +146,8 @@ slowly than the product version.
 ### Changed
 
 - The specification no longer calls itself an "open specification" while inviting
-  pull requests. It is published and vendor-neutral — anyone may read and adopt
-  it — but it is not open source, and PolyForm Strict does not grant derivative
+  pull requests. It is published and vendor-neutral, anyone may read and adopt
+  it: but it is not open source, and PolyForm Strict does not grant derivative
   works. The section now says so, states that tooling written against the
   contract belongs to whoever writes it, and adds the line a contributor needs:
   that what they submit is theirs to give and may be distributed under this
@@ -171,13 +171,13 @@ slowly than the product version.
 
   Two names were reached that are not infrastructure: the Entity Selector's
   system prompt said "Onibex AgenticAI pipeline", and generated documents ended
-  with "Document prepared by AgenticAI Analytics" — visible to whoever receives
+  with "Document prepared by AgenticAI Analytics", visible to whoever receives
   the document. Both now say Onibex ASK.
 
 - **`ask-admin-spa` is now `ask-studio-spa`.** The interface calls itself ASK
   Studio on every screen; only the code still said admin. The directory, the
   image, the container, the Kubernetes manifests and the Keycloak client id all
-  move together — the client id matters, because the realm seed, the SPA default
+  move together: the client id matters, because the realm seed, the SPA default
   and `KEYCLOAK_CLIENT_ID` have to agree or nobody logs in.
 
   Deliberately left alone: `agentic-ai` as a keyword in `CITATION.cff`, in the
@@ -187,7 +187,7 @@ slowly than the product version.
 
 - Every manifest now states the same version as the release. The Python
   packages said `0.1.0` and the SPAs `0.0.0` while the product was tagged
-  `v1.0.0` — none of them is published to an index, so the number was pure
+  `v1.0.0`: none of them is published to an index, so the number was pure
   signal, and it signalled unstable components inside a stable product.
   `scripts/versions.py` moves them together and CI fails if they drift or if a
   tag disagrees with what the code claims.
@@ -204,7 +204,7 @@ slowly than the product version.
   that are not open source and were undocumented: `@sap/xssec` (SAP Developer
   License Agreement), `@sap/xsenv` and `ai-api-client-sdk`. All three are now
   named in `THIRD-PARTY-NOTICES.md`. The image build uses `npm ci` against that
-  lockfile, so what ships is what was audited — copying only `package.json` and
+  lockfile, so what ships is what was audited, copying only `package.json` and
   running `npm install` would have left the pin decorative.
 - `scripts/dependency_licenses.py` read `A OR B` as an obligation under both.
   `node-forge` (BSD-3-Clause OR GPL-2.0) was reported as copyleft when the
@@ -212,7 +212,7 @@ slowly than the product version.
   now elects the permissive option and reports the choice. It also flags
   licences that are not open source at all, which it previously passed as fine.
 
-## [1.0.0] — 2026-08-19
+## [1.0.0]: 2026-08-19
 
 First tagged release, **withdrawn**. ASK had been in development before this
 point; the tag marked where its licensing became complete and consistent enough
@@ -224,14 +224,14 @@ Nothing was ever distributed under 1.0.0 that is not also in 1.1.0.
 
 ### Added
 
-- **The ASK specification** under `definition/` — the runtime-neutral YAML
+- **The ASK specification** under `definition/`, the runtime-neutral YAML
   contract for Bronze/Silver/Gold data products.
-- **The Onibex ASK Platform** under `platform/` — orchestrator, ASK Studio,
+- **The Onibex ASK Platform** under `platform/`: orchestrator, ASK Studio,
   ASK Chat, ASK Setup, and the manual under `platform/docs/`.
 - `llms.txt`, published at
   <https://onibex.github.io/agentic-semantic-knowledge-ask/llms.txt>, so an AI
   agent can establish what this project is and whether it may use it.
-- `scripts/license_headers.py` and `scripts/dependency_licenses.py` — the
+- `scripts/license_headers.py` and `scripts/dependency_licenses.py`, the
   license header pass and the dependency audit, both enforced in CI.
 
 ### Changed
@@ -241,8 +241,8 @@ Nothing was ever distributed under 1.0.0 that is not also in 1.1.0.
   `COMMERCIAL-LICENSE.md`.
 - Copyright holder settled as **Onibex, LLC** across every licensing file,
   README, and source header.
-- Every source file that can carry a comment now carries an SPDX header —
-  652 files — with a required CI job and a pre-commit hook to keep it that way.
+- Every source file that can carry a comment now carries an SPDX header,
+  652 files, with a required CI job and a pre-commit hook to keep it that way.
 - Trademark attribution completed for the Apache Software Foundation, SAP SE,
   Confluent, Inc., Amazon Web Services, and Red Hat.
 
