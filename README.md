@@ -36,7 +36,7 @@ SQL in your database's own dialect, runs it, and answers.
 | | What it is |
 |---|---|
 | **[`definition/`](definition/README.md)** | The **ASK specification** (`ask-spec 1.0`): a vendor-neutral YAML standard for describing AI-ready data products across Bronze, Silver and Gold. Runtime-neutral, so any vendor can adopt it. |
-| **[`platform/`](platform/README.md)** | The **Onibex Agentic Semantic Knowledge Platform**: the product that implements the standard end to end, from authoring a semantic layer to querying it in plain language. |
+| **[`platform/`](platform/README.md)** | The **Onibex Agentic Semantic Knowledge Platform**: the product that implements the standard end to end. Author the semantic layer in **[ASK Studio](platform/docs/ask-studio/README.md)**, then ask questions of it in **[ASK Chat](platform/docs/ask-chat/README.md)**. |
 
 What that changes, next to a tool that reads your database schema directly:
 
@@ -147,14 +147,17 @@ written up as the answer you read. The model is whichever one you configured in 
 it can be a self-hosted one.
 
 **Do I need SAP?**
-No. ASK does not move or copy your data: it connects to the engine you already run and compiles
-to that engine's dialect, and there are ten of them, each with its own SQL generator and its own
-execution adapter rather than a generic fallback. **SAP HANA**, **PostgreSQL**, **Snowflake**,
-**Databricks**, **Google BigQuery**, **ClickHouse**, **Microsoft SQL Server**, **Microsoft
-Fabric**, **IBM Db2** and **Presto**. Nothing in the specification is SAP-specific either. The
-reference examples are SAP SD and MM because that is where ASK was built, and it is where a
-semantic layer earns the most. A `CREATE TABLE` on PostgreSQL is a valid starting point, and
-adding a connection is [Connect a database](platform/docs/ask-setup/02-database-connections.md).
+No. Nothing in the specification is SAP-specific. The reference examples are SAP SD and MM
+because that is where ASK was built, and it is where a semantic layer earns the most, but a
+`CREATE TABLE` on PostgreSQL is a valid starting point.
+
+**Which databases does it work with?**
+Ten, each with its own SQL generator and its own execution adapter rather than a generic
+fallback: **SAP HANA**, **PostgreSQL**, **Snowflake**, **Databricks**, **Google BigQuery**,
+**ClickHouse**, **Microsoft SQL Server**, **Microsoft Fabric**, **IBM Db2** and **Presto**. ASK
+does not move or copy your data; it connects to the engine you already run and compiles to that
+engine's dialect. Adding one is
+[Connect a database](platform/docs/ask-setup/02-database-connections.md).
 
 **Which models can I use?**
 SAP AI Core for managed models, or any LiteLLM provider: Anthropic, OpenAI, AWS Bedrock,
@@ -167,10 +170,9 @@ metadata through OneConnect, or author in the UI, then review the diff. See
 [Add Data Products](platform/docs/ask-studio/02-add-data-products.md).
 
 **Do I have to author a semantic layer at all?**
-Yes, and this is the one honest condition. ASK's determinism comes from the contract, so if
-nobody is going to author one there is nothing for it to compile against. Importing a
-`CREATE TABLE` and letting AI draft the layer is a fifteen-minute start, but somebody has to
-review what it drafted.
+Yes, and it is the one honest condition. ASK's determinism comes from the contract: if nobody
+authors one, there is nothing for it to compile against. The drafting is assisted, the review
+is not.
 
 **Is this open source?**
 **No. Source-available.** Read it, evaluate it, study it, build against it. Production use
