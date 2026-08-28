@@ -38,10 +38,7 @@ SQL in your database's own dialect, runs it, and answers.
 | **[`definition/`](definition/README.md)** | The **ASK specification** (`ask-spec 1.0`): a vendor-neutral YAML standard for describing AI-ready data products across Bronze, Silver and Gold. Runtime-neutral, so any vendor can adopt it. |
 | **[`platform/`](platform/README.md)** | The **Onibex Agentic Semantic Knowledge Platform**: the product that implements the standard end to end, from authoring a semantic layer to querying it in plain language. |
 
-The platform runs from one `docker compose up`: **ASK Setup** to configure it, **ASK Studio** to
-author the semantic layer, **ASK Chat** to ask. There is also an
-[MCP server](platform/services/ask-mcp-server/README.md) for SAP write operations, and an
-`/external/ask` API for agent runtimes such as watsonx Orchestrate, n8n and Zapier.
+What that changes, next to a tool that reads your database schema directly:
 
 | | Most text-to-SQL tools | **ASK** |
 |---|---|---|
