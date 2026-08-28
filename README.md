@@ -1,3 +1,5 @@
+![Onibex ASK, Agentic Semantic Knowledge. Plain-language questions in, governed deterministic SQL out](docs/images/ask-banner.png)
+
 # Onibex Agentic Semantic Knowledge (ASK)
 
 > Ask your enterprise data a question in plain language. Get governed, deterministic

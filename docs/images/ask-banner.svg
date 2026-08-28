@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Onibex ASK, Agentic Semantic Knowledge">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08152f"/>
+      <stop offset="0.45" stop-color="#0d2b6e"/>
+      <stop offset="1" stop-color="#12327f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.18" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.82" cy="0.75" r="0.6">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4a7ab5"/>
+      <stop offset="0.5" stop-color="#94a3b8"/>
+      <stop offset="1" stop-color="#d69e2e"/>
+    </linearGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect width="1280" height="320" fill="url(#glow)"/>
+  <rect width="1280" height="320" fill="url(#glow2)"/>
+
+  <!-- semantic layer, drawn faintly on the right -->
+  <g transform="translate(66 -14)">
+  <g stroke="#7fb0ff" stroke-opacity="0.34" fill="none" stroke-width="1.25">
+    <path d="M865 96 L975 62 M865 96 L980 148 M865 96 L905 196 M975 62 L1090 92 M980 148 L1090 92 M980 148 L1105 190 M905 196 L1000 252 M1000 252 L1105 190 M980 148 L1000 252 M1090 92 L1180 154 M1105 190 L1180 154"/>
+  </g>
+  <g fill="#9ec5ff" fill-opacity="0.62">
+    <circle cx="865" cy="96" r="5.5"/><circle cx="975" cy="62" r="4"/><circle cx="980" cy="148" r="6.5"/>
+    <circle cx="905" cy="196" r="4"/><circle cx="1090" cy="92" r="5"/><circle cx="1105" cy="190" r="4.5"/>
+    <circle cx="1000" cy="252" r="5"/><circle cx="1180" cy="154" r="4"/>
+  </g>
+  <g fill="#e8f1ff">
+    <circle cx="980" cy="148" r="9" fill-opacity="0.9"/>
+  </g>
+  </g>
+
+  <!-- Onibex mark -->
+  <g transform="translate(78 96) scale(1.18)">
+    <g fill="#60a5fa" opacity="0.45" filter="url(#soft)">
+      <rect x="42" y="0" width="16" height="14" rx="3"/>
+      <path fill-rule="evenodd" d="M28 13 L72 13 L95 36 L95 76 L72 99 L28 99 L5 76 L5 36 Z M34 31 L66 31 A11 11 0 0 1 77 42 L77 70 A11 11 0 0 1 66 81 L34 81 A11 11 0 0 1 23 70 L23 42 A11 11 0 0 1 34 31 Z"/>
+    </g>
+    <g fill="#ffffff">
+      <rect x="42" y="0" width="16" height="14" rx="3"/>
+      <path fill-rule="evenodd" d="M28 13 L72 13 L95 36 L95 76 L72 99 L28 99 L5 76 L5 36 Z M34 31 L66 31 A11 11 0 0 1 77 42 L77 70 A11 11 0 0 1 66 81 L34 81 A11 11 0 0 1 23 70 L23 42 A11 11 0 0 1 34 31 Z"/>
+    </g>
+  </g>
+
+  <g font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+    <text x="252" y="122" font-size="19" letter-spacing="7.5" fill="#7ea6f0" font-weight="600">ONIBEX</text>
+    <text x="249" y="216" font-size="96" font-weight="700" letter-spacing="4" fill="#ffffff">ASK</text>
+    <rect x="466" y="128" width="2" height="92" fill="#5b86d0" opacity="0.55"/>
+    <text x="502" y="178" font-size="31" font-weight="400" fill="#d3e2fb" letter-spacing="0.2">
+      <tspan fill="#60a5fa" font-weight="700">A</tspan><tspan>gentic </tspan><tspan fill="#60a5fa" font-weight="700">S</tspan><tspan>emantic </tspan><tspan fill="#60a5fa" font-weight="700">K</tspan><tspan>nowledge</tspan>
+    </text>
+    <text x="502" y="216" font-size="20" fill="#8fb2e8">Plain-language questions in. Governed, deterministic SQL out.</text>
+  </g>
+
+  <rect x="0" y="314" width="1280" height="6" fill="url(#rule)" opacity="0.9"/>
+</svg>
