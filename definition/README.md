@@ -8,11 +8,11 @@
 ---
 
 > **New here?** Start with the [repository overview](../README.md) for the big picture, or go
-> straight to the [Onibex ASK Platform manual](../platform/docs/README.md) to see the contract
+> straight to the [Onibex Agentic Semantic Knowledge Platform manual](../platform/docs/README.md) to see the contract
 > authored and queried in a running product. This document is the normative specification.
 
 > **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
-> Onibex ASK Platform derives its AI-enrichment prompts from these rules and ships them as
+> Onibex Agentic Semantic Knowledge Platform derives its AI-enrichment prompts from these rules and ships them as
 > code assets, but the prompt is a rendering of the specification — never a second authority.
 > Where the platform's behaviour and this text disagree, that is a defect in one of them, to be
 > reconciled here rather than forked.
@@ -266,7 +266,7 @@ ASK was forged on SAP ECC and S/4HANA workloads, but the spec is source-system a
 
 The specification carries its own version, separate from the release number of
 the repository. They answer different questions: the release says which build of
-the Onibex ASK Platform you are running, and the specification version says
+the Onibex Agentic Semantic Knowledge Platform you are running, and the specification version says
 which contract your YAML is written against. The platform will iterate far more
 often than the contract, and a breaking change there should not tell everyone
 who adopted the specification that their files need revisiting.
@@ -319,7 +319,7 @@ the terms of [LICENSE](LICENSE).
 
 ## Maintainers
 
-ASK is initiated and maintained by **[Onibex, LLC](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex publishes the YAML contract as source-available so it can be studied, evaluated, and discussed in the open. See the [repository overview](../README.md) for how this specification relates to the Onibex ASK Platform.
+ASK is initiated and maintained by **[Onibex, LLC](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex publishes the YAML contract as source-available so it can be studied, evaluated, and discussed in the open. See the [repository overview](../README.md) for how this specification relates to the Onibex Agentic Semantic Knowledge Platform.
 
 ---
 
@@ -340,7 +340,7 @@ If ASK is useful in your research or product, please cite it:
 
 ## Where this is implemented
 
-The [Onibex ASK Platform](../platform/README.md) is Onibex's implementation of this
+The [Onibex Agentic Semantic Knowledge Platform](../platform/README.md) is Onibex's implementation of this
 specification. Its manual covers
 [Author the semantic layer · ASK Studio](../platform/docs/ask-studio/README.md), where a layer
 is written against these rules, and
