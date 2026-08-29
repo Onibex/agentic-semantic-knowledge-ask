@@ -6,8 +6,9 @@
 > SQL back, compiled from a business-vocabulary semantic layer and never guessed from
 > raw schema.
 
-**[Where to start](#where-to-start)** · **[Manual](platform/docs/README.md)** ·
-**[Specification](definition/README.md)** · **[FAQ](#faq)** · **[Support](SUPPORT.md)**
+**[Quick start](#quick-start)** · **[Where to start](#where-to-start)** ·
+**[Manual](platform/docs/README.md)** · **[Specification](definition/README.md)** ·
+**[FAQ](#faq)** · **[Support](SUPPORT.md)**
 
 [![Specification: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-e8a838.svg)](definition/README.md)
 [![Platform: 1.1.0](https://img.shields.io/badge/platform-1.1.0-2f6feb.svg)](CHANGELOG.md)
@@ -50,6 +51,25 @@ Why a semantic layer rather than the schema itself is
 [Why not just point an LLM at the schema?](platform/docs/explain/why-not-raw-schema.md). How
 much each engine computes rather than concedes to the model is
 [The three chat engines](platform/docs/explain/engines.md).
+
+---
+
+## Quick start
+
+Docker with Compose v2, and a few minutes for the first build.
+
+```bash
+git clone https://github.com/Onibex/agentic-semantic-knowledge-ask.git
+cd agentic-semantic-knowledge-ask/platform
+cp .env.example .env
+docker compose up -d
+```
+
+Two values in `.env` have to be set before that last command gets you anywhere.
+**[Getting Started](platform/docs/GETTING_STARTED.md)** walks them, and the rest of the path
+from an empty machine to a real answer, in about 45 minutes.
+**[Install and run the platform](platform/docs/01-installation.md)** has every variable, the
+ports, the health checks and what to do when a service will not start.
 
 ---
 
@@ -99,7 +119,7 @@ are trying to do.
 | **Evaluating ASK** | This page, then [Concepts and architecture](platform/docs/02-concepts.md) |
 | **Here to see the product** | [Using the Chat](platform/docs/ask-chat/02-chat.md). Ask a question, read the answer, see the SQL behind it |
 | **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md). What is computed rather than guessed |
-| **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md). One guided path, empty machine to a real answer, about 45 minutes. Needs Docker with Compose v2 |
+| **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md). One guided path, empty machine to a real answer, about 45 minutes |
 | **Installing it** | [Install and run the platform](platform/docs/01-installation.md). Every variable, the startup order, the gotchas |
 | **Configuring it** | [Configure the platform first · ASK Setup](platform/docs/ask-setup/README.md). The database, the model provider, identity |
 | **Authoring a semantic layer** | [Author the semantic layer · ASK Studio](platform/docs/ask-studio/README.md). The nine flows, and the order to read them in |
