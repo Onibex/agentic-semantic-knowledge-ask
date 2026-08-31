@@ -1,6 +1,6 @@
 # Bronze Layer Specification
 
-> **Layer:** Bronze • **Status:** v1 • **Part of:** [ASK. Agentic Semantic Knowledge](../README.md)
+> **Layer:** Bronze • **Status:** v1 • **Part of:** [Onibex Agentic Semantic Knowledge Definition](../README.md)
 
 ## 1. Concept
 

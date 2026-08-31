@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
+
+Source for ask-layers.png, the layered-contract diagram in definition/README.md.
+
+README.md embeds it as a plain Markdown image, so ONE file has to read on both GitHub themes.
+That is why the diagram is drawn as an opaque light card on a transparent canvas: on a dark
+page it reads as a deliberate card rather than a hole. Keep it that way.
+
+Regenerate with any Chromium browser, then trim the trailing transparency:
+
+  chrome --headless=new --hide-scrollbars --force-device-scale-factor=2
+         --default-background-color=00000000 --window-size=1000,620
+         --screenshot=ask-layers.png ask-layers.html
+
+Appending ?dark renders a dark twin. Nothing uses it today; it is kept for the day the page
+moves to a <picture> element with prefers-color-scheme.
+-->
+<meta charset="utf-8">
+<title>ASK: the layered contract</title>
+<style>
+  :root {
+    --bg: #ffffff;      --ink: #1e293b;      --mute: #64748b;  --card-br: #d0d7de;
+    --agent-bg: #f8fafc; --agent-br: #475569; --agent-ink: #0f172a;
+    --gold-bg: #fef3c7;  --gold-br: #b45309;  --gold-ink: #451a03; --gold-badge: #b45309;
+    --silv-bg: #f1f5f9;  --silv-br: #64748b;  --silv-ink: #1e293b; --silv-badge: #475569;
+    --bron-bg: #faf7f2;  --bron-br: #c9b79a;  --bron-ink: #78716c; --bron-badge: #a8a29e;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;      --ink: #e6edf3;      --mute: #8b949e;  --card-br: #30363d;
+    --agent-bg: #161b22; --agent-br: #8b949e; --agent-ink: #e6edf3;
+    --gold-bg: #78350f;  --gold-br: #f59e0b;  --gold-ink: #fef3c7; --gold-badge: #f59e0b;
+    --silv-bg: #334155;  --silv-br: #94a3b8;  --silv-ink: #f1f5f9; --silv-badge: #94a3b8;
+    --bron-bg: #1c1917;  --bron-br: #57534e;  --bron-ink: #a8a29e; --bron-badge: #57534e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body {
+    background: transparent; color: var(--ink); width: 1000px; padding: 10px;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  .card {
+    background: var(--bg); border: 1.5px solid var(--card-br); border-radius: 14px;
+    padding: 30px 34px;
+  }
+  .wrap { display: grid; grid-template-columns: 212px 1fr; gap: 26px; align-items: start }
+  .left { padding-top: 6px }
+  .agent {
+    background: var(--agent-bg); border: 1.5px solid var(--agent-br); border-radius: 12px;
+    padding: 18px 16px; color: var(--agent-ink); text-align: center;
+  }
+  .agent .t { font-size: 15px; font-weight: 700; letter-spacing: .1px }
+  .agent .s { font-size: 11.5px; color: var(--mute); margin-top: 6px; line-height: 1.5 }
+  .arrow { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-left: 6px }
+  .arrow i {
+    font-style: normal; font-size: 10px; color: var(--mute); letter-spacing: .6px;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .arrow hr { flex: 1; border: 0; border-top: 1.5px solid var(--agent-br); opacity: .55 }
+  .arrow b { font-size: 15px; color: var(--agent-br); line-height: 1; margin-left: -6px }
+  .stack { display: flex; flex-direction: column; gap: 9px }
+  .band {
+    border: 1.5px solid; border-radius: 11px; padding: 13px 17px;
+    display: grid; grid-template-columns: 74px 1fr; gap: 15px; align-items: center;
+  }
+  .badge {
+    font-size: 10px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase;
+    color: #fff; border-radius: 20px; padding: 4px 0; text-align: center;
+  }
+  .name { font-size: 16px; font-weight: 800; letter-spacing: .3px }
+  .desc { font-size: 12.5px; line-height: 1.55; margin-top: 3px; opacity: .92 }
+  .gold { background: var(--gold-bg); border-color: var(--gold-br); color: var(--gold-ink) }
+  .gold .badge { background: var(--gold-badge) }
+  .silv { background: var(--silv-bg); border-color: var(--silv-br); color: var(--silv-ink) }
+  .silv .badge { background: var(--silv-badge) }
+  .bron {
+    background: var(--bron-bg); border-color: var(--bron-br); color: var(--bron-ink);
+    border-style: dashed;
+  }
+  .bron .badge { background: var(--bron-badge) }
+  .edge { font-size: 11px; color: var(--mute); padding-left: 89px; letter-spacing: .1px }
+  .edge code { font-family: ui-monospace, Consolas, monospace; font-size: 10.5px }
+  .line { display: flex; align-items: center; gap: 11px; margin: 5px 0 2px }
+  .line hr { flex: 1; border: 0; border-top: 1.5px dashed var(--gold-br); opacity: .75 }
+  .line span {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .85px; text-transform: uppercase;
+    color: var(--gold-br); white-space: nowrap;
+  }
+</style>
+<script>
+  if (location.search.indexOf('dark') !== -1) {
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }
+</script>
+<div class="card">
+<div class="wrap">
+  <div class="left">
+    <div class="agent">
+      <div class="t">Agent / LLM runtime</div>
+      <div class="s">Claude, GPT, Llama,<br>custom orchestrators</div>
+    </div>
+    <div class="arrow"><i>resolves intent against</i><hr><b>&#9654;</b></div>
+  </div>
+  <div class="stack">
+    <div class="band gold">
+      <div class="badge">1st</div>
+      <div>
+        <div class="name">GOLD</div>
+        <div class="desc">Business Logic Data Products. A business definition, pre-joined and
+          semantically resolved. <b>Preferred: if a Gold answers the question, it wins.</b></div>
+      </div>
+    </div>
+    <div class="edge">&#8595;&nbsp; relationships &nbsp;<i>drill / enrich</i></div>
+    <div class="band silv">
+      <div class="badge">2nd</div>
+      <div>
+        <div class="name">SILVER</div>
+        <div class="desc">Foundational Data Products. Reusable enterprise entities with declared
+          grain, measures and relationships. <b>Fallback, when no Gold fits.</b></div>
+      </div>
+    </div>
+    <div class="edge">&#8595;&nbsp; <code>composed_of</code></div>
+    <div class="line"><span>Agent context ends here</span><hr></div>
+    <div class="band bron">
+      <div class="badge">never</div>
+      <div>
+        <div class="name">BRONZE</div>
+        <div class="desc">Raw source tables. Generated on ingestion, and the lineage that makes a
+          business field traceable to its physical column. <b>Never shown to the agent.</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
