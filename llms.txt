@@ -7,9 +7,9 @@
 > relationship graph rather than written, and a workspace allowlist bounds what any
 > question can reach.
 
-Two tracks in one repository. `definition/` is the **ASK specification**, a
-vendor-neutral YAML contract for describing AI-ready data products across Bronze,
-Silver and Gold. `platform/` is the **Onibex Agentic Semantic Knowledge Platform**,
+Two tracks in one repository. `definition/` is the **Onibex Agentic Semantic
+Knowledge Definition**, a vendor-neutral YAML contract for describing AI-ready data
+products across Bronze, Silver and Gold. `platform/` is the **Onibex Agentic Semantic Knowledge Platform**,
 the product that implements it end to end.
 
 Source-available (PolyForm Strict 1.0.0 or PolyForm Free Trial 1.0.0), not open

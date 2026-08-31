@@ -71,7 +71,7 @@ Reading one example teaches the contract faster than the specification does, and
 
 ## The three layers
 
-**Entities, Business Objects and Data Products are equivalent terms.** ASK uses *Data Product*
+**Entities, Business Objects and Data Products are equivalent terms.** ASK uses *Data Product* <!-- terms-ok: the sentence that establishes the synonym has to print it -->
 throughout. The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`,
 `target_entity`), and that split is deliberate and stable: *Data Product* is the term for
 humans, `entity_` is the machine vocabulary, and renaming the keys would break every catalog
@@ -149,7 +149,7 @@ ASK is influenced by, and complementary to, other open semantic-modelling effort
 |---|---|---|
 | [AtScale SML](https://github.com/semanticdatalayer/SML) | Universal semantic-model spec for BI and analytics tools | Shares the layered, YAML-first approach. ASK adds explicit Bronze / Silver / Gold layering and an agent-resolution priority |
 | [Snowflake Semantic Model Generator](https://github.com/Snowflake-Labs/semantic-model-generator) | YAML semantic model for Snowflake Cortex Analyst | Shares the goal of grounding LLM SQL in business semantics. ASK is platform-agnostic and adds layered composition, relationship costing and aggregation safety |
-| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST, GraphQL and SQL APIs | Cube is a runtime, ASK is a contract. ASK can describe entities a Cube schema serves, and the reverse |
+| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST, GraphQL and SQL APIs | Cube is a runtime, ASK is a contract. ASK can describe Data Products a Cube schema serves, and the reverse |
 
 **Runtime neutrality is deliberate.** An ASK catalog can be served from Cube, dbt, Snowflake,
 Databricks Unity Catalog, SAP HANA or a resolver you write. The YAML does not care.

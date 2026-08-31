@@ -21,7 +21,7 @@
 - A **Business Domain** is a group of Data Products inside a workspace that answer a related
   business question, e.g. "Production Orders". The same Data Product can be reused in several
   domains.
-- A **Data Product** is one entity definition (a Bronze/Silver/Gold YAML). You create those
+- A **Data Product** is one YAML definition (Bronze, Silver or Gold). You create those
   in [Add Data Products](02-add-data-products.md); here you just organize them.
 
 ---
@@ -82,7 +82,7 @@ A new domain is empty. To fill it you assign **existing** Data Products (create 
 Click **Manage** on the domain card (or the dashed **+ data product** button). In the dialog,
 search the catalog and select the Data Products this domain should expose, then confirm.
 
-![Manage data products dialog: search the catalog and select entities to add to the domain](../images/studio-domain-manage.png)
+![Manage data products dialog: search the catalog and select Data Products to add to the domain](../images/studio-domain-manage.png)
 
 The chosen Data Products now appear as chips on the card. A chip marked **reused** belongs to
 more than one domain. That's expected and encouraged.
@@ -95,14 +95,14 @@ more than one domain. That's expected and encouraged.
 
 - **Edit** (on the workspace header or a domain card) changes name / slug / description.
   Changing a slug updates its URL.
-- **Delete** a workspace removes it and its business domains. **Your entity YAMLs are not
+- **Delete** a workspace removes it and its business domains. **Your Data Product YAMLs are not
   touched**. They stay in the semantic-layer repo on disk; only the grouping is removed.
 
 ---
 
 ## What's next
 
-→ **[Add Data Products](02-add-data-products.md)**, create the entities that fill
+→ **[Add Data Products](02-add-data-products.md)**, create the Data Products that fill
 your domains (Manual / Upload YAML / DDL + AI / From OneConnect).
 
 ---

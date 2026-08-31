@@ -2,7 +2,7 @@
 
 [Manual](../README.md) › [Author the semantic layer](../README.md#author-the-semantic-layer--ask-studio) › **Add Data Products**
 
-> **How to.** Create the entities that make up your semantic layer,
+> **How to.** Create the Data Products that make up your semantic layer,
 > the **Data Products** the agent maps questions to. There are **four ways** to add one;
 > this page covers when to use each and how.
 
@@ -17,12 +17,12 @@
 
 ## What's a Data Product, and the three layers
 
-A **Data Product** is one entity definition (a YAML). Every Data Product sits in a **layer**:
+A **Data Product** is one YAML definition. Every Data Product sits in a **layer**:
 
 | Layer | What it is | You typically create it by… |
 |---|---|---|
 | **Bronze** | A raw source table: columns and keys, no join logic. | DDL + AI, OneConnect, Upload |
-| **Silver** | A curated business entity that **owns the join topology** (how tables connect). | Manual, Upload, OneConnect |
+| **Silver** | A curated Data Product that **owns the join topology** (how tables connect). | Manual, Upload, OneConnect |
 | **Gold** | A denormalized analytics table you can query directly. | Manual, DDL + AI, Upload |
 
 Don't worry about getting every field perfect on creation. Everything lands **In Review** so
@@ -54,7 +54,7 @@ by hand.
 Pick the **Manual** tab. Fill the structured form: header (layer, name, description, source
 system), then **fields** (name, type, role, alias), and optionally **relationships** (joins).
 
-![Manual authoring form for a Silver entity: the header fields, then its composed-of tables and join graph](../images/studio-dp-manual.png)
+![Manual authoring form for a Silver Data Product: the header fields, then its composed-of tables and join graph](../images/studio-dp-manual.png)
 
 Field roles and authoring rules are covered in
 [Edit and enrich Data Products](03-edit-enrich.md) and the
@@ -76,8 +76,8 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 The importer is **dialect-tolerant across all nine supported engines** (PostgreSQL, SAP HANA,
 ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
 Fabric) and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VIEW`**, as well
-as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold**
-entities too, not just Bronze, with guardrails: it will not fabricate joins from a bare
+as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold** Data
+Products too, not just Bronze, with guardrails: it will not fabricate joins from a bare
 `CREATE TABLE`, and it never guesses a layer (see the note below).
 
 **How the mapping works.** A `CREATE TABLE` with a typed column list is parsed
@@ -86,7 +86,7 @@ entities too, not just Bronze, with guardrails: it will not fabricate joins from
 come straight from the DDL, byte-exact, the AI never transcribes or renames columns. The AI
 contributes only the **semantics** the DDL cannot express (business name, descriptions, field
 roles, Silver classification) through a schema-enforced structured call. When the AI is
-unavailable or its annotation fails, the entity still imports with mechanical defaults and
+unavailable or its annotation fails, the Data Product still imports with mechanical defaults and
 surfaces **In Review** for enrichment. Views, `CREATE TABLE … AS SELECT`, and statements
 without a typed column list are mapped by the full AI path (their columns live in a query
 body). A grain proposed from a ClickHouse `ORDER BY` carries a warning: a sorting key is not
@@ -137,7 +137,7 @@ Pick **From OneConnect**, paste the SAP JSON, and click **Merge from OneConnect*
 
 ![From OneConnect tab: paste box for the SAP JSON export and the Merge button](../images/studio-dp-oneconnect.png)
 
-The result summary shows the entity id, how many changes were **auto-applied**, and how many
+The result summary shows the Data Product id, how many changes were **auto-applied**, and how many
 **conflicts** need manual resolution. Resolve conflicts in
 [Resolve conflicts on a OneConnect merge](07-conflicts-merge.md) (the **Conflicts** filter in Semantic
 Knowledge).

@@ -12,7 +12,7 @@
 | **Who** | Administrator / data steward |
 | **Time** | ~5 minutes |
 | **Prerequisites** | A workspace with at least one **Business Domain** that has a few Data Products assigned (see [Create workspaces and business domains](01-workspaces-domains.md)). |
-| **You'll end with** | A clear picture of one domain's entities and relationships, and the ability to add / remove Data Products from it. |
+| **You'll end with** | A clear picture of one domain's Data Products and relationships, and the ability to add / remove Data Products from it. |
 
 ---
 
@@ -22,7 +22,7 @@
   lands you on its scoped canvas.
 - The canvas shows the domain's Data Products as **nodes**, coloured by **layer**
   (Bronze / Silver / Gold), with edges for the relationships between them.
-- The server resolves the domain to its members **plus one hop** of related entities: when a
+- The server resolves the domain to its members **plus one hop** of related Data Products: when a
   Silver is in the domain, its source **Bronze** tables (`composed_of`) come along as graph
   context so you see the full topology, not orphan nodes. Membership itself stays Silver/Gold
   only. The bronzes are context, re-derived on each load.
@@ -58,7 +58,7 @@ A selected node is outlined with a coloured ring. Bottom-right you get the stand
 Bronze, grey = Silver, amber = Gold).
 
 > **Tip, search on the canvas.** The **Search nodes…** box at the top-left of the graph dims
-> non-matching nodes and shows an `N found` count, so you can spotlight one entity in a busy
+> non-matching nodes and shows an `N found` count, so you can spotlight one node in a busy
 > domain without changing the layout.
 
 ## 2. Filters rail: narrow what's shown
@@ -70,23 +70,23 @@ membership. It only changes the view.
 |---|---|
 | **View.** **Main flow** / **All** | Presets. **Main flow** shows Golds + Silver facts (the transactional flow); **All** shows every layer and role. |
 | **Roles (Silver / Gold).** **Fact (transactional)** / **Dimension** / **Reference / config** | Bring a whole role group in or out. |
-| **Layers.** **Gold** / **Silver** / **Bronze** | Toggle a layer on/off. Each layer expands to a per-entity tree, so you can check a **single** entity (the count on the right is how many times it's referenced). |
+| **Layers.** **Gold** / **Silver** / **Bronze** | Toggle a layer on/off. Each layer expands to a per-node tree, so you can check a **single** node (the count on the right is how many times it's referenced). |
 | **Modules** | When the domain spans SAP modules (e.g. `PP`), toggle a module in or out. |
 
 If any Data Product in the domain has an unresolved merge conflict, a **Pending conflicts**
 inbox appears at the top of the rail, click an entry to jump straight to that node (resolve it
 in [Resolve conflicts on a OneConnect merge](07-conflicts-merge.md)).
 
-![Filters rail: View presets, Roles, the expandable per-layer entity tree, Modules](../images/studio-canvas-filters.png)
+![Filters rail: View presets, Roles, the expandable per-layer node tree, Modules](../images/studio-canvas-filters.png)
 
 > **Tip, focus a lineage.** Selecting a node and choosing **Lineage** in the inspector
-> isolates just that entity's ancestors and descendants; a violet **Lineage of *name*** pill
+> isolates just that node's ancestors and descendants; a violet **Lineage of *name*** pill
 > appears with an **Exit** button, and the filters pause until you exit.
 
 ## 3. Knowledge rail: add Data Products to the domain
 
 Switch the rail to the **Knowledge** tab to see every Data Product **not yet in this domain**
-(only Silver and Gold entities are pickable. Bronze tables are never standalone members; they
+(only Silver and Gold Data Products are pickable. Bronze tables are never standalone members; they
 nest via `composed_of`). Use the **Filter data products…** box to narrow the list.
 
 There are two ways to add one:
@@ -101,7 +101,7 @@ canvas, and, because a Silver arrives **with its source bronzes**. You'll also s
 ![Knowledge rail: searchable list of addable Data Products, each with a drag handle and a + button](../images/studio-canvas-knowledge.png)
 
 > **Warning: membership, not creation.** The Knowledge rail only *adds existing* Data
-> Products to the domain. Create new entities first in
+> Products to the domain. Create new Data Products first in
 > [Add Data Products](02-add-data-products.md); adding to a domain never edits or
 > publishes a YAML.
 
@@ -113,7 +113,7 @@ Click any node to open the **inspector** on the right. It shows:
   **status pill**.
 - Actions: **Edit** (opens the full editor; labelled **Edit (global)** here because an edit to
   the shared YAML affects **every** domain that reuses it, a **reused ×N** badge appears when
-  it's shared), **AI Assist** (AI-assisted enrichment), and **Lineage** (isolate this entity's
+  it's shared), **AI Assist** (AI-assisted enrichment), and **Lineage** (isolate this node's
   ancestors/descendants).
 - The **Environments** panel (per-env publish / diff / version history. See
   [Publish and deploy](05-publish-deploy.md)).
@@ -125,14 +125,14 @@ Click any node to open the **inspector** on the right. It shows:
 ## 5. Remove a Data Product from the domain
 
 With a node selected, open the inspector's **More actions** menu and choose **Remove from
-*&lt;domain&gt;***. This is **membership-only**: it drops the entity from this domain and, if
-they're not still referenced by another loaded entity, its orphaned source bronzes disappear
-from the canvas too. It **never** deletes the YAML and **never** unpublishes the entity from an
-environment.
+*&lt;domain&gt;***. This is **membership-only**: it drops the Data Product from this domain
+and, if it is not still referenced by another loaded Data Product, its orphaned source bronzes
+disappear from the canvas too. It **never** deletes the YAML and **never** unpublishes the Data
+Product from an environment.
 
-> **Warning, removing is not deleting.** *Remove from domain* only changes grouping. The entity YAML
-> stays in the semantic-layer repo and, if published, stays answerable in whatever env it was
-> published to. To take an entity out of an environment, unpublish it (from the Deployment
+> **Warning, removing is not deleting.** *Remove from domain* only changes grouping. The Data
+> Product's YAML stays in the semantic-layer repo and, if published, stays answerable in
+> whatever env it was published to. To take a Data Product out of an environment, unpublish it (from the Deployment
 > panel); to delete it entirely, use Semantic Knowledge.
 
 ---

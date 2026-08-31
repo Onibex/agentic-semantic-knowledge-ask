@@ -113,7 +113,7 @@ Knowledge; auto-applied (non-conflicting) changes land immediately.
 **I get 401 Unauthorized even after logging in.**
 
 Your session likely expired: sign in again. If it recurs, the provider credentials or the
-identity-provider wiring may be off; that's an administrator/ops check in the Config app
+identity-provider wiring may be off; that's an administrator/ops check in **ASK Setup**
 (orchestrator logs and auth wiring).
 
 > **Tip:** when reporting a data-question failure to your administrator, include the exact
@@ -128,7 +128,7 @@ identity-provider wiring may be off; that's an administrator/ops check in the Co
 → **[Create workspaces and business domains](../ask-studio/01-workspaces-domains.md)**, create and
 publish the containers the chat scopes to.
 → **[Add Data Products](../ask-studio/02-add-data-products.md)**, author and enrich the
-entities the agent maps questions to.
+Data Products the agent maps questions to.
 → **Deep ops diagnostics**: handled by your platform / ops team (health checks, auth wiring,
 `trace_id` lookups in the orchestrator logs).
 

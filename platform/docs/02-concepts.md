@@ -121,7 +121,7 @@ Workspace  ─►  Business Domain  ─►  Data Products (Bronze / Silver / Gol
 |---|---|---|
 | **Workspace** | The top-level container the chat scopes to. It backs a deployment (`dev` / `prod`). | *Manufacturing Operations* |
 | **Business Domain** | A group of Data Products that answer a related business question. The same Data Product can be reused across several domains. | *Production Orders* |
-| **Data Product** | One entity definition (a YAML): its fields, roles, relationships, and descriptions. | `production_order`, `production_performance` |
+| **Data Product** | One YAML definition: its fields, roles, relationships, and descriptions. | `production_order`, `production_performance` |
 
 You create workspaces and domains in
 [Create workspaces and business domains](ask-studio/01-workspaces-domains.md), and Data
@@ -135,7 +135,7 @@ bottom, analytics-ready at the top.
 | Layer | What it is | Demo example |
 |---|---|---|
 | **Bronze** | A raw source table: columns and keys, **no join logic**. | `afko_order_header` (AFKO), `afpo_order_item` (AFPO), `aufk_order_master` (AUFK), `afru_order_confirmation` (AFRU) |
-| **Silver** | A curated business entity that **owns the join topology**, how tables connect. This is the single source of truth for joins. | `production_order` (AFKO + AFPO + AUFK + AFRU, at order-item grain) |
+| **Silver** | A curated Data Product that **owns the join topology**, how tables connect. This is the single source of truth for joins. | `production_order` (AFKO + AFPO + AUFK + AFRU, at order-item grain) |
 | **Gold** | A denormalized analytics table you can query directly, with dimensions flattened in as columns. | `production_performance` (planned vs confirmed, scrap/yield by plant / order type / material / month) |
 
 ```mermaid
@@ -143,7 +143,7 @@ flowchart TD
     subgraph GOLD["Gold: query-ready analytics"]
         PP["production_performance<br/><i>planned vs confirmed · scrap · yield</i>"]
     end
-    subgraph SILVER["Silver: curated entity, owns joins"]
+    subgraph SILVER["Silver: curated Data Product, owns joins"]
         PO["production_order<br/><i>order-item grain</i>"]
     end
     subgraph BRONZE["Bronze: raw SAP tables"]
@@ -231,7 +231,7 @@ answer + chart); they differ in *how* they decide which tables and joins to use.
 - **Flash.** One LLM call, straight from free-text schema chunks to SQL. Fastest and
   cheapest; no computed join planning.
 - **Precise.** Selection *and* joins computed, then the emitted SQL is audited against the
-  entities it was allowed to touch. Most reproducible; slowest.
+  Data Products it was allowed to touch. Most reproducible; slowest.
 - **Smart.** The LLM picks Data Products from a scoped catalog; the joins are computed.
   Balanced and production-grade, and the one to reach for when unsure.
 
@@ -286,7 +286,7 @@ flowchart TD
 → **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)**,
 create the containers your data lives in.
 → **[Add Data Products](ask-studio/02-add-data-products.md)**, create the
-entities the agent maps questions to.
+Data Products the agent maps questions to.
 → **[ASK specification](../../definition/README.md)**, the Bronze / Silver / Gold layer definitions and the
 authoring rules behind governed SQL.
 → **[The three chat engines](explain/engines.md)**, what each one computes rather than

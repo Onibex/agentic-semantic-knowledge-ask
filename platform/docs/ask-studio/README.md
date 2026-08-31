@@ -82,7 +82,7 @@ where the authoring journey begins.
 From here, follow the flows in order:
 
 1. [Create workspaces and business domains](01-workspaces-domains.md). Create the containers.
-2. [Add Data Products](02-add-data-products.md). Create the entities.
+2. [Add Data Products](02-add-data-products.md). Create the Data Products.
 3. [Edit and enrich Data Products](03-edit-enrich.md). Refine fields and descriptions.
 4. [Inspect a domain as a graph](04-domain-canvas.md). See the domain as a graph and check the join paths.
 5. [Publish and deploy](05-publish-deploy.md). Make it queryable in the chat.

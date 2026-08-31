@@ -236,7 +236,7 @@ through the Keycloak login before landing on the UI.
 identity.
 → **[Create workspaces and business domains](ask-studio/01-workspaces-domains.md)**, create the
 containers your data lives in.
-→ **[Add Data Products](ask-studio/02-add-data-products.md)**, author the entities the
+→ **[Add Data Products](ask-studio/02-add-data-products.md)**, author the Data Products the
 agent maps questions to.
 → **Deployment runbook** (maintained by your platform / ops team), the full per-service
 procedure (native ports, venv setup, troubleshooting).

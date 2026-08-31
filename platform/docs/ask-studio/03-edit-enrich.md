@@ -27,9 +27,9 @@
   `composed_of` are recomputed server-side on save from what you *can* edit (classification,
   field roles, the bronze picker). The editor shows them live, marked **auto**, so you see what
   will be persisted.
-- **Every edit returns the entity to *In Review*.** Applying an enrichment or saving a manual
-  edit is a commit; the entity goes back to **In Review** so the change is re-checked before it
-  reaches an environment.
+- **Every edit returns the Data Product to *In Review*.** Applying an enrichment or saving a
+  manual edit is a commit; the Data Product goes back to **In Review** so the change is
+  re-checked before it reaches an environment.
 
 ---
 
@@ -39,24 +39,24 @@ There are two entry points, and both land on the same editor:
 
 - **From Semantic Knowledge.** The global catalog. On a row, open the **actions menu** and
   click **Edit**. This opens the full-screen **Edit** panel directly.
-- **From the Domain Canvas.** Open a domain from [Create workspaces and business domains](01-workspaces-domains.md) and click an entity node. The **inspector**
+- **From the Domain Canvas.** Open a domain from [Create workspaces and business domains](01-workspaces-domains.md) and click a Data Product node. The **inspector**
   (DetailPanel) slides in on the right; from there you click **Edit** to open the same editor, or
   **AI Assist** to enrich.
 
-The inspector is the read-only summary of the selected entity: layer / module / status badges,
-the description, **Info** (ID, file, sources), **Join conditions**, and the **Fields** list. Its
-action row is where you launch every refinement.
+The inspector is the read-only summary of the selected Data Product: layer / module / status
+badges, the description, **Info** (ID, file, sources), **Join conditions**, and the **Fields**
+list. Its action row is where you launch every refinement.
 
-![Entity inspector (DetailPanel) with the Edit, AI Assist and Lineage actions and the fields list](../images/studio-edit-detailpanel.png)
+![Data Product inspector (DetailPanel) with the Edit, AI Assist and Lineage actions and the fields list](../images/studio-edit-detailpanel.png)
 
 | Inspector action | What it does |
 |---|---|
-| **Edit** *(or **Edit (global)** on the canvas)** | Opens the full structural editor (step 2). The tooltip warns when the entity is reused across domains. |
+| **Edit** *(or **Edit (global)** on the canvas)** | Opens the full structural editor (step 2). The tooltip warns when the Data Product is reused across domains. |
 | **AI Assist** | Opens the AI enrichment dialog (step 3). |
-| **Lineage** | Isolates this entity's ancestors + descendants on the graph (view-only). |
+| **Lineage** | Isolates this Data Product's ancestors + descendants on the graph (view-only). |
 | **More actions** | On the canvas only, **Remove from *domain*** (membership only; never deletes the YAML). |
 
-> **Tip: editing is global.** If the inspector shows **reused ×N**, this entity feeds N
+> **Tip: editing is global.** If the inspector shows **reused ×N**, this Data Product feeds N
 > Business Domains and your edit affects all of them. That's expected and encouraged for shared
 > reference data, just be deliberate.
 
@@ -65,27 +65,27 @@ action row is where you launch every refinement.
 ## 2. Edit (manual & structural)
 
 Click **Edit**. The editor opens as a full-screen dialog. Its header shows the **layer** badge,
-the auto-derived **entity role** (Silver/Gold), the entity **name** and **id**, and an
+the auto-derived **entity role** (Silver/Gold), the Data Product **name** and **id**, and an
 **Unsaved changes** badge once you touch anything. An **Editing as** banner names the commit
 author (your login).
 
 > The backdrop is intentionally *not* click-to-close. You won't lose edits by clicking outside.
 > Close only via the **×**, **Cancel**, or a successful **Save**.
 
-### 2a. Entity-level fields
+### 2a. Data Product fields
 
-For a **Silver / Gold** entity the top of the editor exposes:
+For a **Silver / Gold** Data Product the top of the editor exposes:
 
 | Field | Editable? | Notes |
 |---|---|---|
-| **Description** | Yes | What the entity is, its grain, when to use it. Fed into the agent's retrieval: signal, not filler. |
-| **Module** | Yes (Silver/Gold) | SAP module tag, e.g. `PP`: the module that owns the entity. **Required**: it also decides where the file lives, so it cannot be left blank. A Gold may carry several. |
+| **Description** | Yes | What the Data Product is, its grain, when to use it. Fed into the agent's retrieval: signal, not filler. |
+| **Module** | Yes (Silver/Gold) | SAP module tag, e.g. `PP`: the module that owns the Data Product. **Required**: it also decides where the file lives, so it cannot be left blank. A Gold may carry several. |
 | **db_table_name** | Yes (Silver/Gold) | The physical table the agent queries, e.g. `GOLD_SD_SALES_PERFORMANCE`. |
 | **classification** | Yes (**Silver**) | `M · master` / `T · transactional` / `C · configuration`. **This drives** `entity_role`. Not shown for Gold: a Gold is authored rather than ingested, so it has no source-system classification to inherit. |
 | **entity_role** | **Silver: no, auto** · **Gold: yes** | **Silver** derives it from classification (section 5.1): C→reference, M→dimension, T→fact\|dimension, recomputed on save. **Gold** you set directly, pick `fact` (the default) unless the Gold is a pure dimensional lookup. |
 | **Context** (`grain.entity_grain`, `composed_of`, `business_grain`) | **No: auto** | Shown read-only in the left **Context** column, marked **auto**. `grain.entity_grain` = the fields whose role is `identifier`; `composed_of` = the Bronze tables set on create. |
 
-A **Bronze** entity *is* a raw SAP table, so it has no classification, `entity_role`, `grain` or
+A **Bronze** node *is* a raw SAP table, so it has no classification, `entity_role`, `grain` or
 `composed_of`, the editor hides those and shows only the description + field list.
 
 ### 2b. Fields
@@ -106,7 +106,7 @@ Each row has a **Advanced** expander for the less-common props: type dimensions,
 **aggregation** behavior and **synonyms**, and a **trash** icon to remove the column. Use
 **+ Add field** at the bottom to append a new column.
 
-![Edit panel showing the entity-level fields on top and the editable field list below](../images/studio-edit-fields.png)
+![Edit panel showing the Data Product fields on top and the editable field list below](../images/studio-edit-fields.png)
 
 > **Warning: on a Silver, `entity_role` and the Context block are auto-derived.** You can't
 > type them directly. To change the role, set **classification** (and mark the right fields as
@@ -120,7 +120,7 @@ Each row has a **Advanced** expander for the less-common props: type dimensions,
 
 ### 2c. Relationships & join conditions
 
-For **Silver / Gold** entities the editor also carries the **Relationships** section, the
+For **Silver / Gold** Data Products the editor also carries the **Relationships** section, the
 lineage edges to other Silvers/Golds that drive JOIN path-finding. Each relationship card has:
 
 | Control | Notes |
@@ -154,7 +154,7 @@ The **Join on** control is the **JoinConditionEditor**. It has two modes:
 
 Click **Save**. Save is enabled only when there are unsaved changes. The server normalizes types,
 recomputes the derived fields, writes the YAML with your login as the commit author, and returns
-the entity to **In Review**. Errors surface in the footer; **Cancel** discards everything.
+the Data Product to **In Review**. Errors surface in the footer; **Cancel** discards everything.
 
 ---
 
@@ -167,7 +167,7 @@ Assist*).
 
 > **Enrich Silver/Gold, not raw Bronze.** Bronze tables are raw SAP fields; the agent benefits
 > most from good descriptions on the **Silver / Gold** that consume them. The button's tooltip
-> says as much on a Bronze entity.
+> says as much on a Bronze node.
 
 ### Step 1: Scope checklist
 
@@ -177,8 +177,8 @@ listed under **Excluded technical fields**.
 
 | Region | What it is |
 |---|---|
-| **Context the AI will use** | Collapsible panel showing the workspace framing (objective + Data Products + sibling entities) sent verbatim to the model. Present only when a workspace is active. |
-| **Entity-level** | One checkbox for the entity's own **description, alias, business_process**. A **priority badge** (EMPTY / SHORT / GOOD) shows how much it needs work. |
+| **Context the AI will use** | Collapsible panel showing the workspace framing (objective + Data Products + sibling Data Products) sent verbatim to the model. Present only when a workspace is active. |
+| **Entity-level** | One checkbox for the Data Product's own **description, alias, business_process**. A **priority badge** (EMPTY / SHORT / GOOD) shows how much it needs work. |
 | **Fields** | One row per enrichable field, each with a checkbox, priority badge, and a `flag?` / `no synonyms` hint where relevant. Quick-select links: **All** · **Empty only** · **None**. |
 
 For the demo, enrich a **measure that has only a terse description**, the scope checklist
@@ -216,10 +216,10 @@ Review, then click **Apply changes** (disabled when the model proposed nothing).
 - **Zero-change diagnostic.** If the model returns no changes (or a truncated reply), a
   **Diagnostic** block explains why, often "descriptions already good" or a truncated response, and suggests narrowing the scope and re-running.
 - **All-or-nothing apply.** Apply writes through the same path as the manual editor, tagged as
-  provenance `ai_assist` in the commit, and returns the entity to **In Review**. **Back** returns
-  to the scope step; **Cancel** discards.
+  provenance `ai_assist` in the commit, and returns the Data Product to **In Review**. **Back**
+  returns to the scope step; **Cancel** discards.
 
-> **Warning. Apply commits.** Applying an enrichment writes the YAML and moves the entity to
+> **Warning. Apply commits.** Applying an enrichment writes the YAML and moves the Data Product to
 > **In Review**, exactly like a manual Save. Re-check it before publishing to an environment.
 
 ---
@@ -229,7 +229,7 @@ Review, then click **Apply changes** (disabled when the model proposed nothing).
 → **[Publish and deploy](05-publish-deploy.md)**, promote the refined Data Product to
 `dev` / `prod` so the chat can answer against it.
 → **[Create workspaces and business domains](01-workspaces-domains.md)**, assign it to a domain.
-→ **[Add Data Products](02-add-data-products.md)**, create more entities.
+→ **[Add Data Products](02-add-data-products.md)**, create more Data Products.
 
 ---
 

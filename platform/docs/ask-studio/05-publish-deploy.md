@@ -35,7 +35,7 @@
 | | Per Data Product | Per Business Domain |
 |---|---|---|
 | **Where** | The **Deployment & Versions** panel in the [Edit and enrich Data Products](03-edit-enrich.md) | The **Publish → dev / prod** buttons on a domain card ([Create workspaces and business domains](01-workspaces-domains.md)) |
-| **Scope** | One entity | Every member of the domain that has pending changes |
+| **Scope** | One Data Product | Every member of the domain that has pending changes |
 | **Best for** | Reviewing and shipping a single definition | Rolling out a whole domain in one pass |
 
 Both go through the same server-side gate and land the same result. Use the per-Data-Product
@@ -66,7 +66,7 @@ Confirm with **Publish to dev** / **Publish to prod**. The button shows a spinne
 publish runs, then the row updates: dev turns green (**Released**), and prod unlocks.
 
 > **Tip, the top-right History link.** The **History** button (clock icon) opens the version
-> history across **Working / dev / prod** for this entity, so you can see exactly which version
+> history across **Working / dev / prod** for this Data Product, so you can see exactly which version
 > is where. The **actions** menu on each environment row also offers **Diff vs dev / prod** (compare
 > your working copy against what's deployed) and, when published, **Unpublish**.
 
@@ -77,7 +77,7 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 
 | prod row shows | Meaning | What to do |
 |---|---|---|
-| **Publish to dev first.** *Waiting on dev* | The entity has **never** been published to dev. prod is hard-gated behind dev. | Publish to **dev** first; prod unlocks the moment dev has a version. |
+| **Publish to dev first.** *Waiting on dev* | The Data Product has **never** been published to dev. prod is hard-gated behind dev. | Publish to **dev** first; prod unlocks the moment dev has a version. |
 | **Up to date** | prod already holds the exact version that's in dev (`prod.sha == dev.sha`). | Nothing to do, prod is current. Push a new dev version first if you have changes. |
 | **Publish to prod** (enabled) | dev is ahead of prod, or prod has never been published yet (the note reads *ready for first prod publish*). | Click to promote the dev version to prod. |
 
@@ -88,9 +88,9 @@ This is the most common question, so it's worth stating plainly. The **prod** bu
 > last dev publish, dev will read **behind working**, publish to dev again first so the version
 > you promote to prod is the one you actually tested.
 
-> **Tip, unpublish order mirrors the gate.** You cannot unpublish from **dev** while the entity
-> is still published to **prod** (the menu item reads *"Unpublish from dev, unpublish prod first"*).
-> Remove prod first, then dev.
+> **Tip, unpublish order mirrors the gate.** You cannot unpublish from **dev** while the Data
+> Product is still published to **prod** (the menu item reads *"Unpublish from dev, unpublish
+> prod first"*). Remove prod first, then dev.
 
 ---
 
@@ -173,7 +173,7 @@ reads **"N versions behind"** so you know the size of the gap before you promote
 **Publish →** buttons launch the domain publish.
 → **[Edit and enrich Data Products](03-edit-enrich.md)**: where the Deployment & Versions panel lives,
 alongside the editor that produces the working draft.
-→ **[Add Data Products](02-add-data-products.md)**, create the entities you publish here.
+→ **[Add Data Products](02-add-data-products.md)**, create the Data Products you publish here.
 
 ---
 

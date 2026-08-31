@@ -16,7 +16,7 @@ is a business definition end to end: what *open* means, which measures matter, w
 
 **Then the Silver underneath it.** [`silver/sales_order.yaml`](silver/sales_order.yaml) shows
 the part that is genuinely reusable: declared grain, measures, relationships, and the join
-graph that stitches VBAK, VBAP and VBKD into one entity.
+graph that stitches VBAK, VBAP and VBKD into one Data Product.
 
 **Bronze last, if at all.** [`bronze/vbak.yaml`](bronze/vbak.yaml) is what ingestion generates
 for you. Read it when you are modelling ingestion or tracing a number to its source.

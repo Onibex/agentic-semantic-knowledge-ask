@@ -33,7 +33,7 @@
 In the left sidebar, click **History**. The page header reads **History** with the subtitle
 *"Git-backed change history per YAML — diff and restore any version."*
 
-The screen is split: a **YAML Files** rail on the left (the entity picker), and the selected
+The screen is split: a **YAML Files** rail on the left (the Data Product picker), and the selected
 Data Product's timeline on the right. Until you pick one you'll see a **"Pick a YAML on the
 left to see its version history"** empty state.
 
@@ -41,19 +41,19 @@ left to see its version history"** empty state.
 
 > **Tip, deep link.** You usually arrive here already scoped. The **History** action on a
 > Data Product (from the canvas inspector or a **Semantic Knowledge** row) opens
-> `/history?yaml=<id>` and lands straight on that entity's timeline, skipping the picker.
+> `/history?yaml=<id>` and lands straight on that Data Product's timeline, skipping the picker.
 
 ## 2. Pick a Data Product
 
 In the **YAML Files** rail, type in the **Search…** box to filter by id or name, then click a
 row. Each row shows a **layer dot** (Bronze = blue, Silver = grey, Gold = yellow) and the
-entity's name and layer.
+Data Product's name and layer.
 
 Select **`production_order`** (the demo Silver). The right pane now shows a header row with:
 
 | Element | What it tells you |
 |---|---|
-| The entity **id** | e.g. `silver_s4h_pp_production_order` (monospace). |
+| The Data Product **id** | e.g. `silver_s4h_pp_production_order` (monospace). |
 | **N commits** | The total number of commits on the current branch. |
 | **Status pill** | The lifecycle status (In Review / Released). |
 | **working v`N`** chip | The working version (with **· draft** when In Review). |
@@ -72,7 +72,7 @@ Under the header sit three tabs. Selecting a Data Product resets you to **Workin
 | **Deployed to prod** | Only the commits that were published to the **prod** environment. |
 
 When you're on **Deployed to dev** or **Deployed to prod**, a note appears on the right:
-*"Restoring from here writes to Working (main) — re-publish to redeploy."* If the entity was
+*"Restoring from here writes to Working (main) — re-publish to redeploy."* If the Data Product was
 never deployed to that environment you'll see a **"Not deployed to `<env>` yet"** message
 instead of a timeline.
 

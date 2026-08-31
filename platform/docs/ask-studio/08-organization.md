@@ -45,7 +45,7 @@ Enter your organization's details:
 | Field | Required | Notes |
 |---|---|---|
 | **Company name** | Yes | The customer running this deployment, demo: *Pinnacle Industrial Manufacturing*. |
-| **Source system** | Yes | The source system **and version**, demo: *SAP S/4HANA 2023 FPS01*. This value frames the agent's answers **and** defaults new entities' `source_system`, include the version so the LLM knows what's available. |
+| **Source system** | Yes | The source system **and version**, demo: *SAP S/4HANA 2023 FPS01*. This value frames the agent's answers **and** defaults new Data Products' `source_system`, include the version so the LLM knows what's available. |
 | **Portal URL** | No | The customer's portal address, demo: *https://ask.pinnacle-mfg.com*. |
 
 > **Note:** The form does not hard-validate these fields, **Save organization** is enabled
@@ -76,7 +76,7 @@ After saving, a small line shows **who** last changed the profile and **when**,
 
 - **Agent prompt.** The orchestrator reads the profile on every query and prepends the
   company name, source system and version to the system prompt.
-- **New Data Products.** The **Source system** value defaults the `source_system` of entities
+- **New Data Products.** The **Source system** value defaults the `source_system` of Data Products
   you create, and pre-fills the source in [Add Data Products](02-add-data-products.md) (where
   you can override it per import).
 
