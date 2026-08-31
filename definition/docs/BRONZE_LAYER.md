@@ -8,7 +8,7 @@ The **Bronze layer** is a **faithful, mostly-uninterpreted representation of sou
 
 Bronze is the **lineage substrate** of ASK: the raw building blocks that Silver Foundational Data Products are composed from, which in turn feed Gold Business Logic Data Products.
 
-> Although the Bronze layer is most often used to describe **tables**, the spec is not table-only. A "Bronze node" is any leaf-level structural unit that participates in a Silver entity: a table, a sub-document, an API response shape, or a flat file schema. The YAML structure is the same regardless.
+> Although the Bronze layer is most often used to describe **tables**, the spec is not table-only. A "Bronze node" is any leaf-level structural unit that participates in a Silver Data Product: a table, a sub-document, an API response shape, or a flat file schema. The YAML structure is the same regardless.
 
 **Bronze mirrors; it does not model.** It carries no `entity_role`, no `grain`, no `composed_of`, no `join_graph`, no `relationships`, and no `field_role` or `aggregation_behavior` on its fields. Join truth lives in Silver; business semantics live in Silver and Gold.
 
@@ -123,7 +123,7 @@ Silver and Gold use a list of field objects because their fields are **derived**
 
 Bronze `type` carries the **canonical, source-agnostic type**: `STRING(10)`, not `C10`; `DECIMAL(15)`, not `P15`; `DATE`, not `D8`.
 
-**One vocabulary, all three layers.** Bronze, Silver and Gold all store the canonical type, so a column reads identically from the raw table through the curated entity to the published surface and no consumer has to know which source produced it. There is no per-layer type dialect. Fidelity to the source is preserved by the field *key* (the column name, unchanged) and by `description`, not by re-encoding the type.
+**One vocabulary, all three layers.** Bronze, Silver and Gold all store the canonical type, so a column reads identically from the raw table through the curated Data Product to the published surface and no consumer has to know which source produced it. There is no per-layer type dialect. Fidelity to the source is preserved by the field *key* (the column name, unchanged) and by `description`, not by re-encoding the type.
 
 ### 4.1 The canonical vocabulary
 
@@ -233,7 +233,7 @@ Three things to be clear about:
 Bronze YAMLs are catalog metadata, not agent-facing context. Most of that isolation is structural, a Bronze is never given the representations retrieval needs:
 
 - **No field-registry rows and no edges.** Ingesting a Bronze reports `{"entities": 1, "fields": 0, "edges": 0}`, its columns are kept out of the field registry so they cannot pollute the agent's semantic field search.
-- **No embedding.** Silver and Gold entities get one; Bronze does not.
+- **No embedding.** Silver and Gold Data Products get one; Bronze does not.
 - **A terse manifest.** The entity document stores `id`, `layer`, `source_system`, `name`, `alias`, `description`, `primary_keys` and the full `raw_yaml`. Nothing else. The whole file is preserved, so a Bronze stays auditable and reconstructible.
 - **No RAG chunks.** The publish cascade skips Bronze outright, so the chunk collection the Flash engine searches never contains one.
 - **Lexical-only reachability.** With no embedding, a Bronze can only be matched by the keyword half of hybrid retrieval, on `name` and `description`: in practice, by its table name. And it earns no layer bonus in re-ranking.

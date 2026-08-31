@@ -134,10 +134,10 @@ answer explains itself: the phase that took the time is named.
 
 ### Schema questions
 
-The agent describes the entity's structure: tables, fields, their types and roles, and the
+The agent describes the Data Product's structure: tables, fields, their types and roles, and the
 exact join predicates, without running a query or drawing a chart.
 
-![A schema question answered: the entity's tables, fields and join predicates, with no query run](../images/chat-answer-schema.png)
+![A schema question answered: the Data Product's tables, fields and join predicates, with no query run](../images/chat-answer-schema.png)
 
 ### Action questions *(requires MCP)*
 

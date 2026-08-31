@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | **Who** | Administrator / data steward |
-| **Time** | ~2 minutes per conflicted entity |
+| **Time** | ~2 minutes per conflicted Data Product |
 | **Prerequisites** | A Data Product created earlier **From OneConnect** (see [Add Data Products](02-add-data-products.md)), then re-merged with a changed export. |
 | **You'll end with** | A reconciled Data Product, every field either keeps your enriched value or accepts the incoming SAP value. |
 
@@ -40,21 +40,21 @@
 Go to the sidebar → **Semantic Layer** → **Semantic Knowledge**. Two things surface a conflict:
 
 - A **Conflicts (N)** filter pill appears next to the status filters (**All · In Review ·
-  Released**) whenever any entity carries an unresolved conflict. `N` is the number of conflicted
-  entities. The pill only shows when `N > 0`.
+  Released**) whenever any Data Product carries an unresolved conflict. `N` is the number of
+  conflicted Data Products. The pill only shows when `N > 0`.
 - On a conflicted row, a small **warning badge** with a count sits beside the status pill.
 
-Click **Conflicts (N)** to narrow the table to just the entities that need reconciling.
+Click **Conflicts (N)** to narrow the table to just the Data Products that need reconciling.
 
 ![Semantic Knowledge with the Conflicts (N) filter pill and a row carrying a warning badge](../images/studio-conflict-filter.png)
 
 > **Tip. The badge is the shortcut.** You don't have to switch filters. Clicking the **warning badge**
-> on a row opens that entity's conflict resolver directly.
+> on a row opens that Data Product's conflict resolver directly.
 
 ## 2. Open the conflict resolver
 
 Click the **warning badge** on the conflicted row (or open the row from the **Conflicts** filter). The
-**Resolve conflicts** dialog opens for that entity, subtitled *"SAP changed fields you enriched.
+**Resolve conflicts** dialog opens for that Data Product, subtitled *"SAP changed fields you enriched.
 Decide per field: keep yours or accept SAP."* Each pending conflict is shown as its own block.
 
 Every conflict block presents a **side-by-side comparison**:
@@ -78,8 +78,8 @@ For each conflict, click one of the two buttons:
 | **Accept SAP update** | Replaces your value with the incoming SAP value for this field. |
 
 A choice resolves that one conflict immediately and drops it from the pending list. Work through
-each block until none remain. When the entity is fully reconciled the dialog shows
-**No pending conflicts. This entity is reconciled.** Click **Done** to close.
+each block until none remain. When the Data Product is fully reconciled the dialog shows
+**No pending conflicts. This entity is reconciled.** Click **Done** to close. <!-- terms-ok: quoting the dialog's own wording, which still says entity -->
 
 > **Partial resolution is fine.** Each decision is saved on its own. You can resolve some fields,
 > close with **Done**, and come back later, the **warning badge** and the **Conflicts (N)** count update
@@ -107,7 +107,7 @@ already edited. In practice:
    **conflict** on that field instead of overwriting it. It appears under the **Conflicts (N)**
    filter and as a **warning badge** on the `production_order` row.
 
-> **Why keep the same id?** The merge engine keys on the entity `id`. A **new** id would create a
+> **Why keep the same id?** The merge engine keys on the Data Product `id`. A **new** id would create a
 > separate Data Product; the **same** id (`4101`) re-merges into the existing one, which is what
 > surfaces the difference as a conflict.
 

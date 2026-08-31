@@ -4,7 +4,7 @@
 
 ## 1. Concept
 
-The **Gold layer** holds **Business Logic Data Products**, entities that encode a *business definition*.
+The **Gold layer** holds **Business Logic Data Products**, which encode a *business definition*.
 
 Where a Silver Foundational Data Product describes "Sales Order" or "Product" in the abstract, a Gold Business Logic Data Product describes a specific business answer such as:
 
@@ -14,19 +14,19 @@ Where a Silver Foundational Data Product describes "Sales Order" or "Product" in
 - *Days Sales Outstanding by Customer*
 - *Production Confirmation Backlog*
 
-A Gold data product is **denormalized**, **semantically resolved**, and **ready to answer business questions directly**. Status fields are already classified into business categories (`OPEN` / `CLOSE`), descriptions are already joined in, derived measures are already computed, and the grain is explicit.
+A Gold Data Product is **denormalized**, **semantically resolved**, and **ready to answer business questions directly**. Status fields are already classified into business categories (`OPEN` / `CLOSE`), descriptions are already joined in, derived measures are already computed, and the grain is explicit.
 
-Gold is the **first place an agent looks** when resolving an intent. If a Gold data product matches the question, the agent does not need to compose a Silver-level join. It can query Gold directly. Gold is what makes ASK *agent-first*.
+Gold is the **first place an agent looks** when resolving an intent. If a Gold Data Product matches the question, the agent does not need to compose a Silver-level join. It can query Gold directly. Gold is what makes ASK *agent-first*.
 
-## 2. When to create a Gold data product
+## 2. When to create a Gold Data Product
 
-Create a Gold entity when **all of the following** are true:
+Create a Gold Data Product when **all of the following** are true:
 
-1. There is a **named business question** the data product answers (e.g. "what is open?", "what is on hand?", "what is overdue?"). Gold names should sound like business reports, not like database tables.
+1. There is a **named business question** the Data Product answers (e.g. "what is open?", "what is on hand?", "what is overdue?"). Gold names should sound like business reports, not like database tables.
 2. The answer requires **denormalization or derivation** that should not be re-implemented every time someone asks the question: for example: deriving `OPEN/CLOSE` from a raw status code, joining customer and material descriptions, or computing a delivery-time bucket.
-3. The data product **will be reused** by multiple consumers (BI, agents, downstream pipelines). One-off transformations belong in a notebook, not in Gold.
+3. The Data Product **will be reused** by multiple consumers (BI, agents, downstream pipelines). One-off transformations belong in a notebook, not in Gold.
 
-Do **not** create a Gold entity if you only need to expose a Silver Foundational Data Product as-is. In that case the agent should resolve to Silver directly.
+Do **not** create a Gold Data Product if you only need to expose a Silver Foundational Data Product as-is. In that case the agent should resolve to Silver directly.
 
 ## 3. Schema
 
@@ -34,23 +34,23 @@ Do **not** create a Gold entity if you only need to expose a Silver Foundational
 
 | Key | Required | Type | Description |
 |---|---|---|---|
-| `id` | ✅ | string | Globally unique identifier. Convention: `gold_<system>_[<module>_]<name>`: the module segment is optional, used when a single module owns the data product. Example: `gold_s4h_open_order_tracker`. **The filename is `<id>.yaml`.** |
+| `id` | ✅ | string | Globally unique identifier. Convention: `gold_<system>_[<module>_]<name>`: the module segment is optional, used when a single module owns the Data Product. Example: `gold_s4h_open_order_tracker`. **The filename is `<id>.yaml`.** |
 | `internal_id` | ✅ | string | Internal/cataloged identifier (often equals `id`). Indexed as a keyword on the entity registry. |
 | `db_table_name` | ⬜ | string | Physical table or view name in the warehouse. **Defaults to `id`** when omitted or empty. Write it as an unquoted scalar. |
 | `layer` | ✅ | string | Must be the literal value `gold`. |
-| `version` | ✅ | string | Spec/version of this data product. Bump on breaking change. |
+| `version` | ✅ | string | Spec/version of this Data Product. Bump on breaking change. |
 | `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo`. See [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
 | `source_system_no` | ✅ | integer | Specific instance/client number of the source system (SAP MANDT, etc.). |
-| `business_process` | ✅ | string | High-level process the entity supports. Use the **same vocabulary as Silver** so the two layers match: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. Unknown values are accepted and normalised, not rejected. **Do not use short codes here** (`OTC`, `P2P`, `SCM`): those are the `<domain>` segment of a Gold **id**, a different thing, using them in this field is what made Silver and Gold speak different languages. |
+| `business_process` | ✅ | string | High-level process the Data Product supports. Use the **same vocabulary as Silver** so the two layers match: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. Unknown values are accepted and normalised, not rejected. **Do not use short codes here** (`OTC`, `P2P`, `SCM`): those are the `<domain>` segment of a Gold **id**, a different thing, using them in this field is what made Silver and Gold speak different languages. |
 | `module` | ✅ | string \| string[] | One module or a list when the Gold spans modules: `["SD", "MM"]`. UPPERCASE. |
 | `tag1`, `tag2` | ⬜ | string | Optional secondary categorization for catalog faceting. |
 | `name` | ✅ | string | Short business name (snake_case). Drives natural-language matching. |
 | `classification` | ⬜ | string | `M` = master · `T` = transactional · `C` = configuration. **Optional at Gold and purely a catalog hint**: unlike Silver, it does not derive `entity_role` here, because a Gold is authored rather than ingested and has no source-system classification to inherit. |
-| `description` | ✅ | string | What business question this entity answers, and the load-bearing facts no key expresses: what is denormalized, what is sparse, what the entity does *not* contain. The grain belongs to `grain`, not here. See [§5.1](#51-write-descriptions-that-carry-only-what-no-key-does). |
-| `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`). You set it directly, and the server does not overwrite it. Most Gold entities are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
+| `description` | ✅ | string | What business question this Data Product answers, and the load-bearing facts no key expresses: what is denormalized, what is sparse, what the Data Product does *not* contain. The grain belongs to `grain`, not here. See [§5.1](#51-write-descriptions-that-carry-only-what-no-key-does). |
+| `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Authored at Gold** (defaults to `fact`). You set it directly, and the server does not overwrite it. Most Gold Data Products are facts; `reference` is legal but unusual for a Gold. Note this differs from Silver, where the same field is *derived* from `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
 | `fields` | ✅ | object[] | Field definitions. See [§3.3](#33-fields). |
-| `relationships` | ⬜ | object[] | Outbound graph edges to other entities. Optional in the schema, but a Gold with none is unreachable by traversal, declare them unless the entity is genuinely terminal. See [§3.4](#34-relationships). |
+| `relationships` | ⬜ | object[] | Outbound graph edges to other Data Products. Optional in the schema, but a Gold with none is unreachable by traversal, declare them unless the Data Product is genuinely terminal. See [§3.4](#34-relationships). |
 
 > **A Gold has no `composed_of` and no `join_graph`.** Both are Silver-layer keys and are not
 > part of the Gold schema. See [§3.1.1](#311-why-gold-has-no-composed_of-or-join_graph).
@@ -77,7 +77,7 @@ What carries that meaning instead:
 |---|---|
 | What physical table do I query? | `db_table_name`: stated once, unqualified. |
 | What can I join to, and how? | `relationships`, the graph the planner actually traverses. See [§3.4](#34-relationships). |
-| Where did this data come from? | The entity `description`. |
+| Where did this data come from? | The Data Product `description`. |
 
 Do not invent a replacement key (`built_from`, `lineage_note`, …). The problem being solved is a
 structural key carrying prose-grade information; a new one just repeats it. If the provenance of
@@ -86,7 +86,7 @@ field the agent actually reads.
 
 ### 3.2 Grain
 
-`grain` declares the unique key of the entity. **Getting the grain right is the most common point of failure for both agents and humans.**
+`grain` declares the unique key of the Data Product. **Getting the grain right is the most common point of failure for both agents and humans.**
 
 ```yaml
 grain:
@@ -173,7 +173,7 @@ Each field is an object in the `fields` list:
 
 #### 3.3.2 Sparse measures pattern
 
-Gold facts that union multiple operation types (e.g. an order-tracking-reception entity that mixes Production Orders, Purchase Orders, Stock Orders, and Sales Orders) often carry **sparse measures**. One column per operation type, where only one is populated per row.
+Gold facts that union multiple operation types (e.g. an order-tracking-reception Data Product that mixes Production Orders, Purchase Orders, Stock Orders, and Sales Orders) often carry **sparse measures**. One column per operation type, where only one is populated per row.
 
 When using sparse measures, **always state the sparsity rule in the field's `description`**:
 
@@ -257,7 +257,7 @@ The three values of `additivity`:
 
 ### 3.4 Relationships
 
-`relationships` is the **graph layer** of ASK. It defines outbound edges from this Gold entity to other entities (Silver or Gold). The agent's planner uses these edges to enrich queries with cross-entity context.
+`relationships` is the **graph layer** of ASK. It defines outbound edges from this Gold Data Product to other Data Products (Silver or Gold). The agent's planner uses these edges to enrich queries with context from related Data Products.
 
 ```yaml
 relationships:
@@ -279,14 +279,14 @@ relationships:
 
 | Key | Required | Description |
 |---|---|---|
-| `target_entity` | ✅ | The `id` of the entity this relationship points to. Must resolve in the catalog. |
+| `target_entity` | ✅ | The `id` of the Data Product this relationship points to. Must resolve in the catalog. |
 | `relationship_type` | ✅ | `one_to_one`, `many_to_one`, `one_to_many`, or `many_to_many`. |
 | `join_condition` | ✅ | SQL-style join predicate. Use fully-qualified column names. Multi-key joins use `AND`. Carried and rendered **verbatim**: write it exactly as it must appear after `ON`, including non-equality terms such as `IN (...)`. Qualifiers are governed by [§3.4.2](#342-the-qualifier-contract). |
 | `semantic_label` | ✅ | Human-readable label for the edge. Use **active business verbs**: `ordered_by`, `fulfilled_from`, `material_of`, `covered_by_current_stock`. |
 | `traversal_cost` | ⬜ | Numeric heuristic, lower = cheaper: the planner's edge weight when choosing between alternative paths. **Floats, not integers**: fractional values are what make the ranking finer than the four tiers. Defaults to `1.0`, which claims the edge is as cheap as a direct key join, set it deliberately rather than inheriting that claim. Rubric in [§5.5](#55-score-traversal_cost-honestly). |
 | `aggregation_safety` | ⬜ | Exactly one of `safe` (join does not multiply rows), `requires_dedup` (the join fans out: `one_to_many`, `many_to_many`, partner tables), or `unsafe` (the join structurally breaks aggregation: the edge is removed from the traversal graph, so no path is built through it). **A value outside that set is rejected.** Defaults to `safe`, so an un-set fan-out edge silently claims to be safe, set it explicitly on every edge that multiplies rows. On the auto-generated reverse edge it is **derived from the inverted cardinality, not copied**, fan-out is directional: except `unsafe`, which propagates both ways. See [§5.6](#56-mark-requires_dedup-whenever-there-is-fan-out) for what `requires_dedup` obliges. |
 | `cross_module` | ⬜ | Boolean, default `false`. `true` if the join crosses business modules (SD ↔ MM, P2P ↔ SCM). The planner can charge a small cost premium or surface the cross-module nature in explanations. |
-| `description` | ⬜ | What this join means in business terms. Carries the grain or dedup caveat a curator wants the SQL generator to see: it is rendered beneath the edge's `ON` clause, so a caveat written here reaches the model even when the entity's own YAML was not retrieved. |
+| `description` | ⬜ | What this join means in business terms. Carries the grain or dedup caveat a curator wants the SQL generator to see: it is rendered beneath the edge's `ON` clause, so a caveat written here reaches the model even when the Data Product's own YAML was not retrieved. |
 
 Only the first four are required. The rest carry defaults: and two of those defaults are claims, not neutral values: an edge with no `traversal_cost` asserts it is as cheap as a direct key join, and one with no `aggregation_safety` asserts it does not fan out. Both are wrong on exactly the edges that matter most.
 
@@ -308,12 +308,12 @@ Gold-to-Gold relationships ("cross-fact lookups") are valid and useful: for exam
     current stock position. Use to assess ATP/coverage."
 ```
 
-When two Gold entities share a natural key (e.g. `(client, plant, material)`), expose the relationship explicitly so the agent can answer questions like *"which open orders are covered by current stock?"* without inferring the join itself.
+When two Gold Data Products share a natural key (e.g. `(client, plant, material)`), expose the relationship explicitly so the agent can answer questions like *"which open orders are covered by current stock?"* without inferring the join itself.
 
 #### 3.4.2 The qualifier contract
 
 **Every qualifier in a `join_condition` is the `db_table_name` of its own side.** The predicate
-names exactly two tables. This entity's `db_table_name` and the target entity's `db_table_name`.
+names exactly two tables. This Data Product's `db_table_name` and the target's `db_table_name`.
 And nothing else.
 
 The predicate is handed to the SQL generator as an *authoritative* join condition, with an explicit
@@ -321,13 +321,13 @@ instruction not to invent a replacement for it. So a wrong qualifier is not a co
 SQL that cannot execute. Two spellings get this wrong.
 
 The contract is also **load-bearing at ingestion**: the qualifiers are read off the predicate to
-identify the edge's two physical tables, the one matching this entity's `db_table_name` is the
-source, the other is the target: and both are shown to the SQL generator next to the entity ids,
+identify the edge's two physical tables, the one matching this Data Product's `db_table_name` is the
+source, the other is the target: and both are shown to the SQL generator next to the Data Product ids,
 so nothing has to infer that `gold_s4h_inventory_situation` and `GOLD_INVENTORY_SITUATION` are the
 same object. A predicate that does not name its own side, or that names more than two tables, is
 logged as a contract violation.
 
-**1. The entity `id` instead of the physical table.**
+**1. The Data Product `id` instead of the physical table.**
 
 ```yaml
 # ✗ wrong — SILVER_ECC_SD_SALES_ORDER is an id, not a selectable object
@@ -337,7 +337,7 @@ join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_ECC_SD_SALES_OR
 join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_SD_SALES_ORDER.vbeln_vbak"
 ```
 
-Ids resolve entities in the catalog; they are not tables. The two look similar enough that the
+Ids resolve Data Products in the catalog; they are not tables. The two look similar enough that the
 mistake survives review, which is exactly why the rule is mechanical: **look up the target's
 `db_table_name` and copy it.**
 
@@ -362,7 +362,7 @@ mistake survives review, which is exactly why the rule is mechanical: **look up 
 This second case is the one that bites at Gold, because a Gold routinely reaches a dimension only
 *through* a Silver it already links to. The temptation is to declare the destination you want and
 write whatever predicate seems to get there. Resist it: **if the join only works by passing through
-a third entity, that is two edges.** The planner is built to walk multi-hop paths; it is not built
+a third Data Product, that is two edges.** The planner is built to walk multi-hop paths; it is not built
 to repair a predicate that names a table nobody selected from.
 
 ## 4. Naming conventions
@@ -379,7 +379,7 @@ to repair a predicate that names a table nobody selected from.
 
 Write `db_table_name` as an unquoted scalar. Quoting it is harmless but inconsistent. It is a plain identifier, not a string that needs protecting.
 
-Prefer business names over source-system column codes (`KUNNR`, `MATNR`, `WERKS`): the point of Gold is to expose a business vocabulary, and `customer_id` reads better than `kunnr_kna1` to everyone who later maintains the entity.
+Prefer business names over source-system column codes (`KUNNR`, `MATNR`, `WERKS`): the point of Gold is to expose a business vocabulary, and `customer_id` reads better than `kunnr_kna1` to everyone who later maintains the Data Product.
 
 This is a preference, not a prohibition. A Gold built by flattening a Silver often inherits `<column>_<table>` names, and renaming them buys little: **the business meaning of a Gold field lives in its `description`**, which is what the agent reads and what retrieval embeds. A field named `ovrll_sts` with a description that enumerates its status codes is entirely usable; a field named `order_status` with no description is not. Spend the effort on the description first, and rename when it costs nothing.
 
@@ -398,7 +398,7 @@ This is a preference, not a prohibition. A Gold built by flattening a Silver oft
 | Whether a join needs dedup | `aggregation_safety` |
 | The physical table | `db_table_name` |
 
-What a description **must** carry is what no key can say: a lifecycle flag the agent should filter out, a sentinel value that breaks a cast, a sparse column populated only under one condition, the value set behind a status, a series that needs carry-forward, or a limit of the entity ("this is *not* filtered to open lines despite the name").
+What a description **must** carry is what no key can say: a lifecycle flag the agent should filter out, a sentinel value that breaks a cast, a sparse column populated only under one condition, the value set behind a status, a series that needs carry-forward, or a limit of the Data Product ("this is *not* filtered to open lines despite the name").
 
 Descriptions are also the embedded text used for retrieval, so a sentence that restates a key does not merely mislead. It displaces business meaning in the vector.
 
@@ -428,7 +428,7 @@ at all.
 | **4+** | The dimension is **already flattened into this Gold**. Discourage the traversal: it exists only for raw attributes the Gold did not denormalize. |
 
 The 4+ tier is the one authors forget, and it is specific to Gold. A Gold that already carries
-`customer_name` as a column does not need to traverse to the customer entity to answer "sales by
+`customer_name` as a column does not need to traverse to the customer Data Product to answer "sales by
 customer name", but the edge is still worth declaring for the attributes that were *not*
 flattened in. Pricing it at `4` keeps the planner from taking a join it does not need, without
 hiding the path. Say so in the description too ("…already denormalized here; traverse only for
@@ -522,7 +522,7 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.
 - [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never an
-      entity `id`, never a third table. See [§3.4.2](#342-the-qualifier-contract).
+      Data Product `id`, never a third table. See [§3.4.2](#342-the-qualifier-contract).
 - [ ] No relationship describes its own keys as provisional. "Placeholder", "to be enriched",
       "real keys may differ": an edge whose predicate is admittedly wrong is worse than no edge,
       because the generator is told the condition is authoritative. Ship the real composite key

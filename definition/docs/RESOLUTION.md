@@ -100,7 +100,7 @@ relationships are declared on Silver and not only on Gold, and why
 relationships, never a Gold's. The Gold was not selected, and its join keys differ. Gold
 relationships exist only to enrich a non-flattened attribute or to drill down to detail.
 
-Which plane is used is decided by retrieval priority, not by which entities happen to carry
+Which plane is used is decided by retrieval priority, not by which Data Products happen to carry
 edges. **Declaring relationships on Silver does not weaken the preference for Gold.**
 
 ## 4. What a conforming resolver has to do

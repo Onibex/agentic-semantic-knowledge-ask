@@ -14,7 +14,7 @@ Which one you are touching decides how a change is handled:
 
 | You are changing | Track | Reviewed as |
 |---|---|---|
-| `definition/` | The **ASK specification** (`ask-spec 1.0`): a published, vendor-neutral contract | A change to a contract other people have already implemented against. Slower, and deliberately so. |
+| `definition/` | The **Onibex Agentic Semantic Knowledge Definition** (`ask-spec 1.0`): a published, vendor-neutral contract | A change to a contract other people have already implemented against. Slower, and deliberately so. |
 | `platform/` | The **Onibex Agentic Semantic Knowledge Platform**, the runtime and its manual | An ordinary code or documentation change. |
 
 ## Before you open a pull request
@@ -90,18 +90,26 @@ The three surfaces are **ASK Studio**, **ASK Chat** and **ASK Setup**. Studio wa
 Admin* for most of this repository's life; only the `ask-admin-api` package kept that name. The
 queryable unit is a **Data Product**, not an *entity*.
 
-That last one is a judgement call, not a rule a build can apply: `entity_role` is a YAML key,
-`entity id` and `cross-entity` are load-bearing, and an OData `entity set` belongs to OData. The
-manual uses the word about a hundred times and nearly all of them are right. When you mean the
-thing a reader creates in Studio, write **Data Product**.
+That last one used to be a judgement call. It is checked now, because once the prose was
+cleaned the exceptions turned out to be a closed list: the `entity_` YAML keys are code and
+already exempt, `cross-entity` and `per-entity` are adjectives rather than the noun, `entity
+registry` and `entity document` name real OpenSearch objects, and an `entity set` belongs to
+OData. Everything else a reader creates in Studio is a **Data Product**.
+
+If the check stops you and your line really is the exception, say why on the line itself:
+
+```markdown
+**No pending conflicts. This entity is reconciled.** <!-- terms-ok: quoting the dialog -->
+```
 
 ### What the build enforces
 
 - **Every page is listed in `platform/docs/README.md`** and carries a link back to it.
 - **Every relative link resolves**, including `#heading-anchors`.
 - **The surface names have not drifted back** to *ASK Admin*, `ask-admin/` or `admin-*.png`.
+- **The queryable unit is called a Data Product**, outside the closed list above.
 
-Check all three locally with:
+Check them all locally with:
 
 ```bash
 python scripts/docs_links.py --check

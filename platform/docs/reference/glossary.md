@@ -42,7 +42,7 @@
 |---|---|
 | **Bronze** | The layer for a **raw source table**: its columns and keys, and nothing else. A Bronze Data Product carries **no join logic**. In the demo, `afko_order_header` (AFKO) and `afpo_order_item` (AFPO) are Bronze. See [Add Data Products](../ask-studio/02-add-data-products.md). |
 | **Business Domain** | A group of Data Products inside a workspace that answer a related business question: e.g. *Production Orders*. A domain's description is fed into the agent's prompt context, so it should describe what the domain covers in business terms. The **same Data Product can be reused across several domains**. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
-| **Business grain** | The human-readable label for an entity's grain, e.g. *production order item*. See **Grain**. |
+| **Business grain** | The human-readable label for a Data Product's grain, e.g. *production order item*. See **Grain**. |
 
 ## C
 
@@ -56,7 +56,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Data Product** | One entity definition (a YAML): its fields, their roles, relationships (joins), and descriptions. Every Data Product lives in a layer: **Bronze**, **Silver**, or **Gold**. You create them via Manual, Upload YAML, DDL + AI, or From OneConnect (see [Add Data Products](../ask-studio/02-add-data-products.md)). |
+| **Data Product** | One YAML definition: its fields, their roles, relationships (joins), and descriptions. Every Data Product lives in a layer: **Bronze**, **Silver**, or **Gold**. You create them via Manual, Upload YAML, DDL + AI, or From OneConnect (see [Add Data Products](../ask-studio/02-add-data-products.md)). |
 | **`db_table_name`** | The **physical table the generated SQL targets**. Essential for Gold, which is a real, selectable table, not a computed view. |
 | **DDL + AI** | A Data Product creation mode: you provide SQL `CREATE TABLE` statements and the platform maps them into ASK YAML with AI assistance. The layer is auto-detected per file from the table name (the `SILVER_` / `GOLD_` convention); if it can't be detected, you must pick one before importing. |
 | **Dimension** | A `field_role` for categorical, groupable attributes: codes and groups you filter or `GROUP BY` (e.g. plant `AFPO.DWERK`, material `AFPO.MATNR`). Not aggregated. Contrast with **Attribute** (free text) and **Measure** (quantitative). |
@@ -65,16 +65,16 @@
 
 | Term | Meaning |
 |---|---|
-| **Enrichment (Enrich)** | An AI-assisted step that suggests improved **descriptions** and **synonyms** for a field or entity. You review the before/after diff and apply it. Good descriptions and synonyms directly improve answer quality. They are how the agent maps a user's words to your columns. |
+| **Enrichment (Enrich)** | An AI-assisted step that suggests improved **descriptions** and **synonyms** for a field or a whole Data Product. You review the before/after diff and apply it. Good descriptions and synonyms directly improve answer quality. They are how the agent maps a user's words to your columns. |
 | **Entity grain** | See **Grain**. |
-| **`entity_role` (fact / dimension / reference)** | How a Silver/Gold entity is used in SQL. A **fact** carries measures (e.g. `production_order`); a **dimension** provides groupable attributes; a **reference** is lookup/configuration data. This is a different axis from a field's **field role** and from the source-data **classification** (M / T / C). On a **Silver** it is derived from `classification`; on a **Gold** it is authored, defaulting to `fact`. |
+| **`entity_role` (fact / dimension / reference)** | How a Silver/Gold Data Product is used in SQL. A **fact** carries measures (e.g. `production_order`); a **dimension** provides groupable attributes; a **reference** is lookup/configuration data. This is a different axis from a field's **field role** and from the source-data **classification** (M / T / C). On a **Silver** it is derived from `classification`; on a **Gold** it is authored, defaulting to `fact`. |
 | **Environment (dev / prod)** | Which published snapshot the chat queries. Authoring happens in a working area; you **publish to dev** first, then **promote to prod**. The chat's environment selector decides which snapshot a user sees, so a Data Product published only to dev is invisible when the chat is set to prod. |
 
 ## F
 
 | Term | Meaning |
 |---|---|
-| **Fact** | An `entity_role` for an entity that carries measures (quantitative values) at a defined grain: the thing you aggregate. In the demo, `production_order` is a fact. See **`entity_role`**. |
+| **Fact** | An `entity_role` for a Data Product that carries measures (quantitative values) at a defined grain: the thing you aggregate. In the demo, `production_order` is a fact. See **`entity_role`**. |
 | **Field role (measure / dimension / identifier / timestamp / attribute / status_flag)** | The role assigned to each field, which tells the agent **where the column may appear in SQL**. **Measure**: quantitative, may be aggregated (SUM/AVG) or filtered. **Dimension**: categorical, may be grouped or filtered. **Identifier**: keys and document numbers; grouped or filtered, never aggregated. **Timestamp**, dates/periods; drives time context. **Attribute**: free text; filter-only, avoid grouping. **Status flag**: a small closed set of business states (e.g. `X = blocked, blank = not blocked`); filter-only. |
 | **Flash** | See **Agent Mode**. The fastest engine: schema-as-text search, one-shot SQL, no deep validation. Best for quick, exploratory questions. |
 
@@ -98,7 +98,7 @@
 | Term | Meaning |
 |---|---|
 | **Join** | See **Relationship**. In the demo, the Silver `production_order` joins header `AFKO` to item `AFPO` on the order number (`AUFNR`). |
-| **`join_graph`** | On a Silver, the join plan **between the composed Bronze tables** (Bronze-to-Bronze only), including execution order. It is how a Silver stitches its raw tables into one entity. Distinct from **relationships**, which are cross-entity edges. |
+| **`join_graph`** | On a Silver, the join plan **between the composed Bronze tables** (Bronze-to-Bronze only), including execution order. It is how a Silver stitches its raw tables into one Data Product. Distinct from **relationships**, which are cross-entity edges. |
 
 ## L
 
@@ -132,8 +132,8 @@
 
 | Term | Meaning |
 |---|---|
-| **Reference** | An `entity_role` for lookup or configuration data (on a Silver, source **classification** `C` always maps to reference). There is no separate "configuration" entity role, configuration data surfaces as reference. |
-| **Relationship (join)** | A cross-entity edge the agent may traverse to build a JOIN. Each relationship names a target entity, a relationship type (one-to-one / one-to-many / …), a full SQL join condition, a business label, a traversal cost, and an aggregation-safety hint. Relationships live on **Silver** (Silver → Silver, required so the fallback plane works) and on **Gold** (Gold → Silver / Gold → Gold, for enrichment, drill-down, and lineage); a Silver never points to a Gold. |
+| **Reference** | An `entity_role` for lookup or configuration data (on a Silver, source **classification** `C` always maps to reference). There is no separate "configuration" role, configuration data surfaces as reference. |
+| **Relationship (join)** | A cross-entity edge the agent may traverse to build a JOIN. Each relationship names a `target_entity`, a relationship type (one-to-one / one-to-many / …), a full SQL join condition, a business label, a traversal cost, and an aggregation-safety hint. Relationships live on **Silver** (Silver → Silver, required so the fallback plane works) and on **Gold** (Gold → Silver / Gold → Gold, for enrichment, drill-down, and lineage); a Silver never points to a Gold. |
 | **Released** | The lifecycle status of a Data Product that has been published to an environment (as opposed to **In Review**). |
 | **Roles (ask-admin / ask-user)** | The two platform roles that govern access. **ask-admin** grants full authoring and configuration (ASK Studio and ASK Setup); **ask-user** grants use of the chat. Every user of the realm is **auto-granted ask-user**, so business users can ask questions without extra setup; **ask-admin** is assigned deliberately. |
 
@@ -143,7 +143,7 @@
 |---|---|
 | **Semantic Dictionary** | Pre-agreed business terms: canonical labels, synonyms, and phrase mappings, maintained per SAP module under **ASK Studio** / **ASK Setup** (as applicable to your build). It sharpens how the agent maps a user's words to your columns and helps disambiguation. In the demo, *Confirmed Yield* maps to `AFRU.LMNGA` with synonyms *good quantity, good output, yield*. |
 | **Semantic layer** | The whole curated model the agent maps questions to: workspaces, business domains, and the Bronze/Silver/Gold Data Products with their fields, relationships, and descriptions. Because the agent can only use what the semantic layer defines, answers are governed and reproducible. |
-| **Silver** | A layer for a **curated business entity that owns the join topology**, the single source of truth for how its underlying tables connect (`composed_of` + `join_graph` + `relationships`). In the demo, `production_order` (AFKO + AFPO + AUFK + AFRU) is Silver. See [Add Data Products](../ask-studio/02-add-data-products.md). |
+| **Silver** | A layer for a **curated Data Product that owns the join topology**, the single source of truth for how its underlying tables connect (`composed_of` + `join_graph` + `relationships`). In the demo, `production_order` (AFKO + AFPO + AUFK + AFRU) is Silver. See [Add Data Products](../ask-studio/02-add-data-products.md). |
 | **Slug** | The URL- and API-safe identifier for a workspace or domain (lowercase letters, digits, hyphens), auto-derived from the name: e.g. `manufacturing-operations`. It identifies the object, so it must be unique. |
 | **Smart** | See **Agent Mode**. The balanced engine: catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. (The chat's default engine is **Precise**.) |
 | **Source system** | The system your data originates from (e.g. `s4h` for SAP S/4HANA). Set on the **Organization profile** and per Data Product; it tunes the AI mapping in DDL + AI and OneConnect modes. |
@@ -162,7 +162,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Workspace** | The top-level container the chat scopes to; it backs a deployment (`dev` / `prod`) and holds **business domains**. In the demo, *Manufacturing Operations* is the workspace. Deleting a workspace removes its grouping but does **not** delete your entity YAMLs. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
+| **Workspace** | The top-level container the chat scopes to; it backs a deployment (`dev` / `prod`) and holds **business domains**. In the demo, *Manufacturing Operations* is the workspace. Deleting a workspace removes its grouping but does **not** delete your Data Product YAMLs. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
 
 ---
 

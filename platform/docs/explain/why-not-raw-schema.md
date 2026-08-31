@@ -36,7 +36,7 @@ expensive.
 
 Each of those is a decision the product makes rather than a claim it asserts:
 
-- **The LLM chooses among resolved entities.** It never names a table.
+- **The LLM chooses among resolved Data Products.** It never names a table.
 - **Join paths are computed, not written.** Dijkstra runs over a declared relationship graph.
 - **Retrieval is hybrid and ranked.** kNN plus BM25 plus RRF, over a curated vocabulary.
 - **Everything is scoped.** A workspace allowlist decides what any question can reach.

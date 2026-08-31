@@ -128,7 +128,7 @@ identity-provider wiring may be off; that's an administrator/ops check in the Co
 → **[Create workspaces and business domains](../ask-studio/01-workspaces-domains.md)**, create and
 publish the containers the chat scopes to.
 → **[Add Data Products](../ask-studio/02-add-data-products.md)**, author and enrich the
-entities the agent maps questions to.
+Data Products the agent maps questions to.
 → **Deep ops diagnostics**: handled by your platform / ops team (health checks, auth wiring,
 `trace_id` lookups in the orchestrator logs).
 

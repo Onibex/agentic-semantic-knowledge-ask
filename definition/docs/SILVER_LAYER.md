@@ -4,14 +4,14 @@
 
 ## 1. Concept
 
-The **Silver layer** holds **Foundational Data Products**, entities that represent **real-world artifacts** in the enterprise. They are the digital twins of the business objects you would talk about in a meeting:
+The **Silver layer** holds **Foundational Data Products**, which represent **real-world artifacts** in the enterprise. They are the digital twins of the business objects you would talk about in a meeting:
 
 - **Sales Order**, **Purchase Order**, **Production Order**
 - **Customer**, **Supplier**, **Employee**
 - **Product / Trading Goods**, **Plant**, **Material Group**
 - **General Ledger Account**, **Cost Center**, **Profit Center**
 
-A Silver Foundational Data Product is **already coherent**. It knows that a Sales Order has a Header, Items, Schedule Lines, Partners, Document Flow, and Status; and it presents them as **one queryable entity** with a clearly stated grain. But it is **not yet semantically resolved** the way Gold is. Silver is still close to the source system, still uses source-system codes, and still requires the agent (or a Gold layer above it) to interpret what those codes mean.
+A Silver Foundational Data Product is **already coherent**. It knows that a Sales Order has a Header, Items, Schedule Lines, Partners, Document Flow, and Status; and it presents them as **one queryable Data Product** with a clearly stated grain. But it is **not yet semantically resolved** the way Gold is. Silver is still close to the source system, still uses source-system codes, and still requires the agent (or a Gold layer above it) to interpret what those codes mean.
 
 Silver is the **fallback layer** for agent intent resolution. When no Gold Business Logic Data Product matches the question, the agent falls back to Silver and composes the answer from one or more Foundational Data Products.
 
@@ -27,7 +27,7 @@ The data practitioner's job is to choose the right variant granularity. ASK give
 
 ## 2. The multi-node model
 
-A Silver Foundational Data Product is composed of one or more **Bronze nodes** (raw tables) joined into a coherent business entity.
+A Silver Foundational Data Product is composed of one or more **Bronze nodes** (raw tables) joined into one coherent Data Product.
 
 For example, a `Sales Order` Foundational Data Product is composed of:
 
@@ -39,7 +39,7 @@ For example, a `Sales Order` Foundational Data Product is composed of:
 | `VBPA` (Partners) | Sold-to, Ship-to, Bill-to, Payer per item |
 | `VBFA` (Document Flow) | Predecessor/successor links across documents |
 
-The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and **which fields of the union are exposed**. The grain of the Silver entity is the natural grain of the joined result: for `Sales Order`, that is one row per `(VBELN, POSNR)` (sales order item).
+The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and **which fields of the union are exposed**. The grain of the Silver Data Product is the natural grain of the joined result: for `Sales Order`, that is one row per `(VBELN, POSNR)` (sales order item).
 
 ## 3. Schema
 
@@ -47,11 +47,11 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 
 | Key | Required | Type | Description |
 |---|---|---|---|
-| `id` | ✅ | string | Globally unique identifier. Convention: `silver_<system>_<module>_<name>`. Example: `silver_s4h_sd_sales_order`. **The filename is the entity `name`** (`sales_order.yaml`). |
+| `id` | ✅ | string | Globally unique identifier. Convention: `silver_<system>_<module>_<name>`. Example: `silver_s4h_sd_sales_order`. **The filename is the Data Product `name`** (`sales_order.yaml`). |
 | `internal_id` | ✅ | string | Internal/cataloged identifier. Often follows a numbering pattern like `<system>_<sysno>_<seq>`. |
 | `db_table_name` | ⬜ | string | Physical table or view name in the warehouse. **Defaults to `id`** when omitted or empty. |
 | `layer` | ✅ | string | Must be the literal value `silver`. |
-| `version` | ✅ | string | Spec/version of this data product. |
+| `version` | ✅ | string | Spec/version of this Data Product. |
 | `source_system` | ✅ | string | Originating system family. Registered tokens: `s4h`, `ecc`, `generic`, `salesforce`, `odoo`. See [BRONZE_LAYER.md §3.1](./BRONZE_LAYER.md#31-top-level-keys) for the authoritative list. Use **`s4h`** for SAP S/4HANA, never `s4hana`: the token is the `<system>` segment of the `id`, so a variant spelling produces ids that do not match the rest of the catalog. |
 | `source_system_no` | ✅ | integer | Specific instance/client number of the source system. |
 | `business_process` | ✅ | string | Process this artifact participates in. Recommended vocabulary: unknown values are **accepted and normalised** (trimmed, upper-cased), not rejected: `ORDER TO CASH`, `PROCURE TO PAY`, `PLANT TO PRODUCE`, `RECORD TO REPORT`, `ORGANIZATIONAL STRUCTURE`. `ORGANIZATIONAL STRUCTURE` is a legitimate value, not a gap: it marks a **generic, cross-module** artifact belonging to no single process (a plant, a sales office, an org unit). Do not put a module code here, and do not use short codes like `OTC` / `SCM`. Those belong to the `<domain>` segment of a Gold **id**, not to this field. |
@@ -61,10 +61,10 @@ The Silver YAML describes **how those Bronze nodes join** (the `join_graph`) and
 | `description` | ✅ | string | Narrative business description: **what artifact this represents** and **what it is typically used for**. Do not restate the grain, the composing nodes or the field inventory: `grain`, `composed_of` and `fields[]` already carry those, and a prose copy drifts from them. See [§3.4.3](#343-what-a-description-is-for). |
 | `entity_role` | ✅ | string | `fact`, `dimension`, or `reference`. **Derived, not authored**: the server recomputes it from `classification` on every save, so a hand-written value is overwritten. The rule is `C` → `reference`; `M` → `dimension` (or `reference` when every composed table is a customizing table); `T` → `fact` when the artifact has a currency/quantity measure or is item-level, else `dimension`. To change the role, change `classification`. |
 | `grain` | ✅ | object | See [§3.2](#32-grain). |
-| `composed_of` | ✅ | string[] | Lineage: the Bronze node `id`s that make up this Silver entity. |
+| `composed_of` | ✅ | string[] | Lineage: the Bronze node `id`s that make up this Silver Data Product. |
 | `join_graph` | ◐ | object[] | How the Bronze nodes are joined. **Required when `composed_of` names more than one node**; a single-table Silver has no `join_graph` at all. See [§3.3](#33-join_graph). |
 | `fields` | ✅ | object[] | Field definitions. See [§3.4](#34-fields). |
-| `relationships` | ⬜ | object[] | Outbound graph edges to other entities (typically other Silver). See [§3.5](#35-relationships). |
+| `relationships` | ⬜ | object[] | Outbound graph edges to other Data Products (typically other Silver). See [§3.5](#35-relationships). |
 | `tag1` | ⬜ | string | Free catalog facet. Populated from the source export where available; a populated value is usually hand-authored. |
 | `tag2` | ⬜ | string | Second catalog facet, conventionally `<MODULE>-<SUBMODULE>` (`SD-MD`, `MM-PUR`). |
 
@@ -72,7 +72,7 @@ Keys not listed here are **dropped on load**, not rejected: the layer models dec
 
 ### 3.2 Grain
 
-Silver entities have **complex grains** more often than Gold does, because they preserve the structure of the source system.
+Silver Data Products have **complex grains** more often than Gold does, because they preserve the structure of the source system.
 
 ```yaml
 grain:
@@ -95,7 +95,7 @@ grain:
 | `entity_grain` | ✅ | Ordered list of **published field names** (`fields[].name`) whose combination uniquely identifies a row. |
 | `business_grain` | ✅ | Plain-English description of the grain (`sales_order_item`, `customer_address`, `material_master`). |
 
-**Members are published column names, not source-system codes.** The grain reaches the agent as YAML text and instructs it to filter and `GROUP BY` those names, so a member that is not a selectable column of the entity does not make the contract imprecise. It makes it **unexecutable**. Silver columns are named `<column>_<table>` ([§3.4](#34-fields)), and the grain uses exactly those names. This also removes a real ambiguity: `VBELN` alone is four different columns on a four-table Silver.
+**Members are published column names, not source-system codes.** The grain reaches the agent as YAML text and instructs it to filter and `GROUP BY` those names, so a member that is not a selectable column of the Data Product does not make the contract imprecise. It makes it **unexecutable**. Silver columns are named `<column>_<table>` ([§3.4](#34-fields)), and the grain uses exactly those names. This also removes a real ambiguity: `VBELN` alone is four different columns on a four-table Silver.
 
 **The grain must be MINIMAL, not merely unique.** The contract asserts two things at once: exactly one row per distinct combination, **and** many rows whenever a filter pins only a subset. A padded key satisfies the first and falsifies the second, so the agent concludes that pinning the real key returns many rows when it returns one. Both failure directions are silent: the YAML still looks plausible.
 
@@ -104,11 +104,11 @@ Two rules decide which key columns survive, and both are read off `join_graph`:
 1. **A join covering the right table's ENTIRE primary key contributes nothing.** It matches at most one row, so that table multiplies nothing, a stock table joined on its full `material + plant + storage location` attaches exactly one row per movement line. This does *not* depend on which columns the join leaves FROM: reaching that table through columns that are not part of the left table's own key is the ordinary N:1 case. When a join covers only PART of the right key, it fans out, and the uncovered members are exactly what widens the grain.
 2. **Columns the predicates declare equal are ONE key column.** `VBAK.VBELN = VBAP.VBELN` means both hold the same value; declaring both states one constraint twice. Keep the member from the root-most table. Collapsing by *bare column name* instead is wrong. It merges `VBAK.VBELN` (the order) with `VBFA.VBELN` (the **successor** document), two different values under one name.
 
-When a Silver entity unions multiple cardinalities (header + items + partners + flow), the grain is the **finest** of them. Note the consequence: a loose join predicate legitimately produces a **wider** grain, and the declaration must reflect it. Tightening the predicate tightens the grain, the grain never hides a bad join.
+When a Silver Data Product unions multiple cardinalities (header + items + partners + flow), the grain is the **finest** of them. Note the consequence: a loose join predicate legitimately produces a **wider** grain, and the declaration must reflect it. Tightening the predicate tightens the grain, the grain never hides a bad join.
 
 ### 3.3 `join_graph`
 
-`join_graph` declares how the Bronze nodes are joined together to form this Silver entity.
+`join_graph` declares how the Bronze nodes are joined together to form this Silver Data Product.
 
 ```yaml
 join_graph:
@@ -137,7 +137,7 @@ join_graph:
 | `condition` | ✅ | SQL-style join predicate. Multi-key joins use `AND`: **one entry per table pair**, see below. |
 | `sequence` | ✅ | Position of the table being **added**, the `right_table`, in the assembly order. Lower is earlier. See [the sequence convention](#the-sequence-convention-starts-at-2) below. |
 
-The `join_graph` is **descriptive**, not prescriptive. It tells the agent (and any downstream pipeline) how the Silver entity is *conceptually* assembled. The actual physical implementation may be a denormalized table, a view, or a virtualized Cube/dbt model.
+The `join_graph` is **descriptive**, not prescriptive. It tells the agent (and any downstream pipeline) how the Silver Data Product is *conceptually* assembled. The actual physical implementation may be a denormalized table, a view, or a virtualized Cube/dbt model.
 
 #### The sequence convention: starts at 2
 
@@ -149,14 +149,14 @@ position 2 brings in.
 Two consequences are worth stating, because both are easy to get backwards:
 
 - **The anchor still appears as a `left_table`**, including on the lowest-numbered row. Identify the
-  anchor as the table that is never a `right_table`, not as the `left_table` of `sequence: 2`. An
-  entity anchored on `EKKO` whose first row reads `EKKO → EKPO, sequence: 2` is adding `EKPO`
+  anchor as the table that is never a `right_table`, not as the `left_table` of `sequence: 2`. A
+  Data Product anchored on `EKKO` whose first row reads `EKKO → EKPO, sequence: 2` is adding `EKPO`
   second, which is exactly right.
 - **Sequence belongs to the table pair, not to the predicate.** Every row for one
   `(left_table, right_table)` pair carries the same sequence, which is why a composite key must be
   one `AND`-composed row rather than several rows sharing a number.
 
-Gaps carry no meaning. An entity may run `2, 3, 4, 5` or `2, 3, 5`; renumbering to close a gap is
+Gaps carry no meaning. A Data Product may run `2, 3, 4, 5` or `2, 3, 5`; renumbering to close a gap is
 churn, since only the relative order is read.
 
 #### A composite key is ONE entry
@@ -210,8 +210,8 @@ Each field is an object in the `fields` list. Silver field definitions are **clo
 | `source` | ⬜ | Lineage: `<TABLE>.<column>` referencing the Bronze node. Documentation only. It is never fabricated, so a Silver imported from a single `CREATE TABLE` simply omits it. |
 | `field_role` | ✅ | `identifier`, `dimension`, `measure`, `timestamp`, `attribute`, or `status_flag`. **`attribute`** is for free-text descriptions or names (a material description, an order text): the agent may filter on it and SELECT it, but never `GROUP BY` it: contrast **`dimension`**, which is a code from a closed set and *is* groupable. A material *description* is an `attribute`; a material *group code* is a `dimension`. **`status_flag`** is a small closed set of business states (open/partial/closed): groupable, but never arithmetically aggregated. |
 | `type` | ✅ | Canonical type: `STRING(n)`, `INTEGER`, `DECIMAL(p[,s])`, `DATE`, `TIMESTAMP`, `BOOLEAN`. The same vocabulary at every layer, source-system codes such as `C10` or `P15` are not used here. (See [Bronze Layer §4](BRONZE_LAYER.md#4-type-system) for the vocabulary and the source mapping.) |
-| `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. A published entity should carry one on every field, but an *empty* description is better than an invented one: when the meaning of a code set is genuinely unknown, leave it blank rather than guess. See [§3.4.3](#343-what-a-description-is-for). |
-| `synonyms` | ⬜ | Alternative business names for this field, to widen retrieval. Indexed for keyword search and folded into the entity's embedding, so a term users actually say (`"buyer"` for a customer id) becomes findable. Useless on a `status_flag`, leave it `[]`. |
+| `description` | ✅ | Business meaning. For status fields, **enumerate the codes** and what they mean. A published Data Product should carry one on every field, but an *empty* description is better than an invented one: when the meaning of a code set is genuinely unknown, leave it blank rather than guess. See [§3.4.3](#343-what-a-description-is-for). |
+| `synonyms` | ⬜ | Alternative business names for this field, to widen retrieval. Indexed for keyword search and folded into the Data Product's embedding, so a term users actually say (`"buyer"` for a customer id) becomes findable. Useless on a `status_flag`, leave it `[]`. |
 | `aggregation_behavior` | ⬜ | Optional at Silver. When set, follows the same rules as Gold: a function name only: `SUM`, `AVG`, `MIN`, `MAX`, `COUNT`, `COUNT_DISTINCT`, `none`. Absence means *not curated*, and a measure that is not curated is assumed additive. See [Gold Layer §3.3.4](GOLD_LAYER.md#334-additive-vs-non-additive-measures). |
 | `additivity` / `non_additive_over` | ⬜ | Also as at Gold: the dimensions a measure may *not* be aggregated across. Allowed values are `additive`, `semi_additive`, `non_additive`. **Derived at ingest** for every measure whose own source table's key does not determine the grain, which on a multi-table Silver is most of them: a header amount is restated on every item, partner and document-flow row it joins to. An explicit value authored by a curator wins; absence means additive. Three pairings are **rejected at ingestion and on save**, not warned about: `additivity` on a non-measure field; `semi_additive` without a non-empty `non_additive_over`; and `non_additive` without `aggregation_behavior: none`. Every `non_additive_over` member must also appear in `grain.entity_grain` *and* resolve to a real field. |
 
@@ -247,7 +247,7 @@ So a description carries what no other key can: what the thing *means* to the bu
 |---|---|
 | The grain columns | `grain.entity_grain` |
 | What one row is | `grain.business_grain` |
-| Which nodes compose the entity | `composed_of` |
+| Which nodes compose the Data Product | `composed_of` |
 | The field inventory | `fields[]` |
 | The join predicates | `join_graph` |
 
@@ -273,7 +273,7 @@ The Gold layer that consumes this Silver should derive a clean `order_status` (`
 
 ### 3.5 Relationships
 
-Silver entities declare relationships to other Silver entities. These describe the **enterprise data graph** that Silver Foundational Data Products participate in, and they are what makes the Silver fallback plane work: a Silver fact must be able to reach its dimensions through its *own* edges.
+Silver Data Products declare relationships to other Silver Data Products. These describe the **enterprise data graph** that Silver Foundational Data Products participate in, and they are what makes the Silver fallback plane work: a Silver fact must be able to reach its dimensions through its *own* edges.
 
 **Direction rule: Silver points at Silver, never at Gold.** A Silver does not know which Gold products are built on top of it, and it must not: Silvers are reusable across many Golds, so an edge pointing upward would bind a foundational product to one consumer and invert the dependency. Lineage and drill-down edges are declared on the Gold side ([GOLD_LAYER.md §3.4](GOLD_LAYER.md#34-relationships)).
 
@@ -313,26 +313,26 @@ The relationship schema is identical to the Gold layer's. See [Gold Layer §3.4]
 
 #### 3.5.1 The qualifier contract
 
-Note the qualifiers in the example above: **`SILVER_SD_SALES_ORDER`, the entity's
+Note the qualifiers in the example above: **`SILVER_SD_SALES_ORDER`, the Data Product's
 `db_table_name`: not `silver_s4h_sd_sales_order`, its `id`.**
 
 **Every qualifier in a `join_condition` is the `db_table_name` of its own side.** The predicate
-names exactly two tables. This entity's and the target's. And nothing else. It is handed to the
-SQL generator as an authoritative join condition, with an explicit instruction not to invent a
-replacement, so a wrong qualifier produces SQL that cannot execute.
+names exactly two tables. This Data Product's and the target's. And nothing else. It is handed
+to the SQL generator as an authoritative join condition, with an explicit instruction not to
+invent a replacement, so a wrong qualifier produces SQL that cannot execute.
 
 The contract is also **load-bearing at ingestion**: the qualifiers are read off the predicate to
-identify the edge's two physical tables, and both are shown to the SQL generator next to the entity
-ids, so nothing has to infer that `silver_s4h_sd_sales_order` and `SILVER_SD_SALES_ORDER` are the
-same object. A predicate that does not name its own side, or that names more than two tables, is
+identify the edge's two physical tables, and both are shown to the SQL generator alongside the
+Data Product ids, so nothing has to infer that `silver_s4h_sd_sales_order` and
+`SILVER_SD_SALES_ORDER` are the same object. A predicate that does not name its own side, or that names more than two tables, is
 logged as a contract violation.
 
 Two spellings get this wrong, and both are easy to ship because they look plausible:
 
-- **The entity `id` instead of the physical table.** Ids resolve entities in the catalog; they are
-  not selectable objects. Look up the target's `db_table_name` and copy it.
-- **A third table that is neither endpoint.** If the join only works by passing *through* a third
-  entity, that is **two edges, not one**: declare the hop to the intermediary, and let the
+- **The Data Product `id` instead of the physical table.** Ids resolve Data Products in the
+  catalog; they are not selectable objects. Look up the target's `db_table_name` and copy it.
+- **A third table that is neither endpoint.** If the join only works by passing *through* a
+  third Data Product, that is **two edges, not one**: declare the hop to the intermediary, and let the
   intermediary declare its own edge onward. A predicate naming a table absent from the `FROM` list
   is not a join.
 
@@ -368,7 +368,7 @@ A Silver Foundational Data Product should answer the question *"what does this a
 
 ### 5.5 Variants are a feature, not duplication
 
-If two business contexts genuinely need different versions of the "same" entity, publish two Silver Foundational Data Products. Do not contort one variant to fit both contexts. The catalog can hold many variants; the agent picks the right one based on intent and scope.
+If two business contexts genuinely need different versions of the "same" Data Product, publish two Silver Foundational Data Products. Do not contort one variant to fit both contexts. The catalog can hold many variants; the agent picks the right one based on intent and scope.
 
 ### 5.6 Declare relationships generously
 
@@ -380,8 +380,8 @@ Joins like `sales_order ↔ inventory_movement` over `(matnr, werks)` are **many
 
 ## 6. Reference examples
 
-- [`examples/silver/sales_order.yaml`](../examples/silver/sales_order.yaml). Multi-node fact entity (VBAK + VBAP + VBKD + VBPA + VBFA).
-- [`examples/silver/trading_goods.yaml`](../examples/silver/trading_goods.yaml). Multi-node dimensional entity (MARA + MAKT + MARM + MSTA + MVKE).
+- [`examples/silver/sales_order.yaml`](../examples/silver/sales_order.yaml). Multi-node fact Data Product (VBAK + VBAP + VBKD + VBPA + VBFA).
+- [`examples/silver/trading_goods.yaml`](../examples/silver/trading_goods.yaml). Multi-node dimensional Data Product (MARA + MAKT + MARM + MSTA + MVKE).
 
 ## 7. Validation checklist
 
@@ -397,7 +397,7 @@ Before publishing a Silver YAML to the catalog, verify:
       ([the sequence convention](#the-sequence-convention-starts-at-2)).
 - [ ] Every column named in a `join_graph` `condition` exists in that side's Bronze node.
 - [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never an
-      entity `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).
+      Data Product `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).
 - [ ] `grain.entity_grain` reflects the actual finest cardinality of the joined result.
 - [ ] Every `grain.entity_grain` member is a `fields[].name`: a selectable column, not a source-system code ([§3.2](#32-grain)).
 - [ ] The grain is MINIMAL: no member is redundant given the `join_graph` predicates.

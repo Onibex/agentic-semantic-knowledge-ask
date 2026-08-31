@@ -35,8 +35,8 @@ SQL in your database's own dialect, runs it, and answers.
 
 | | What it is |
 |---|---|
-| **[`definition/`](definition/README.md)** | The **ASK specification** (`ask-spec 1.0`): a vendor-neutral YAML standard for describing AI-ready data products across Bronze, Silver and Gold. Runtime-neutral, so any vendor can adopt it. |
-| **[`platform/`](platform/README.md)** | The **Onibex Agentic Semantic Knowledge Platform**: the product that implements the standard end to end. Author the semantic layer in **[ASK Studio](platform/docs/ask-studio/README.md)**, then ask questions of it in **[ASK Chat](platform/docs/ask-chat/README.md)**. |
+| **[Onibex Agentic Semantic Knowledge Definition](definition/README.md)** · `definition/` | The published specification (`ask-spec 1.0`): a vendor-neutral YAML standard for describing AI-ready data products across Bronze, Silver and Gold. Runtime-neutral, so any vendor can adopt it. |
+| **[Onibex Agentic Semantic Knowledge Platform](platform/README.md)** · `platform/` | The product that implements the standard end to end. Author the semantic layer in **[ASK Studio](platform/docs/ask-studio/README.md)**, then ask questions of it in **[ASK Chat](platform/docs/ask-chat/README.md)**. |
 
 What that changes, next to a tool that reads your database schema directly:
 
@@ -75,7 +75,7 @@ ports, the health checks and what to do when a service will not start.
 
 ## How to use this repository
 
-1. **Go to the folder for what you want**: `definition/` for the open standard, `platform/`
+1. **Go to the folder for what you want**: `definition/` for the specification, `platform/`
    for the product.
 2. **Start with the `README.md` inside it.** Every folder has one, and it is the index for
    that folder.
@@ -87,7 +87,7 @@ Everything is Markdown and renders on GitHub. Nothing has to be downloaded to be
 
 ## Contents
 
-**[`definition/`](definition/README.md)**, the open specification
+**[`definition/`](definition/README.md)**, the published specification
 
 - [The layer specifications](definition/docs/README.md). The normative Bronze, Silver and Gold
   rules, and which layer the agent reaches for first
@@ -124,7 +124,7 @@ are trying to do.
 | **Configuring it** | [Configure the platform first · ASK Setup](platform/docs/ask-setup/README.md). The database, the model provider, identity |
 | **Authoring a semantic layer** | [Author the semantic layer · ASK Studio](platform/docs/ask-studio/README.md). The nine flows, and the order to read them in |
 | **Reading the whole manual** | [The manual](platform/docs/README.md). Every page, grouped by what you are trying to do |
-| **Adopting the specification** | [`definition/README.md`](definition/README.md) |
+| **Adopting the specification** | [Onibex Agentic Semantic Knowledge Definition](definition/README.md) |
 | **An AI agent** | [`llms.txt`](llms.txt) |
 
 ---

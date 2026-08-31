@@ -39,7 +39,7 @@ Flash searches the semantic layer as free-text chunks and writes SQL in a single
 plan, no computed join path, no scope audit afterwards.
 
 It is the fastest and cheapest engine, and it is honest about what it gives up: when several
-join paths exist between two entities, Flash picks one the way a fluent reader would, by
+join paths exist between two Data Products, Flash picks one the way a fluent reader would, by
 plausibility, not by cost. On a well-modelled, shallow domain that is usually right. On a deep
 one it is a coin flip that looks like an answer.
 
@@ -52,9 +52,9 @@ Precise is the most reproducible engine, and the only one that checks its own wo
 
 It extracts a structured plan from the question, then ranks Data Products **deterministically**: hybrid keyword-plus-vector retrieval, fused and re-ranked so Gold outranks Silver. Selection
 is a pure function of the question and the corpus: the same question against the same corpus
-selects the same entities, every time. Join paths are computed with Dijkstra over the declared
+selects the same Data Products, every time. Join paths are computed with Dijkstra over the declared
 relationship graph, so the cheapest correct path wins rather than the most plausible-sounding
-one. Finally it audits the emitted SQL against the entities it authorised, and retries once if
+one. Finally it audits the emitted SQL against the Data Products it authorised, and retries once if
 the SQL reached for something outside that set.
 
 ![The same canvas filtered to the five Data Products one question needed: two Gold, two Silver, and the relationships between them](../images/studio-canvas-filtered.png)
@@ -80,7 +80,7 @@ than would fit in a prompt as full definitions. It then resolves the joins **det
 through the same relationship graph Precise uses.
 
 So Smart concedes the selection and keeps the join planning. That is the right trade for
-everyday use: a wrong entity selection usually produces an obviously wrong answer, while a
+everyday use: a wrong Data Product selection usually produces an obviously wrong answer, while a
 wrong join path produces a plausible one, and plausible-but-wrong is the failure that reaches
 a board deck.
 
@@ -136,7 +136,7 @@ contract downstream:
   reach at all, before any engine runs.
 - **No raw tables.** No engine will answer a business question from a Bronze node. Flash cannot:
   Bronze is never chunked into the collections it searches. Smart restricts its catalog query to
-  Silver and Gold. Precise filters both entity resolution and path selection to the same two
+  Silver and Gold. Precise filters both Data Product resolution and path selection to the same two
   layers, opening Bronze only for schema questions, *"what columns does VBAK have"*, which are
   not questions about your data. See
   [Bronze isolation](../../../definition/docs/BRONZE_LAYER.md#66-what-isolates-bronze-and-how).
