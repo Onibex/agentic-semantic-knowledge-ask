@@ -23,3 +23,7 @@ python scripts/docs_terms.py --check
 
 **Run them after `git add`.** All of them read what git tracks, so an unstaged new file passes
 locally and fails in CI.
+
+---
+
+[← Back to the repository overview](../README.md)

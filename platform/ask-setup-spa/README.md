@@ -35,3 +35,7 @@ What has to be filled in, and in what order.
 [Connect a database](../docs/ask-setup/02-database-connections.md) and
 [Connect an LLM provider](../docs/ask-setup/03-llm-providers.md). The two that are required;
 the rest of the section is optional or read-only.
+
+---
+
+[← Back to the platform](../README.md)

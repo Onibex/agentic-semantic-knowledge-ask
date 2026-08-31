@@ -14,3 +14,7 @@ Runtime services that are not Python packages.
 Configure it from ASK Setup: [Enable the MCP server](../docs/ask-setup/06-mcp-server.md), and
 [Register an OpenAPI contract](../docs/ask-setup/07-contracts.md) to turn an OData spec into
 tools.
+
+---
+
+[← Back to the platform](../README.md)

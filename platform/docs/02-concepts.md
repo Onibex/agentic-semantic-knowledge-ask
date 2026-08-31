@@ -232,8 +232,12 @@ answer + chart); they differ in *how* they decide which tables and joins to use.
   cheapest; no computed join planning.
 - **Precise.** Selection *and* joins computed, then the emitted SQL is audited against the
   entities it was allowed to touch. Most reproducible; slowest.
-- **Smart.** The default. The LLM picks Data Products from a scoped catalog; the joins are
-  computed. Balanced and production-grade.
+- **Smart.** The LLM picks Data Products from a scoped catalog; the joins are computed.
+  Balanced and production-grade, and the one to reach for when unsure.
+
+The Chat's selector arrives on **Precise**; `/external/ask` and artifact generation default to
+**Smart**. [The three chat engines](explain/engines.md) has the table of which runs when nobody
+chooses.
 
 The difference that matters is **where determinism lives**: Precise computes the selection,
 Smart computes the join planning, Flash computes neither. All three emit governed SQL over the

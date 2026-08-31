@@ -1,6 +1,7 @@
 # Onibex Agentic Semantic Knowledge Platform
 
-Turn a question in plain language into **governed SQL** over the data you already have.
+> Turn a question in plain language into **governed SQL** over the data you already have,
+> compiled from a semantic layer your own people author.
 
 **"Based on open sales orders for material ID TG12, do we have enough stock to cover that
 demand?"**

@@ -25,3 +25,7 @@ and is tested with its own suite (`cd packages/<name> && pytest`).
 How these fit together, in prose and diagrams:
 [Concepts and architecture](../docs/02-concepts.md). How the three engines differ:
 [The three chat engines](../docs/explain/engines.md).
+
+---
+
+[← Back to the platform](../README.md)

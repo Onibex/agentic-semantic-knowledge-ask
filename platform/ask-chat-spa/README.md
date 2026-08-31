@@ -26,3 +26,7 @@ rather than drifting quietly.
 
 **Documentation:** [Ask questions · ASK Chat](../docs/ask-chat/README.md). How the surface is
 used. [The three chat engines](../docs/explain/engines.md). What the mode selector changes.
+
+---
+
+[← Back to the platform](../README.md)

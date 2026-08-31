@@ -46,3 +46,7 @@ npm start
   the tools the agent sees.
 - [Connect to SAP](../../docs/ask-setup/05-sap-connection.md). The credentials this service
   authenticates with.
+
+---
+
+[← Back to the services](../README.md)
