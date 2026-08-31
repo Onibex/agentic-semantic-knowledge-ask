@@ -17,30 +17,26 @@ before there is anything to author against or answer from.
 
 ---
 
-## Required, in this order
+## The seven sections
 
-1. [Connect a database](02-database-connections.md). The database ASK queries. One active
-   connection per environment.
-2. [Connect an LLM provider](03-llm-providers.md). The model that writes SQL, and the embedder
-   that powers retrieval.
+The left sidebar and the Home grid list them in this order, so the numbers match the screen.
 
-At that point the platform works. Everything below is optional or read-only.
+| # | In the sidebar | Page | When you need it |
+|---|---|---|---|
+| 1 | **Setup** | [Check the search index](01-setup.md) | Read-only. The OpenSearch connection the whole platform runs on |
+| 2 | **Database** | [Connect a database](02-database-connections.md) | **Required, first.** One active connection per environment |
+| 3 | **LLM Providers** | [Connect an LLM provider](03-llm-providers.md) | **Required, second.** The model that writes SQL, and the embedder behind retrieval |
+| 4 | **Identity Provider** | [Review the identity provider](04-identity-provider.md) | Read-only. Who signs in, and how |
+| 5 | **SAP Connection** | [Connect to SAP](05-sap-connection.md) | Only for SAP write-back. S/4HANA credentials |
+| 6 | **MCP Server** | [Enable the MCP server](06-mcp-server.md) | Only for SAP write-back. The endpoint that performs the writes |
+| 7 | **Contracts** | [Register an OpenAPI contract](07-contracts.md) | Only for SAP write-back. Turns an OData spec into MCP tools |
 
-## When you need them
-
-- [Connect to SAP](05-sap-connection.md). S/4HANA credentials, for write-back.
-- [Enable the MCP server](06-mcp-server.md). The endpoint that performs those writes.
-- [Register an OpenAPI contract](07-contracts.md). Turns an OData spec into MCP tools.
-
-## Read-only
-
-- [Review the identity provider](04-identity-provider.md). Who signs in, and how.
-- [Check the search index](01-setup.md). The OpenSearch connection the whole platform runs on.
-  stored.
+**Do 2 and 3 first, in that order.** At that point the platform works, and everything else is
+optional or read-only.
 
 ## Find your way around
 
-### 1. The Home dashboard
+### The Home dashboard
 
 Signing in lands you on **Home**. The page opens with a hero, the app title and an **Onibex
 platform administration** subtitle, and a **Refresh** button that re-reads live status from the
@@ -64,21 +60,6 @@ Click any card to open its section. At the very bottom, when a language model is
 > **Tip. The cards are a checklist.** The status strips make the dashboard a live checklist:
 > work top to bottom until the progress bar reads **`7 / 7`**. Status is derived from the server,
 > so **Refresh** after a change made elsewhere (for example an environment variable update).
-
-### 2. The seven sections
-
-The left sidebar and the Home grid list the same seven sections, in order. Each has its own page in
-this manual:
-
-| # | Section | What you set there |
-|---|---|---|
-| 1 | **Setup** | [Check the search index](01-setup.md). The read-only, environment-sourced OpenSearch connection, plus a health check. |
-| 2 | **Database** | [Connect a database](02-database-connections.md). The registry of databases the agent queries; one active per environment. |
-| 3 | **LLM Providers** | [Connect an LLM provider](03-llm-providers.md). The language models the agent can use, plus the shared embedder. |
-| 4 | **Identity Provider** | [Review the identity provider](04-identity-provider.md). The read-only active sign-in provider and your session. |
-| 5 | **SAP Connection** | [Connect to SAP](05-sap-connection.md). S/4HANA URL, client credentials and OAuth token endpoint. |
-| 6 | **MCP Server** | [Enable the MCP server](06-mcp-server.md). The Model Context Protocol endpoint for write-back actions to SAP. |
-| 7 | **Contracts** | [Register an OpenAPI contract](07-contracts.md). OpenAPI specs registered as MCP tool contracts for the agent. |
 
 ### Where configuration is stored
 
