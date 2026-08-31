@@ -106,7 +106,8 @@ If the check stops you and your line really is the exception, say why on the lin
 
 - **Every page is listed in `platform/docs/README.md`** and carries a link back to it.
 - **Every relative link resolves**, including `#heading-anchors`.
-- **The surface names have not drifted back** to *ASK Admin*, `ask-admin/` or `admin-*.png`.
+- **The surface names have not drifted back** to *ASK Admin*, the *Configuration app*,
+  `ask-admin/` or `admin-*.png`.
 - **The queryable unit is called a Data Product**, outside the closed list above.
 
 Check them all locally with:

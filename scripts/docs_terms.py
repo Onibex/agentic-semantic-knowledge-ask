@@ -101,6 +101,16 @@ RULES: list[tuple[str, re.Pattern[str], str, tuple[str, ...]]] = [
         (),
     ),
     (
+        "Setup called by its old name",
+        # ASK Setup was the "Configuration app" before it was a named surface, and
+        # the name outlived the rename in a troubleshooting fix that sent a reader
+        # looking for an app the UI does not have. Same failure as ASK Admin, so
+        # the same guard.
+        re.compile(r"\bconfig(?:uration)? app(?:lication)?\b", re.IGNORECASE),
+        "ASK Setup",
+        (),
+    ),
+    (
         "old manual path",
         re.compile(r"\bask-admin/"),
         "ask-studio/",

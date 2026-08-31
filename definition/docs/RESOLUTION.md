@@ -94,7 +94,8 @@ Two consequences follow, and they are the reason the layer specifications read a
 **The Silver plane must be self-sufficient.** A Silver fact has to reach its dimensions through
 *its own* `relationships`. Strip those and the fallback has no graph to walk. That is why
 relationships are declared on Silver and not only on Gold, and why
-[SILVER_LAYER.md §5.6](SILVER_LAYER.md) tells you to declare them generously.
+[SILVER_LAYER.md §5.6](SILVER_LAYER.md#56-declare-relationships-generously) tells you to
+declare them generously.
 
 **The two planes are parallel, not layered.** On fallback the resolver uses the *Silver's*
 relationships, never a Gold's. The Gold was not selected, and its join keys differ. Gold

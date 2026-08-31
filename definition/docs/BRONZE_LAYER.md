@@ -12,7 +12,7 @@ Bronze is the **lineage substrate** of ASK: the raw building blocks that Silver 
 
 **Bronze mirrors; it does not model.** It carries no `entity_role`, no `grain`, no `composed_of`, no `join_graph`, no `relationships`, and no `field_role` or `aggregation_behavior` on its fields. Join truth lives in Silver; business semantics live in Silver and Gold.
 
-## 2. ⚠️ Bronze is not for business agents, USE ONLY for Technical Agents
+## 2. Bronze is not for business agents, only for technical ones
 
 **Do not give Bronze YAMLs to your business agent as primary context.**
 
@@ -271,7 +271,7 @@ Both are generated output, not hand-written illustrations: they are what the ing
 
 Before publishing a Bronze YAML to the catalog, verify:
 
-- [ ] All ten required keys are present: `id`, `layer`, `version`, `source_system`, `source_system_id`, `name`, `alias`, `description`, `primary_key`, `fields`.
+- [ ] All ten keys are present: `id`, `layer`, `version`, `source_system`, `source_system_id`, `name`, `alias`, `description`, `primary_key`, `fields`.
 - [ ] `id` follows `bronze_<system>_<table_lower>_<alias_lower>`, lowercase, and is reconstructible from `source_system` + `name` + `alias`.
 - [ ] `name` matches the source-system table name **exactly** (case-sensitive).
 - [ ] `source_system` is a registered token (`s4h`, `ecc`, `generic`, `salesforce`, `odoo`).

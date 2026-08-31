@@ -113,7 +113,7 @@ Knowledge; auto-applied (non-conflicting) changes land immediately.
 **I get 401 Unauthorized even after logging in.**
 
 Your session likely expired: sign in again. If it recurs, the provider credentials or the
-identity-provider wiring may be off; that's an administrator/ops check in the Config app
+identity-provider wiring may be off; that's an administrator/ops check in **ASK Setup**
 (orchestrator logs and auth wiring).
 
 > **Tip:** when reporting a data-question failure to your administrator, include the exact

@@ -330,10 +330,10 @@ logged as a contract violation.
 **1. The Data Product `id` instead of the physical table.**
 
 ```yaml
-# ✗ wrong — SILVER_ECC_SD_SALES_ORDER is an id, not a selectable object
+# ✗ wrong: SILVER_ECC_SD_SALES_ORDER is an id, not a selectable object
 join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_ECC_SD_SALES_ORDER.vbeln_vbak"
 
-# ✓ right — the target's db_table_name
+# ✓ right: the target's db_table_name
 join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.sales_order = SILVER_SD_SALES_ORDER.vbeln_vbak"
 ```
 
@@ -344,19 +344,19 @@ mistake survives review, which is exactly why the rule is mechanical: **look up 
 **2. A third table that is neither endpoint.**
 
 ```yaml
-# ✗ wrong — this Gold has no material-group column, so the author "borrowed" a path
+# ✗ wrong: this Gold has no material-group column, so the author "borrowed" a path
 #   through trading_goods. The ON clause names a table that is not in the FROM list.
 - target_entity: "silver_s4h_mm_material_group"
   join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
   description: "Navigate through trading_goods to Material Group."
 
-# ✓ right — declare the hop you can actually make, and let the intermediary
+# ✓ right: declare the hop you can actually make, and let the intermediary
 #   declare its own edge onward. Two edges, not one.
 - target_entity: "silver_s4h_sd_trading_goods"
   join_condition: "GOLD_MM_INVENTORY_POSITION.material_id = SILVER_TRADING_GOODS.matnr_mara"
   description: "Material master. This is also the route to material category: material group
     and material hierarchy hang off trading_goods' own relationships, so reach them as a
-    second hop from here — this Gold carries no group or hierarchy code column of its own."
+    second hop from here: this Gold carries no group or hierarchy code column of its own."
 ```
 
 This second case is the one that bites at Gold, because a Gold routinely reaches a dimension only
@@ -423,7 +423,7 @@ at all.
 | Cost | Situation |
 |---|---|
 | **1** | Direct foreign key, same module. The natural, cheap dimensional join. |
-| **1.5 – 2** | Direct foreign key, but crossing modules. |
+| **1.5 to 2** | Direct foreign key, but crossing modules. |
 | **3** | Bridge table, `many_to_many`, or any edge marked `requires_dedup`, the join changes the grain. |
 | **4+** | The dimension is **already flattened into this Gold**. Discourage the traversal: it exists only for raw attributes the Gold did not denormalize. |
 
@@ -480,7 +480,7 @@ exercise. Start with the first if you are reading one:
 | Example | Fields | What it is the clearest example of |
 |---|---:|---|
 | [`gold_s4h_mm_inventory_position`](../examples/gold/gold_s4h_mm_inventory_position.yaml) | 17 | The smallest complete Gold. A snapshot fact with **no time dimension**, `synonyms` on every measure, one computed `status_flag`, and all three relationship shapes (`safe` to two dimensions, `requires_dedup` down to its source Silver). |
-| [`gold_s4h_open_order_tracker`](../examples/gold/gold_s4h_open_order_tracker.yaml) | 37 | Breadth: 12 relationships including a gold→gold cross-fact lookup, and the `status_flag` descriptions §9.6 holds up as the bar. |
+| [`gold_s4h_open_order_tracker`](../examples/gold/gold_s4h_open_order_tracker.yaml) | 37 | Breadth: 12 relationships including a gold→gold cross-fact lookup, and `status_flag` descriptions that meet the bar [§5.2](#52-pre-derive-status-fields) sets. |
 | [`gold_s4h_order_tracking_reception`](../examples/gold/gold_s4h_order_tracking_reception.yaml) | 18 | A 5-column grain, and a field named `order`: a SQL reserved word, which is why every identifier the generator emits is quoted. |
 | [`gold_s4h_inventory_situation`](../examples/gold/gold_s4h_inventory_situation.yaml) | 30 | The time-series counterpart of the first: same domain projected forward by `future_date`, so the two together show what a time dimension changes. |
 
@@ -521,7 +521,7 @@ Before publishing a Gold YAML to the catalog, verify:
 - [ ] Every status field documents its rule.
 - [ ] Every sparse measure documents its sparsity condition.
 - [ ] Every relationship has `traversal_cost` and `aggregation_safety` set.
-- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never an
+- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never a
       Data Product `id`, never a third table. See [§3.4.2](#342-the-qualifier-contract).
 - [ ] No relationship describes its own keys as provisional. "Placeholder", "to be enriched",
       "real keys may differ": an edge whose predicate is admittedly wrong is worse than no edge,

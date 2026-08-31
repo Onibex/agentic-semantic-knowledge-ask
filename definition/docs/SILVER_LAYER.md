@@ -78,12 +78,12 @@ Silver Data Products have **complex grains** more often than Gold does, because 
 grain:
   entity_grain:
     - vbeln_vbak      # Sales document (the anchor; VBAP/VBKD/VBPA.VBELN and VBFA.VBELV
-                      #   are the same value by the join predicates — declared ONCE)
+                      #   are the same value by the join predicates, declared ONCE)
     - posnr_vbap      # Item
     - posnr_vbpa      # Partner row's item  ┐ VBPA is joined on VBELN alone,
     - parvw_vbpa      # Partner function    ┘   so it fans out by both
     - posnv_vbfa      # Predecessor item
-    - vbeln_vbfa      # Successor doc — a DIFFERENT value from vbeln_vbak
+    - vbeln_vbfa      # Successor doc: a DIFFERENT value from vbeln_vbak
     - posnn_vbfa      # Successor item
     - vbtyp_n_vbfa    # Successor doc category
     - posnr_vbkd      # Business-data row's item
@@ -166,12 +166,12 @@ A join on several key columns is a single `join_graph` entry whose `condition` c
 join on its own:
 
 ```yaml
-# ✗ wrong — two entries for the same pair. Either one, taken alone, fans out:
+# ✗ wrong: two entries for the same pair. Either one, taken alone, fans out:
 #   joining EKPO to EKET on EBELN only multiplies by every schedule line of the order.
 - { left_table: EKPO, right_table: EKET, join_type: INNER, condition: EKPO.EBELN = EKET.EBELN, sequence: 3 }
 - { left_table: EKPO, right_table: EKET, join_type: INNER, condition: EKPO.EBELP = EKET.EBELP, sequence: 3 }
 
-# ✓ right — one entry, AND-composed
+# ✓ right: one entry, AND-composed
 - left_table: EKPO
   right_table: EKET
   join_type: INNER
@@ -237,6 +237,22 @@ This convention keeps lineage visible in the column name and avoids collisions w
 
 The mode is fixed **before the first ingest**. It decides the physical column names minted for the whole corpus, so changing it later renames every Silver column. An unrecognised value raises rather than falling back, precisely because a silent default would mint the wrong names.
 
+#### 3.4.2 Document status fields
+
+Silver status fields preserve the **raw source-system codes**. The Silver description must enumerate the codes; the *interpretation* (e.g. mapping to `OPEN/CLOSE`) belongs in Gold.
+
+```yaml
+- name: gbstk_vbak
+  source: VBAK.GBSTK
+  field_role: status_flag
+  type: STRING(1)
+  description: "Overall Processing Status. A = not yet processed / open,
+    B = partially processed, C = fully processed / completed.
+    Use to filter open or pending sales orders."
+```
+
+The Gold layer that consumes this Silver should derive a clean `order_status` (`OPEN`/`CLOSE`) field and document the rule there.
+
 #### 3.4.3 What a description is for
 
 A description is **embedded text**: it becomes part of the vector that retrieval matches a question against. That makes it the one field where padding has a measurable cost, every word spent restating something another key already carries displaces business meaning from that vector.
@@ -254,22 +270,6 @@ So a description carries what no other key can: what the thing *means* to the bu
 A prose copy of any of those does not merely waste space. It becomes a second source that drifts, and the reader has no way to tell which one is stale.
 
 When the meaning is genuinely unknown, leave the description empty. A guess is worse than a blank: a blank is visibly unfinished, while a plausible invention gets embedded, retrieved and believed.
-
-#### 3.4.2 Document status fields
-
-Silver status fields preserve the **raw source-system codes**. The Silver description must enumerate the codes; the *interpretation* (e.g. mapping to `OPEN/CLOSE`) belongs in Gold.
-
-```yaml
-- name: gbstk_vbak
-  source: VBAK.GBSTK
-  field_role: status_flag
-  type: STRING(1)
-  description: "Overall Processing Status. A = not yet processed / open,
-    B = partially processed, C = fully processed / completed.
-    Use to filter open or pending sales orders."
-```
-
-The Gold layer that consumes this Silver should derive a clean `order_status` (`OPEN`/`CLOSE`) field and document the rule there.
 
 ### 3.5 Relationships
 
@@ -396,7 +396,7 @@ Before publishing a Silver YAML to the catalog, verify:
 - [ ] `join_graph[].sequence` starts at **2**, the anchor holds the implicit position 1
       ([the sequence convention](#the-sequence-convention-starts-at-2)).
 - [ ] Every column named in a `join_graph` `condition` exists in that side's Bronze node.
-- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never an
+- [ ] Every qualifier in a `join_condition` is the `db_table_name` of its own side, never a
       Data Product `id`, never a third table. See [§3.5.1](#351-the-qualifier-contract).
 - [ ] `grain.entity_grain` reflects the actual finest cardinality of the joined result.
 - [ ] Every `grain.entity_grain` member is a `fields[].name`: a selectable column, not a source-system code ([§3.2](#32-grain)).

@@ -98,7 +98,7 @@ a board deck.
 | **Data Products chosen by** | Chunk similarity | Ranking function (deterministic) | LLM, from a scoped catalog |
 | **Joins planned by** | The LLM | Dijkstra | Dijkstra |
 | **Scope validation** | None | Post-SQL audit + one retry | None (catalog-scoped) |
-| **Speed (approx.)** | ~15–20 s | ~60 s | ~40 s |
+| **Speed (approx.)** | ~15 to 20 s | ~60 s | ~40 s |
 | **Reproducibility** | Low | High | Medium |
 
 *Speed figures are observational and vary with your model provider and question complexity.*

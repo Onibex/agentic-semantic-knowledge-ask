@@ -29,10 +29,10 @@
 
 | Term | Meaning |
 |---|---|
-| **Agent Mode (Flash / Precise / Smart)** | The engine the chat uses to turn a data question into SQL. **Flash** is fastest: it searches your schema as text and writes SQL in one shot, with no deep validation. **Precise** is the **default**: the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. **Smart** is balanced: it uses the Data Product catalog as context, picks Data Products naturally, and resolves joins through the relationship graph. The chat opens on **Precise**; switch to **Smart** or **Flash** when speed matters more than full validation. |
+| **Agent Mode (Flash / Precise / Smart)** | The engine the chat uses to turn a data question into SQL. **Flash** is fastest: it searches your schema as text and writes SQL in one shot, with no deep validation. **Precise** is the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, computes the join path, and audits the emitted SQL against what it authorised. **Smart** is balanced: it picks Data Products from a scoped catalog and resolves joins through the relationship graph. **There is no platform-wide default.** The chat's selector opens on **Precise**; `/external/ask` and artifact generation default to **Smart**, and Smart is the one to start with. See [The three chat engines](../explain/engines.md). |
 | **Artifacts** | The chat's document-generation surface: a guided wizard (Name → Purpose → Data focus → Format) that turns query results into a downloadable document. See [Generate a report or brief](../ask-chat/03-artifacts.md). |
 | **ASK Studio** | The administration application where you author and publish the semantic layer: workspaces, business domains, and Data Products. Distinct from **ASK Setup** (technical setup) and the **chat** (where users ask questions). |
-| **ASK Setup** | The administrator application for **technical setup** (formerly "Configuration app"). It hosts a multi-engine **Database connection registry** (the nine supported SQL engines, one active per environment), an **LLM Provider registry** (one active), and the **Identity Provider** configuration. The **OpenSearch** search index is **env-sourced and read-only** here. Separate from **ASK Studio**, which handles the semantic layer. |
+| **ASK Setup** | The administrator application for **technical setup**. It hosts a multi-engine **Database connection registry** (the ten supported SQL engines, one active per environment), an **LLM Provider registry** (one active), and the **Identity Provider** configuration. The **OpenSearch** search index is **env-sourced and read-only** here. Separate from **ASK Studio**, which handles the semantic layer. |
 | **Alias** | A human-readable label for a field, shown instead of the technical column name, e.g. `AFKO.AUFNR` aliased as *Order Number*. Aliases help both people and the agent recognize a column. |
 | **Attribute** | A `field_role` for free-text descriptions or names (a material description, an order text). The agent may filter on an attribute but should **not** `GROUP BY` a long attribute. Contrast with **Dimension**: a material *description* is an attribute; a material *group code* is a dimension. |
 
@@ -48,7 +48,7 @@
 
 | Term | Meaning |
 |---|---|
-| **`composed_of`** | On a Silver Data Product, the ordered list of Bronze tables it is built from. On a Gold, it is usually the Gold's own physical table. |
+| **`composed_of`** | On a Silver Data Product, the ordered list of Bronze tables it is built from. **A Gold has none**: it is a table produced upstream by an ETL, so the joins are not reconstructible from a list of names and `db_table_name` carries what you query instead. See [Gold Layer §3.1.1](../../../definition/docs/GOLD_LAYER.md#311-why-gold-has-no-composed_of-or-join_graph). |
 | **Conflict** | A difference the platform detects when merging incoming content (typically a **OneConnect** import) against an existing Data Product. Conflicts are surfaced for manual resolution rather than silently overwriting your work; they appear under the **Conflicts** filter in Semantic Knowledge. |
 | **Connection** | A named database connection in **ASK Setup**'s connection registry, an engine plus its host/credentials. The registry can hold many; **one connection is active per environment** (`dev` / `prod`), and that active connection is what the chat queries. |
 
@@ -125,7 +125,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Precise** | See **Agent Mode**. The **default** engine: the most rigorous and reproducible: it extracts a plan, ranks Data Products deterministically, picks optimal joins, and validates scope. Best for audit and compliance, or when you need to explain exactly why a table or join was chosen. |
+| **Precise** | See **Agent Mode**. The most rigorous and reproducible engine: it extracts a plan, ranks Data Products deterministically, computes the join path, and audits the emitted SQL against what it authorised. Best for audit and compliance, or when you need to explain exactly why a table or join was chosen. It is what the chat's selector opens on. |
 | **Publish** | Promoting authored changes so the chat can see them. Publishing is **gated dev → prod**: you publish to **dev** first, and **prod** becomes available only once dev is current. You can publish a single Data Product from its detail panel or a whole business domain at once. Nothing is queryable until it is published. |
 
 ## R
@@ -145,10 +145,10 @@
 | **Semantic layer** | The whole curated model the agent maps questions to: workspaces, business domains, and the Bronze/Silver/Gold Data Products with their fields, relationships, and descriptions. Because the agent can only use what the semantic layer defines, answers are governed and reproducible. |
 | **Silver** | A layer for a **curated Data Product that owns the join topology**, the single source of truth for how its underlying tables connect (`composed_of` + `join_graph` + `relationships`). In the demo, `production_order` (AFKO + AFPO + AUFK + AFRU) is Silver. See [Add Data Products](../ask-studio/02-add-data-products.md). |
 | **Slug** | The URL- and API-safe identifier for a workspace or domain (lowercase letters, digits, hyphens), auto-derived from the name: e.g. `manufacturing-operations`. It identifies the object, so it must be unique. |
-| **Smart** | See **Agent Mode**. The balanced engine: catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. (The chat's default engine is **Precise**.) |
+| **Smart** | See **Agent Mode**. The balanced engine: catalog-as-context, natural Data Product selection, graph-resolved joins. Best for everyday, high-volume use. (The chat's selector opens on **Precise**, so Smart is a deliberate switch.) |
 | **Source system** | The system your data originates from (e.g. `s4h` for SAP S/4HANA). Set on the **Organization profile** and per Data Product; it tunes the AI mapping in DDL + AI and OneConnect modes. |
 | **SQL engine / multi-DB** | The kind of database the generated SQL runs against. The platform supports ten engines: **PostgreSQL, SAP HANA, ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft Fabric, Presto**. Each with its own SQL dialect and its own execution adapter. You register connections and pick the active one per environment in **ASK Setup** (see **Connection**). |
-| **Status flag** | A `field_role` for a field whose value space is a small closed set of business states (typically 2–5, e.g. `X = blocked, blank = not blocked`). The agent treats it as **filter-only**, never aggregates it or groups by it. |
+| **Status flag** | A `field_role` for a field whose value space is a small closed set of business states (typically 2 to 5, e.g. `X = blocked, blank = not blocked`). The agent treats it as **filter-only**, never aggregates it or groups by it. |
 | **Synonyms** | Alternative words for a field or term that boost retrieval and disambiguation: e.g. *good quantity, good output, yield* for confirmed yield. Added by hand or suggested during **Enrichment**. |
 
 ## T
