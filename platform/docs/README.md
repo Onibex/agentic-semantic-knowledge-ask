@@ -1,12 +1,16 @@
 # The Onibex Agentic Semantic Knowledge Platform manual
 
-> The complete user manual for the **Onibex Agentic Semantic Knowledge Platform**. Install it, author a semantic layer, publish it dev → prod, and let business users query enterprise data in plain language.
+> The complete user manual for the **Onibex Agentic Semantic Knowledge Platform**. Install it,
+> author a semantic layer, publish it dev to prod, and let business users query enterprise data
+> in plain language.
 
 **New here? Start with [Getting Started](GETTING_STARTED.md).** It is one guided path from an
 empty machine to a real answer, in about 45 minutes. Everything below is the reference you
 come back to afterwards, when you need one specific thing.
 
-> Part of the [Agentic Semantic Knowledge repository](../README.md). See the root overview for the ASK concepts and the open ASK standard under `definition/`.
+> Part of the [Onibex Agentic Semantic Knowledge (ASK) repository](../../README.md). The root
+> overview has the two tracks; the contract those Data Products are written against is the
+> [Onibex Agentic Semantic Knowledge Definition](../../definition/README.md).
 
 **About the examples.** Every walkthrough uses one of two demonstration datasets: **SAP
 Production Planning** (Production Orders) for authoring and configuration, **Sales &
@@ -80,7 +84,7 @@ required; the rest are optional or read-only.
 
 ## License
 
-The Onibex Agentic Semantic Knowledge Platform is source-available under the
-**PolyForm Strict License 1.0.0**. See [`LICENSE.md`](../LICENSE.md). Noncommercial use,
-research, evaluation, and personal study are permitted; commercial or production use
-requires a commercial license from [Onibex](https://onibex.com).
+Source-available and dual-licensed: **PolyForm Strict 1.0.0 OR PolyForm Free Trial 1.0.0**,
+at your option. Production or any other commercial use requires a commercial license.
+[`LICENSE.md`](../LICENSE.md) is the authoritative text and
+[`../README.md`](../README.md) has the summary.

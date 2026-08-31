@@ -1,34 +1,77 @@
-# Onibex ASK — Agentic Semantic Knowledge
+# Onibex Agentic Semantic Knowledge (ASK)
 
-> A deterministic Text-to-SQL agent and the accompanying YAML specification
-> for AI-ready SAP data products. Resolves natural-language questions
-> against a curated semantic layer (Bronze/Silver/Gold) via OpenSearch hybrid
-> search and a deterministic entity-relationship graph, compiling SQL from
-> resolved fields — the LLM maps to the semantic layer, it never invents
-> tables or columns.
+> Ask enterprise data a question in plain language and get governed, deterministic
+> SQL back, compiled from a business-vocabulary semantic layer rather than guessed
+> from raw schema. The model is never shown a table or column name: it chooses among
+> Data Products an author declared, join paths are computed from a declared
+> relationship graph rather than written, and a workspace allowlist bounds what any
+> question can reach.
 
-Source-available (PolyForm Strict / Free Trial); a commercial license is
-required for production or other commercial use — see [Licensing](#licensing)
-below before integrating this project into a product or service.
+Two tracks in one repository. `definition/` is the **ASK specification**, a
+vendor-neutral YAML contract for describing AI-ready data products across Bronze,
+Silver and Gold. `platform/` is the **Onibex Agentic Semantic Knowledge Platform**,
+the product that implements it end to end.
 
-## Docs
+Source-available (PolyForm Strict 1.0.0 or PolyForm Free Trial 1.0.0), not open
+source. A commercial license is required for production or other commercial use. See
+[Licensing](#licensing) before integrating this project into a product or service.
 
-- [README](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/README.md): repository overview — platform + specification, how
-  they relate.
-- [Platform README](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/README.md): the runtime — orchestrator,
-  admin/chat/setup SPAs, the three SQL-generation modes (flash/precise/smart).
-- [Getting Started](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/GETTING_STARTED.md): bring up the stack
-  locally or via `docker compose up`.
-- [ASK Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/README.md): the Bronze/Silver/Gold YAML
-  contract for the semantic layer — **ask-spec 1.0**, versioned separately from
-  the platform release.
+## Start here
+
+- [README](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/README.md):
+  repository overview. The two tracks, how they relate, and where each reader starts.
+- [Getting Started](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/GETTING_STARTED.md):
+  one guided path from an empty machine to a real answer, about 45 minutes.
+- [Why not just point an LLM at the schema?](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/explain/why-not-raw-schema.md):
+  which four decisions ASK computes instead of guessing, and the condition it rests on.
+
+## The specification
+
+- [Onibex Agentic Semantic Knowledge Definition](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/README.md):
+  the index. `ask-spec 1.0`, versioned separately from the platform release.
+- [Gold Layer Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/docs/GOLD_LAYER.md):
+  Business Logic Data Products, pre-joined and semantically resolved.
+- [Silver Layer Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/docs/SILVER_LAYER.md):
+  Foundational Data Products. Grain, measures, `join_graph`, relationships, variants.
+- [Bronze Layer Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/docs/BRONZE_LAYER.md):
+  raw nodes. Lineage substrate, never agent context.
+- [Resolution Specification](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/docs/RESOLUTION.md):
+  layer priority, the two resolution planes, and what a conforming resolver must do.
+- [Reference examples](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/definition/examples/README.md):
+  31 Data Products from SAP SD and MM. A shape to copy, not a catalog to deploy.
+
+## The platform
+
+- [Platform README](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/README.md):
+  the three surfaces, the Compose stack, and what lives in the directory.
+- [The manual](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/README.md):
+  every page, grouped by what the reader is trying to do.
+- [Concepts and architecture](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/02-concepts.md):
+  the mental model, with diagrams.
+- [The three chat engines](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/explain/engines.md):
+  Flash, Precise and Smart. What each computes rather than guesses, and which runs
+  when nobody chooses.
+- [Install and run the platform](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/platform/docs/01-installation.md):
+  every variable, the startup order, the health checks.
+
+Three browser surfaces on one backend: **ASK Setup** configures databases and model
+providers, **ASK Studio** authors and publishes the semantic layer, **ASK Chat**
+answers questions. There is also an `/external/ask` API for agent runtimes such as
+watsonx Orchestrate, n8n and Zapier, with its own OpenAPI document and credentials,
+and an MCP server for SAP write operations.
+
+Compiles for ten SQL engines, each with its own generator and execution adapter: SAP
+HANA, PostgreSQL, Snowflake, Databricks, Google BigQuery, ClickHouse, Microsoft SQL
+Server, Microsoft Fabric, IBM Db2 and Presto.
 
 ## Licensing
 
-- [LICENSE](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/LICENSE): PolyForm Strict License 1.0.0 / PolyForm Free Trial
-  License 1.0.0 (at your option).
-- [COMMERCIAL-LICENSE.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/COMMERCIAL-LICENSE.md): production/commercial use.
-- [THIRD-PARTY-NOTICES.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/THIRD-PARTY-NOTICES.md): third-party components.
+- [LICENSE](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/LICENSE):
+  PolyForm Strict License 1.0.0 or PolyForm Free Trial License 1.0.0, at your option.
+- [COMMERCIAL-LICENSE.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/COMMERCIAL-LICENSE.md):
+  production and other commercial use.
+- [THIRD-PARTY-NOTICES.md](https://github.com/Onibex/agentic-semantic-knowledge-ask/blob/main/THIRD-PARTY-NOTICES.md):
+  third-party components.
 
 Copyright (c) 2026 Onibex, LLC. All rights reserved.
 
