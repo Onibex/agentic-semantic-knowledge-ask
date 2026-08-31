@@ -93,14 +93,20 @@ RULES: list[tuple[str, re.Pattern[str], str]] = [
 ]
 
 
+# Published prose that is not Markdown. `llms.txt` is the summary AI agents read,
+# and filtering on "*.md" left it the one published file where the old surface name
+# survived a rename that touched ninety-eight others.
+ALSO_CHECKED = ("llms.txt",)
+
+
 def tracked_markdown() -> list[Path]:
-    """Published Markdown, as git sees it.
+    """Published prose, as git sees it.
 
     Only tracked files, so a local run and CI agree -- a check that disagrees
     with the build is a check people learn to ignore.
     """
     result = subprocess.run(
-        ["git", "ls-files", "*.md"],
+        ["git", "ls-files", "*.md", *ALSO_CHECKED],
         cwd=ROOT,
         capture_output=True,
         text=True,
