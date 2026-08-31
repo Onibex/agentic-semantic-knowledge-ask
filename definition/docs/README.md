@@ -10,8 +10,13 @@ contract; everything else in this repository derives from them.
 - [Gold](GOLD_LAYER.md). A business definition, pre-joined and semantically resolved. The
   layer that answers a question the way *your* company asks it.
 
-Read [the specification overview](../README.md) first for the resolution model, which layer
-the agent reaches for, and why. For worked YAML, see [the examples](../examples/README.md).
+A fourth document is normative but describes no layer:
+
+- [Resolution](RESOLUTION.md). Which layer the agent reaches for and why, the two planes a
+  question can land in, and what a conforming resolver has to do.
+
+Read [the specification overview](../README.md) first. For worked YAML, see
+[the examples](../examples/README.md).
 
 ---
 

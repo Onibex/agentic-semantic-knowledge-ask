@@ -1,359 +1,202 @@
-# ASK: Agentic Semantic Knowledge Definition
+# Onibex Agentic Semantic Knowledge Definition
 
-> A YAML specification for AI-ready data products. The semantic foundation for Agentic AI on enterprise data.
+> A YAML specification for AI-ready data products. The semantic foundation for Agentic AI on
+> enterprise data.
 
-[![Spec: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-orange.svg)](#specification-version)
-[![Maintained by: Onibex](https://img.shields.io/badge/Maintained%20by-Onibex-black.svg)](https://onibex.com)
+**[Who it is for](#who-ask-is-for)** · **[The normative documents](#the-normative-documents)** ·
+**[The three layers](#the-three-layers)** · **[How a question resolves](#how-a-question-resolves)** ·
+**[How it compares](#how-ask-compares)** · **[Versioning](#versioning-and-governance)**
 
----
+[![Spec: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-e8a838.svg)](#versioning-and-governance)
+[![Source-available: PolyForm Strict or Free Trial](https://img.shields.io/badge/licence-PolyForm%20Strict%20%7C%20Free%20Trial-6f42c1.svg)](LICENSE)
 
-> **New here?** Start with the [repository overview](../README.md) for the big picture, or go
-> straight to the [Onibex Agentic Semantic Knowledge Platform manual](../platform/docs/README.md) to see the contract
-> authored and queried in a running product. This document is the normative specification.
+> **New here?** The [repository overview](../README.md) has the big picture, and the
+> [Onibex Agentic Semantic Knowledge Platform manual](../platform/docs/README.md) shows this
+> contract authored and queried in a running product. This folder is the specification itself.
 
 > **This folder is the single normative source for the Bronze / Silver / Gold contract.** The
-> Onibex Agentic Semantic Knowledge Platform derives its AI-enrichment prompts from these rules and ships them as
-> code assets, but the prompt is a rendering of the specification, never a second authority.
-> Where the platform's behaviour and this text disagree, that is a defect in one of them, to be
-> reconciled here rather than forked.
-
-## What is ASK?
-
-**Agentic Semantic Knowledge (ASK)** is a YAML specification that describes enterprise data in the terms an agent has to reason in: what an entity is, at what grain, which measures it carries, and which joins are legitimate.
-
-LLMs and agents are good at generating SQL, calling tools, and chaining steps. They are bad at knowing *which* table answers *which* business question, what `MATNR` means, why `VBAK.GBSTK = 'C'` means an order is closed, or which join path is the cheapest one to traverse. Without that context, agents either hallucinate or refuse.
-
-ASK closes that gap by declaring the **business semantics** of the data: entities, grains, measures, statuses, relationships and intent, in a layered specification any agent runtime can read.
-
-```mermaid
-flowchart TB
-    AGENT["<b>Agent / LLM runtime</b><br/>Claude, GPT, Llama, custom orchestrators"]
-    AGENT -- "resolves intent against" --> GOLD
-
-    subgraph SPEC["ASK YAML specification"]
-        direction LR
-        GOLD["<b>GOLD</b><br/>Business Logic<br/>Data Products<br/><br/><i>1st &mdash; preferred</i>"]
-        SILVER["<b>SILVER</b><br/>Foundational<br/>Data Products<br/><br/><i>2nd &mdash; fallback</i>"]
-        BRONZE["<b>BRONZE</b><br/>raw source tables<br/><br/><i>never agent context</i>"]
-        GOLD -- "relationships<br/><i>drill / enrich</i>" --> SILVER
-        SILVER -- "composed_of" --> BRONZE
-    end
-
-    style GOLD fill:#fef3c7,stroke:#b45309,color:#111
-    style SILVER fill:#f1f5f9,stroke:#64748b,color:#111
-    style BRONZE fill:#f5f0e8,stroke:#a16207,color:#111
-```
-
-ASK is **declarative**, **runtime-agnostic**, and **business-vocabulary-first**. It does not generate the data products. It describes them so agents know what they are.
+> Onibex Agentic Semantic Knowledge Platform derives its AI-enrichment prompts from these rules
+> and ships them as code assets, but the prompt is a rendering of the specification, never a
+> second authority. Where the platform's behaviour and this text disagree, that is a defect in
+> one of them, to be reconciled here rather than forked.
 
 ---
 
-## Why ASK exists
+## What ASK is
 
-Most enterprises sit on top of decades of OLTP systems (SAP, Oracle, Salesforce, Workday, etc.) where:
+**Agentic Semantic Knowledge (ASK)** is a YAML specification that describes enterprise data in
+the terms an agent has to reason in: what a Data Product is, at what grain, which measures it
+carries, and which joins are legitimate.
 
-- Tables have cryptic names (`VBAK`, `EKKO`, `MARA`).
-- Columns are 3–5 letter abbreviations in a foreign language (`MATNR`, `KUNNR`, `WERKS`).
-- Business meaning lives in tribal knowledge, not metadata.
-- Status fields use single-character codes whose meaning is buried in customizing tables.
-- The same business concept (an "open order") is computed differently across teams.
+LLMs are good at generating SQL, calling tools and chaining steps. They are bad at knowing
+*which* table answers *which* business question, what `MATNR` means, why `VBAK.GBSTK = 'C'`
+means an order is closed, or which join path is the cheapest to traverse. Most enterprises sit
+on decades of OLTP systems where the names are codes, the meaning lives in tribal knowledge, and
+two teams compute *"open order"* differently. Retrieval over schema descriptions does not close
+that gap, because the model still has to resolve a question to the right Data Product, the
+right grain and the right join path.
 
-You cannot point an LLM at this and expect it to act reliably. Even Retrieval-Augmented Generation (RAG) over schema descriptions fails, because the model still needs to *resolve a question to the right entity, the right grain, and the right join path*.
+ASK closes it by declaring the **business semantics**: Data Products, grains, measures, statuses,
+relationships and intent, in a layered contract any agent runtime can read.
 
-ASK exists to provide the missing semantic layer between the agent and the warehouse: encoding not just *what the data is* but *what business question it answers*, *how safe it is to aggregate*, and *which path to traverse first*.
+![The three ASK layers as a stack. An agent resolves intent against Gold first, falls back to Silver when no Gold fits, and a dashed line marks where agent context ends: Bronze sits below it, never shown to the agent](docs/images/ask-layers.png)
 
----
+ASK is **declarative**, **runtime-neutral** and **business-vocabulary-first**. It does not
+generate data products. It describes them, so agents know what they are.
+
+## Who ASK is for
+
+ASK was forged on SAP ECC and S/4HANA workloads, but the contract is source-system agnostic.
+Examples for Salesforce, Workday, NetSuite and others are welcome by PR.
+
+- **Data platform teams** building agent-native data products on warehouses or lakehouses.
+- **Enterprise architects** designing semantic layers across SAP, Oracle, Salesforce and other
+  transactional systems.
+- **AI engineers** integrating text-to-SQL, GenBI or autonomous agents on enterprise data.
+- **Data practitioners** wanting a portable, vendor-neutral way to describe Foundational and
+  Business Logic Data Products.
+
+## The normative documents
+
+| Document | What it fixes |
+|---|---|
+| **[Gold Layer Specification](docs/GOLD_LAYER.md)** | Business Logic Data Products. Pre-joined, semantically resolved, agent-first |
+| **[Silver Layer Specification](docs/SILVER_LAYER.md)** | Foundational Data Products. Grain, measures, `join_graph`, relationships, variants |
+| **[Bronze Layer Specification](docs/BRONZE_LAYER.md)** | Raw nodes. The lineage substrate |
+| **[Resolution](docs/RESOLUTION.md)** | Layer priority, the two planes, resolver conformance |
+| **[Reference examples](examples/README.md)** | Thirty-one Data Products from SAP SD and MM. A shape to copy, not a catalog to deploy |
+
+Reading one example teaches the contract faster than the specification does, and
+[the index says which to open first](examples/README.md#where-to-start).
 
 ## The three layers
 
-ASK organizes data products into three layers. **Entities, Business Objects, and Data Products are equivalent terms**. ASK uses "Data Product" throughout.
-
-The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`, `target_entity`). That split is deliberate and stable: "Data Product" is the term for humans, `entity_` is the machine vocabulary, and renaming the keys would break every catalog and reference that points at them.
+**Entities, Business Objects and Data Products are equivalent terms.** ASK uses *Data Product*
+throughout. The YAML keys keep the `entity_` prefix (`entity_role`, `entity_grain`,
+`target_entity`), and that split is deliberate and stable: *Data Product* is the term for
+humans, `entity_` is the machine vocabulary, and renaming the keys would break every catalog
+that points at them.
 
 | Layer | Concept | Purpose | Agent visibility |
-|-------|---------|---------|------------------|
-| **🥇 Gold** | Business Logic Data Product | Encodes a business definition (e.g. "Available-to-Sell Inventory", "Open Order Tracker"). Semantically pre-resolved, denormalized, and ready to answer business questions directly. | **Primary**, agents prefer Gold |
-| **🥈 Silver** | Foundational Data Product | Encodes a real-world enterprise artifact (Customer, Product, Sales Order). Composed of one or more Bronze nodes joined into a coherent business entity. Reusable across many Gold products. | **Fallback**, agents use Silver when no Gold matches |
-| **🥉 Bronze** | Raw node / table | A faithful, mostly-uninterpreted representation of a source system table or node. | **Avoid**, not recommended as agent context |
+|---|---|---|---|
+| 🥇 **[Gold](docs/GOLD_LAYER.md)** | Business Logic Data Product | Encodes a business definition such as *Available-to-Sell Inventory* or *Open Order Tracker*. Semantically pre-resolved, denormalized, ready to answer directly. | **Primary.** Agents prefer Gold |
+| 🥈 **[Silver](docs/SILVER_LAYER.md)** | Foundational Data Product | Encodes a real-world enterprise artifact: Customer, Product, Sales Order. Composed of one or more Bronze nodes joined into a coherent Data Product, and reusable across many Golds. | **Fallback.** Used when no Gold matches |
+| 🥉 **[Bronze](docs/BRONZE_LAYER.md)** | Raw node or table | A faithful, mostly uninterpreted representation of a source table. | **Never.** Lineage, not agent context |
 
-### Intent Resolution priority
+## How a question resolves
 
-When an agent receives a natural-language question, the layers are ranked in this order:
+A question is answered from the highest layer that can answer it: a Gold that answers it
+outranks a Silver that could compose one, and Bronze is never a candidate. That priority
+produces **two resolution planes**, and which plane a question lands in is what makes the
+authoring rules make sense. It is also what binds the author: a Silver fact has to reach its
+dimensions through its *own* relationships, or the fallback has no graph to walk.
 
+**→ [Resolution](docs/RESOLUTION.md)** is the normative rule: the priority, why Bronze is
+skipped, both planes, and what a conforming resolver has to do.
+
+## A Gold, end to end
+
+The shape of a Business Logic Data Product, abridged. The whole file is
+[`examples/gold/gold_s4h_open_order_tracker.yaml`](examples/gold/gold_s4h_open_order_tracker.yaml).
+
+```yaml
+id: "gold_s4h_open_order_tracker"
+layer: "gold"
+business_process: "ORDER TO CASH"
+entity_role: "fact"
+grain:
+  entity_grain: ["client", "sales_order", "item"]
+  business_grain: "sales_order_item_level"
+
+fields:
+  - name: "order_status"
+    field_role: "status_flag"
+    description: "Derived OPEN/CLOSE classification. Rule: GBSTK='C' -> CLOSE, else OPEN."
+
+relationships:
+  - target_entity: "silver_s4h_sd_customer_master"
+    relationship_type: "many_to_one"
+    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
+    traversal_cost: 1
+    aggregation_safety: "safe"
 ```
-1. GOLD    → "Is there a Business Logic Data Product that already answers this?"
-2. SILVER  → "Is there a Foundational Data Product I can compose an answer from?"
-3. BRONZE  → (skipped by default — not good agent context)
-```
 
-This is a **priority, not a sequence of passes.** A resolver is free to search the whole catalog at once and then rank what it found, what the contract fixes is the *outcome*: a Gold that answers the question outranks a Silver that could compose one, and Bronze is not an answer surface at all. Expressing the priority as re-ranking rather than a layer-by-layer walk is what makes a single retrieval pass sufficient.
+An agent reading that knows the data product answers questions about **open sales orders**, that
+its grain is one row per order item so `order_qty` is safe to sum, that `order_status` is already
+derived so the `GBSTK` rule need not be re-implemented, and that customer details are one cheap,
+aggregation-safe join away. That is enough for a Gold-quality SQL plan, with no raw schema.
 
-**Why Bronze is skipped:** A raw table like `VBAK` has no notion that `GBSTK='C'` means "closed", that `VDATU` is the *requested* delivery date (not actual), or how it joins to `VBAP`. Giving agents Bronze leaks raw schema noise and almost always produces wrong SQL. Bronze exists to be **lineage** for Silver and Gold, not the agent surface.
-
-### The two planes
-
-That priority produces two resolution planes, and knowing which one a question lands in is
-what makes the authoring rules make sense:
-
-```mermaid
-flowchart TB
-    REQ["Request"] --> INTENT["<b>Intent</b><br/>measures &middot; dimensions &middot; filters &middot; grain"]
-    INTENT --> RETRIEVAL{"Retrieval,<br/>gold-first"}
-
-    RETRIEVAL -- "a Gold <b>covers</b> it: measures, dimensions,<br/>grain and filters, already denormalized" --> COVER["SQL from the Gold alone, no joins.<br/><b>Cheapest and most deterministic.</b>"]
-    RETRIEVAL -- "a Gold has the fact, but one attribute<br/>is not flattened into it" --> ENRICH["Traverse the <b>Gold's</b> relationships<br/>to enrich or drill out"]
-    RETRIEVAL -- "no Gold applies" --> PLANE
-
-    subgraph PLANE["The Silver plane"]
-        direction TB
-        S1["Anchor on the fact Silver<br/>that owns the measures"]
-        S2["Shortest path over silver &rarr; silver relationships,<br/>weighted by traversal_cost"]
-        S3["Resolve composed_of to the physical tables"]
-        S4["Honour aggregation_safety,<br/>so a fan-out does not double-count"]
-        S1 --> S2 --> S3 --> S4
-    end
-```
-
-Two consequences bind the author:
-
-- **The Silver plane must be self-sufficient.** A Silver fact has to reach its dimensions
-  through *its own* `relationships`. Strip those and the fallback has no graph to walk,
-  which is why relationships live on Silver and not only on Gold.
-- **The two planes are parallel, not layered.** On fallback the agent uses the *Silver's*
-  relationships, never a Gold's: the Gold was not selected, and its join keys differ. Gold
-  relationships exist only to enrich a non-flattened attribute or to drill down to detail.
-
-Which plane is used is decided by retrieval priority, not by which entities happen to carry
-edges. Declaring relationships on Silver does not weaken the preference for Gold.
-
----
-
-## What ASK does *not* describe
+## What ASK does not describe
 
 ASK is the **structural and semantic contract** of a data product, not its **build logic**.
 
 - ❌ ETL / ELT code, Spark jobs, dbt models, SQLMesh transforms
 - ❌ Aggregations, deduplication rules, slowly-changing-dimension logic
 - ❌ Validations, data-quality checks, business-rule engines
-- ✅ The **resulting structure** that those pipelines produce
+- ✅ The **resulting structure** those pipelines produce
 - ✅ The **business meaning** of that structure
-- ✅ The **relationships** between entities
+- ✅ The **relationships** between Data Products
 
-If your Gold "Available-to-Sell" data product is built by a 400-line dbt model, ASK does not care about the 400 lines. ASK cares about the columns, grains, measures, statuses, and joins that come *out* of those 400 lines, because that is what the agent needs to reason about.
+If your Gold *"Available-to-Sell"* data product is built by a 400-line dbt model, ASK does not
+care about the 400 lines. It cares about the columns, grains, measures, statuses and joins that
+come *out* of them, because that is what the agent needs to reason about.
 
----
+## How ASK compares
 
-## Quick example
-
-Here is the shape of a Gold Business Logic Data Product (full example: [`examples/gold/gold_s4h_open_order_tracker.yaml`](examples/gold/gold_s4h_open_order_tracker.yaml)):
-
-```yaml
-id: "gold_s4h_open_order_tracker"
-layer: "gold"
-name: "open_order_tracker"
-business_process: "ORDER TO CASH"
-module: ["SD"]
-description: "Sales-order-item-level OTC snapshot. Denormalized with customer,
-              plant, material, full org hierarchy, delivery context, and derived
-              order_status (OPEN/CLOSE). Use for fulfillment and prioritization."
-entity_role: "fact"
-db_table_name: "GOLD_SD_OPEN_ORDER_TRACKER"
-grain:
-  entity_grain: ["client", "sales_order", "item"]
-  business_grain: "sales_order_item_level"
-
-fields:
-  - name: "order_qty"
-    field_role: "measure"
-    type: "DECIMAL"
-    description: "Quantity the customer ordered on this line."
-    aggregation_behavior: "SUM"
-
-  - name: "order_status"
-    field_role: "status_flag"
-    type: "STRING(5)"
-    description: "Derived OPEN/CLOSE classification. Rule: GBSTK='C' -> CLOSE,
-                  else OPEN. Use this for binary 'is the order still active?'."
-
-relationships:
-  - target_entity: "silver_s4h_sd_customer_master"
-    relationship_type: "many_to_one"
-    join_condition: "GOLD_SD_OPEN_ORDER_TRACKER.customer_id = SILVER_SD_CUSTOMER_MASTER.kunnr_kna1"
-    semantic_label: "ordered_by"
-    traversal_cost: 1
-    aggregation_safety: "safe"
-```
-
-An agent reading this knows:
-
-- This data product answers questions about **open sales orders** in the **OTC** process.
-- Its grain is **one row per sales-order item**: safe to count, safe to sum `order_qty`.
-- `order_status` is already derived, no need to re-implement the `GBSTK` rule.
-- Customer details are one cheap join away (`traversal_cost: 1`, `aggregation_safety: safe`).
-
-That is enough context for a Gold-quality SQL plan. No raw schema needed.
-
----
-
-## Repository structure
-
-```
-
-definition/               # (this folder inside agentic-semantic-knowledge-ask)
-├── README.md                          ← you are here
-├── docs/
-│   ├── GOLD_LAYER.md                  ← Gold layer specification
-│   ├── SILVER_LAYER.md                ← Silver layer specification
-│   └── BRONZE_LAYER.md                ← Bronze layer specification
-├── examples/                          ← organised by LAYER, never by module
-│   ├── gold/                          ← 4 Business Logic Data Products
-│   ├── silver/                        ← 12 Foundational Data Products
-│   └── bronze/                        ← 15 raw nodes (the lineage of sales_order, trading_goods, inv_mov_stock and plant)
-└── LICENSE
-```
-
----
-
-## Layer documentation
-
-Each layer has its own normative specification:
-
-- **[Gold Layer Specification](docs/GOLD_LAYER.md).** Business Logic Data Products. Pre-joined, semantically resolved, agent-first.
-- **[Silver Layer Specification](docs/SILVER_LAYER.md).** Foundational Data Products. Reusable enterprise artifacts (Customer, Product, Sales Order).
-- **[Bronze Layer Specification](docs/BRONZE_LAYER.md).** Raw nodes and tables. Lineage substrate, not agent context.
-
----
-
-## Multiple variants per data product
-
-A real enterprise rarely has *one* "Trading Goods" or *one* "Sales Order". A data practitioner may need multiple variants of the same Foundational Data Product to reflect business reality:
-
-- A company with two lines of business may publish `silver_lob_a_trading_goods` and `silver_lob_b_trading_goods` with different attributes per line.
-- A multi-region enterprise may publish `silver_emea_sales_order` and `silver_americas_sales_order` with different sales-org constraints.
-
-This is intentional. **A composable AI Data Strategy depends on the data practitioner choosing the right level of variant granularity.** ASK provides the structural language; the catalog topology is a business decision.
-
----
-
-## How ASK compares to other specs
-
-ASK is influenced by, and complementary to, other open semantic-modeling efforts:
+ASK is influenced by, and complementary to, other open semantic-modelling efforts:
 
 | Project | Focus | Relationship to ASK |
-|---------|-------|---------------------|
-| [AtScale SML](https://github.com/semanticdatalayer/SML) | Universal semantic-model spec for BI/analytics tools | ASK shares the layered, YAML-first, BI-friendly approach. ASK adds explicit Bronze/Silver/Gold layering and an **agent-resolution priority** for LLMs. |
-| [Snowflake Semantic Model Generator](https://github.com/Snowflake-Labs/semantic-model-generator) | YAML semantic model for Snowflake Cortex Analyst (text-to-SQL) | ASK shares the goal of grounding LLM SQL generation in business semantics. ASK is platform-agnostic and adds layered composition, relationship costing, and aggregation safety. |
-| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST/GraphQL/SQL APIs | Cube is a runtime; ASK is a spec. ASK can describe entities that a Cube schema serves, and vice versa. They are complementary. |
+|---|---|---|
+| [AtScale SML](https://github.com/semanticdatalayer/SML) | Universal semantic-model spec for BI and analytics tools | Shares the layered, YAML-first approach. ASK adds explicit Bronze / Silver / Gold layering and an agent-resolution priority |
+| [Snowflake Semantic Model Generator](https://github.com/Snowflake-Labs/semantic-model-generator) | YAML semantic model for Snowflake Cortex Analyst | Shares the goal of grounding LLM SQL in business semantics. ASK is platform-agnostic and adds layered composition, relationship costing and aggregation safety |
+| [Cube](https://github.com/cube-js/cube) | Headless semantic layer with REST, GraphQL and SQL APIs | Cube is a runtime, ASK is a contract. ASK can describe entities a Cube schema serves, and the reverse |
 
-ASK is deliberately **runtime-neutral**. You can serve an ASK catalog from Cube, dbt, Snowflake, Databricks Unity Catalog, SAP HANA, or a custom resolver. The YAML does not care.
+**Runtime neutrality is deliberate.** An ASK catalog can be served from Cube, dbt, Snowflake,
+Databricks Unity Catalog, SAP HANA or a resolver you write. The YAML does not care.
 
----
+## Versioning and governance
 
-## Who should adopt ASK?
-
-- **Data platform teams** building agent-native data products on top of warehouses or lakehouses.
-- **Enterprise architects** designing semantic layers across SAP, Oracle, Salesforce, and other transactional systems.
-- **AI engineers** integrating text-to-SQL, GenBI, or autonomous agents on enterprise data.
-- **Data practitioners** wanting a portable, vendor-neutral way to describe Foundational and Business Logic Data Products.
-
-ASK was forged on SAP ECC and S/4HANA workloads, but the spec is source-system agnostic. Examples for Salesforce, Workday, NetSuite, and other systems are welcome via PR.
-
----
-
-## Specification version
-
-**ask-spec 1.0.**
-
-The specification carries its own version, separate from the release number of
-the repository. They answer different questions: the release says which build of
-the Onibex Agentic Semantic Knowledge Platform you are running, and the specification version says
-which contract your YAML is written against. The platform will iterate far more
-often than the contract, and a breaking change there should not tell everyone
+**`ask-spec 1.0`.** The specification carries its own version, separate from the platform's
+release number, because they answer different questions: the release says which build you are
+running, the specification version says which contract your YAML is written against. The
+platform iterates far more often than the contract, and a change there should not tell everyone
 who adopted the specification that their files need revisiting.
 
-Two digits, no patch level: a contract does not get bugfixes, it gets changes.
+Two digits, no patch level. A contract does not get bugfixes, it gets changes.
 
 | | When it moves |
 |---|---|
-| **MAJOR.** `2.0` | A document valid under the previous version stops being valid: a required field is removed or renamed, or resolution semantics change. |
-| **MINOR.** `1.1` | Additions that leave existing documents valid: a new optional field, a new layer of documentation, clarified wording. |
+| **MAJOR**, `2.0` | A document valid under the previous version stops being valid: a required field is removed or renamed, or resolution semantics change |
+| **MINOR**, `1.1` | Additions that leave existing documents valid: a new optional field, a new document, clarified wording |
 
-Not to be confused with the `version:` field inside each data product, which
-belongs to that artifact. It tracks the evolution of one entity, not of the
-contract that describes it.
+Not to be confused with the `version:` field inside each data product, which tracks the
+evolution of one Data Product rather than of the contract that describes it.
 
----
+**Open.** Refresh the reference examples on S/4HANA adding PP, examples for non-SAP source
+systems, and a conformance test suite.
 
-## Roadmap
+**Proposing a change.** Open an issue with `[RFC]` in the title; new examples and non-SAP
+coverage come as PRs. [`CONTRIBUTING.md`](../CONTRIBUTING.md) has the rest, including why a
+specification change is handled differently from a platform one. Tooling you build *around* the
+contract is yours: the licence covers this repository's material, not what you write against it.
 
-- [x] Draft v1 of Bronze, Silver, Gold layer specifications
-- [x] Reference SAP ECC examples (SD and MM modules)
-- [ ] Refresh the reference examples on S/4HANA, adding PP
-- [ ] Examples for non-SAP source systems (Salesforce, Siemens, etc)
-- [ ] Conformance test suite
+**Licence.** Source-available and dual-licensed under **PolyForm Strict 1.0.0 OR PolyForm Free
+Trial 1.0.0**, at your option. See [`LICENSE`](LICENSE) and
+[`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md). To cite ASK, the repository ships a
+[`CITATION.cff`](../CITATION.cff) that GitHub renders into APA and BibTeX.
 
----
-
-## Contributing
-
-ASK is a **published, vendor-neutral specification**: anyone can read it, adopt
-it, and describe their data products with it. It is not open source, the text
-is source-available under [LICENSE](LICENSE), and Onibex stewards it.
-Contributions are welcome on that footing:
-
-- **Specification proposals.** Open an issue with `[RFC]` in the title.
-- **New examples.** Submit a PR adding a YAML under `examples/`.
-- **Source-system coverage.** Non-SAP examples are especially valuable.
-- **Tooling.** Validators, generators, linters, IDE plugins. Tooling you build
-  around the specification is yours; the licence covers this repository's own
-  material, not what you write against the contract.
-
-Please open an issue to discuss substantial changes before submitting a PR.
-
-By submitting a contribution you confirm that it is yours to give, and you grant
-Onibex, LLC permission to include it in this repository and distribute it under
-the terms of [LICENSE](LICENSE).
-
----
-
-
-## Maintainers
-
-ASK is initiated and maintained by **[Onibex, LLC](https://onibex.com)** The specification grew out of production work on **Onibex ASK (Agentic Semantic Knowledge)**, Onibex's three-layer agentic-AI runtime for SAP; Onibex publishes the YAML contract as source-available so it can be studied, evaluated, and discussed in the open. See the [repository overview](../README.md) for how this specification relates to the Onibex Agentic Semantic Knowledge Platform.
-
----
-
-## Citation
-
-If ASK is useful in your research or product, please cite it:
-
-```bibtex
-@misc{ask_semantic_model_2026,
-  title  = {ASK: Agentic Semantic Knowledge — A YAML Specification for AI-Ready Data Products},
-  author = {Onibex, LLC},
-  year   = {2026},
-  url    = {https://github.com/Onibex/agentic-semantic-knowledge-ask/tree/main/definition}
-}
-```
-
----
+**Stewardship.** ASK is published and maintained by **[Onibex, LLC](https://onibex.com)**. It
+grew out of production work on Onibex ASK, and is published source-available so it can be
+studied, evaluated and discussed in the open.
 
 ## Where this is implemented
 
-The [Onibex Agentic Semantic Knowledge Platform](../platform/README.md) is Onibex's implementation of this
-specification. Its manual covers
-[Author the semantic layer · ASK Studio](../platform/docs/ask-studio/README.md), where a layer
-is written against these rules, and
+The [Onibex Agentic Semantic Knowledge Platform](../platform/README.md) is Onibex's
+implementation of this specification. Its manual covers
+[Author the semantic layer · ASK Studio](../platform/docs/ask-studio/README.md), where a layer is
+written against these rules, and
 [The three chat engines](../platform/docs/explain/engines.md), where the resolution model above
-becomes a query. The specification is runtime-neutral: any vendor can adopt it, and the platform
-is not the only possible reader.
+becomes a query.
 
-## License
-
-The ASK specification is source-available and dual-licensed. See
-[`LICENSE`](LICENSE): **PolyForm Strict License 1.0.0** (noncommercial use,
-research, evaluation, and personal study, indefinitely) or **PolyForm Free
-Trial License 1.0.0** (evaluate for your business for up to 32 consecutive
-calendar days), at your option. Production or any other commercial use
-requires a commercial license from [Onibex](https://onibex.com). See
-[`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).
+The specification is runtime-neutral. The platform is one reader of it, not the only possible
+one.

@@ -1,6 +1,6 @@
 # Silver Layer Specification
 
-> **Layer:** Silver • **Status:** v1 • **Part of:** [ASK. Agentic Semantic Knowledge](../README.md)
+> **Layer:** Silver • **Status:** v1 • **Part of:** [Onibex Agentic Semantic Knowledge Definition](../README.md)
 
 ## 1. Concept
 
