@@ -57,6 +57,8 @@ sits a grid of **seven cards**, one per configuration section, each with a short
 - A grey strip with an alert means it still needs attention (for example **No active connection**
   or **OpenSearch not set**).
 
+![The Setup progress bar reading 3 / 7, and four section cards: OpenSearch and Identity Provider carrying a green configured strip, Database and LLM Providers a grey one that still needs attention](../images/setup-home-progress.png)
+
 Click any card to open its section. At the very bottom, when a language model is active, an
 **Active model** badge shows the model id in use.
 

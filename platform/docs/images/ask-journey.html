@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+Copyright (c) 2026 Onibex, LLC. All rights reserved.
+
+Source for ask-journey.png, the Configure -> Author -> Publish -> Ask diagram in
+platform/docs/README.md.
+
+It is embedded as a plain Markdown image, so ONE file has to read on both GitHub themes.
+That is why it is drawn as an opaque light card on a transparent canvas: on a dark page it
+reads as a deliberate card rather than a hole. Keep it that way.
+
+Regenerate with any Chromium browser, then trim the trailing transparency:
+
+  chrome --headless=new --hide-scrollbars --force-device-scale-factor=2
+         --default-background-color=00000000 --window-size=1060,560
+         --screenshot=ask-journey.png ask-journey.html
+
+Appending ?dark renders a dark twin. Nothing uses it today.
+-->
+<meta charset="utf-8">
+<title>ASK: Configure, Author, Publish, Ask</title>
+<style>
+  :root {
+    --bg: #ffffff;  --card-br: #d0d7de;  --ink: #1e293b;  --mute: #64748b;
+    --rule: #cbd5e1;
+    --setup-bg: #f1f5f9;  --setup-br: #64748b;  --setup-ink: #334155;
+    --studio-bg: #f5f3ff; --studio-br: #7c3aed; --studio-ink: #4c1d95;
+    --chat-bg: #eff6ff;   --chat-br: #2563eb;   --chat-ink: #1e3a8a;
+    --gate-bg: #fffbeb;   --gate-br: #b45309;   --gate-ink: #78350f;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;  --card-br: #30363d;  --ink: #e6edf3;  --mute: #8b949e;
+    --rule: #30363d;
+    --setup-bg: #1e293b;  --setup-br: #94a3b8;  --setup-ink: #e2e8f0;
+    --studio-bg: #2e1065; --studio-br: #a78bfa; --studio-ink: #ede9fe;
+    --chat-bg: #172554;   --chat-br: #60a5fa;   --chat-ink: #dbeafe;
+    --gate-bg: #451a03;   --gate-br: #f59e0b;   --gate-ink: #fef3c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body {
+    background: transparent; width: 1060px; padding: 10px; color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  .card {
+    background: var(--bg); border: 1.5px solid var(--card-br); border-radius: 14px;
+    padding: 30px 32px;
+  }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; align-items: stretch }
+  .step { position: relative; padding-right: 30px }
+  .step:last-child { padding-right: 0 }
+  .step::after {
+    content: "\25B6"; position: absolute; right: 8px; top: 68px;
+    font-size: 15px; color: var(--rule);
+  }
+  .step:last-child::after { content: none }
+  .num {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.1px; color: var(--mute);
+    margin-bottom: 5px;
+  }
+  .box {
+    border: 1.5px solid; border-radius: 11px; padding: 13px 15px; height: 100%;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .verb { font-size: 17px; font-weight: 800; letter-spacing: .2px }
+  .surface {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    opacity: .82;
+  }
+  .what { font-size: 12.5px; line-height: 1.5 }
+  .who { font-size: 11px; line-height: 1.45; opacity: .78; margin-top: auto; padding-top: 6px }
+  .setup  { background: var(--setup-bg);  border-color: var(--setup-br);  color: var(--setup-ink) }
+  .studio { background: var(--studio-bg); border-color: var(--studio-br); color: var(--studio-ink) }
+  .chat   { background: var(--chat-bg);   border-color: var(--chat-br);   color: var(--chat-ink) }
+  .gate {
+    margin-top: 18px; background: var(--gate-bg); border: 1.5px dashed var(--gate-br);
+    border-radius: 11px; padding: 11px 15px; color: var(--gate-ink);
+    font-size: 12.5px; line-height: 1.5;
+  }
+  .gate b { letter-spacing: .2px }
+</style>
+<script>
+  if (location.search.indexOf('dark') !== -1) {
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }
+</script>
+<div class="card">
+  <div class="row">
+    <div class="step">
+      <div class="num">STEP 1</div>
+      <div class="box setup">
+        <div class="verb">Configure</div>
+        <div class="surface">ASK Setup</div>
+        <div class="what">A database to query and a model provider to write SQL with.</div>
+        <div class="who">Platform engineer. Done once, then closed.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">STEP 2</div>
+      <div class="box studio">
+        <div class="verb">Author</div>
+        <div class="surface">ASK Studio</div>
+        <div class="what">Workspaces, business domains and the Data Products that answer a
+          question.</div>
+        <div class="who">Data stewards and analysts. The everyday work.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">STEP 3</div>
+      <div class="box studio">
+        <div class="verb">Publish</div>
+        <div class="surface">ASK Studio</div>
+        <div class="what">Promote what you authored, to <code>dev</code> first and then to
+          <code>prod</code>.</div>
+        <div class="who">Data stewards. Every publish is a commit.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">STEP 4</div>
+      <div class="box chat">
+        <div class="verb">Ask</div>
+        <div class="surface">ASK Chat</div>
+        <div class="what">A question in plain language, answered with the SQL behind it.</div>
+        <div class="who">Business users, in any language.</div>
+      </div>
+    </div>
+  </div>
+  <div class="gate">
+    <b>Step 3 is a gate, not a formality.</b> The chat only sees Data Products published to the
+    environment it is querying. Most "it is broken" reports are an unpublished business domain.
+  </div>
+</div>

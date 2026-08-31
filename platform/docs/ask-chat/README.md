@@ -45,11 +45,11 @@ which page you are on.
 | Section | What it does |
 |---|---|
 | **Home** nav link | The dashboard: orchestrator health, active configuration, and links to Chat and Artifacts. |
-| **Chat** nav link | The conversational interface: ask questions, read answers, browse session history. |
-| **Artifacts** nav link | Generate, view, and download AI-produced business documents. |
-| **Workspace** dropdown | Scopes every query to a specific collection of Data Products. Required before asking anything. |
-| **Environment** toggle | Switches between the `dev` (development) and `prod` (production) database. |
-| **Mode** selector | Picks the SQL resolution strategy: **Flash**, **Precise**, or **Smart**. |
+| **Chat** nav link | The conversational interface: ask questions, read answers, browse session history. [Using the Chat](02-chat.md) |
+| **Artifacts** nav link | Generate, view, and download AI-produced business documents. [Generate a report or brief](03-artifacts.md) |
+| **Workspace** dropdown | Scopes every query to a specific collection of Data Products. Required before asking anything. [Scope a question](01-workspace-environment-mode.md) |
+| **Environment** toggle | Switches between the `dev` (development) and `prod` (production) database. [Scope a question](01-workspace-environment-mode.md) |
+| **Mode** selector | Picks the SQL resolution strategy: **Flash**, **Precise**, or **Smart**. [The three chat engines](../explain/engines.md) |
 
 All three settings (Workspace, Environment, Mode) are **persisted to local storage**. They
 survive page refreshes and browser restarts.
