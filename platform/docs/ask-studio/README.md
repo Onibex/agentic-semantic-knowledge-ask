@@ -45,15 +45,11 @@ queryable.
 
 ## Find your way around
 
-### 1. Sign in
+Authoring needs the **`ask-admin`** role: signing in with **`ask-user`** reaches the Chat but
+not this app. The authentication modes, the role model and what a 401 or a 403 actually means
+are in [Sign in to ASK](../guides/sign-in.md).
 
-Authoring needs the **`ask-admin`** role; signing in with **`ask-user`** reaches the Chat but
-not this app.
-
-→ **[Sign in to ASK](../guides/sign-in.md)**: the three authentication modes, the role model,
-and what a 401 or a 403 actually means.
-
-### 2. The navigation sidebar
+### 1. The navigation sidebar
 
 Once signed in, the left sidebar is your permanent map. It's grouped into five labelled
 sections; the current page is highlighted in Onibex blue.
@@ -74,14 +70,14 @@ sections; the current page is highlighted in Onibex blue.
 > **Tip:** The sidebar footer always shows the **auth chip**, your **email**, your **role**,
 > and a **sign-out** button. Use the sign-out button (the door icon) to end your session.
 
-### 3. The page chrome (PageHeader)
+### 2. The page chrome (PageHeader)
 
 Most tool pages share the same header bar at the top of the content area: a tinted, rounded
 icon, a **title**, an optional one-line **subtitle**, and an optional actions area pinned to
 the right (for buttons like **New data product**). Reading that header tells you at a glance
 which page you're on and what actions it offers.
 
-### 4. The landing page (Workspaces)
+### 3. The landing page (Workspaces)
 
 Signing in takes you to **Workspaces**, the app's home. It's a split screen: a **rail** of
 all workspaces on the left and the selected workspace's business domains on the right. This is

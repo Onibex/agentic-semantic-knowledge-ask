@@ -29,6 +29,10 @@ If you are not already authenticated you land on the Onibex-branded sign-in scre
 
 ![ASK Studio sign-in screen with the Onibex logo, the Agentic Semantic Knowledge title, and the Sign in button](../images/studio-overview-login.png)
 
+The three surfaces share the screen and differ only in the title above the button.
+
+![The ASK Chat sign-in screen: the Onibex logo, the Agentic Semantic Knowledge title and the Sign in button](../images/chat-overview-login.png)
+
 ## 2. Pick the mode your deployment uses
 
 What you see on that screen depends on how the deployment was configured. There are three

@@ -1,5 +1,10 @@
 # Configure the platform first · ASK Setup
 
+ASK Setup holds the technical configuration the rest of the platform runs on: the database it
+queries, the model that writes SQL, identity, SAP and the write-back endpoints.
+
+![ASK Setup Home: the hero, the Setup progress bar, and the seven section cards with the status strip that turns green once each one is configured](../images/setup-home.png)
+
 **Nothing in ASK Studio or ASK Chat works until this section is done.** ASK Setup is the
 prerequisite, not a third product: the platform needs a database to query and a model provider
 before there is anything to author against or answer from.
@@ -54,8 +59,6 @@ sits a grid of **seven cards**, one per configuration section, each with a short
 
 Click any card to open its section. At the very bottom, when a language model is active, an
 **Active model** badge shows the model id in use.
-
-![ASK Setup Home: hero, Setup progress bar, the seven section cards with status strips (the active-model badge appears once an LLM provider is active)](../images/setup-home.png)
 
 > **Tip. The cards are a checklist.** The status strips make the dashboard a live checklist:
 > work top to bottom until the progress bar reads **`7 / 7`**. Status is derived from the server,
