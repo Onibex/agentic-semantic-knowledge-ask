@@ -22,9 +22,10 @@ matching data. This is said here rather than on every page.
 
 ## Start here
 
-**[Getting Started](GETTING_STARTED.md)** walks the platform's one journey,
-**Configure → Author → Publish → Ask**, end to end on a single table. It is the only page
-that needs to be read in a particular order.
+**[Getting Started](GETTING_STARTED.md)** walks the platform's one journey end to end on a
+single table. It is the only page that needs to be read in a particular order.
+
+![The platform's one journey in four steps: Configure in ASK Setup, Author and Publish in ASK Studio, Ask in ASK Chat, with a note that publishing is a gate because the chat only sees Data Products published to the environment it is querying](images/ask-journey.png)
 
 ## Every page, by area
 
@@ -36,6 +37,7 @@ that needs to be read in a particular order.
 - [Why not just point an LLM at the schema?](explain/why-not-raw-schema.md). What a curated semantic layer computes that a schema cannot say
 - [The three chat engines](explain/engines.md). Flash / Precise / Smart: what each computes rather than guesses, and how to choose
 - [ASK specification](../../definition/README.md). The normative Bronze / Silver / Gold contract
+- [Resolution Specification](../../definition/docs/RESOLUTION.md). Which layer the agent reaches for, the two planes, and what a conforming resolver must do
 
 ### [Everyday tasks](guides/README.md)
 - [Sign in to ASK](guides/sign-in.md). The three authentication modes, the role model, and what 401 / 403 mean

@@ -3,7 +3,7 @@
 [Manual](README.md) › [Foundations](README.md#foundations) › **Install and run the platform**
 
 > **How to.** Bring the full ASK Platform up on one machine with Docker and
-> reach each of its user interfaces: **ASK Studio**, the **Chat**, and **ASK Setup**, plus the
+> reach each of its user interfaces: **ASK Studio**, **ASK Chat** and **ASK Setup**, plus the
 > **Keycloak** admin console. This page keeps install depth light; the full per-service
 > procedure is maintained by your platform / ops team.
 >
@@ -28,7 +28,7 @@
   knowledge graph / vectors **and** the encrypted configuration store (database connections and
   LLM providers). **Keycloak** is the identity provider.
 - The three interfaces you use are separate **React single-page apps**, each on **its own host
-  port**: **ASK Studio** (semantic-layer authoring), the **Chat** (natural-language querying), and
+  port**: **ASK Studio** (semantic-layer authoring), **ASK Chat** (natural-language querying), and
   **ASK Setup** (technical configuration). There is no shared login proxy and no path-routing.
   Each app runs its own Keycloak sign-in.
 - The SPAs are static bundles served by Nginx. Their auth posture and host address are **baked
@@ -85,7 +85,7 @@ version control (`.env` is gitignored). Generate secrets with the one-liners the
 | **`SEMANTIC_LAYER_HOST_PATH`** | Yes | Absolute host path to your semantic-layer git repo. It is bind-mounted into `ask-admin-api` at `/app/semantic-layer`. **The directory must contain a `.git`**: without it, YAML commits become silent no-ops and publish-to-environment can't work. |
 | **`AUTH_MODE`** | Yes | Auth backend: `keycloak` (local IdP), `xsuaa` (SAP BTP), or `none` (open dev). **Baked into the SPA bundles at build time**, changing it requires a SPA rebuild (see Step 6). |
 | **`DEV_BYPASS_AUTH`** | Yes | `true` disables authentication (local convenience, honored only when `ENVIRONMENT=local`); `false` enforces `AUTH_MODE`. |
-| **`CHAT_AUTH_MODE`** | No | Overrides the **Chat** SPA's auth independently of `AUTH_MODE` (unset = follows `AUTH_MODE`). Set `dev` on a plain-HTTP remote box: browser PKCE needs a secure context that `http://<ip>` can't provide (`localhost` is exempt). Also baked at build time. |
+| **`CHAT_AUTH_MODE`** | No | Overrides the **ASK Chat** SPA's auth independently of `AUTH_MODE` (unset = follows `AUTH_MODE`). Set `dev` on a plain-HTTP remote box: browser PKCE needs a secure context that `http://<ip>` can't provide (`localhost` is exempt). Also baked at build time. |
 | **`OPENSEARCH_HOST`** | Yes | Host of the OpenSearch cluster. **Env-first** (the store's own connection can't live inside the store it holds). Inside the compose network this is the service name **`opensearch`** (the default), no `settings.json` edit needed. It is shown **read-only** in ASK Setup. |
 | **`OPENSEARCH_PORT`** | Yes | OpenSearch port, default `9200`. |
 | **`OPENSEARCH_USE_SSL`** | Yes | `false` for the single-node dev cluster (its security plugin is disabled). |
@@ -176,7 +176,7 @@ mappings in `docker-compose.yml`:
 | Interface | URL | Served by | Notes |
 |---|---|---|---|
 | **ASK Studio** (React SPA) | `http://localhost:5173` | `ask-studio-spa` (Nginx) | Authoring: workspaces, domains, Data Products, dictionary, history. |
-| **Chat** (React SPA) | `http://localhost:5174` | `ask-chat-spa` (Nginx) | Natural-language querying. |
+| **ASK Chat** (React SPA) | `http://localhost:5174` | `ask-chat-spa` (Nginx) | Natural-language querying. |
 | **ASK Setup** (React SPA) | `http://localhost:5175` | `ask-setup-spa` (Nginx) | Technical configuration: OpenSearch, database connections, LLM providers, identity. |
 | **Keycloak** (admin console) | `http://localhost:8180` | `keycloak` | Identity-provider admin console (only relevant when auth is on). |
 
@@ -222,7 +222,7 @@ through the Keycloak login before landing on the UI.
 | YAML edits save but never appear in history; publish-to-environment fails | The directory `SEMANTIC_LAYER_HOST_PATH` points at has **no `.git`**, or it has no `dev` / `prod` branches yet. On a from-zero deploy the repo isn't auto-initialized: `git init` it, make an initial commit, and ensure the `dev` and `prod` branches exist, publish-to-environment writes to those branches. |
 | `AUTH_MODE` change has no effect in the browser | The SPAs bake `AUTH_MODE` (and `EXTERNAL_HOST`) into their bundle at build time. Rebuild the SPA image, `./redeploy.sh` (or `ONLY=<spa> ./redeploy.sh`), a restart alone reuses the old bundle. |
 | A database connection Test is green but chat can't query it | `EXECUTOR_EXTRAS` differs between `ask-admin-api` (which runs the Test) and `ask-orchestrator` (which runs chat), or the engine's driver isn't baked in. Set the **same** `EXECUTOR_EXTRAS` on both and rebuild. |
-| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port. ASK Studio `5173`, Chat `5174`, ASK Setup `5175`. |
+| Following an older runbook that expects a single shared login port with `/chat` and `/config` sub-paths | That layout belonged to the previous UI generation and its login proxy, both removed. Each React SPA now has its own port. ASK Studio `5173`, ASK Chat `5174`, ASK Setup `5175`. |
 
 > **Warning, first-boot config.** The database connections and provider credentials are **not**
 > set by this install step. Configure them after the stack is up, in **ASK Setup**. Until a
