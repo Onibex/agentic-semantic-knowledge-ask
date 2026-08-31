@@ -37,3 +37,7 @@ the surface is for and the order to learn it in.
 [Inspect a domain as a graph](../docs/ask-studio/04-domain-canvas.md). What the canvas shows.
 [Publish and deploy](../docs/ask-studio/05-publish-deploy.md). Why nothing authored here is
 queryable until that step.
+
+---
+
+[← Back to the platform](../README.md)

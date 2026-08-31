@@ -121,7 +121,7 @@ agent will answer:
 |---|---|
 | **Workspace** | The one you created in Step 3. |
 | **Environment** | **dev**. That is where you published. |
-| **Mode** | **Smart**, the default. |
+| **Mode** | **Smart**. The selector arrives on Precise; Smart is the one to start with. |
 
 Now ask a question about the table you described, in ordinary language. Any language works.
 
