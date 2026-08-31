@@ -30,19 +30,12 @@ Products. See [Configure the platform first · ASK Setup](../ask-setup/README.md
 
 ## Find your way around
 
-### 1. Sign in
+Sign in with your usual credentials. Every user of the realm gets the **`ask-user`** role
+automatically, so asking questions needs no extra setup. The authentication modes, the role
+model and what a 401 or a 403 actually means are in
+[Sign in to ASK](../guides/sign-in.md).
 
-![The ASK Chat sign-in screen: the Onibex logo, the Agentic Semantic Knowledge title and the Sign in button](../images/chat-overview-login.png)
-
-Every user of the realm gets the **`ask-user`** role automatically, so asking questions needs
-no extra setup.
-
-→ **[Sign in to ASK](../guides/sign-in.md)**: the three authentication modes, the role model,
-and what a 401 or a 403 actually means.
-
----
-
-### 2. The navigation sidebar
+### 1. The navigation sidebar
 
 Once signed in, the left sidebar is your permanent map. It is always visible, regardless of
 which page you are on.
@@ -54,7 +47,7 @@ which page you are on.
 | **Home** nav link | The dashboard: orchestrator health, active configuration, and links to Chat and Artifacts. |
 | **Chat** nav link | The conversational interface: ask questions, read answers, browse session history. |
 | **Artifacts** nav link | Generate, view, and download AI-produced business documents. |
-| **Workspace** dropdown | Scopes every query to a specific data product collection. Required before asking anything. |
+| **Workspace** dropdown | Scopes every query to a specific collection of Data Products. Required before asking anything. |
 | **Environment** toggle | Switches between the `dev` (development) and `prod` (production) database. |
 | **Mode** selector | Picks the SQL resolution strategy: **Flash**, **Precise**, or **Smart**. |
 
@@ -63,7 +56,7 @@ survive page refreshes and browser restarts.
 
 ---
 
-### 3. The Home dashboard
+### 2. The Home dashboard
 
 Opening the app takes you to the **Home** page. It shows:
 
@@ -77,13 +70,7 @@ Opening the app takes you to the **Home** page. It shows:
 
 ![ASK Chat home page: health badge, active configuration cards, feature navigation panels, and capabilities strip](../images/chat-overview-home.png)
 
-From here, follow the flows in order:
-
-1. [Scope a question](01-workspace-environment-mode.md). Configure the three sidebar controls before asking anything.
-2. [Using the Chat](02-chat.md). Ask questions and read governed SQL answers.
-3. [Generate a report or brief](03-artifacts.md). Generate and download business documents.
-
----
+Ready to start? Begin with [Scope a question](01-workspace-environment-mode.md).
 
 ---
 
