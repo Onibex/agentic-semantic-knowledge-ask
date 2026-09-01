@@ -32,8 +32,10 @@ Role extraction
 ───────────────
   xsuaa:    `scope` claim — keeps scopes prefixed with `ask.`
              e.g. `ask.ask-orchestrator!t1234.query` → role `query`
-  keycloak: `resource_access.ask-studio-spa.roles[]` array
-            (client id read from KEYCLOAK_CLIENT_ID env var)
+  keycloak: `realm_access.roles[]`, with `realm_roles[]` as the fallback for
+            tokens where the default mapper is off. Client roles
+            (`resource_access.<client>.roles`) are deliberately NOT read:
+            the realm defines none, so that path is always empty.
 
 Dev bypass
 ──────────

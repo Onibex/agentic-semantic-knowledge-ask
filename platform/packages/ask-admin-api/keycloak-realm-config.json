@@ -28,7 +28,7 @@
   },
   "clients": [
     {
-      "clientId": "ask-studio-spa",
+      "clientId": "ask-studio",
       "name": "ASK Studio",
       "description": "Browser-based Single Page Application for the ASK Platform admin console",
       "enabled": true,
@@ -74,14 +74,14 @@
             "access.token.claim": "true",
             "claim.name": "resource_access.${clientId}.roles",
             "jsonType.label": "String",
-            "usermodel.clientRoleMapping.clientId": "ask-studio-spa"
+            "usermodel.clientRoleMapping.clientId": "ask-studio"
           }
         }
       ]
     },
     {
-      "clientId": "ask-chat-spa",
-      "name": "ASK Chat SPA",
+      "clientId": "ask-chat",
+      "name": "ASK Chat",
       "description": "Browser SPA for the ASK Platform chat UI",
       "enabled": true,
       "publicClient": true,
@@ -128,14 +128,14 @@
             "access.token.claim": "true",
             "claim.name": "resource_access.${clientId}.roles",
             "jsonType.label": "String",
-            "usermodel.clientRoleMapping.clientId": "ask-chat-spa"
+            "usermodel.clientRoleMapping.clientId": "ask-chat"
           }
         }
       ]
     },
     {
-      "clientId": "ask-setup-spa",
-      "name": "ASK Setup SPA",
+      "clientId": "ask-setup",
+      "name": "ASK Setup",
       "description": "Browser SPA for the ASK Platform system-configuration UI",
       "enabled": true,
       "publicClient": true,
@@ -182,7 +182,7 @@
             "access.token.claim": "true",
             "claim.name": "resource_access.${clientId}.roles",
             "jsonType.label": "String",
-            "usermodel.clientRoleMapping.clientId": "ask-setup-spa"
+            "usermodel.clientRoleMapping.clientId": "ask-setup"
           }
         }
       ]

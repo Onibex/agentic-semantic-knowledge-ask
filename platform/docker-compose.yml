@@ -14,9 +14,9 @@
 #   - keycloak            (identity provider)         8080 → 8180
 #   - ask-orchestrator    (FastAPI chat backend)      8080 → ${ORCH_HOST_PORT:-8083}
 #   - ask-admin-api       (FastAPI admin backend)     8081 → ${ADMIN_API_HOST_PORT:-8081}
-#   - ask-studio-spa       (React admin UI + Nginx)      80 → 5173
-#   - ask-chat-spa        (React chat  UI + Nginx)      80 → 5174
-#   - ask-setup-spa       (React setup UI + Nginx)      80 → 5175
+#   - ask-studio       (React admin UI + Nginx)      80 → 5173
+#   - ask-chat        (React chat  UI + Nginx)      80 → 5174
+#   - ask-setup       (React setup UI + Nginx)      80 → 5175
 #   - teams-bot           (Teams middleware, opt-in)  8085 → ${TEAM_BOT_HOST_PORT:-8085}
 #   - mcp-server          (SAP write ops,    opt-in)  4004 → ${MCP_HOST_PORT:-4004}
 #
@@ -36,7 +36,7 @@
 #   AUTH_MODE=keycloak DEV_BYPASS_AUTH=false docker-compose up
 #   Admin console: http://localhost:8180  (admin / admin o KC_ADMIN_PASSWORD)
 #   SPA login:     apunta VITE_AUTH_MODE=keycloak VITE_KEYCLOAK_URL=http://localhost:8180
-#                  VITE_KEYCLOAK_REALM=ask-platform en ask-studio-spa/.env.local
+#                  VITE_KEYCLOAK_REALM=ask-platform en ask-studio/.env.local
 #
 # Shared state:
 #   - ./config                 → /app/config (settings.json, aicore_config.json)
@@ -56,7 +56,7 @@
 #   EXTERNAL_HOST=<public-DNS-or-IP> in .env and REBUILD the SPAs (VITE_* are baked
 #   at BUILD time). There is NO separate remote overlay: a remote deploy is THIS
 #   file plus a filled-in .env (see .env.remote.example).
-#   CHAT_AUTH_MODE lets the chat SPA run dev-auth independently of AUTH_MODE
+#   CHAT_AUTH_MODE lets ASK Chat run dev-auth independently of AUTH_MODE
 #   (used where the deployment is served over plain HTTP, since PKCE's
 #   crypto.subtle needs a secure context).
 #
@@ -305,15 +305,15 @@ services:
       retries:  6
       start_period: 30s
 
-  # ─── ASK Studio — admin SPA (React + Nginx) ────────────────────────────
-  ask-studio-spa:
+  # ─── ASK Studio — ASK Studio (React + Nginx) ────────────────────────────
+  ask-studio:
     build:
-      context: ./ask-studio-spa
+      context: ./ask-studio
       dockerfile: Dockerfile
       args:
         # VITE_* se hornean en el bundle en build time (NO en runtime): cambiar
         # AUTH_MODE en .env NO afecta al SPA hasta que se REBUILDEA la imagen
-        # (`docker compose build ask-studio-spa` o `up --build`).
+        # (`docker compose build ask-studio` o `up --build`).
         # VITE_KEYCLOAK_URL debe ser la URL que alcanza el BROWSER (no la red
         # Docker interna) — por eso apunta a localhost:8180 y no a keycloak:8080.
         VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
@@ -323,8 +323,8 @@ services:
         VITE_SETUP_SPA_URL:  "http://${EXTERNAL_HOST:-localhost}:5175"
     mem_limit: 64m
     mem_reservation: 20m
-    image: ask-studio-spa:${APP_VERSION:-latest}
-    container_name: ask-studio-spa
+    image: ask-studio:${APP_VERSION:-latest}
+    container_name: ask-studio
     ports:
       - "5173:80"   # browser: http://localhost:5173
     networks: [ ask-net ]
@@ -344,13 +344,13 @@ services:
       retries:  3
       start_period: 10s
 
-  # ─── ASK Chat SPA (React + Nginx) ─────────────────────────────────────
-  ask-chat-spa:
+  # ─── ASK Chat (React + Nginx) ─────────────────────────────────────
+  ask-chat:
     build:
-      context: ./ask-chat-spa
+      context: ./ask-chat
       dockerfile: Dockerfile
       args:
-        # Chat SPA auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
+        # ASK Chat auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
         # can run dev-auth on a plain-HTTP host (PKCE's crypto.subtle needs a secure
         # context) while admin/setup stay on keycloak. Falls back to AUTH_MODE,
         # then keycloak. Set CHAT_AUTH_MODE=dev in .env on a plain-HTTP host.
@@ -359,8 +359,8 @@ services:
         VITE_KEYCLOAK_REALM: ask-platform
     mem_limit: 64m
     mem_reservation: 20m
-    image: ask-chat-spa:${APP_VERSION:-latest}
-    container_name: ask-chat-spa
+    image: ask-chat:${APP_VERSION:-latest}
+    container_name: ask-chat
     ports:
       - "5174:80"   # browser: http://<host>:5174
     networks: [ ask-net ]
@@ -375,12 +375,12 @@ services:
       retries:  3
       start_period: 10s
 
-  # -- ASK Setup/Config SPA (React + Nginx) --------------------------------
-  # Client-side Keycloak auth (VITE_AUTH_MODE) like the admin SPA;
+  # -- ASK Setup (React + Nginx) --------------------------------
+  # Client-side Keycloak auth (VITE_AUTH_MODE) like ASK Studio;
   # nginx proxies /api/admin -> admin-api.
-  ask-setup-spa:
+  ask-setup:
     build:
-      context: ./ask-setup-spa
+      context: ./ask-setup
       dockerfile: Dockerfile
       args:
         VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
@@ -388,8 +388,8 @@ services:
         VITE_KEYCLOAK_REALM: ask-platform
     mem_limit: 64m
     mem_reservation: 20m
-    image: ask-setup-spa:${APP_VERSION:-latest}
-    container_name: ask-setup-spa
+    image: ask-setup:${APP_VERSION:-latest}
+    container_name: ask-setup
     ports:
       - "5175:80"   # browser: http://<host>:5175
     networks: [ ask-net ]

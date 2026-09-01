@@ -14,6 +14,10 @@ queryable.
 - **ASK Studio owns the semantic layer.** Workspaces, business domains, Data Products.
   Databases, model providers and MCP are configured once in
   [ASK Setup](../ask-setup/README.md) before any of this can be published or queried.
+- **What you author here is written against a contract.** Which keys a Data Product may
+  declare, what each layer means and what the agent is allowed to do with them is the
+  [Onibex Agentic Semantic Knowledge Definition](../../../definition/README.md). ASK Studio
+  is the tool; that is the rulebook, and every page below assumes it.
 - The whole platform follows one journey: **Configure → Author → Publish → Ask**. ASK Studio
   covers the **Author** and **Publish** steps.
 

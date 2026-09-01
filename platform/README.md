@@ -57,7 +57,7 @@ order, every port, the health checks and what to do when a service will not star
 | | |
 |---|---|
 | `docker-compose.yml` | The whole stack, one command. Local and server deploys differ only in `.env` |
-| [`ask-setup-spa/`](ask-setup-spa/README.md) · [`ask-studio-spa/`](ask-studio-spa/README.md) · [`ask-chat-spa/`](ask-chat-spa/README.md) | The three React SPAs, each served by its own Nginx |
+| [`ask-setup/`](ask-setup/README.md) · [`ask-studio/`](ask-studio/README.md) · [`ask-chat/`](ask-chat/README.md) | The three React SPAs, each served by its own Nginx |
 | [`packages/`](packages/README.md) | The backend: typed Python packages with boundaries the build enforces |
 | [`services/`](services/README.md) | Runtime services that are not Python packages, currently the MCP server for SAP write operations |
 | [`docs/`](docs/README.md) | The manual |

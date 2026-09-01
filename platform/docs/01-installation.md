@@ -120,8 +120,8 @@ them up **in dependency order**: the backing services first, then the backends, 
    starts alongside it.
 2. **`ask-orchestrator`** and **`ask-admin-api`**, the FastAPI backends; each waits for
    OpenSearch to report healthy.
-3. **`ask-studio-spa`** (waits on the admin API), **`ask-chat-spa`** (waits on the orchestrator
-   and the admin API), and **`ask-setup-spa`** (waits on the admin API), the three React UIs.
+3. **`ask-studio`** (waits on the admin API), **`ask-chat`** (waits on the orchestrator
+   and the admin API), and **`ask-setup`** (waits on the admin API), the three React UIs.
    They are static Nginx bundles and talk to Keycloak from the **browser**, so they do **not**
    gate on Keycloak's healthcheck.
 4. **`mcp-server`**, the internal endpoint for SAP write actions (port `4004`). **`teams-bot`**
@@ -153,9 +153,9 @@ opensearch         opensearch         Up (healthy)    0.0.0.0:9200->9200/tcp
 keycloak           keycloak           Up (healthy)    0.0.0.0:8180->8080/tcp
 ask-orchestrator   ask-orchestrator   Up (healthy)    0.0.0.0:8083->8080/tcp
 ask-admin-api      ask-admin-api      Up (healthy)    0.0.0.0:8081->8081/tcp
-ask-studio-spa      ask-studio-spa      Up (healthy)    0.0.0.0:5173->80/tcp
-ask-chat-spa       ask-chat-spa       Up (healthy)    0.0.0.0:5174->80/tcp
-ask-setup-spa      ask-setup-spa      Up (healthy)    0.0.0.0:5175->80/tcp
+ask-studio      ask-studio      Up (healthy)    0.0.0.0:5173->80/tcp
+ask-chat       ask-chat       Up (healthy)    0.0.0.0:5174->80/tcp
+ask-setup      ask-setup      Up (healthy)    0.0.0.0:5175->80/tcp
 ```
 
 (`mcp-server` and `teams-bot` also appear; they are opt-in and stay idle until their
@@ -175,9 +175,9 @@ mappings in `docker-compose.yml`:
 
 | Interface | URL | Served by | Notes |
 |---|---|---|---|
-| **ASK Studio** (React SPA) | `http://localhost:5173` | `ask-studio-spa` (Nginx) | Authoring: workspaces, domains, Data Products, dictionary, history. |
-| **ASK Chat** (React SPA) | `http://localhost:5174` | `ask-chat-spa` (Nginx) | Natural-language querying. |
-| **ASK Setup** (React SPA) | `http://localhost:5175` | `ask-setup-spa` (Nginx) | Technical configuration: OpenSearch, database connections, LLM providers, identity. |
+| **ASK Studio** (React SPA) | `http://localhost:5173` | `ask-studio` (Nginx) | Authoring: workspaces, domains, Data Products, dictionary, history. |
+| **ASK Chat** (React SPA) | `http://localhost:5174` | `ask-chat` (Nginx) | Natural-language querying. |
+| **ASK Setup** (React SPA) | `http://localhost:5175` | `ask-setup` (Nginx) | Technical configuration: OpenSearch, database connections, LLM providers, identity. |
 | **Keycloak** (admin console) | `http://localhost:8180` | `keycloak` | Identity-provider admin console (only relevant when auth is on). |
 
 Each SPA runs its own Keycloak sign-in. There is no shared login proxy routing several apps
@@ -207,7 +207,7 @@ through the Keycloak login before landing on the UI.
   **not** touch volumes, for a destructive wipe run `docker compose down -v` yourself.
 
 > **Tip: rebuild one service.** To rebuild just the SPA whose config you changed, scope the
-> script: `ONLY=ask-setup-spa ./redeploy.sh` (or `ask-studio-spa` / `ask-chat-spa`). This is the
+> script: `ONLY=ask-setup ./redeploy.sh` (or `ask-studio` / `ask-chat`). This is the
 > step that makes an `AUTH_MODE` or `EXTERNAL_HOST` change take effect in the browser.
 
 ---

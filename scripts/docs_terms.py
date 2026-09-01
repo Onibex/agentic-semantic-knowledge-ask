@@ -96,7 +96,11 @@ RULES: list[tuple[str, re.Pattern[str], str, tuple[str, ...]]] = [
         # Not "console": Keycloak's own screen is the admin console, and so is
         # OpenSearch's. Borrowing their names for our app is the drift; describing
         # theirs accurately is not.
-        re.compile(r"\b(?:the )?admin (?:app|panel|UI)\b", re.IGNORECASE),
+        #
+        # "SPA" is here because dropping the -spa directory suffix turned up
+        # "the admin SPA" in the third-party notices and two runbooks: the old
+        # product name wearing the generic noun. A bare "SPA" is still fine.
+        re.compile(r"\b(?:the )?admin (?:app|panel|UI|SPA)\b", re.IGNORECASE),
         "ASK Studio",
         (),
     ),

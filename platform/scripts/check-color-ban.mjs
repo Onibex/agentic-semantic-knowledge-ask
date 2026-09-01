@@ -29,7 +29,7 @@ import { join, dirname, extname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const APPS = ['ask-studio-spa', 'ask-chat-spa', 'ask-setup-spa']
+const APPS = ['ask-studio', 'ask-chat', 'ask-setup']
 const SCAN_EXT = new Set(['.ts', '.tsx', '.css'])
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.vite'])
 // The canonical design-token files legitimately carry raw colors; they are the

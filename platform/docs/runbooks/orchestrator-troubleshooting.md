@@ -49,7 +49,7 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
 ### 1. `/v1/query` returns 401 "Missing bearer token"
 
 - **Cause:** request didn't include `Authorization: Bearer <jwt>`.
-- **In the chat SPA:** the browser attaches the access token it obtained from the
+- **In ASK Chat:** the browser attaches the access token it obtained from the
   identity provider; the SPA's Nginx then proxies `/api/orchestrator/*` to the
   orchestrator **preserving that header**. A 401 therefore means either the
   browser session has no token (log in again) or a proxy in front of the SPA is
@@ -59,10 +59,10 @@ and use `kubectl port-forward`, never re-deploy with the flag flipped.
 
 ### Validating JWT forwarding end-to-end
 
-Manual procedure, run after deploying the orchestrator + chat SPA:
+Manual procedure, run after deploying the orchestrator + ASK Chat:
 
 1. Deploy: `kubectl apply -f deploy/ask-orchestrator-deploy/`
-2. Open the chat SPA and log in.
+2. Open ASK Chat and log in.
 3. Ask a Precise/Smart question through the UI.
 4. From a separate shell, tail orchestrator logs:
    ```
@@ -107,12 +107,12 @@ Manual procedure, run after deploying the orchestrator + chat SPA:
   Verify `kubectl describe pod` shows the volume bound and the file exists
   inside the container (`kubectl exec ... -- ls /app/config/`).
 
-### 5. Chat SPA shows "Orchestrator unreachable"
+### 5. ASK Chat shows "Orchestrator unreachable"
 
 - The SPA's Nginx couldn't reach the orchestrator it proxies to.
 - Check:
   - `kubectl get svc -n onibex-ask ask-orchestrator-service`
-  - `kubectl exec deployment/ask-chat-spa -- wget -qO- http://ask-orchestrator-service/v1/health`
+  - `kubectl exec deployment/ask-chat -- wget -qO- http://ask-orchestrator-service/v1/health`
   - Network policies between pods.
 
 ---

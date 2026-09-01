@@ -75,23 +75,23 @@ jobs:
         working-directory: platform
         run: pytest tests/boundary/ -q
 
-  spa:
-    name: ${{ matrix.spa }} typecheck + build
+  frontend:
+    name: ${{ matrix.app }} typecheck + build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        spa: [ask-studio-spa, ask-chat-spa, ask-setup-spa]
+        app: [ask-studio, ask-chat, ask-setup]
     defaults:
       run:
-        working-directory: platform/${{ matrix.spa }}
+        working-directory: platform/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: platform/${{ matrix.spa }}/package-lock.json
+          cache-dependency-path: platform/${{ matrix.app }}/package-lock.json
       - name: Install
         run: npm ci
       - name: Typecheck
