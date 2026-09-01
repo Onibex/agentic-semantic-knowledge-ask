@@ -32,7 +32,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
         └────────┬─────────┘                      │            │
                  │ HTTP                      HTTP │            │ HTTP
         ┌────────┴─────────┐          ┌───────────┴────┐  ┌────┴───────────┐
-        │ ask-chat     │          │ ask-studio  │  │ ask-setup  │
+        │ ask-chat         │          │ ask-studio     │  │ ask-setup      │
         │ React + Nginx    │          │ React + Nginx  │  │ React + Nginx  │
         │ :5174            │          │ :5173          │  │ :5175          │
         │ chat + artifacts │          │ semantic layer │  │ technical setup│
@@ -40,7 +40,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
              (ASK Chat also calls the admin API for the workspace list)
 ```
 
-**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. **ASK Studio** is the write path for Workspaces / Organization / Data Products / AI Enrichment; the **ASK Setup** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
+**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. **ASK Studio** is the write path for Workspaces / Organization / Data Products / AI Enrichment; **ASK Setup** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
 
 | Service | Module | Port | What it does |
 |---|---|---|---|
@@ -72,7 +72,7 @@ Every command below runs from `platform/`, so set this once per shell and the
 rest copy-pastes unchanged:
 
 ```powershell
-# The platform/ directory of YOUR checkout — adjust to wherever you cloned it.
+# The platform/ directory of YOUR checkout: adjust to wherever you cloned it.
 $PLATFORM = "C:\src\agentic-semantic-knowledge-ask\platform"
 ```
 
@@ -279,7 +279,7 @@ cd $PLATFORM
 $env:ENVIRONMENT = "local"
 $env:DEV_BYPASS_AUTH = "true"
 
-# Required — Fernet master key. The orchestrator aborts at boot if missing/malformed.
+# Required: Fernet master key. The orchestrator aborts at boot if missing/malformed.
 $env:ONIBEX_ENCRYPTION_KEY = "<paste-the-generated-value-here>"
 
 # Windows-safe stdout. Without this, prints with emojis crash on cp1252.
@@ -312,7 +312,7 @@ $env:DEV_BYPASS_AUTH = "true"
 $env:ONIBEX_ENCRYPTION_KEY = "<paste-the-generated-value-here>"
 $env:PYTHONIOENCODING = "utf-8"
 
-# Required — semantic-layer repo (admin-api fail-closes if either is empty).
+# Required: semantic-layer repo (admin-api fail-closes if either is empty).
 $env:REPO_ROOT      = "$SEMANTIC_LAYER"
 $env:WORKSPACE_PATH = "$SEMANTIC_LAYER"
 
@@ -344,8 +344,8 @@ npm install
 
 # Dev server with HMR.
 # The Vite proxy rewrites:
-#   /api/orchestrator/* → http://localhost:8080/v1/*   (orchestrator — required)
-#   /api/admin/*        → http://localhost:8081/v1/admin/*  (admin-api — needed for workspace list)
+#   /api/orchestrator/* → http://localhost:8080/v1/*   (orchestrator, required)
+#   /api/admin/*        → http://localhost:8081/v1/admin/*  (admin-api, needed for workspace list)
 npm run dev
 ```
 
@@ -592,7 +592,7 @@ If you'd rather not manage a venv and five terminals, the same topology runs in 
 ```powershell
 cd $PLATFORM
 docker compose up -d
-# Browser: http://localhost:5174 (chat) — http://localhost:5173 (admin) — http://localhost:5175 (setup)
+# Browser: http://localhost:5174 (chat) · http://localhost:5173 (studio) · http://localhost:5175 (setup)
 docker compose logs -f ask-orchestrator    # tail any service
 docker compose down                         # tear it all down
 ```
@@ -678,10 +678,10 @@ for pkg in ask-llm-gateway ask-knowledge-graph ask-intent-resolution \
   uv pip install -e "packages/$pkg"
 done
 
-# Encrypted-secrets master key — required by both backends (generate once, save somewhere safe).
+# Encrypted-secrets master key: required by both backends (generate once, save somewhere safe).
 export ONIBEX_ENCRYPTION_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
 
-# Semantic-layer repo paths — required by admin-api (boot fails closed if empty).
+# Semantic-layer repo paths: required by admin-api (boot fails closed if empty).
 export REPO_ROOT="$SEMANTIC_LAYER"
 export WORKSPACE_PATH="$SEMANTIC_LAYER"
 

@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | **Who** | Administrator / data steward |
-| **Time** | 2–10 minutes depending on the mode |
+| **Time** | 2 to 10 minutes depending on the mode |
 | **Prerequisites** | Signed in to **ASK Studio**; a provider configured (see [ASK Setup](../ask-setup/README.md)) for the AI-assisted modes. |
 | **You'll end with** | One or more Data Products in **In Review** status, ready to edit, organize, and publish. |
 
@@ -73,9 +73,9 @@ into the workspace **In Review**; publish them later from the Deployment panel.
 
 **Use when:** you have SQL DDL and want it mapped into ASK YAML for you.
 
-The importer is **dialect-tolerant across all nine supported engines** (PostgreSQL, SAP HANA,
-ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft
-Fabric) and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VIEW`**, as well
+The importer is **dialect-tolerant across all ten supported engines** (PostgreSQL, SAP HANA,
+ClickHouse, IBM Db2, Snowflake, Databricks, BigQuery, SQL Server, Microsoft Fabric, Presto)
+and accepts **`CREATE TABLE`, `CREATE VIEW`, and `CREATE MATERIALIZED VIEW`**, as well
 as Snowflake **`DYNAMIC` / `TRANSIENT` / `ICEBERG`** tables. It can map **Silver and Gold** Data
 Products too, not just Bronze, with guardrails: it will not fabricate joins from a bare
 `CREATE TABLE`, and it never guesses a layer (see the note below).

@@ -115,7 +115,8 @@ Behavior of the plan:
   They're summarized as **"+ K not eligible (will be skipped)"** underneath.
 - When publishing to **prod**, if some members still need a dev publish first, the skipped line
   adds an amber note **", some need a dev publish first"**.
-- If nothing needs publishing, the dialog says *"Nothing to publish. Everything is up to date."*
+- If nothing needs publishing, the dialog says *"Nothing to publish, everything is up to date."*
+  On **prod** the verb changes: *"Nothing to promote, everything is up to date."*
 
 Click **Publish N → dev** (or **→ prod**) to start.
 

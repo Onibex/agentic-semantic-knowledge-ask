@@ -37,7 +37,7 @@ fixes need the person who set up the platform.
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
-| **"No workspaces configured"** in chat | No workspace exists yet, or none is published. | *Administrator:* create one in **ASK Studio → Workspaces** and publish a business domain into the environment. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
+| **The workspace picker in the chat is empty** | No workspace exists yet, or none is published. | *Administrator:* create one in **ASK Studio → Workspaces** and publish a business domain into the environment. See [Create workspaces and business domains](../ask-studio/01-workspaces-domains.md). |
 | Chat returns **empty results** | Nothing is published to the selected environment. | Switch the environment selector to **dev**; if still empty, ask the administrator to publish the business domain (e.g. *Production Orders*) to that environment. |
 | **`prod` returns nothing, `dev` works** | Data Products are published to **dev** only. | *Administrator:* promote them to **prod** in ASK Studio, the prod publish becomes available only once **dev is current** (the dev → prod gate). |
 | Answer uses the **wrong column** (e.g. picks scrap instead of yield) | Missing synonyms, or an ambiguous business term. | *Administrator:* enrich the Data Product's field descriptions/synonyms, or add the term to the **semantic dictionary** (e.g. map *good quantity / yield* → `AFRU.LMNGA`). |

@@ -172,8 +172,8 @@
 Business Domain, and Data Product come to life.
 → **[Add Data Products](../ask-studio/02-add-data-products.md)**. Bronze / Silver / Gold and the
 four creation modes.
-→ **[ASK specification](../../../definition/README.md)**, the authoritative rules
-behind these definitions (layers, field roles, relationships, Gold), incl. the
+→ **[Onibex Agentic Semantic Knowledge Definition](../../../definition/README.md)**,
+the authoritative rules behind these definitions (layers, field roles, relationships, Gold), incl. the
 [Bronze](../../../definition/docs/BRONZE_LAYER.md) / [Silver](../../../definition/docs/SILVER_LAYER.md) / [Gold](../../../definition/docs/GOLD_LAYER.md) layer specs.
 
 ---

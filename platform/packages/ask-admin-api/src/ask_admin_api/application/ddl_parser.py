@@ -16,10 +16,10 @@ code, byte-exact, and the model is left to annotate only what the DDL cannot
 say (business names, descriptions, field roles). See ``ddl_skeleton.py`` for
 the assembly and ``ddl_import_service.py`` for the orchestration.
 
-Scope: ``CREATE TABLE`` statements with a typed column list, across the engines
-the DDL + AI feature declares (PostgreSQL, SAP HANA, ClickHouse, Db2, Snowflake,
-Databricks, BigQuery, SQL Server, Fabric — docs/ask-studio/02-add-data-products.md
-Mode C). Views / CTAS / column-less definitions parse to a relation with
+Scope: ``CREATE TABLE`` statements with a typed column list. The parser does not
+branch on dialect: it tokenises the statement and accommodates the few spellings
+that differ (ClickHouse ``ORDER BY`` as a key declaration, BigQuery's whole-path
+backticks), so any engine's dump parses. Views / CTAS / column-less definitions parse to a relation with
 ``columns == []`` — the caller falls back to the full-LLM path for those.
 
 Identifier casing: names are kept EXACTLY as written (quotes stripped). Real

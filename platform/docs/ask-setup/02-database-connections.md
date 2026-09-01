@@ -88,6 +88,7 @@ Pick the engine from the grid. The platform supports nine:
 | **BigQuery** | Project ID, Credentials path (ADC), Service account key (JSON), Dataset, Location, Max bytes billed |
 | **SQL Server** | Host, Port, Database, User, Password, ODBC driver, Encrypt, Trust server certificate |
 | **Microsoft Fabric** | SQL endpoint, Database, Tenant ID, Client ID, Client secret, ODBC driver |
+| **Presto** | Host, Port, Catalog, Schema, User, Password, HTTP scheme |
 
 ### Step 2: Connection details
 

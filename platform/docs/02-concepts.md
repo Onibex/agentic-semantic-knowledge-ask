@@ -287,8 +287,8 @@ flowchart TD
 create the containers your data lives in.
 → **[Add Data Products](ask-studio/02-add-data-products.md)**, create the
 Data Products the agent maps questions to.
-→ **[ASK specification](../../definition/README.md)**, the Bronze / Silver / Gold layer definitions and the
-authoring rules behind governed SQL.
+→ **[Onibex Agentic Semantic Knowledge Definition](../../definition/README.md)**,
+the Bronze / Silver / Gold layer definitions and the authoring rules behind governed SQL.
 → **[The three chat engines](explain/engines.md)**, what each one computes rather than
 guesses, and how to choose between them.
 

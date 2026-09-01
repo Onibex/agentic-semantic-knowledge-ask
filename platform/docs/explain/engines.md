@@ -127,8 +127,8 @@ The engines are interchangeable from the chat's point of view because they share
 contract downstream:
 
 - **The same database and environment.** Any supported SQL engine. PostgreSQL, SAP HANA,
-  ClickHouse, IBM Db2, Snowflake, Databricks, Google BigQuery, SQL Server, Microsoft Fabric,
-  and the published `dev` or `prod` environment. The active connection is chosen in ASK Setup,
+  ClickHouse, IBM Db2, Snowflake, Databricks, Google BigQuery, SQL Server, Microsoft Fabric
+  and Presto, and the published `dev` or `prod` environment. The active connection is chosen in ASK Setup,
   never in the chat.
 - **The same answer shape.** Generated SQL, a results table, a written answer, and an automatic
   chart when the result has more than one row.

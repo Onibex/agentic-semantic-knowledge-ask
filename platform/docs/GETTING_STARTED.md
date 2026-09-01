@@ -138,7 +138,7 @@ did not invent a table name.
 
 Two failures account for most first runs:
 
-- **"No workspaces configured"** in the Chat, the workspace exists but nothing is published
+- **The workspace picker in ASK Chat is empty**, so the workspace exists but nothing is published
   to the environment you selected. Go back to Step 5, or switch the environment to `dev`.
 - **An answer that finds no data.** The Data Product is published, but the underlying table
   is empty or the connection points at the wrong schema. Check the connection in ASK Setup.
@@ -153,7 +153,7 @@ You now have the whole loop working on one table. Where to go depends on what yo
 |---|---|
 | Understand what just happened | [Concepts and architecture](02-concepts.md) |
 | Know why the answer is trustworthy | [The three chat engines](explain/engines.md) |
-| Author a real semantic layer | [The ASK specification](../../definition/README.md) |
+| Author a real semantic layer | [Onibex Agentic Semantic Knowledge Definition](../../definition/README.md) |
 | Look up a term | [Glossary](reference/glossary.md) |
 
 ---
