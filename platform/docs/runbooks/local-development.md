@@ -32,15 +32,15 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
         └────────┬─────────┘                      │            │
                  │ HTTP                      HTTP │            │ HTTP
         ┌────────┴─────────┐          ┌───────────┴────┐  ┌────┴───────────┐
-        │ ask-chat-spa     │          │ ask-studio-spa  │  │ ask-setup-spa  │
+        │ ask-chat     │          │ ask-studio  │  │ ask-setup  │
         │ React + Nginx    │          │ React + Nginx  │  │ React + Nginx  │
         │ :5174            │          │ :5173          │  │ :5175          │
         │ chat + artifacts │          │ semantic layer │  │ technical setup│
         └──────────────────┘          └────────────────┘  └────────────────┘
-             (the chat SPA also calls the admin API for the workspace list)
+             (ASK Chat also calls the admin API for the workspace list)
 ```
 
-**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. The **Studio SPA** is the write path for Workspaces / Organization / Data Products / AI Enrichment; the **setup SPA** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
+**10 typed packages** live under `packages/` (installed editable into the venv); all pipeline code lives there and the SPAs are thin REST clients. **ASK Studio** is the write path for Workspaces / Organization / Data Products / AI Enrichment; the **ASK Setup** owns the technical configuration plane (DB connections, LLM + embedder providers, identity provider, encrypted secrets).
 
 | Service | Module | Port | What it does |
 |---|---|---|---|
@@ -48,9 +48,9 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 | `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `VITE_AUTH_MODE=keycloak`. Skip in pure dev. |
 | `ask-orchestrator` | `ask_orchestrator.main:app` | 8080 | Chat backend (intent → SQL → exec) |
 | `ask-admin-api` | `ask_admin_api.main:app` | 8081 | Admin backend (dictionary, KG ingestion, embeddings, secrets, prompts, enrichment, workspaces, organization) |
-| `ask-studio-spa` | `ask-studio-spa/` (Vite dev or Nginx) | 5173 | ASK Studio. Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
-| `ask-chat-spa` | `ask-chat-spa/` (Vite dev or Nginx) | 5174 | React chat UI. Chat (streaming), Artifacts gallery + creator |
-| `ask-setup-spa` | `ask-setup-spa/` (Vite dev or Nginx) | 5175 | React setup UI: database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
+| `ask-studio` | `ask-studio/` (Vite dev or Nginx) | 5173 | ASK Studio. Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
+| `ask-chat` | `ask-chat/` (Vite dev or Nginx) | 5174 | React chat UI. Chat (streaming), Artifacts gallery + creator |
+| `ask-setup` | `ask-setup/` (Vite dev or Nginx) | 5175 | React setup UI: database connections, LLM/embedder providers, identity provider, SAP connection, MCP, contracts |
 
 ---
 
@@ -328,16 +328,16 @@ curl.exe http://127.0.0.1:8081/v1/health
 
 OpenAPI docs: **http://127.0.0.1:8081/docs**
 
-The admin-api owns dictionary CRUD, YAML ingestion, embeddings management, and the internal `/v1/internal/reload` endpoint the setup SPA triggers after every configuration save.
+The admin-api owns dictionary CRUD, YAML ingestion, embeddings management, and the internal `/v1/internal/reload` endpoint ASK Setup triggers after every configuration save.
 
 ---
 
-## 4. Boot the Chat SPA (`ask-chat-spa`, :5174)
+## 4. Boot ASK Chat (`ask-chat`, :5174)
 
 **Terminal 3:**
 
 ```powershell
-cd $PLATFORM\ask-chat-spa
+cd $PLATFORM\ask-chat
 
 # One-time install of npm deps.
 npm install
@@ -355,7 +355,7 @@ npm run dev
 - Orchestrator (Terminal 1, port 8080) **must** be running, the chat page and artifact generator both call `/v1/query` and `/v1/artifact`.
 - Admin API (Terminal 2, port 8081) is needed for the workspace dropdown in the sidebar (fetches `/v1/admin/workspaces`). The app still loads without it, but workspace selection will fail.
 
-**No `.env.local` needed** in pure dev, the Vite proxy handles all API routing and there is no auth mode to configure for the chat SPA.
+**No `.env.local` needed** in pure dev, the Vite proxy handles all API routing and there is no auth mode to configure for ASK Chat.
 
 Pages available:
 
@@ -382,12 +382,12 @@ npm run preview   # → http://localhost:4173
 
 ---
 
-## 5. Boot the Admin SPA (`ask-studio-spa`, :5173)
+## 5. Boot ASK Studio (`ask-studio`, :5173)
 
 **Terminal 4:**
 
 ```powershell
-cd $PLATFORM\ask-studio-spa
+cd $PLATFORM\ask-studio
 
 # One-time install of npm deps (only the first time).
 npm install --legacy-peer-deps
@@ -399,7 +399,7 @@ npm run dev
 
 → Browser: **http://localhost:5173**
 
-**Auth mode:** default `dev` (no Keycloak). Set `VITE_AUTH_MODE=keycloak` in `ask-studio-spa/.env.local` if you want the real login flow + a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180).
+**Auth mode:** default `dev` (no Keycloak). Set `VITE_AUTH_MODE=keycloak` in `ask-studio/.env.local` if you want the real login flow + a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180).
 
 Pages available:
 
@@ -416,16 +416,16 @@ Pages available:
 | `/admin/docs` | Documentation ingestion into the RAG index |
 | `/admin/setup` | Read-only effective config (LLM / Embedder / OpenSearch) |
 
-> Regenerating the OpenAPI-typed client: `cd ask-studio-spa && npm run generate-api:file`, reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
+> Regenerating the OpenAPI-typed client: `cd ask-studio && npm run generate-api:file`, reads `http://127.0.0.1:8081/openapi.json` and writes `src/api/generated.ts`.
 
 ---
 
-## 6. Boot the Setup SPA (`ask-setup-spa`, :5175)
+## 6. Boot ASK Setup (`ask-setup`, :5175)
 
 **Terminal 5:**
 
 ```powershell
-cd $PLATFORM\ask-setup-spa
+cd $PLATFORM\ask-setup
 
 # One-time install of npm deps (only the first time).
 npm install
@@ -464,9 +464,9 @@ Pages available:
 | Admin API | http://127.0.0.1:8081 | 2 |
 | Admin OpenAPI | http://127.0.0.1:8081/docs | 2 |
 | Admin health | http://127.0.0.1:8081/v1/health | 2 |
-| Chat SPA | http://localhost:5174 | 3 |
-| Admin SPA | http://localhost:5173 | 4 |
-| Setup SPA | http://localhost:5175 | 5 |
+| ASK Chat | http://localhost:5174 | 3 |
+| ASK Studio | http://localhost:5173 | 4 |
+| ASK Setup | http://localhost:5175 | 5 |
 
 ---
 
@@ -540,7 +540,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | `ENCRYPTION_KEY_MISSING: set ONIBEX_ENCRYPTION_KEY in the environment` at boot | Set `$env:ONIBEX_ENCRYPTION_KEY` BEFORE uvicorn. Generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. The same key MUST be exported in every terminal that boots orchestrator or admin-api. They share the encrypted store. |
 | `ENCRYPTION_KEY_INVALID_FORMAT` at boot | The value isn't a Fernet key (32-byte urlsafe-b64). Regenerate with the one-liner above and re-export. |
 | `ENCRYPTION_KEY_MISMATCH` on `/v1/query` | The OpenSearch doc was encrypted with a different master key than the current one. Either restore the previous key, or wipe the `ask-system-settings-v1` index and re-enter credentials via the SPA. |
-| `SEMANTIC_LAYER_PATHS_MISSING` at admin-api boot | Set `REPO_ROOT` and `WORKSPACE_PATH` in the admin-api terminal (typically the same value. See §Pre-requisites → Semantic-layer repo). |
+| `SEMANTIC_LAYER_PATHS_MISSING` at admin-api boot | Set `REPO_ROOT` and `WORKSPACE_PATH` in the admin-api terminal (typically the same value. See [Semantic-layer repo](#semantic-layer-repo-required-for-ask-admin-api)). |
 | `SEMANTIC_LAYER_PATHS_INVALID` at admin-api boot | The path is set but doesn't exist or isn't a directory. Verify it on disk; remember forward slashes are fine on Windows. |
 | `SEMANTIC_LAYER_NO_GIT` warning + commits look no-op | `git init` inside the directory `REPO_ROOT` points to. Until then YAML writes still persist to disk but no history is recorded. |
 | Docker fails with `SEMANTIC_LAYER_HOST_PATH variable is not set` | Add `SEMANTIC_LAYER_HOST_PATH=$SEMANTIC_LAYER` to host `.env` before `docker compose up`. |
@@ -548,16 +548,16 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | `Activate.ps1 cannot be loaded because running scripts is disabled` | One-time: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` |
 | `lint-imports.exe` not found | Make sure the venv is active (`.\venv\Scripts\Activate.ps1`) |
 | `config/settings.json not found` on uvicorn boot | Run `uvicorn` from **`platform/`**, NOT from `packages\<pkg>\`. Same applies to the integration tests inside each package. |
-| Chat hangs waiting for a response | Verify the orchestrator (T1) is up at `:8080` and that the chat SPA's Vite proxy is running |
+| Chat hangs waiting for a response | Verify the orchestrator (T1) is up at `:8080` and that ASK Chat's Vite proxy is running |
 | OpenSearch connection refused | `Test-NetConnection localhost -Port 9200` to confirm it's listening |
 | Setup save doesn't refresh the orchestrator's cached config | The admin-api broadcasts `/v1/internal/reload`; make sure `ASK_ORCHESTRATOR_URL` is exported in the **admin-api** terminal so the broadcast reaches the chat backend |
 | Port already in use after killed run | Use the `Get-NetTCPConnection` one-liner above to free 8080/8081/5173/5174/5175 |
 | SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2 + that `VITE_API_BASE_URL` (if set in `.env.local`) matches `http://127.0.0.1:8081` |
-| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio-spa/.env.local` |
-| Chat SPA (`ask-chat-spa`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for the chat SPA only works while `npm run dev` is running. The proxy is not active in the production build. |
-| Chat SPA workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via ASK Studio at `:5173`. |
+| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio/.env.local` |
+| ASK Chat (`ask-chat`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for ASK Chat only works while `npm run dev` is running. The proxy is not active in the production build. |
+| ASK Chat workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via ASK Studio at `:5173`. |
 | Port 5174 already in use | `Get-NetTCPConnection -LocalPort 5174 -State Listen \| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }` |
-| `npm install` fails in `ask-chat-spa` with peer-dep errors | Run `npm install --legacy-peer-deps` instead of plain `npm install`. |
+| `npm install` fails in `ask-chat` with peer-dep errors | Run `npm install --legacy-peer-deps` instead of plain `npm install`. |
 | `&&` doesn't work in PowerShell 5.1 | Use `;` for unconditional chain or `if ($?) { ... }` for conditional |
 | `uv pip install` complains "no virtualenv" | Set `$env:VIRTUAL_ENV` to the venv path before invoking uv |
 
@@ -565,7 +565,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 
 ## Tip: launch all services with a single Windows Terminal command
 
-If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed. Each lives in its own working directory (`ask-chat-spa/` at :5174, `ask-studio-spa/` at :5173, `ask-setup-spa/` at :5175).
+If you have Windows Terminal (`wt.exe`), this opens both backends at once with everything pre-configured (orchestrator + admin-api). Launch the SPAs separately when needed. Each lives in its own working directory (`ask-chat/` at :5174, `ask-studio/` at :5173, `ask-setup/` at :5175).
 
 Set the master key + semantic-layer paths once before running the one-liner:
 
@@ -643,7 +643,7 @@ Installing the package is inert until the embedder config chooses it. Pick ONE:
   EMBEDDER_MODEL=sentence-transformers/all-mpnet-base-v2   # optional; this is the default
   EMBEDDER_API_KEY=<hf_hub_token>                          # optional; only for private/gated models
   ```
-- **Setup SPA**: *LLM Providers* → set the **embedder** provider to `huggingface` + model.
+- **ASK Setup**: *LLM Providers* → set the **embedder** provider to `huggingface` + model.
 - **Encrypted secrets**: `POST /v1/admin/secrets/embedder` with `{ "provider": "huggingface",
   "model": "…" }` (canonical store; survives restarts).
 
@@ -694,18 +694,18 @@ export ENVIRONMENT=local DEV_BYPASS_AUTH=true PYTHONIOENCODING=utf-8
 export ASK_ORCHESTRATOR_URL=http://127.0.0.1:8080
 python -m uvicorn ask_admin_api.main:app --host 127.0.0.1 --port 8081 --reload
 
-# Boot the Chat SPA (terminal 3)
-cd ask-chat-spa
+# Boot ASK Chat (terminal 3)
+cd ask-chat
 npm install          # first time only
 npm run dev          # → http://localhost:5174
 
-# Boot the Admin SPA (terminal 4)
-cd ask-studio-spa
+# Boot ASK Studio (terminal 4)
+cd ask-studio
 npm install --legacy-peer-deps   # first time only
 npm run dev                       # → http://localhost:5173
 
-# Boot the Setup SPA (terminal 5)
-cd ask-setup-spa
+# Boot ASK Setup (terminal 5)
+cd ask-setup
 npm install          # first time only
 npm run dev          # → http://localhost:5175
 

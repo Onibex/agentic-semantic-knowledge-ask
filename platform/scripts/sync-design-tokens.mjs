@@ -25,7 +25,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const APPS = ['ask-studio-spa', 'ask-chat-spa', 'ask-setup-spa']
+const APPS = ['ask-studio', 'ask-chat', 'ask-setup']
 const FILES = ['tokens.css', 'theme.css']
 
 const check = process.argv.includes('--check')

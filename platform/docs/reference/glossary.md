@@ -48,7 +48,7 @@
 
 | Term | Meaning |
 |---|---|
-| **`composed_of`** | On a Silver Data Product, the ordered list of Bronze tables it is built from. **A Gold has none**: it is a table produced upstream by an ETL, so the joins are not reconstructible from a list of names and `db_table_name` carries what you query instead. See [Gold Layer §3.1.1](../../../definition/docs/GOLD_LAYER.md#311-why-gold-has-no-composed_of-or-join_graph). |
+| **`composed_of`** | On a Silver Data Product, the ordered list of Bronze tables it is built from. **A Gold has none**: it is a table produced upstream by an ETL, so the joins are not reconstructible from a list of names and `db_table_name` carries what you query instead. See [why a Gold has neither](../../../definition/docs/GOLD_LAYER.md#311-why-gold-has-no-composed_of-or-join_graph). |
 | **Conflict** | A difference the platform detects when merging incoming content (typically a **OneConnect** import) against an existing Data Product. Conflicts are surfaced for manual resolution rather than silently overwriting your work; they appear under the **Conflicts** filter in Semantic Knowledge. |
 | **Connection** | A named database connection in **ASK Setup**'s connection registry, an engine plus its host/credentials. The registry can hold many; **one connection is active per environment** (`dev` / `prod`), and that active connection is what the chat queries. |
 

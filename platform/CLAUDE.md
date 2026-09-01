@@ -6,7 +6,7 @@
 
 A **deterministic Text-to-SQL agent** that:
 
-1. Takes natural-language questions (any language) via the ASK Chat SPA
+1. Takes natural-language questions (any language) via the ASK Chat
 2. Classifies macro-intent: `SQL_EXECUTION` | `SCHEMA_QUERY` | `DOCS_QUERY` | `ACTION_EXECUTION`
 3. Resolves business terms against a curated **semantic layer** (ASK YAML corpus)
    via OpenSearch hybrid search (kNN + BM25 + RRF)
@@ -20,9 +20,9 @@ A **deterministic Text-to-SQL agent** that:
 
 | Component | Technology | Purpose |
 |---|---|---|
-| `ask-studio-spa/` (**ASK Studio**) | React + Vite + Nginx | Author & publish the semantic layer: workspaces, business domains, Data Products |
-| `ask-chat-spa/` (**ASK Chat**) | React + Vite + Nginx | End-user chat |
-| `ask-setup-spa/` (**ASK Setup**) | React + Vite + Nginx | Technical setup: DB connections, LLM providers, identity |
+| `ask-studio/` (**ASK Studio**) | React + Vite + Nginx | Author & publish the semantic layer: workspaces, business domains, Data Products |
+| `ask-chat/` (**ASK Chat**) | React + Vite + Nginx | End-user chat |
+| `ask-setup/` (**ASK Setup**) | React + Vite + Nginx | Technical setup: DB connections, LLM providers, identity |
 | `packages/ask-orchestrator` | FastAPI | Public chat backend (see endpoints below) |
 | `packages/ask-admin-api` | FastAPI | Admin backend: semantic-layer CRUD, ingestion, enrichment, secrets, git publish |
 | `services/ask-mcp-server` | Node | SAP write ops via MCP (opt-in compose profile) |
@@ -135,7 +135,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 - `config/settings.json` (gitignored; template: `config/settings.example.json`),
   minimal file config. Env vars override.
 - **DB connections and LLM providers are NOT in files**: they live Fernet-encrypted
-  in OpenSearch, managed through the Setup SPA (N connections, one active per env;
+  in OpenSearch, managed through ASK Setup (N connections, one active per env;
   multiple LLM providers, one active). Master key via env (`scripts/rotate_master_key.py`).
 - Keycloak realm import for local dev: `packages/ask-admin-api/keycloak-realm-config.json`
   (all secrets are local-demo placeholders).
@@ -175,7 +175,7 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 | SQL generation rules / dialects | `packages/ask-sql-generation/.../application/freeform_generator.py` + `prompts/` |
 | Add DB adapter | `packages/ask-sql-executor/.../infrastructure/` |
 | Ingestion / YAML model | `packages/ask-knowledge-graph/` |
-| Admin flows (publish, enrich, DDL) | `packages/ask-admin-api/` + `ask-studio-spa/` |
+| Admin flows (publish, enrich, DDL) | `packages/ask-admin-api/` + `ask-studio/` |
 | Design tokens (all SPAs) | `design/tokens.css` + `scripts/sync-design-tokens.mjs` |
 
 ## House rules

@@ -47,14 +47,14 @@ that date; re-audit before a release with `python scripts/dependency_licenses.py
 | `certifi` (CA bundle, transitive) | MPL-2.0: used unmodified, so the MPL's source-disclosure obligation is not triggered |
 | `orjson`, `tqdm` (transitive) | dual: MPL-2.0 AND (Apache-2.0 OR MIT) / MPL-2.0 AND MIT |
 
-## JavaScript/TypeScript: `ask-chat-spa/`, `ask-studio-spa/`, `ask-setup-spa/`
+## JavaScript/TypeScript: `ask-chat/`, `ask-studio/`, `ask-setup/`
 
 Direct `dependencies` (audited via `license-checker`): React, React DOM,
 React Router, Zustand, Axios, Zod, React Hook Form, TanStack Query, Radix UI
 (`@radix-ui/*`), `lucide-react`, `sonner`, `clsx`, `tailwind-merge`,
 `class-variance-authority`, Monaco Editor (`@monaco-editor/react`,
-`monaco-editor`: admin SPA only), React Flow (`reactflow`, `dagre`, admin
-SPA only), `plotly.js-dist-min` (chat SPA only), **all MIT**.
+`monaco-editor`: ASK Studio only), React Flow (`reactflow`, `dagre`, ASK
+Studio only), `plotly.js-dist-min` (ASK Chat only), **all MIT**.
 
 Build-time-only tooling (Vite, Rolldown, TypeScript, `lightningcss`) pulls in
 a handful of non-MIT licenses (Apache-2.0, BSD-3-Clause, 0BSD, and MPL-2.0 for
@@ -62,7 +62,7 @@ a handful of non-MIT licenses (Apache-2.0, BSD-3-Clause, 0BSD, and MPL-2.0 for
 application bundle.
 
 One runtime dependency is not MIT: **`dompurify`**, pulled in by
-`monaco-editor` in the admin SPA, is dual-licensed **MPL-2.0 OR Apache-2.0**.
+`monaco-editor` in ASK Studio, is dual-licensed **MPL-2.0 OR Apache-2.0**.
 It does ship in that bundle. Onibex elects **Apache-2.0** for it, so no MPL
 obligation attaches; the library is used unmodified in either case.
 

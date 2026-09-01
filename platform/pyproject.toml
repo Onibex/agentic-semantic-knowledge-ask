@@ -19,7 +19,7 @@ extend-exclude = [
     "venv",
     ".venv",
     "node_modules",
-    "ask-studio-spa",
+    "ask-studio",
     "config",
     "workspace",
     "deploy",
