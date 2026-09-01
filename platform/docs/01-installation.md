@@ -48,15 +48,16 @@
   docker compose version
   ```
 
-- A clone of the repository, and a shell opened at its root (the folder that contains
-  `docker-compose.yml`).
+- A clone of the repository, and a shell opened at `platform/`, the folder that contains
+  `docker-compose.yml`.
 - Outbound network access for the LLM / embedder provider you configure later (e.g. AWS Bedrock)
   and for your target database (e.g. SAP HANA Cloud). These are configured **after** first boot
   in **ASK Setup**, not here.
 
 > **Tip. Docker vs native.** This page uses the Docker path (one command, everything in
-> containers). If you'd rather run each service natively for active development, follow your
-> platform's native-development runbook instead. It covers the venv setup and the native ports.
+> containers). If you'd rather run each service natively for active development, follow
+> [Local development](runbooks/local-development.md) instead. It covers the venv setup and
+> the native ports.
 
 ## 2. Create your `.env` file
 

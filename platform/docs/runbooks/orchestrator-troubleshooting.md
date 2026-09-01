@@ -126,7 +126,7 @@ kubectl logs -n onibex-ask deployment/ask-orchestrator -f
 # port-forward for local debugging
 kubectl port-forward -n onibex-ask svc/ask-orchestrator-service 8080:80
 
-# hit the orchestrator with a forged token (fails fast — useful to verify auth wiring)
+# hit the orchestrator with a forged token (fails fast, useful to verify auth wiring)
 curl -X POST http://127.0.0.1:8080/v1/query \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer fake.jwt.token" \

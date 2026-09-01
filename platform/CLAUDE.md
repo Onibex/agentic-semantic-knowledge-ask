@@ -6,7 +6,7 @@
 
 A **deterministic Text-to-SQL agent** that:
 
-1. Takes natural-language questions (any language) via the ASK Chat
+1. Takes natural-language questions (any language) via ASK Chat
 2. Classifies macro-intent: `SQL_EXECUTION` | `SCHEMA_QUERY` | `DOCS_QUERY` | `ACTION_EXECUTION`
 3. Resolves business terms against a curated **semantic layer** (ASK YAML corpus)
    via OpenSearch hybrid search (kNN + BM25 + RRF)

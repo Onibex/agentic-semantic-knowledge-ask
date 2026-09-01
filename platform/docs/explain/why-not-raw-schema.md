@@ -70,8 +70,8 @@ version, review and diff, not a modelling layer you rent.
 concedes to the model.
 → **[Create workspaces and business domains](../ask-studio/01-workspaces-domains.md)**, the
 scope that decides what a question can reach.
-→ **[ASK specification](../../../definition/README.md)**, the normative contract the layer is
-written against.
+→ **[Onibex Agentic Semantic Knowledge Definition](../../../definition/README.md)**,
+the normative contract the layer is written against.
 
 ---
 
