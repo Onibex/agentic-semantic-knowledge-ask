@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The namespace every other manifest in this folder declares.
+#
+# It was missing: each Deployment, Service and APIRule sets
+# `namespace: onibex-ask`, but nothing created it, so a fresh clone could not
+# apply the folder even after the scheduling bug was fixed.
+#
+# Apply order on a clean cluster:
+#   1. kubectl apply -f namespace.yaml
+#   2. create the secrets (copy secret.example.yaml, fill it in)
+#   3. kubectl apply -R -f platform/deploy/
+#
+# The -R matters: `kubectl apply -f platform/deploy/` is NOT recursive, and the
+# three Deployments live in subfolders, so without it only the top-level files
+# are applied.
+# ─────────────────────────────────────────────────────────────────────────────
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: onibex-ask
+  labels:
+    app.kubernetes.io/part-of: onibex-ask

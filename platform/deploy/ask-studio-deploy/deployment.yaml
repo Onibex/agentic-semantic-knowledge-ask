@@ -82,22 +82,7 @@ spec:
     - port: 80
       targetPort: 80
   type: ClusterIP
----
-# The SPA does its own PKCE auth in-browser — noAuth: true on the APIRule.
-# All API calls are proxied through nginx to ask-admin-api (in-cluster).
-apiVersion: gateway.kyma-project.io/v2
-kind: APIRule
-metadata:
-  name: ask-studio-apirule
-  namespace: onibex-ask
-spec:
-  hosts:
-    - ask-studio.<YOUR_CLUSTER_DOMAIN>
-  service:
-    name: ask-studio-service
-    port: 80
-  gateway: kyma-system/kyma-gateway
-  rules:
-    - path: /*
-      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-      noAuth: true
+# External exposure is target-specific, so it does not live in this file. The
+# Kyma APIRule moved to deploy/kyma/, which only applies on a Kyma cluster; on
+# EKS and AKS the Helm chart adds an Ingress in phase 4. Until then, reach this
+# service with `kubectl port-forward svc/ask-studio-service 8080:80`.
