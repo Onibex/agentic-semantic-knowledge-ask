@@ -237,31 +237,21 @@ def _build_edge_pair(node: Any, rel: Any) -> list[tuple[str, dict[str, Any]]]:
     ]
 
 
-def _opensearch_kwargs(os_cfg: dict) -> dict:
-    """Env-first OpenSearch client kwargs (OPENSEARCH_*), settings.json fallback.
+def _opensearch_kwargs() -> dict:
+    """OpenSearch client kwargs, from the environment and nowhere else.
 
-    Mirrors ask_llm_gateway.infrastructure.secrets.repository — env vars win so
-    this survives the cleanup that strips ``opensearch`` from settings.json.
+    The ``settings.json`` fallback is gone, along with the parameter that
+    carried it. You cannot read the address of OpenSearch out of OpenSearch, so
+    the connection is one of the three things that stays in the environment for
+    good, and in Kubernetes it arrives as a Secret. The ``localhost`` default is
+    deliberate and unchanged.
     """
-    host = os.getenv("OPENSEARCH_HOST")
-    port_env = os.getenv("OPENSEARCH_PORT")
-    use_ssl_env = os.getenv("OPENSEARCH_USE_SSL")
+    host = os.getenv("OPENSEARCH_HOST") or "localhost"
+    port = int(os.getenv("OPENSEARCH_PORT") or 9200)
+    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", ""))
+    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
     username = os.getenv("OPENSEARCH_USER") or None
     password = os.getenv("OPENSEARCH_PASSWORD") or None
-
-    if not host:
-        host = os_cfg.get("host", "localhost")
-        port = int(port_env or os_cfg.get("port", 9200))
-        use_ssl = (
-            bool(os_cfg.get("use_ssl", False)) if use_ssl_env is None else _truthy(use_ssl_env)
-        )
-        username = username or os_cfg.get("username") or None
-        password = password or os_cfg.get("password") or None
-        verify_certs = bool(os_cfg.get("verify_certs", False))
-    else:
-        port = int(port_env or 9200)
-        use_ssl = _truthy(use_ssl_env or "")
-        verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
 
     kwargs: dict = {
         "hosts": [{"host": host, "port": port}],
@@ -349,13 +339,11 @@ class OpenSearchAskRepository:
         # e.g. GET /v1/admin/yaml/published-ids (BACKLOG group 0, P1).
         config = config_manager.load_config() or {}
 
-        # Env-first (OPENSEARCH_*) with settings.json fallback.
-        os_cfg = config.get("opensearch") or {}
-        kwargs: dict = _opensearch_kwargs(os_cfg)
-        # Larger connection pool — the default behaves as size 1 here and
-        # churns connections under concurrent reads. settings.json
-        # opensearch.pool_maxsize overrides.
-        kwargs["maxsize"] = int(os_cfg.get("pool_maxsize", 20))
+        # Connection from the environment only; see _opensearch_kwargs.
+        kwargs: dict = _opensearch_kwargs()
+        # Larger connection pool: the default behaves as size 1 here and churns
+        # connections under concurrent reads. Tune with OPENSEARCH_POOL_MAXSIZE.
+        kwargs["maxsize"] = int(os.getenv("OPENSEARCH_POOL_MAXSIZE") or 20)
 
         self.client = OpenSearch(**kwargs)
 
@@ -368,15 +356,14 @@ class OpenSearchAskRepository:
         self.INDEX_FIELD = env_index("ask-field-registry-v1", env)
         self.INDEX_EDGE = env_index("ask-edge-registry-v1", env)
 
-        # Embedding dimension — must match the active embedder.
-        # Change opensearch.embedding_dim in settings.json when switching embedders,
-        # then call drop_all_registry_indices() + re-ingest all YAMLs.
+        # Embedding dimension: must match the active embedder. Set
+        # OPENSEARCH_EMBEDDING_DIM when switching to an embedder of a different
+        # size, then call drop_all_registry_indices() + re-ingest all YAMLs.
+        # The mapping is immutable once the index exists, so this is a
+        # deployment decision and belongs in the environment.
         # Default 1024 = platform standard (Bedrock Titan Text Embeddings V2,
-        # runtime_settings, /setup/effective all agree). Override via
-        # OPENSEARCH_EMBEDDING_DIM when switching to an embedder of a different size.
-        self.embedding_dim = int(
-            os.getenv("OPENSEARCH_EMBEDDING_DIM") or os_cfg.get("embedding_dim", 1024)
-        )
+        # runtime_settings, /setup/effective all agree).
+        self.embedding_dim = int(os.getenv("OPENSEARCH_EMBEDDING_DIM") or 1024)
 
         # Language of the analyzer applied to every searched text field. Same
         # deployment flag the authoring prompts read, so the corpus and its index

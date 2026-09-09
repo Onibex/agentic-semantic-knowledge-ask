@@ -98,37 +98,30 @@ def _truthy(value: str) -> bool:
     return value.strip().lower() in ("1", "true", "yes", "on")
 
 
-def _get_os_client(os_config: dict):
+def _get_os_client():
+    """The OpenSearch connection, from the environment and nowhere else.
+
+    Took a settings dict until the deployment-settings move; the fallback is
+    gone and the parameter went with it, so the four call sites no longer have
+    to carry a config around just to open a connection. The ``localhost``
+    default is deliberate and unchanged.
+    """
     from opensearchpy import OpenSearch
 
-    # Env-first (OPENSEARCH_*) with the passed settings.json config as fallback —
-    # env vars win so this survives stripping ``opensearch`` from settings.json.
-    host = os.getenv("OPENSEARCH_HOST")
-    port_env = os.getenv("OPENSEARCH_PORT")
-    use_ssl_env = os.getenv("OPENSEARCH_USE_SSL")
+    host = os.getenv("OPENSEARCH_HOST") or "localhost"
+    port = int(os.getenv("OPENSEARCH_PORT") or 9200)
+    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", ""))
+    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
     username = os.getenv("OPENSEARCH_USER") or None
     password = os.getenv("OPENSEARCH_PASSWORD") or None
-
-    if not host:
-        host = os_config.get("host", "localhost")
-        port = int(port_env or os_config.get("port", 9200))
-        use_ssl = (
-            bool(os_config.get("use_ssl", False)) if use_ssl_env is None else _truthy(use_ssl_env)
-        )
-        username = username or os_config.get("username") or None
-        password = password or os_config.get("password") or None
-        verify_certs = bool(os_config.get("verify_certs", False))
-    else:
-        port = int(port_env or 9200)
-        use_ssl = _truthy(use_ssl_env or "")
-        verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
 
     kwargs: dict = {
         "hosts": [{"host": host, "port": port}],
         "use_ssl": use_ssl,
         "verify_certs": verify_certs,
         "ssl_show_warn": False,
-        "maxsize": int(os_config.get("pool_maxsize", 20)),  # avoid size-1 pool churn
+        # avoid size-1 pool churn; tune with OPENSEARCH_POOL_MAXSIZE
+        "maxsize": int(os.getenv("OPENSEARCH_POOL_MAXSIZE") or 20),
     }
     if username and password:
         kwargs["http_auth"] = (username, password)
@@ -175,7 +168,7 @@ class OpenSearchVectorStore:
         self._index = _index_for(collection_name, env)
         self._embeddings = embeddings
         self._os_config = os_config
-        self._client = _get_os_client(os_config)
+        self._client = _get_os_client()
         self._embedding_dim: int | None = None
         self._ensure_index()
 
@@ -509,7 +502,7 @@ def get_or_create_opensearch_vectorstore(
 
 def test_opensearch_connection(os_config: dict) -> tuple[bool, str]:
     try:
-        client = _get_os_client(os_config)
+        client = _get_os_client()
         version = client.info().get("version", {}).get("number", "unknown")
         return True, f"Connection successful. OpenSearch {version}"
     except Exception as e:

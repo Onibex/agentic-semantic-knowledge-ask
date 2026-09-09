@@ -27,19 +27,18 @@ The ``encrypted`` sub-object is mapped with ``enabled: false`` so OpenSearch
 stores it but does NOT index it — defense-in-depth in case anyone tries to
 query the index directly.
 
-OpenSearch connection mirrors the pattern used by
-``WorkspaceRepository``: read host/port/auth from ``settings.json`` (with env
-overrides). This module CANNOT depend on SecretsProvider — chicken-and-egg.
+OpenSearch connection mirrors the pattern used by ``WorkspaceRepository``:
+host/port/auth come from the environment, and only from there. This module
+CANNOT depend on SecretsProvider, chicken-and-egg, and for the same reason the
+connection itself cannot be stored in the index it opens.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import time
 from datetime import UTC
-from pathlib import Path
 from typing import Any
 
 from opensearchpy import OpenSearch
@@ -491,33 +490,24 @@ def _split_by_registry(
 
 
 def _build_client() -> OpenSearch:
-    """Read OpenSearch connection from env (preferred) or ``settings.json``.
+    """The OpenSearch connection, from the environment and nowhere else.
 
-    Env vars win — that's how this module survives the cleanup that strips the
-    ``opensearch`` block from ``settings.json``. The fallback keeps existing
-    dev environments working until they migrate.
+    The ``settings.json`` fallback is gone, and this module is the one where
+    that matters most: it IS the secrets store. You cannot read the address of
+    OpenSearch out of OpenSearch, nor the key that decrypts what is in it, so
+    the connection and ``ONIBEX_ENCRYPTION_KEY`` are the irreducible pair that
+    stays in the environment for good. In Kubernetes both arrive as a Secret,
+    and the key must be byte-identical across upgrades or everything stored
+    here stops decrypting.
+
+    The ``localhost`` default is deliberate and unchanged.
     """
-    host = os.getenv("OPENSEARCH_HOST")
-    port_env = os.getenv("OPENSEARCH_PORT")
-    use_ssl_env = os.getenv("OPENSEARCH_USE_SSL")
+    host = os.getenv("OPENSEARCH_HOST") or "localhost"
+    port = int(os.getenv("OPENSEARCH_PORT") or 9200)
+    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", ""))
+    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
     username = os.getenv("OPENSEARCH_USER") or None
     password = os.getenv("OPENSEARCH_PASSWORD") or None
-
-    if not host:
-        cfg = _read_settings_safely()
-        os_cfg = cfg.get("opensearch") or {}
-        host = os_cfg.get("host", "localhost")
-        port = int(port_env or os_cfg.get("port", 9200))
-        use_ssl = (
-            bool(os_cfg.get("use_ssl", False)) if use_ssl_env is None else _truthy(use_ssl_env)
-        )
-        username = username or os_cfg.get("username") or None
-        password = password or os_cfg.get("password") or None
-        verify_certs = bool(os_cfg.get("verify_certs", False))
-    else:
-        port = int(port_env or 9200)
-        use_ssl = _truthy(use_ssl_env or "")
-        verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
 
     kwargs: dict[str, Any] = {
         "hosts": [{"host": host, "port": port}],
@@ -528,17 +518,6 @@ def _build_client() -> OpenSearch:
     if username and password:
         kwargs["http_auth"] = (username, password)
     return OpenSearch(**kwargs)
-
-
-def _read_settings_safely() -> dict[str, Any]:
-    path = Path("config/settings.json")
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        logger.warning("Could not parse settings.json — using OpenSearch defaults")
-        return {}
 
 
 def _truthy(value: str) -> bool:
