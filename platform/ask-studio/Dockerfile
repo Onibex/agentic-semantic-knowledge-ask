@@ -17,27 +17,28 @@ RUN npm ci --prefer-offline --legacy-peer-deps && chmod -R +x node_modules/.bin/
 
 COPY . .
 
-# Vite bakes estos valores en el bundle en build time.
-# Para cambiarlos en otro entorno, rebuildeá con --build-arg.
-# Default matches docker-compose's host port mapping (8180:8080). Anyone doing
-# a plain `docker build` (no --build-arg) gets the URL the BROWSER can reach.
-ARG VITE_AUTH_MODE=keycloak
-ARG VITE_KEYCLOAK_URL=http://localhost:8180
-ARG VITE_KEYCLOAK_REALM=ask-platform
-# Cross-app link target: ASK Setup (setup-spa) — LLM is managed there, shown
-# read-only here. Must be the URL the BROWSER can reach (not the Docker net).
-ARG VITE_SETUP_SPA_URL=http://localhost:5175
-
-ENV VITE_AUTH_MODE=$VITE_AUTH_MODE
-ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
-ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
-ENV VITE_SETUP_SPA_URL=$VITE_SETUP_SPA_URL
-
+# No VITE_* build arguments. The auth configuration and the cross-app links are
+# runtime values now: the entrypoint renders them into /config.js from the
+# environment when the container starts. Baking them in made three SPAs times
+# three cloud targets nine image builds, and every change of cluster domain a
+# rebuild. Docker's own linter flagged them as SecretsUsedInArgOrEnv too.
+#
+# This image is therefore identical for EKS, AKS and Kyma.
 RUN node node_modules/vite/bin/vite.js build
 
 # ── Stage 2: serve ──────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Rendered at container start into /usr/share/nginx/html/config.js and
+# /etc/nginx/ask/security-headers.conf, both of which nginx.conf expects.
+COPY config.template.js /etc/nginx/ask/config.template.js
+COPY docker-entrypoint-ask.sh /docker-entrypoint-ask.sh
+RUN sed -i 's/\r//' /docker-entrypoint-ask.sh && chmod +x /docker-entrypoint-ask.sh
+
 EXPOSE 80
+# Validates, renders, then hands over to nginx's own entrypoint, so the stock
+# behaviour (the /docker-entrypoint.d hooks) is preserved.
+ENTRYPOINT ["/docker-entrypoint-ask.sh"]
 CMD ["nginx", "-g", "daemon off;"]

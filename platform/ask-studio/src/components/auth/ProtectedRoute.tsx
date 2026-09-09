@@ -11,8 +11,11 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Loader2, ShieldOff } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { runtimeEnv } from '@/auth/config'
 
-const CHAT_URL = import.meta.env.VITE_CHAT_URL as string | undefined
+// Runtime, not build time: this points at another host, so baking it in made
+// every cluster domain a rebuild. Empty means ASK Chat is not deployed here.
+const CHAT_URL = runtimeEnv().CHAT_URL || undefined
 
 interface Props {
   requiredRole?: string

@@ -35,11 +35,14 @@
 # Para probar con Keycloak local:
 #   AUTH_MODE=keycloak DEV_BYPASS_AUTH=false docker-compose up
 #   Admin console: http://localhost:8180  (admin / admin o KC_ADMIN_PASSWORD)
-#   SPA login:     apunta VITE_AUTH_MODE=keycloak VITE_KEYCLOAK_URL=http://localhost:8180
-#                  VITE_KEYCLOAK_REALM=ask-platform en ask-studio/.env.local
+#   SPA login:     los tres SPA leen ASK_AUTH_MODE / ASK_KEYCLOAK_URL /
+#                  ASK_KEYCLOAK_REALM del entorno al ARRANCAR el contenedor.
+#                  Para `npm run dev` nativo, los mismos nombres en .env.local.
 #
 # Shared state:
 #   - ./config                 → /app/config (settings.json, aicore_config.json)
+#                                Ya NO lo monta mcp-server: los contratos de API
+#                                viven en OpenSearch desde 2026-09-09.
 #   - ./logs                   → /app/logs   (token_usage.jsonl)
 #   - $SEMANTIC_LAYER_HOST_PATH → /app/semantic-layer (external semantic-layer repo
 #                                with its OWN .git — see "Semantic layer" below)
@@ -51,10 +54,11 @@
 # on the host; the admin-api container reads it via REPO_ROOT=/app/semantic-layer.
 #
 # Browser-facing host (local vs remote):
-#   Every browser-facing URL (Keycloak issuer + the 3 SPAs' baked VITE_KEYCLOAK_URL)
+#   Every browser-facing URL (the Keycloak issuer and the 3 SPAs' ASK_KEYCLOAK_URL)
 #   is driven by ONE var, EXTERNAL_HOST (default: localhost). On a remote host set
-#   EXTERNAL_HOST=<public-DNS-or-IP> in .env and REBUILD the SPAs (VITE_* are baked
-#   at BUILD time). There is NO separate remote overlay: a remote deploy is THIS
+#   EXTERNAL_HOST=<public-DNS-or-IP> in .env and RESTART the SPAs. A rebuild is no
+#   longer needed: the values are read at container start, not baked into the
+#   bundle. There is NO separate remote overlay: a remote deploy is THIS
 #   file plus a filled-in .env (see .env.remote.example).
 #   CHAT_AUTH_MODE lets ASK Chat run dev-auth independently of AUTH_MODE
 #   (used where the deployment is served over plain HTTP, since PKCE's
@@ -310,17 +314,22 @@ services:
     build:
       context: ./ask-studio
       dockerfile: Dockerfile
-      args:
-        # VITE_* se hornean en el bundle en build time (NO en runtime): cambiar
-        # AUTH_MODE en .env NO afecta al SPA hasta que se REBUILDEA la imagen
-        # (`docker compose build ask-studio` o `up --build`).
-        # VITE_KEYCLOAK_URL debe ser la URL que alcanza el BROWSER (no la red
-        # Docker interna) — por eso apunta a localhost:8180 y no a keycloak:8080.
-        VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
-        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
-        VITE_KEYCLOAK_REALM: ask-platform
-        # Cross-app link: ASK Setup owns LLM config; ASK Studio shows it read-only.
-        VITE_SETUP_SPA_URL:  "http://${EXTERNAL_HOST:-localhost}:5175"
+    # Read at CONTAINER START, not at build time. Changing any of these is a
+    # `docker compose up -d ask-studio` away; it used to need a rebuild of the
+    # image, because Vite baked the VITE_* values into the bundle.
+    #
+    # ASK_KEYCLOAK_URL must be the URL the BROWSER can reach, not the Docker
+    # network name: the OAuth dance happens in the browser, so keycloak:8080
+    # would be unreachable from it.
+    environment:
+      ASK_AUTH_MODE:           ${AUTH_MODE:-keycloak}
+      ASK_KEYCLOAK_URL:        "http://${EXTERNAL_HOST:-localhost}:8180"
+      ASK_KEYCLOAK_REALM:      ask-platform
+      ASK_KEYCLOAK_CLIENT_ID:  ask-studio
+      # Cross-app links: ASK Setup owns LLM config and ASK Studio shows it
+      # read-only. Empty would hide the link rather than break it.
+      ASK_SETUP_SPA_URL:       "http://${EXTERNAL_HOST:-localhost}:5175"
+      ASK_CHAT_URL:            "http://${EXTERNAL_HOST:-localhost}:5174"
     mem_limit: 64m
     mem_reservation: 20m
     image: ask-studio:${APP_VERSION:-latest}
@@ -349,14 +358,20 @@ services:
     build:
       context: ./ask-chat
       dockerfile: Dockerfile
-      args:
-        # ASK Chat auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
-        # can run dev-auth on a plain-HTTP host (PKCE's crypto.subtle needs a secure
-        # context) while admin/setup stay on keycloak. Falls back to AUTH_MODE,
-        # then keycloak. Set CHAT_AUTH_MODE=dev in .env on a plain-HTTP host.
-        VITE_AUTH_MODE:      ${CHAT_AUTH_MODE:-${AUTH_MODE:-keycloak}}
-        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
-        VITE_KEYCLOAK_REALM: ask-platform
+    # ASK Chat auth is decoupled from the other SPAs via CHAT_AUTH_MODE so it
+    # can run without a login on a plain-HTTP host (PKCE's crypto.subtle needs
+    # a secure context) while ASK Studio and ASK Setup stay on Keycloak. Falls
+    # back to AUTH_MODE, then keycloak.
+    #
+    # On a plain-HTTP host set CHAT_AUTH_MODE=none in .env. It used to say
+    # `dev`, which was never a value anything understood: it fell through to
+    # the unknown-mode branch, which happened to mean "no login". The entrypoint
+    # now rejects it by name and lists what it accepts.
+    environment:
+      ASK_AUTH_MODE:          ${CHAT_AUTH_MODE:-${AUTH_MODE:-keycloak}}
+      ASK_KEYCLOAK_URL:       "http://${EXTERNAL_HOST:-localhost}:8180"
+      ASK_KEYCLOAK_REALM:     ask-platform
+      ASK_KEYCLOAK_CLIENT_ID: ask-chat
     mem_limit: 64m
     mem_reservation: 20m
     image: ask-chat:${APP_VERSION:-latest}
@@ -376,16 +391,17 @@ services:
       start_period: 10s
 
   # -- ASK Setup (React + Nginx) --------------------------------
-  # Client-side Keycloak auth (VITE_AUTH_MODE) like ASK Studio;
+  # Client-side Keycloak auth (ASK_AUTH_MODE) like ASK Studio;
   # nginx proxies /api/admin -> admin-api.
   ask-setup:
     build:
       context: ./ask-setup
       dockerfile: Dockerfile
-      args:
-        VITE_AUTH_MODE:      ${AUTH_MODE:-keycloak}
-        VITE_KEYCLOAK_URL:   "http://${EXTERNAL_HOST:-localhost}:8180"
-        VITE_KEYCLOAK_REALM: ask-platform
+    environment:
+      ASK_AUTH_MODE:          ${AUTH_MODE:-keycloak}
+      ASK_KEYCLOAK_URL:       "http://${EXTERNAL_HOST:-localhost}:8180"
+      ASK_KEYCLOAK_REALM:     ask-platform
+      ASK_KEYCLOAK_CLIENT_ID: ask-setup
     mem_limit: 64m
     mem_reservation: 20m
     image: ask-setup:${APP_VERSION:-latest}

@@ -18,13 +18,13 @@ RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY . .
 
-ARG VITE_AUTH_MODE=keycloak
-ARG VITE_KEYCLOAK_URL=http://localhost:8180
-ARG VITE_KEYCLOAK_REALM=ask-platform
-
-ENV VITE_AUTH_MODE=$VITE_AUTH_MODE
-ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
-ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
+# No VITE_* build arguments. The auth configuration is a runtime value now: the
+# entrypoint renders it into /config.js from the environment when the container
+# starts. Baking it in made three SPAs times three cloud targets nine image
+# builds, and every change of cluster domain a rebuild. Docker's own linter
+# flagged them as SecretsUsedInArgOrEnv too.
+#
+# This image is therefore identical for EKS, AKS and Kyma.
 
 # vite build directly (skip tsc -b) - same as ask-studio / ask-setup
 RUN node node_modules/vite/bin/vite.js build
@@ -33,5 +33,15 @@ RUN node node_modules/vite/bin/vite.js build
 FROM nginx:1.27-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Rendered at container start into /usr/share/nginx/html/config.js and
+# /etc/nginx/ask/security-headers.conf, both of which nginx.conf expects.
+COPY config.template.js /etc/nginx/ask/config.template.js
+COPY docker-entrypoint-ask.sh /docker-entrypoint-ask.sh
+RUN sed -i 's/\r//' /docker-entrypoint-ask.sh && chmod +x /docker-entrypoint-ask.sh
+
 EXPOSE 80
+# Validates, renders, then hands over to nginx's own entrypoint, so the stock
+# behaviour (the /docker-entrypoint.d hooks) is preserved.
+ENTRYPOINT ["/docker-entrypoint-ask.sh"]
 CMD ["nginx", "-g", "daemon off;"]
