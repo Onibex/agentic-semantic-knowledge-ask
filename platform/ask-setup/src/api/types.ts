@@ -101,12 +101,6 @@ export interface ConfigGetResponse {
   config: AppConfig
 }
 
-export interface ConfigSaveResponse {
-  success: boolean
-  cleared: string[]
-  message: string
-}
-
 // ── Setup effective (read-only snapshot: GET /v1/admin/setup/effective) ───────
 // One generic section shape per provider. OpenSearch is env-sourced (bootstrap);
 // `source` tells the UI where each value came from.

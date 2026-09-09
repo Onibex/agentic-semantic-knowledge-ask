@@ -5,21 +5,33 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""``GET /v1/admin/config`` and ``POST /v1/admin/config`` — read/write config/settings.json.
+"""``GET /v1/admin/config`` — read ``config/settings.json``.
+
+**Read-only, as of 2026-09-09, and that is the point.** ``POST /v1/admin/config``
+was deleted here: it was the last thing in the platform that wrote this file,
+and by then nothing called it. Every section a human edits had already moved to
+the encrypted store (LLM, embedder, database, and finally the SAP connection),
+and every deployment flag had moved to the environment.
+
+What that buys is the whole reason for the exercise: **a file nobody writes can
+be a read-only Kubernetes ConfigMap.** No ReadWriteOnce volume shared by three
+pods, and therefore no podAffinity pinning them to one node, which is what kept
+the two backends from scheduling at all. See
+ITERATION_K8S_MULTICLOUD_PLAN section 3.
+
+Four sections still have live readers, all of them deploy-time tuning that a
+ConfigMap serves fine: ``schema_mode`` (flash strategy), ``hybrid_pipeline``
+(precise retrieval), ``pipeline_v2`` (smart catalog) and
+``sap_ai_core.config_path``.
+
+One writable file DOES remain, and it is a different one: ``config/api-config.json``,
+owned by ``routers/contracts`` and also baked into the MCP server image. It needs
+the same treatment before the chart can drop shared storage entirely.
 
 Rules
 ─────
 * File is resolved relative to the process CWD (``Path("config/settings.json")``).
 * GET masks sensitive fields before returning.
-* POST performs a deep-merge (top-level keys not present in the payload are
-  preserved).  Sensitive fields that arrive empty or as the mask sentinel
-  ``"••••••••"`` (or any value starting with ``"••"``) are left unchanged on
-  disk.
-* Nested sections ``deployments`` and ``sap_ai_core`` are merged one level deep
-  (individual sub-keys survive if not in the incoming payload).
-* After a successful write the in-process singletons held by the
-  ``dictionary``, ``embeddings``, and ``yaml_ingestion`` router modules are
-  reset via ``importlib`` to avoid circular imports.
 """
 
 from __future__ import annotations
@@ -31,7 +43,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth.validator import TokenClaims, validate_token
 
@@ -206,56 +218,3 @@ async def get_config(
     raw = _read_raw()
     masked = _mask_config(raw)
     return ConfigResponse(config=masked)
-
-
-@router.post(
-    "/config",
-    response_model=ConfigSaveResponse,
-    summary="Merge and save settings.json",
-    description=(
-        "Merges the supplied partial config into the existing "
-        "``config/settings.json``.  Keys absent from the payload are "
-        "preserved.  Masked sensitive values are not overwritten.  "
-        "After writing, in-process singletons (dictionary, embeddings, "
-        "yaml_ingestion) are reset so the next request picks up the new "
-        "settings."
-    ),
-)
-async def save_config(
-    body: ConfigSaveRequest,
-    claims: TokenClaims = Depends(validate_token),
-) -> ConfigSaveResponse:
-    trace_id = uuid.uuid4().hex
-    auth_email = getattr(claims, "email", "unknown")
-    logger.info(
-        "[%s] POST /v1/admin/config user=%s keys=%s", trace_id, auth_email, list(body.config.keys())
-    )
-
-    # Refuse a section that moved to the encrypted store. Merging it here would
-    # return 200 and write a file nothing reads any more, so the admin would
-    # believe the value took effect. An error naming the right endpoint is the
-    # whole point.
-    moved = [key for key in body.config if key in _MOVED_SECTIONS]
-    if moved:
-        detail = "; ".join(f"{key} is now written through {_MOVED_SECTIONS[key]}" for key in moved)
-        logger.warning("[%s] rejected a moved section: %s", trace_id, detail)
-        raise HTTPException(status_code=400, detail=detail)
-
-    existing = _read_raw()
-    merged = _merge_config(existing, body.config)
-
-    _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _CONFIG_PATH.write_text(
-        json.dumps(merged, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    logger.info("[%s] settings.json written successfully", trace_id)
-
-    cleared = _reset_router_singletons()
-    logger.info("[%s] singletons reset: %s", trace_id, cleared)
-
-    return ConfigSaveResponse(
-        success=True,
-        cleared=cleared,
-        message="Configuration saved.",
-    )

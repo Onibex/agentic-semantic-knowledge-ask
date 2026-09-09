@@ -13,7 +13,6 @@ import type {
   SapConnectionSaveRequest,
   TestConnectionResult,
   ConfigGetResponse,
-  ConfigSaveResponse,
   SetupEffectiveResponse,
   OpenSearchTestResponse,
   AicoreConfigStatus,
@@ -206,14 +205,6 @@ export const configApi = {
     }
   },
 
-  save: async (partial: Record<string, unknown>): Promise<ConfigSaveResponse> => {
-    try {
-      const res = await http.post<ConfigSaveResponse>('/config', { config: partial })
-      return res.data
-    } catch (err) {
-      throw new Error(extractError(err))
-    }
-  },
 }
 
 // Read-only effective config snapshot + OpenSearch health probe.
