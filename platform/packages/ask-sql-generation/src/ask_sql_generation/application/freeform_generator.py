@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import UTC, datetime
 from typing import Any
 
 from langchain_core.messages import HumanMessage
@@ -383,6 +384,32 @@ def _loose_extract_sql_response(text: str) -> dict[str, Any] | None:
     if em:
         out["explanation"] = em.group(1).strip()
     return out
+
+
+def _format_today() -> str:
+    """Today's date, so a relative window resolves to the right YEAR.
+
+    The model cannot call the engine's date function while it writes, so with no
+    date in the prompt it invents the year: "the rest of the year" came out as
+    ``future_date >= today() AND future_date <= toDate('2025-12-31')``, an empty
+    interval by construction because the engine's ``today()`` was already 2026.
+
+    The date is for CHOOSING the period. The filter itself must still come from
+    the engine's own date function (each dialect's rules block names it), so the
+    comparison keeps running on the database's clock and timezone, not ours.
+    UTC because every internal timestamp on this platform is UTC; the viewer's
+    local time is a presentation concern.
+
+    Computed per call, never at import: the orchestrator process outlives a day.
+    """
+    return (
+        f"TODAY IS {datetime.now(UTC).date().isoformat()} (UTC).\n"
+        "Use it to resolve WHICH year, month or quarter a relative window means "
+        '("this month", "the rest of the year", "the last 6 months", "yesterday").\n'
+        "For the filter itself, derive BOTH bounds from the engine's own date "
+        "function documented in the dialect rules below. NEVER hardcode a year: "
+        "mixing an engine function with a literal year yields an empty interval."
+    )
 
 
 def _format_ir_hints(ir_hints: dict[str, Any] | None) -> str:
@@ -1193,6 +1220,8 @@ class FreeformSQLGeneratorService:
             history_block
             + user_prefix
             + role_line
+            + "\n\n"
+            + _format_today()
             + "\n\n"
             + f"USER QUESTION:\n{question}\n\n"
             + _format_ir_hints(ir_hints)
