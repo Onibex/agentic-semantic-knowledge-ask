@@ -153,7 +153,12 @@ jobs:
         # --durations names the slowest tests, because ask-admin-api's 530 tests
         # took 27 minutes on a developer machine and it is worth knowing whether
         # that reproduces here or was a local artefact.
-        run: pytest packages/*/tests -q --import-mode=importlib --durations=10
+        #
+        # tests/integration is the cross-package home: those tests import
+        # several packages at once, which no package may do itself
+        # (see .importlinter), and they need the full environment installed
+        # above, which the lint job does not have.
+        run: pytest packages/*/tests tests/integration -q --import-mode=importlib --durations=10
 
   frontend:
     name: ${{ matrix.app }} typecheck + build
