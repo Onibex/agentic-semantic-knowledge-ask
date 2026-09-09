@@ -7,6 +7,22 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
+/**
+ * Where this app's authentication configuration comes from.
+ *
+ * `window.__ENV__`, set by /config.js, which the container entrypoint renders
+ * from the environment at start. It used to come from `import.meta.env.VITE_*`,
+ * baked into the bundle by Vite at build time, which made three SPAs times
+ * three cloud targets nine image builds and turned every change of cluster
+ * domain into a rebuild.
+ *
+ * There is deliberately NO fallback to the old build-time variables. Two
+ * configuration paths is precisely how a production SPA ends up pointing at
+ * localhost, and a fallback guarantees the two drift.
+ */
+
+import type { RuntimeEnv } from '../runtime-env'
+
 export interface AuthConfig {
   mode: 'keycloak' | 'xsuaa' | 'none'
   issuerUrl: string
@@ -19,11 +35,28 @@ export interface AuthConfig {
   scopes: string[]
 }
 
-function buildKeycloakConfig(): AuthConfig {
-  const baseUrl = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8180'
-  const realm = import.meta.env.VITE_KEYCLOAK_REALM ?? 'ask-platform'
-  const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? 'ask-studio'
-  const issuerUrl = `${baseUrl}/realms/${realm}`
+/**
+ * The runtime configuration, or a loud failure.
+ *
+ * Reaching this without /config.js means the page was served without it, which
+ * is a deployment fault rather than a user one. Throwing here surfaces it on
+ * the first paint instead of letting the app render a login button that
+ * silently points nowhere.
+ */
+export function runtimeEnv(): RuntimeEnv {
+  const env = window.__ENV__
+  if (!env || !env.AUTH_MODE) {
+    throw new Error(
+      'ASK Studio: /config.js did not load, so there is no runtime configuration. ' +
+        'It is rendered by the container entrypoint from ASK_AUTH_MODE and the ' +
+        'variables that go with it, and index.html must load it before the app bundle.',
+    )
+  }
+  return env
+}
+
+function buildKeycloakConfig(env: RuntimeEnv): AuthConfig {
+  const issuerUrl = `${env.KEYCLOAK_URL.replace(/\/$/, '')}/realms/${env.KEYCLOAK_REALM}`
 
   return {
     mode: 'keycloak',
@@ -31,15 +64,14 @@ function buildKeycloakConfig(): AuthConfig {
     authorizationEndpoint: `${issuerUrl}/protocol/openid-connect/auth`,
     tokenEndpoint: `${issuerUrl}/protocol/openid-connect/token`,
     endSessionEndpoint: `${issuerUrl}/protocol/openid-connect/logout`,
-    clientId,
+    clientId: env.KEYCLOAK_CLIENT_ID,
     redirectUri: `${window.location.origin}/login/callback`,
     scopes: ['openid', 'profile', 'email'],
   }
 }
 
-function buildXsuaaConfig(): AuthConfig {
-  const baseUrl = import.meta.env.VITE_XSUAA_URL ?? ''
-  const clientId = import.meta.env.VITE_XSUAA_CLIENT_ID ?? ''
+function buildXsuaaConfig(env: RuntimeEnv): AuthConfig {
+  const baseUrl = env.XSUAA_URL.replace(/\/$/, '')
 
   return {
     mode: 'xsuaa',
@@ -47,7 +79,7 @@ function buildXsuaaConfig(): AuthConfig {
     authorizationEndpoint: `${baseUrl}/oauth/authorize`,
     tokenEndpoint: `${baseUrl}/oauth/token`,
     endSessionEndpoint: `${baseUrl}/logout`,
-    clientId,
+    clientId: env.XSUAA_CLIENT_ID,
     redirectUri: `${window.location.origin}/login/callback`,
     scopes: ['openid'],
   }
@@ -67,17 +99,18 @@ function buildNoneConfig(): AuthConfig {
 }
 
 function resolveAuthConfig(): AuthConfig {
-  const authMode = import.meta.env.VITE_AUTH_MODE
+  const env = runtimeEnv()
 
-  if (authMode === 'keycloak') {
-    return buildKeycloakConfig()
+  if (env.AUTH_MODE === 'keycloak') {
+    return buildKeycloakConfig(env)
   }
 
-  if (authMode === 'xsuaa') {
-    return buildXsuaaConfig()
+  if (env.AUTH_MODE === 'xsuaa') {
+    return buildXsuaaConfig(env)
   }
 
-  // VITE_AUTH_MODE unset / unknown → dev bypass (no login)
+  // 'none' only, and only because somebody set it. An unknown value never
+  // reaches here: the entrypoint rejects it before nginx starts.
   return buildNoneConfig()
 }
 
