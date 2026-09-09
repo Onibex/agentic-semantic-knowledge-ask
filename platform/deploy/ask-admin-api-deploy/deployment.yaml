@@ -6,18 +6,21 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ASK Admin API — FastAPI admin backend (port 8081)
-# Namespace: onibex-ask
+# ASK Admin API, the FastAPI admin backend (port 8081).
+# Namespace: onibex-ask, created by namespace.yaml
 #
-# Shares the ask-config-pvc (RWO) with the pod that owns it — must be
-# co-located on the same node as ask-config.
+# config/settings.json comes from the ask-config ConfigMap, mounted read-only.
+# There is no shared volume any more, so this pod schedules on any node.
 #
-# Auth: validate_token accepts both XSUAA (BTP) and Keycloak tokens
-# depending on AUTH_MODE.  Client secret supplied via xsuaa-ask-secret.
+# Auth: validate_token picks ONE issuer from AUTH_MODE, either "keycloak" or
+# "xsuaa". EKS runs Keycloak. XSUAA stays wired for the later Kyma target and
+# every reference to it is optional, so its Secret can be absent.
 #
-# The SPA nginx proxies /api/admin/* and /api/* here — no external APIRule
-# needed for the API itself (in-cluster only, reached through the SPA).
-# If you need direct external access (e.g. for testing), uncomment the APIRule.
+# The SPA nginx proxies /api/admin/* and /api/* here, so the API needs no
+# external entry point of its own: it is in-cluster only, reached through the
+# SPA. For direct access while testing, use `kubectl port-forward`. The
+# target-specific exposure objects live in deploy/kyma/ (Kyma) or come from the
+# Helm chart (EKS, AKS).
 # ─────────────────────────────────────────────────────────────────────────────
 ---
 apiVersion: apps/v1
@@ -30,7 +33,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate          # PVC is RWO — one writer at a time
+    type: RollingUpdate
   selector:
     matchLabels:
       app: ask-admin-api
@@ -39,13 +42,6 @@ spec:
       labels:
         app: ask-admin-api
     spec:
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: ask-config
-              topologyKey: kubernetes.io/hostname
       containers:
         - name: ask-admin-api
           image: <your-registry>/onibex-ask-admin-api:latest
@@ -55,51 +51,111 @@ spec:
           env:
             - name: ENVIRONMENT
               value: "production"
+            # "both" was not a value validate_token understands. It matches
+            # neither branch, so claims stayed None and EVERY request 401'd.
+            # The accepted values are exactly "keycloak" and "xsuaa".
             - name: AUTH_MODE
-              value: "both"       # accepts XSUAA and Keycloak tokens
+              value: "keycloak"
+            - name: DEV_BYPASS_AUTH
+              value: "false"
             - name: LOG_LEVEL
               value: "INFO"
-            # ── XSUAA credentials ────────────────────────────────────────────
+            # ── Keycloak ─────────────────────────────────────────────────────
+            # KEYCLOAK_JWKS_URL is what the validator reads. The previous
+            # KEYCLOAK_ISSUER was read by nothing, and being optional it went
+            # unnoticed: the pod started and rejected every token.
+            - name: KEYCLOAK_JWKS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-ask-secret
+                  key: jwks-url
+            # ── OpenSearch, env-first in all nine client sites ───────────────
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-host
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-port
+            - name: OPENSEARCH_USE_SSL
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-use-ssl
+            - name: OPENSEARCH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-user
+            - name: OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-password
+            # Validated at boot by validate_master_key(); the pod refuses to
+            # start without it. Must be byte-identical across redeploys.
+            - name: ONIBEX_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: encryption-key
+            # ── Semantic-layer repo, required at boot ────────────────────────
+            # main.py refuses to boot when REPO_ROOT or WORKSPACE_PATH is empty
+            # or does not point at a real directory (SEMANTIC_LAYER_PATHS_*).
+            # Both point at the same mount, as in docker-compose.
+            - name: REPO_ROOT
+              value: "/app/semantic-layer"
+            - name: WORKSPACE_PATH
+              value: "/app/semantic-layer"
+            - name: SEMANTIC_LAYER_AUTO_INIT
+              value: "true"
+            # ── XSUAA, optional and BTP only ─────────────────────────────────
             - name: XSUAA_URL
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: url
+                  optional: true
             - name: XSUAA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: clientid
+                  optional: true
             - name: XSUAA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: clientsecret
+                  optional: true
             - name: XSUAA_UAA_DOMAIN
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: uaadomain
+                  optional: true
             - name: XSUAA_VERIFICATION_KEY
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: verificationkey
+                  optional: true
             - name: XSUAA_XSAPPNAME
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: xsappname
-            # ── Keycloak (optional — set when AUTH_MODE includes keycloak) ───
-            - name: KEYCLOAK_ISSUER
-              valueFrom:
-                secretKeyRef:
-                  name: keycloak-ask-secret
-                  key: issuer
                   optional: true
           volumeMounts:
             - name: config-volume
-              mountPath: /app/config
+              mountPath: /app/config/settings.json
+              subPath: settings.json
+              readOnly: true
+            - name: semantic-layer
+              mountPath: /app/semantic-layer
           resources:
             requests:
               memory: "256Mi"
@@ -122,8 +178,20 @@ spec:
             failureThreshold: 6
       volumes:
         - name: config-volume
-          persistentVolumeClaim:
-            claimName: ask-config-pvc
+          configMap:
+            name: ask-config
+        # The semantic layer is a git working tree that only THIS pod touches,
+        # so it never needed the shared volume that caused the affinity. An
+        # emptyDir plus SEMANTIC_LAYER_AUTO_INIT gets the pod to Ready on a
+        # clean cluster.
+        #
+        # OPEN ITEM for the Helm chart: an emptyDir is lost when the pod
+        # restarts, and with it any YAML authored and not yet pushed. The two
+        # honest options are a per-pod ReadWriteOnce PVC, which is fine here
+        # precisely because nothing else mounts it, or a git remote as the
+        # source of truth. Deciding that is phase 4, not this task.
+        - name: semantic-layer
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

@@ -6,11 +6,14 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ASK Orchestrator — FastAPI deployment
+# ASK Orchestrator, the FastAPI query backend (port 8080).
 # Wiring shared with the rest of the namespace:
-#   - Namespace onibex-ask
-#   - XSUAA credentials from the xsuaa-ask-secret
-#   - config/settings.json from the shared ask-config-pvc
+#   - Namespace onibex-ask, created by namespace.yaml
+#   - config/settings.json from the ask-config ConfigMap, mounted read-only
+#   - OpenSearch and the encryption key from ask-platform-secret
+#   - Keycloak JWKS from keycloak-ask-secret
+#   - XSUAA is optional and BTP only; on EKS those keys are absent and every
+#     reference below is marked optional so the pod still starts
 # ─────────────────────────────────────────────────────────────────────────────
 ---
 apiVersion: apps/v1
@@ -22,8 +25,10 @@ metadata:
     app: ask-orchestrator
 spec:
   replicas: 1
+  # Recreate was here only because the old volume allowed one writer at a time.
+  # Nothing is shared now, so an old and a new pod can overlap during a rollout.
   strategy:
-    type: Recreate          # PVC is RWO — one writer at a time
+    type: RollingUpdate
   selector:
     matchLabels:
       app: ask-orchestrator
@@ -32,14 +37,6 @@ spec:
       labels:
         app: ask-orchestrator
     spec:
-      # Co-locate with the pod that owns the RWO config PVC so both can mount it
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: ask-config
-              topologyKey: kubernetes.io/hostname
       containers:
         - name: ask-orchestrator
           # NOTE: tag the image during CI; replace `latest` with a SHA
@@ -55,40 +52,97 @@ spec:
               value: "false"
             - name: LOG_LEVEL
               value: "INFO"
-            # ── XSUAA credentials from the existing secret ───────────────────
+            # ── Auth ─────────────────────────────────────────────────────────
+            # validator.py reads AUTH_MODE at every call and accepts exactly
+            # "keycloak" or "xsuaa". Any other value matches neither branch and
+            # every request 401s, so do not invent one. EKS runs Keycloak.
+            - name: AUTH_MODE
+              value: "keycloak"
+            - name: KEYCLOAK_JWKS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-ask-secret
+                  key: jwks-url
+            # ── OpenSearch, env-first in all nine client sites ───────────────
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-host
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-port
+            - name: OPENSEARCH_USE_SSL
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-use-ssl
+            - name: OPENSEARCH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-user
+            - name: OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: opensearch-password
+            # Decrypts the LLM, embedder and database credentials held in
+            # OpenSearch. Must be byte-identical across redeploys.
+            - name: ONIBEX_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ask-platform-secret
+                  key: encryption-key
+            # ── XSUAA, optional and BTP only ─────────────────────────────────
+            # Marked optional so the absence of the Secret on EKS or AKS does
+            # not hold the pod in CreateContainerConfigError.
             - name: XSUAA_URL
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: url
+                  optional: true
             - name: XSUAA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: clientid
+                  optional: true
             - name: XSUAA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: clientsecret
+                  optional: true
             - name: XSUAA_UAA_DOMAIN
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: uaadomain
+                  optional: true
             - name: XSUAA_VERIFICATION_KEY
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: verificationkey
+                  optional: true
             - name: XSUAA_XSAPPNAME
               valueFrom:
                 secretKeyRef:
                   name: xsuaa-ask-secret
                   key: xsappname
+                  optional: true
           volumeMounts:
+            # subPath so only settings.json is overlaid: the orchestrator image
+            # bakes the whole /app/config folder (Dockerfile:141) and a
+            # directory mount would shadow it.
             - name: config-volume
-              mountPath: /app/config
+              mountPath: /app/config/settings.json
+              subPath: settings.json
+              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -109,10 +163,13 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 6
+      # No persistent volume anywhere. Nothing in this pod writes to disk:
+      # token telemetry stays in memory (TokenTracker is built with query_id
+      # only, never log_path), so there is no /app/logs mount either.
       volumes:
         - name: config-volume
-          persistentVolumeClaim:
-            claimName: ask-config-pvc
+          configMap:
+            name: ask-config
 ---
 apiVersion: v1
 kind: Service
@@ -126,22 +183,7 @@ spec:
     - port: 80
       targetPort: 8080
   type: ClusterIP
----
-# Exposed through an APIRule with noAuth: true — the orchestrator does its own
-# XSUAA validation in-process. Replace the host with your cluster's domain.
-apiVersion: gateway.kyma-project.io/v2
-kind: APIRule
-metadata:
-  name: ask-orchestrator-apirule
-  namespace: onibex-ask
-spec:
-  hosts:
-    - ask-orchestrator.<YOUR_CLUSTER_DOMAIN>
-  service:
-    name: ask-orchestrator-service
-    port: 80
-  gateway: kyma-system/kyma-gateway
-  rules:
-    - path: /*
-      methods: ["GET", "POST", "OPTIONS"]
-      noAuth: true
+# External exposure is target-specific, so it does not live in this file. The
+# Kyma APIRule moved to deploy/kyma/, which only applies on a Kyma cluster; on
+# EKS and AKS the Helm chart adds an Ingress in phase 4. Until then, reach this
+# service with `kubectl port-forward svc/ask-orchestrator-service 8080:80`.
