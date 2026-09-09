@@ -117,4 +117,4 @@ snapshot of the index first.
 
 ---
 
-[← Back to operating the platform](README.md)
+[← Back to the manual](../README.md)
