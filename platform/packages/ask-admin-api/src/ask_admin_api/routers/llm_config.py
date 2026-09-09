@@ -16,8 +16,6 @@ Endpoints
 POST /v1/admin/llm/aicore/config       Upload SAP AI Core service-key JSON
 GET  /v1/admin/llm/aicore/config       Return AI Core file status (masked)
 GET  /v1/admin/llm/aicore/deployments  Fetch running deployments from AI Core REST API
-GET  /v1/admin/llm/config              Return effective LLM + Embedder config (all providers)
-POST /v1/admin/llm/config              Save provider config to settings.json
 """
 
 from __future__ import annotations
@@ -375,125 +373,6 @@ async def list_aicore_deployments(
 
 
 # ── Generic provider config endpoints ────────────────────────────────────────
-
-
-@router.get("/config", response_model=EffectiveLLMConfig)
-async def get_effective_llm_config(
-    claims: TokenClaims = Depends(validate_token),
-) -> EffectiveLLMConfig:
-    """Return the effective LLM + Embedder configuration with per-field source.
-
-    API keys are always masked (value=***) in the response regardless of source.
-    """
-    cfg = _read_settings()
-    llm_section = cfg.get("llm") or {}
-    emb_section = cfg.get("embedder") or {}
-
-    return EffectiveLLMConfig(
-        stack_mode=_field("STACK_MODE", cfg.get("stack_mode")),
-        llm_provider=_field("LLM_PROVIDER", llm_section.get("provider")),
-        llm_model=_field("LLM_MODEL", llm_section.get("model")),
-        llm_api_key=_field("LLM_API_KEY", llm_section.get("api_key"), sensitive=True),
-        llm_api_base=_field("LLM_API_BASE", llm_section.get("api_base")),
-        llm_api_version=_field("LLM_API_VERSION", llm_section.get("api_version")),
-        llm_deployment_id=_field(
-            "LLM_DEPLOYMENT_ID",
-            llm_section.get("deployment_id") or cfg.get("deployments", {}).get("llm"),
-        ),
-        embedder_provider=_field("EMBEDDER_PROVIDER", emb_section.get("provider")),
-        embedder_model=_field("EMBEDDER_MODEL", emb_section.get("model")),
-        embedder_api_key=_field("EMBEDDER_API_KEY", emb_section.get("api_key"), sensitive=True),
-        embedder_api_base=_field("EMBEDDER_API_BASE", emb_section.get("api_base")),
-        embedder_api_version=_field("EMBEDDER_API_VERSION", emb_section.get("api_version")),
-        embedder_deployment_id=_field(
-            "EMBEDDER_DEPLOYMENT_ID",
-            emb_section.get("deployment_id") or cfg.get("deployments", {}).get("embeddings"),
-        ),
-        # params dicts: keys are env-var names (AWS_ACCESS_KEY_ID, VERTEXAI_*).
-        # Values are not masked — production must inject these via env vars,
-        # not via this UI. Returned for visibility / round-tripping only.
-        llm_params={str(k): str(v) for k, v in (llm_section.get("params") or {}).items()},
-        embedder_params={str(k): str(v) for k, v in (emb_section.get("params") or {}).items()},
-    )
-
-
-@router.post("/config", status_code=200)
-async def save_provider_config(
-    body: ProviderConfigRequest,
-    claims: TokenClaims = Depends(validate_token),
-) -> dict[str, str]:
-    """Save LLM + Embedder provider config to settings.json.
-
-    Only fields present in the request body are updated (partial update).
-    Sensitive fields (api_key) from the request are written to settings.json;
-    in production, prefer injecting secrets via env vars instead.
-    """
-    trace_id = uuid.uuid4().hex
-    logger.info("[%s] llm config save user=%s", trace_id, getattr(claims, "email", "?"))
-
-    cfg = _read_settings()
-
-    if body.stack_mode is not None:
-        cfg["stack_mode"] = body.stack_mode
-
-    llm_fields = (
-        body.llm_provider,
-        body.llm_model,
-        body.llm_api_key,
-        body.llm_api_base,
-        body.llm_api_version,
-        body.llm_deployment_id,
-        body.llm_params,
-    )
-    if any(v is not None for v in llm_fields):
-        llm = cfg.setdefault("llm", {})
-        if body.llm_provider is not None:
-            llm["provider"] = body.llm_provider
-        if body.llm_model is not None:
-            llm["model"] = body.llm_model
-        if body.llm_api_key is not None:
-            llm["api_key"] = body.llm_api_key
-        if body.llm_api_base is not None:
-            llm["api_base"] = body.llm_api_base
-        if body.llm_api_version is not None:
-            llm["api_version"] = body.llm_api_version
-        if body.llm_deployment_id is not None:
-            llm["deployment_id"] = body.llm_deployment_id
-        if body.llm_params is not None:
-            # Empty dict {} explicitly clears the params map.
-            llm["params"] = dict(body.llm_params)
-
-    emb_fields = (
-        body.embedder_provider,
-        body.embedder_model,
-        body.embedder_api_key,
-        body.embedder_api_base,
-        body.embedder_api_version,
-        body.embedder_deployment_id,
-        body.embedder_params,
-    )
-    if any(v is not None for v in emb_fields):
-        emb = cfg.setdefault("embedder", {})
-        if body.embedder_provider is not None:
-            emb["provider"] = body.embedder_provider
-        if body.embedder_model is not None:
-            emb["model"] = body.embedder_model
-        if body.embedder_api_key is not None:
-            emb["api_key"] = body.embedder_api_key
-        if body.embedder_api_base is not None:
-            emb["api_base"] = body.embedder_api_base
-        if body.embedder_api_version is not None:
-            emb["api_version"] = body.embedder_api_version
-        if body.embedder_deployment_id is not None:
-            emb["deployment_id"] = body.embedder_deployment_id
-        if body.embedder_params is not None:
-            emb["params"] = dict(body.embedder_params)
-
-    _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _SETTINGS_PATH.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
-    logger.info("[%s] settings.json updated", trace_id)
-
-    return {"status": "ok", "message": "Provider config saved to settings.json"}
 
 
 # ── Test connection endpoint ─────────────────────────────────────────────────

@@ -370,16 +370,7 @@ export async function deletePhrase(id: string): Promise<void> {
   await http.delete(`/admin/dictionary/${encodeURIComponent(id)}`);
 }
 
-// Config API
-export async function getConfig(): Promise<AppSettings> {
-  const { data } = await http.get<ConfigResponse>('/admin/config');
-  return data.config;
-}
 
-export async function saveConfig(config: AppSettings): Promise<ConfigSaveResponse> {
-  const { data } = await http.post<ConfigSaveResponse>('/admin/config', { config });
-  return data;
-}
 
 // Knowledge Graph API
 export async function getCatalog(): Promise<LightweightEntity[]> {
@@ -527,15 +518,7 @@ export async function resetKgIndices(): Promise<ResetIndicesResult> {
   return data;
 }
 
-export async function testSapConnection(): Promise<ConnectionTestResult> {
-  const { data } = await http.post<ConnectionTestResult>('/admin/sap-connection/test', {});
-  return data;
-}
 
-export async function testMcpConnection(): Promise<ConnectionTestResult> {
-  const { data } = await http.post<ConnectionTestResult>('/admin/mcp/test', {});
-  return data;
-}
 
 // Contracts
 export async function getContracts(): Promise<ContractsConfig> {
@@ -566,23 +549,8 @@ export async function listAicoreDeployments(): Promise<DeploymentInfo[]> {
   return data.deployments;
 }
 
-// ── Multi-provider LLM + Embedder config ────────────────────────────────────
-// New generic endpoints (Tier 2): one shape for SAP AI Core (managed) and for
-// LiteLLM (direct — OpenAI, Anthropic, Azure, Databricks, Bedrock, …).
-export async function getEffectiveLLMConfig(): Promise<EffectiveLLMConfig> {
-  const { data } = await http.get<EffectiveLLMConfig>('/admin/llm/config');
-  return data;
-}
 
-export async function saveProviderConfig(body: ProviderConfigRequest): Promise<{ status: string; message: string }> {
-  const { data } = await http.post<{ status: string; message: string }>('/admin/llm/config', body);
-  return data;
-}
 
-export async function testProviderConnection(body: TestProviderRequest): Promise<TestProviderResponse> {
-  const { data } = await http.post<TestProviderResponse>('/admin/llm/test', body);
-  return data;
-}
 
 // ── Setup Effective (read-only snapshot for the SPA's Setup page) ──────────
 
@@ -1026,8 +994,3 @@ export async function ingestDoc(
   return data;
 }
 
-// Database connection test
-export async function testDatabaseConnection(body: DatabaseTestRequest): Promise<DatabaseTestResult> {
-  const { data } = await http.post<DatabaseTestResult>('/admin/database/test', body);
-  return data;
-}
