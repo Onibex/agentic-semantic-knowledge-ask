@@ -328,9 +328,9 @@ export function SapConnectionPage() {
           ) : config ? (
             /* Read mode */
             <dl className="grid grid-cols-1 gap-4">
-              <Field label={t('sap_field_host')} value={config.host} mono />
-              <Field label={t('sap_field_odata_path')} value={config.odata_path} mono />
-              <Field label={t('sap_field_username')} value={config.username} />
+              <Field label={t('sap_field_host')} value={config.host ?? ''} mono />
+              <Field label={t('sap_field_odata_path')} value={config.odata_path ?? ''} mono />
+              <Field label={t('sap_field_username')} value={config.username ?? ''} />
               <Field label={t('sap_field_password')} value={config.password ? MASK : ''} />
             </dl>
           ) : (
