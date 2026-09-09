@@ -138,7 +138,7 @@ class RagIndexingService:
         Manage Embeddings UI to show what's indexed without dumping every
         chunk over the wire.
         """
-        client = _get_os_client(self._os_config)
+        client = _get_os_client()
         index = _index_for(collection, self._env)
 
         if not client.indices.exists(index=index):
@@ -202,7 +202,7 @@ class RagIndexingService:
         the OpenSearch term filter is reliable). ``source_files`` stays for
         documentation deletion (rag_data_product_docs has no entity_id).
         """
-        client = _get_os_client(self._os_config)
+        client = _get_os_client()
         index = _index_for(collection, self._env)
 
         if not client.indices.exists(index=index):

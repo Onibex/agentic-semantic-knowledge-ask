@@ -32,11 +32,9 @@ Concurrency model:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import uuid
-from pathlib import Path
 from typing import Any
 
 from opensearchpy import OpenSearch
@@ -118,7 +116,7 @@ _ORGANIZATION_MAPPING: dict[str, Any] = {
 
 
 class WorkspaceRepository:
-    """OpenSearch CRUD for the hierarchy. Reads connection from settings.json."""
+    """OpenSearch CRUD for the hierarchy. Connection comes from the environment."""
 
     def __init__(self, client: OpenSearch | None = None) -> None:
         self._client = client or _build_client()
@@ -382,51 +380,32 @@ class WorkspaceRepository:
 
 
 def _build_client() -> OpenSearch:
-    """Reads OpenSearch config from settings.json the same way ask-knowledge-graph does."""
-    settings_path = Path("config/settings.json")
-    cfg: dict[str, Any] = {}
-    if settings_path.exists():
-        try:
-            cfg = json.loads(settings_path.read_text(encoding="utf-8"))
-        except Exception:
-            logger.warning("Could not parse settings.json — using OpenSearch defaults")
+    """The OpenSearch connection, from the environment and nowhere else.
 
-    # Env-first (OPENSEARCH_*) with settings.json fallback — same resolution the
-    # secrets repo + system_prompts repo use, so env vars win and this survives
-    # the cleanup that strips ``opensearch`` from settings.json.
-    os_cfg = cfg.get("opensearch") or {}
-    host = os.getenv("OPENSEARCH_HOST")
-    port_env = os.getenv("OPENSEARCH_PORT")
-    use_ssl_env = os.getenv("OPENSEARCH_USE_SSL")
+    The CWD-relative ``config/settings.json`` fallback is gone; see the twin in
+    ``system_prompts_repository`` for why the connection is one of the three
+    things that stays in the environment for good. The ``localhost`` default is
+    deliberate and unchanged.
+    """
+    host = os.getenv("OPENSEARCH_HOST") or "localhost"
+    port = int(os.getenv("OPENSEARCH_PORT") or 9200)
+    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", ""))
+    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
     username = os.getenv("OPENSEARCH_USER") or None
     password = os.getenv("OPENSEARCH_PASSWORD") or None
-
-    if not host:
-        host = os_cfg.get("host", "localhost")
-        port = int(port_env or os_cfg.get("port", 9200))
-        use_ssl = (
-            bool(os_cfg.get("use_ssl", False)) if use_ssl_env is None else _truthy(use_ssl_env)
-        )
-        username = username or os_cfg.get("username") or None
-        password = password or os_cfg.get("password") or None
-        verify_certs = bool(os_cfg.get("verify_certs", False))
-    else:
-        port = int(port_env or 9200)
-        use_ssl = _truthy(use_ssl_env or "")
-        verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
 
     kwargs: dict[str, Any] = {
         "hosts": [{"host": host, "port": port}],
         "use_ssl": use_ssl,
         "verify_certs": verify_certs,
         "ssl_show_warn": False,
-        # Default urllib3 pool is effectively 1 connection here — under a burst
+        # Default urllib3 pool is effectively 1 connection here: under a burst
         # of concurrent requests (rapid canvas "+", catalog refetch, warmup) the
         # pool fills and connections get discarded + re-handshaked, adding
         # latency ("Connection pool is full, discarding connection"). This client
         # is shared by the BD repo AND the lifecycle repo, so a larger pool
-        # benefits both. Overridable via settings.json opensearch.pool_maxsize.
-        "maxsize": int(os_cfg.get("pool_maxsize", 20)),
+        # benefits both. Tune with OPENSEARCH_POOL_MAXSIZE.
+        "maxsize": int(os.getenv("OPENSEARCH_POOL_MAXSIZE") or 20),
     }
     if username and password:
         kwargs["http_auth"] = (username, password)

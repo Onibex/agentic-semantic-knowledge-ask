@@ -21,10 +21,12 @@ Source of truth (post encrypted-secrets refactor):
 
   * LLM / Embedder   → ``ask-system-settings-v1`` index (via SecretsRepository).
                        Sensitive fields come masked as ``"***"``.
-  * OpenSearch       → environment variables (``OPENSEARCH_*``) with a tiny
-                       ``settings.json.opensearch`` fallback for the dev
-                       migration window. Bootstrap chicken-and-egg: OS creds
-                       cannot live encrypted inside OS.
+  * OpenSearch       → environment variables (``OPENSEARCH_*``) and nothing
+                       else. Bootstrap chicken-and-egg: OpenSearch credentials
+                       cannot live encrypted inside OpenSearch. The old
+                       ``settings.json.opensearch`` fallback is gone, so no
+                       field in this section reports a ``file`` source any
+                       more.
 
 Endpoints
 ─────────
@@ -34,12 +36,10 @@ POST /v1/admin/setup/test/opensearch     OpenSearch cluster health probe
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import time
 import uuid
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -53,8 +53,6 @@ from ..auth.validator import TokenClaims, validate_token
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/admin/setup", tags=["admin/setup"])
-
-_SETTINGS_PATH = Path("config/settings.json")
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -133,15 +131,6 @@ def _repo() -> SecretsRepository:
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-
-
-def _read_settings_safely() -> dict[str, Any]:
-    if not _SETTINGS_PATH.exists():
-        return {}
-    try:
-        return json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
 
 
 def _build_llm_or_embedder_section(target: str, title: str) -> ConfigSection:
@@ -256,15 +245,17 @@ def _build_llm_or_embedder_section(target: str, title: str) -> ConfigSection:
 
 
 def _build_opensearch_section() -> ConfigSection:
-    """OpenSearch card — env vars are the canonical source.
+    """OpenSearch card. The environment is the only source.
 
     Bootstrap chicken-and-egg: the secrets backend itself lives in OpenSearch,
-    so OS creds cannot live encrypted inside OS. They stay in env vars
-    (``.env`` for dev, K8s Secret in prod). A legacy ``settings.json.opensearch``
-    block is read as a fallback during the migration window.
+    so OpenSearch credentials cannot live encrypted inside OpenSearch. They stay
+    in the environment (``.env`` for dev, a Kubernetes Secret in prod).
+
+    The legacy ``settings.json.opensearch`` fallback is gone, so ``source`` here
+    now only ever reads ``environment`` or ``default``. Reporting a ``file``
+    source for a value no client would read from a file was the more misleading
+    option: this card exists to say what the running services actually use.
     """
-    cfg = _read_settings_safely()
-    os_cfg = cfg.get("opensearch") or {}
 
     def _field(name: str, env_name: str, fallback: Any, sensitive: bool = False) -> ConfigField:
         env_val = os.getenv(env_name)
@@ -279,26 +270,22 @@ def _build_opensearch_section() -> ConfigSection:
             return ConfigField(
                 name=name,
                 value="***" if sensitive else str(fallback),
-                source="file",
+                source="default",
                 sensitive=sensitive,
             )
         return ConfigField(name=name, value="", source="default", sensitive=sensitive)
 
     fields = [
-        _field("host", "OPENSEARCH_HOST", os_cfg.get("host", "localhost")),
-        _field("port", "OPENSEARCH_PORT", os_cfg.get("port", 9200)),
-        _field("use_ssl", "OPENSEARCH_USE_SSL", "enabled" if os_cfg.get("use_ssl") else "disabled"),
-        _field(
-            "embedding_dim",
-            "OPENSEARCH_EMBEDDING_DIM",
-            os_cfg.get("embedding_dim", 1024),
-        ),
+        _field("host", "OPENSEARCH_HOST", "localhost"),
+        _field("port", "OPENSEARCH_PORT", 9200),
+        _field("use_ssl", "OPENSEARCH_USE_SSL", "disabled"),
+        _field("embedding_dim", "OPENSEARCH_EMBEDDING_DIM", 1024),
     ]
-    if os.getenv("OPENSEARCH_USER") or os_cfg.get("username"):
-        fields.append(_field("username", "OPENSEARCH_USER", os_cfg.get("username")))
-    if os.getenv("OPENSEARCH_PASSWORD") or os_cfg.get("password"):
+    if os.getenv("OPENSEARCH_USER"):
+        fields.append(_field("username", "OPENSEARCH_USER", None))
+    if os.getenv("OPENSEARCH_PASSWORD"):
         fields.append(
-            _field("password", "OPENSEARCH_PASSWORD", os_cfg.get("password"), sensitive=True)
+            _field("password", "OPENSEARCH_PASSWORD", None, sensitive=True)
         )
     return ConfigSection(
         id="opensearch",
@@ -335,19 +322,22 @@ async def test_opensearch_connection(
 
     Always 200 — the success / error is in the body so the SPA can render
     inline without exception handling.
+
+    Resolves from the environment ONLY, and that is the whole point: it has to
+    resolve exactly the way every real client does
+    (``system_prompts_repository._build_client`` and its eight twins), or a
+    green Test button stops meaning the services can connect. It used to also
+    read ``settings.json``, which after the deployment-settings move would have
+    made this probe test a connection nothing else uses.
     """
     trace_id = uuid.uuid4().hex
-    cfg = _read_settings_safely()
-    os_cfg = cfg.get("opensearch") or {}
 
-    host = os.getenv("OPENSEARCH_HOST") or os_cfg.get("host", "localhost")
-    port = int(os.getenv("OPENSEARCH_PORT") or os_cfg.get("port", 9200))
-    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", "")) or bool(os_cfg.get("use_ssl", False))
-    username = os.getenv("OPENSEARCH_USER") or os_cfg.get("username") or None
-    password = os.getenv("OPENSEARCH_PASSWORD") or os_cfg.get("password") or None
-    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", "")) or bool(
-        os_cfg.get("verify_certs", False)
-    )
+    host = os.getenv("OPENSEARCH_HOST") or "localhost"
+    port = int(os.getenv("OPENSEARCH_PORT") or 9200)
+    use_ssl = _truthy(os.getenv("OPENSEARCH_USE_SSL", ""))
+    username = os.getenv("OPENSEARCH_USER") or None
+    password = os.getenv("OPENSEARCH_PASSWORD") or None
+    verify_certs = _truthy(os.getenv("OPENSEARCH_VERIFY_CERTS", ""))
 
     scheme = "https" if use_ssl else "http"
     url = f"{scheme}://{host}:{port}/_cluster/health"
