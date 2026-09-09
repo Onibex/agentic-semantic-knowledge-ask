@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { configApi, llmConnApi, dbApi, sapApi, setupApi } from '@/api/client'
+import { configApi, contractsApi, llmConnApi, dbApi, sapApi, setupApi } from '@/api/client'
 import { authConfig } from '@/auth/config'
 import { useTranslation } from '@/hooks/useTranslation'
 import type { AppConfig } from '@/api/types'
@@ -103,9 +103,10 @@ export function HomePage() {
   async function load() {
     setLoading(true)
     try {
-      const [cfgRes, sapRes, llmRes, dbRes, setupRes] = await Promise.allSettled([
+      const [cfgRes, sapRes, contractsRes, llmRes, dbRes, setupRes] = await Promise.allSettled([
         configApi.get(),
         sapApi.get(),
+        contractsApi.get(),
         llmConnApi.list(),
         dbApi.list(),
         setupApi.effective(),
@@ -116,11 +117,12 @@ export function HomePage() {
         // (isSapConfigured / isMcpConfigured) working unchanged.
         const sap = sapRes.status === 'fulfilled' ? sapRes.value.config : {}
         setConfig({ ...cfgRes.value.config, sap_s4hana: sap } as AppConfig)
-        // contracts count from config
-        const apis = (cfgRes.value.config as Record<string, unknown>).contracts
-        if (Array.isArray(apis)) setContractCount(apis.length)
-        else setContractCount(0)
       }
+      // The contracts live in api-config.json, not settings.json, so this used
+      // to read a key that never exists and the card always showed zero.
+      setContractCount(
+        contractsRes.status === 'fulfilled' ? (contractsRes.value.apis?.length ?? 0) : 0,
+      )
       if (llmRes.status === 'fulfilled') {
         const { connections, active } = llmRes.value
         const activeConn = connections.find((c) => c.id === active.active)
