@@ -5,7 +5,7 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-from datetime import date
+from datetime import UTC, datetime
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -37,9 +37,11 @@ You extract BUSINESS TERMS that the downstream pipeline will resolve.
 
 __LANGUAGE_RULE__
 
-TODAY'S DATE: {current_date}
+TODAY'S DATE: {current_date} (UTC)
 Use this to resolve relative time references: "this month", "last quarter", "yesterday",
 "this year", "last week", etc. Always calculate concrete start/end dates in time_context.
+Every bound you emit MUST be derived from the date above. Never write a year you did
+not compute from it, and never carry over a year from the examples in this prompt.
 
 ─── OUTPUT FIELDS (one by one) ───────────────────────────────────────────────
 
@@ -97,10 +99,11 @@ Use this to resolve relative time references: "this month", "last quarter", "yes
      - start: ISO 8601 date string (YYYY-MM-DD), or null
      - end: ISO 8601 date string (YYYY-MM-DD), or null
      - granularity: one of "day", "week", "month", "quarter", "year", or null
-   Examples:
+   Examples (the user NAMED the period, so its year comes from the question):
      "in March 2026" → {{"field": "order date", "start": "2026-03-01", "end": "2026-03-31", "granularity": "month"}}
      "Q1 2026" → {{"field": "order date", "start": "2026-01-01", "end": "2026-03-31", "granularity": "quarter"}}
-     "last year" → {{"field": "order date", "start": "2025-01-01", "end": "2025-12-31", "granularity": "year"}}
+   A RELATIVE period ("last year", "this month") carries no year: compute it from
+   TODAY'S DATE. See TIME-FILTERED PATTERN below.
    If the user does NOT mention a date period → set to null (do not invent dates).
 
 7. sorting (optional list of objects)
@@ -244,7 +247,9 @@ A: is_impossible=true, intent_summary="Greeting, not an analytical question"
                 plan = self.chain.invoke(
                     {
                         "user_query": user_query,
-                        "current_date": date.today().isoformat(),
+                        # UTC, not date.today(): the latter reads the container's
+                        # local clock, and every internal timestamp here is UTC.
+                        "current_date": datetime.now(UTC).date().isoformat(),
                         "format_instructions": self.parser.get_format_instructions(),
                     }
                 )

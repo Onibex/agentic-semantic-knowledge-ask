@@ -26,6 +26,7 @@ aprovechar prompt caching de Claude. Sólo la user message varía por query.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 
 from langchain_core.messages import HumanMessage
 
@@ -100,6 +101,9 @@ FORMAT RULES
 - Respond with ONLY the JSON object. No markdown fences, no prose.
 - If a field doesn't apply, use null or empty list as appropriate.
 - Use ISO-8601 for dates (YYYY-MM-DD).
+- Resolve every RELATIVE window ("this month", "the rest of the year", "the last
+  6 months") against TODAY'S DATE given above, never against a guessed year.
+  If the question names no period, leave time_context null: do not invent one.
 """
 
 
@@ -220,17 +224,25 @@ class EntitySelectorService:
     def _build_system_prompt(
         self, catalog: Catalog, organization_context: str | None = None
     ) -> str:
-        """System prompt estable: org context (optional) + rules + catalog + few-shots.
+        """System prompt estable: org context (optional) + today + rules + catalog + few-shots.
 
         Org context goes FIRST so the LLM sees the customer's environment
         before any of the generic rules — primes it to frame answers for that
         specific SAP install. Stays out of the cached-prompt portion (catalog
         + few-shots) because it changes whenever the admin edits Organization.
+
+        Today's date joins it in that volatile head, and is computed HERE rather
+        than baked into `_SYSTEM_RULES`: a module-level constant would freeze the
+        date at import and the orchestrator process outlives a day. Without it
+        the selector dates a relative window off a guessed year, and the SQL
+        stage inherits the wrong period (see `_format_today` in
+        ask_sql_generation.application.freeform_generator).
         """
         catalog_text = self._catalog_service.render_as_prompt_context(catalog)
         parts: list[str] = []
         if organization_context:
             parts.append(organization_context)
+        parts.append(f"TODAY'S DATE: {datetime.now(UTC).date().isoformat()} (UTC)")
         parts.append(_SYSTEM_RULES)
         parts.append(catalog_text)
         parts.append(_FEW_SHOTS)
