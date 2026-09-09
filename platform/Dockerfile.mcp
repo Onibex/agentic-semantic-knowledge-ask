@@ -16,10 +16,14 @@ COPY services/ask-mcp-server/package.json services/ask-mcp-server/package-lock.j
 COPY services/ask-mcp-server/patch.js .
 RUN npm ci
 
-# Copy default MCP config (used as seed if PVC has no config yet)
-COPY services/ask-mcp-server/api-config.json .
+# No api-config.json is baked in any more. It is fetched from the admin API at
+# boot by the script below, which is what removed the last shared writable file
+# in the platform. A baked copy kept "as a fallback" would reintroduce exactly
+# the defect being removed: two sources of truth, one silently shadowing the
+# other.
+COPY services/ask-mcp-server/fetch-contracts.js .
 
-# Startup script: reads api-config.json from PVC if available
+# Startup script: fetches the contracts, then starts the proxy
 COPY services/ask-mcp-server/start.sh .
 RUN sed -i 's/\r//' start.sh && chmod +x start.sh
 
