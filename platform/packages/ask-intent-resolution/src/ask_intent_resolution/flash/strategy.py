@@ -108,7 +108,6 @@ class FlashStrategy:
                 "db_type": db_type,
                 "db_config": db_config,
                 "hana_schema": (db_config or {}).get("schema", "") if db_type == "hana" else "",
-                "schema_mode": cfg.get("schema_mode", "both"),
                 "sql_executor": SqlExecutorService(formatter=LLMResultFormatter(llm)),
             }
             # Evict superseded revisions so a process that has seen several model
@@ -137,7 +136,6 @@ class FlashStrategy:
                 bundle["llm"],
                 bundle["db_type"],
                 history,
-                bundle["schema_mode"],
                 hana_schema=bundle.get("hana_schema", ""),
                 # Workspace scope: restrict RAG chunks to the workspace's entities.
                 allowed_ids=request.allowed_entity_ids,

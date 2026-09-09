@@ -19,10 +19,15 @@ pods, and therefore no podAffinity pinning them to one node, which is what kept
 the two backends from scheduling at all. See
 ITERATION_K8S_MULTICLOUD_PLAN section 3.
 
-Four sections still have live readers, all of them deploy-time tuning that a
-ConfigMap serves fine: ``schema_mode`` (flash strategy), ``hybrid_pipeline``
-(precise retrieval), ``pipeline_v2`` (smart catalog) and
+**Two** sections still have live readers, both deploy-time tuning that a
+ConfigMap serves fine: ``hybrid_pipeline`` (precise retrieval) and
 ``sap_ai_core.config_path``.
+
+``schema_mode`` and ``pipeline_v2`` went on 2026-09-09, on Alberth's
+observation that neither should have a dependency any more: the publish path
+writes one doc_type so ``yaml`` is the only mode with anything behind it, and
+the query scope comes from the workspace. Both readers turned out to be dead
+code rather than live settings.
 
 One writable file DOES remain, and it is a different one: ``config/api-config.json``,
 owned by ``routers/contracts`` and also baked into the MCP server image. It needs

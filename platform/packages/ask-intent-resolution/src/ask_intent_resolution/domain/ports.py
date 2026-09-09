@@ -37,10 +37,11 @@ class ResolutionRequest:
     mode: Mode
     session_id: str | None = None
     conversation_history: list[dict[str, Any]] = field(default_factory=list)
-    # Workspace-scoped entity allowlist (Iter 1, Req #5). When provided the
-    # smart strategy filters its catalog to this set; None falls back to the
-    # legacy ``pipeline_v2.active_profile`` lookup in settings.json (kept
-    # temporarily for batch / CLI callers that don't pass a workspace).
+    # Workspace-scoped entity allowlist (Iter 1, Req #5). The smart strategy
+    # filters its catalog to this set, and it is now the ONLY source: the
+    # ``pipeline_v2.active_profile`` fallback in settings.json was removed
+    # (2026-09-09) once it turned out to be unreachable. ResolutionRequest is
+    # built in exactly one place, and there workspace_id is required.
     #
     # CONTRACT — three-valued, and every consumer MUST branch on ``is None``,
     # never on truthiness:

@@ -125,29 +125,6 @@ class HybridPipelineSettings(BaseModel):
     max_expansion_rounds: int = 1
 
 
-class DataProductDefinition(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    description: str = ""
-    entity_ids: list[str] = Field(default_factory=list)
-
-
-class PipelineProfile(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    description: str = ""
-    data_products: list[str] = Field(default_factory=list)
-    extra_entity_ids: list[str] = Field(default_factory=list)
-
-
-class PipelineV2Settings(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    active_profile: str = "default"
-    profiles: dict[str, PipelineProfile] = Field(default_factory=dict)
-    data_products: dict[str, DataProductDefinition] = Field(default_factory=dict)
-
-
 # ── Root model ──────────────────────────────────────────────────────────────
 
 
@@ -163,7 +140,6 @@ class RuntimeSettings(BaseModel):
     # Top-level discriminators
     db_type: Literal["hana", "postgresql"] = "postgresql"
     stack_mode: Literal["managed", "direct"] = "direct"
-    schema_mode: str = "yaml"
     model_name: str = ""
 
     # Connection sections
@@ -186,7 +162,6 @@ class RuntimeSettings(BaseModel):
     sap_s4hana: SapS4HanaSettings = Field(default_factory=SapS4HanaSettings)
 
     # Pipeline + retrieval tuning
-    pipeline_v2: PipelineV2Settings = Field(default_factory=PipelineV2Settings)
     hybrid_pipeline: HybridPipelineSettings = Field(default_factory=HybridPipelineSettings)
 
     # ── Constructors ────────────────────────────────────────────────────────
