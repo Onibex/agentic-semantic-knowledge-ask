@@ -3,6 +3,15 @@
 .venv
 venv
 env
+# `env` above matches a path named exactly `env`, NOT `.env`. Without the two
+# lines below, a developer's .env (encryption key, OpenSearch and Keycloak
+# passwords, provider tokens) is eligible to be copied into an image. The
+# backend Dockerfiles copy explicit paths today, so nothing leaks, but the
+# images are published to a public registry and a broadened COPY must not be
+# able to turn that into a leak.
+.env
+.env.*
+!.env.example
 __pycache__
 *.pyc
 *.pyo
