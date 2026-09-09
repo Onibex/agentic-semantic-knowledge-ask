@@ -136,8 +136,11 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Orchestrator image is backend-only: the typed packages installed above are
-# self-contained, so the only project tree the runtime still needs is config/
-# (settings.json + api-config.json), overridden by the PVC / bind mount.
+# self-contained, so the only project tree the runtime still needs is config/,
+# which now holds settings.json alone. In Kubernetes that one file arrives as a
+# read-only ConfigMap mounted over this path with subPath; locally it is a bind
+# mount. api-config.json left on 2026-09-09: the API contracts live in
+# OpenSearch and the MCP server fetches them at boot.
 COPY config /app/config
 
 ENV PYTHONPATH=/app

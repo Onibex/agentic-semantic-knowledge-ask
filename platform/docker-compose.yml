@@ -447,8 +447,14 @@ services:
     ports:
       - "${MCP_HOST_PORT:-4004}:4004"
     env_file: [ .env ]
-    volumes:
-      - ./config:/app/config
+    environment:
+      # The API contracts are fetched from the admin API at boot, so there is
+      # no ./config mount any more and no api-config.json baked in the image.
+      # See services/ask-mcp-server/fetch-contracts.js: it retries with backoff
+      # and keeps the container unready rather than starting with zero tools.
+      ASK_ADMIN_API_URL: http://ask-admin-api:8081
+      ASK_INGEST_API_KEY: ${ASK_INGEST_API_KEY:-dev-local-key-change-me}
+      ASK_ENV: ${ASK_ENV:-dev}
     networks: [ ask-net ]
     restart: unless-stopped
     healthcheck:

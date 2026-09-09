@@ -27,7 +27,8 @@
 #                             .env.remote.example / .env.example ARE included.
 #   config/aicore_config.json SAP AI Core creds — a secret; provision on the host
 #                             (or use Bedrock IAM / the ASK Setup UI). settings.json
-#                             and api-config.json still ship.
+#                             still ships; api-config.json no longer exists, the
+#                             API contracts live in OpenSearch since 2026-09-09.
 #   config/chats|profiles|artifacts   RUNTIME state, not deploy input: chat
 #                             transcripts, user profiles and generated artifacts
 #                             from whoever ran the stack locally. `./config` is a

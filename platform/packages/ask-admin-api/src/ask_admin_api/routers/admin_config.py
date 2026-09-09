@@ -29,9 +29,11 @@ writes one doc_type so ``yaml`` is the only mode with anything behind it, and
 the query scope comes from the workspace. Both readers turned out to be dead
 code rather than live settings.
 
-One writable file DOES remain, and it is a different one: ``config/api-config.json``,
-owned by ``routers/contracts`` and also baked into the MCP server image. It needs
-the same treatment before the chart can drop shared storage entirely.
+``config/api-config.json`` used to be the one writable file left. It went the
+same way on 2026-09-09: the API contracts now live in ``ask-api-contracts-v1``,
+env-suffixed, and the MCP server fetches them at boot instead of reading a
+mounted file. **No file on disk is written by the platform any more**, which is
+what lets the chart drop shared storage entirely.
 
 Rules
 ─────
