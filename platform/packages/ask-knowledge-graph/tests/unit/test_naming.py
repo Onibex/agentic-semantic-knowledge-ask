@@ -102,3 +102,23 @@ def test_invalid_value_raises_instead_of_defaulting(monkeypatch):
     monkeypatch.delenv("ASK_COLUMN_NAMING")
     with pytest.raises(ValueError, match="sap"):
         resolve_column_naming_mode({"ingestion": {"column_naming": "sap"}})
+
+
+def test_ambient_settings_file_is_not_read(monkeypatch, tmp_path):
+    """A `config/settings.json` in the CWD must NOT reach the resolver.
+
+    This is the regression guard for the deployment-settings move: the file
+    used to be a source when no dict was passed, which made every test that
+    touched this flag depend on the developer's own deployment config. Note
+    `delenv` alone was NEVER sufficient isolation, because it drops the env
+    var and leaves the file.
+    """
+    monkeypatch.delenv("ASK_COLUMN_NAMING", raising=False)
+    cfg_dir = tmp_path / "config"
+    cfg_dir.mkdir()
+    (cfg_dir / "settings.json").write_text(
+        '{"ingestion": {"column_naming": "alias"}}', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert resolve_column_naming_mode() is ColumnNamingMode.TECHNICAL

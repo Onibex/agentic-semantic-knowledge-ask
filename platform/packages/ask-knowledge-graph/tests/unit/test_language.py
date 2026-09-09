@@ -110,3 +110,22 @@ def test_invalid_value_raises_instead_of_defaulting(monkeypatch):
     monkeypatch.delenv("ASK_SEMANTIC_LANGUAGE")
     with pytest.raises(ValueError, match="pt"):
         resolve_semantic_language({"semantic_layer": {"language": "pt"}})
+
+
+def test_ambient_settings_file_is_not_read(monkeypatch, tmp_path):
+    """A `config/settings.json` in the CWD must NOT reach the resolver.
+
+    Twin of the naming guard. Before the deployment-settings move this file
+    was read whenever the caller passed no dict, so a developer machine
+    configured like a client turned green tests red with a diff that looked
+    nothing like its cause.
+    """
+    monkeypatch.delenv("ASK_SEMANTIC_LANGUAGE", raising=False)
+    cfg_dir = tmp_path / "config"
+    cfg_dir.mkdir()
+    (cfg_dir / "settings.json").write_text(
+        '{"semantic_layer": {"language": "es"}}', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert resolve_semantic_language() is SemanticLanguage.EN
