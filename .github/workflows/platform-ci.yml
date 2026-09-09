@@ -75,6 +75,53 @@ jobs:
         working-directory: platform
         run: pytest tests/boundary/ -q
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # The package test suites: 99 test files across 9 packages that CI never ran.
+  # Until now the only Python tests here were `tests/boundary/`, which is two
+  # of them, so hundreds of tests existed with nothing running them.
+  #
+  # NOT a required status check, deliberately. It is new, so what it reports on
+  # its first runs is the truth about the suites rather than a verdict on the
+  # PR that added it. Promote it in the `protect-main` ruleset once it is green.
+  #
+  # One job, one install, on purpose. A matrix over the packages looks tidier
+  # and does not work: `ask-admin-api` declares `ask-knowledge-graph`,
+  # `ask-llm-gateway` and `ask-sql-executor` as dependencies BY NAME, so
+  # installing it alone sends pip to PyPI looking for packages that only exist
+  # in this repo. Installing the union first, then the local packages with
+  # --no-deps, is what makes every sibling import resolve.
+  # ───────────────────────────────────────────────────────────────────────────
+  python-tests:
+    name: Package test suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: platform/requirements.txt
+      - name: Install the third-party union
+        working-directory: platform
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      - name: Install the local packages
+        working-directory: platform
+        run: |
+          for pkg in packages/*/; do
+            [ -f "$pkg/pyproject.toml" ] || continue
+            pip install --no-deps -e "$pkg"
+          done
+      - name: Tests
+        working-directory: platform
+        # --import-mode=importlib is what each package sets in its own
+        # pyproject; running from the workspace root does not pick those up, so
+        # it is passed explicitly. Without it, same-named test modules in
+        # different packages collide.
+        run: pytest packages/*/tests -q --import-mode=importlib
+
   frontend:
     name: ${{ matrix.app }} typecheck + build
     runs-on: ubuntu-latest
