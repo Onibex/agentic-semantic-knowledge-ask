@@ -101,18 +101,26 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: platform/requirements.txt
+      - name: Install uv
+        run: pip install uv
       - name: Install the third-party union
         working-directory: platform
+        # uv, not pip, because uv is how the images install (Dockerfile.admin:49
+        # and its siblings). It is not a workaround: testing with the resolver
+        # that ships is the point. The two disagree on this very file, and pip
+        # loses. `python-docx` is unpinned (requirements.txt:52); pip backtracks
+        # to 1.1.1, which caps `lxml<=4.9.2`, which has no Python 3.12 wheel and
+        # then fails to build for want of libxml2 headers. uv picks 1.1.2, whose
+        # lxml is uncapped and has wheels.
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-cov
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest pytest-asyncio pytest-cov
       - name: Install the local packages
         working-directory: platform
         run: |
           for pkg in packages/*/; do
             [ -f "$pkg/pyproject.toml" ] || continue
-            pip install --no-deps -e "$pkg"
+            uv pip install --system --no-deps -e "$pkg"
           done
       - name: Tests
         working-directory: platform
@@ -120,7 +128,11 @@ jobs:
         # pyproject; running from the workspace root does not pick those up, so
         # it is passed explicitly. Without it, same-named test modules in
         # different packages collide.
-        run: pytest packages/*/tests -q --import-mode=importlib
+        #
+        # --durations names the slowest tests, because ask-admin-api's 530 tests
+        # took 27 minutes on a developer machine and it is worth knowing whether
+        # that reproduces here or was a local artefact.
+        run: pytest packages/*/tests -q --import-mode=importlib --durations=10
 
   frontend:
     name: ${{ matrix.app }} typecheck + build
