@@ -75,6 +75,86 @@ jobs:
         working-directory: platform
         run: pytest tests/boundary/ -q
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # The package test suites: 99 test files across 9 packages that CI never ran.
+  # Until now the only Python tests here were `tests/boundary/`, which is two
+  # of them, so hundreds of tests existed with nothing running them.
+  #
+  # NOT a required status check, deliberately. It is new, so what it reports on
+  # its first runs is the truth about the suites rather than a verdict on the
+  # PR that added it. Promote it in the `protect-main` ruleset once it is green.
+  #
+  # One job, one install, on purpose. A matrix over the packages looks tidier
+  # and does not work: `ask-admin-api` declares `ask-knowledge-graph`,
+  # `ask-llm-gateway` and `ask-sql-executor` as dependencies BY NAME, so
+  # installing it alone sends pip to PyPI looking for packages that only exist
+  # in this repo. Installing the union first, then the local packages with
+  # --no-deps, is what makes every sibling import resolve.
+  # ───────────────────────────────────────────────────────────────────────────
+  python-tests:
+    name: Package test suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: platform/requirements.txt
+      - name: Install uv
+        run: pip install uv
+      - name: Install the shared requirements
+        working-directory: platform
+        # uv, not pip, because uv is how the images install (Dockerfile.admin:49
+        # and its siblings). It is not a workaround: testing with the resolver
+        # that ships is the point. The two disagree on this very file, and pip
+        # loses. `python-docx` is unpinned (requirements.txt:52); pip backtracks
+        # to 1.1.1, which caps `lxml<=4.9.2`, which has no Python 3.12 wheel and
+        # then fails to build for want of libxml2 headers. uv picks 1.1.2, whose
+        # lxml is uncapped and has wheels.
+        #
+        # requirements.txt is NOT the union of what the packages need. It
+        # carries the shared and LLM-provider dependencies; each package
+        # declares its own on top (fastapi, gitpython, opensearch-py, ...), so
+        # the step below has to resolve those too.
+        run: |
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest pytest-asyncio pytest-cov
+      - name: Install the local packages
+        working-directory: platform
+        # Two passes, because several packages depend on their siblings BY NAME
+        # (`ask-admin-api` wants `ask-knowledge-graph`, `ask-llm-gateway` and
+        # `ask-sql-executor`). Pass one puts every local name in the
+        # environment with --no-deps, so no resolver goes hunting on PyPI for a
+        # package that only exists in this repo. Pass two resolves the real
+        # third-party dependencies of each, with the sibling names already
+        # satisfied. Order-independent, unlike the topological sequence the
+        # Dockerfiles hand-maintain.
+        run: |
+          set -euo pipefail
+          pkgs=()
+          for pkg in packages/*/; do
+            [ -f "$pkg/pyproject.toml" ] || continue
+            pkgs+=("$pkg")
+          done
+          for pkg in "${pkgs[@]}"; do
+            uv pip install --system --no-deps -e "$pkg"
+          done
+          for pkg in "${pkgs[@]}"; do
+            uv pip install --system -e "$pkg"
+          done
+      - name: Tests
+        working-directory: platform
+        # --import-mode=importlib is what each package sets in its own
+        # pyproject; running from the workspace root does not pick those up, so
+        # it is passed explicitly. Without it, same-named test modules in
+        # different packages collide.
+        #
+        # --durations names the slowest tests, because ask-admin-api's 530 tests
+        # took 27 minutes on a developer machine and it is worth knowing whether
+        # that reproduces here or was a local artefact.
+        run: pytest packages/*/tests -q --import-mode=importlib --durations=10
+
   frontend:
     name: ${{ matrix.app }} typecheck + build
     runs-on: ubuntu-latest
