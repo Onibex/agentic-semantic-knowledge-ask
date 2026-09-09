@@ -19,19 +19,26 @@ See ``docs/HANDOFF_encrypted_secrets_opensearch.md`` for the design.
 from .crypto import ENCRYPTION_KEY_ENV, decrypt, encrypt
 from .db_config import is_db_configured, resolve_db_config
 from .provider import SecretsProvider, export_fields_to_env, get_secrets_provider
-from .registry import db_provider_fields, known_db_types, provider_fields
+from .registry import SAP_PROVIDER, db_provider_fields, known_db_types, provider_fields, sap_fields
 from .repository import (
     ACTIVE_POINTER_ID,
     CONN_PREFIX,
     INDEX_SYSTEM_SETTINGS,
     LLM_ACTIVE_POINTER_ID,
     LLM_CONN_PREFIX,
+    SAP_TARGET,
     SecretsRepository,
     new_connection_id,
     new_llm_connection_id,
 )
+from .sap_config import is_sap_configured, resolve_sap_config
 
 __all__ = [
+    "sap_fields",
+    "resolve_sap_config",
+    "is_sap_configured",
+    "SAP_TARGET",
+    "SAP_PROVIDER",
     "ACTIVE_POINTER_ID",
     "CONN_PREFIX",
     "ENCRYPTION_KEY_ENV",

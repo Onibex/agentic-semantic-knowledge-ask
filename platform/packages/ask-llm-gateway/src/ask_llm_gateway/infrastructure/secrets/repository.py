@@ -45,7 +45,7 @@ from opensearchpy import OpenSearch
 from opensearchpy.exceptions import NotFoundError
 
 from .crypto import decrypt, encrypt
-from .registry import db_provider_fields, provider_fields
+from .registry import db_provider_fields, provider_fields, sap_fields
 
 logger = logging.getLogger(__name__)
 
@@ -73,10 +73,15 @@ ACTIVE_POINTER_ID = "db_active"
 LLM_CONN_PREFIX = "llmconn:"
 LLM_ACTIVE_POINTER_ID = "llm_active"
 
+# SAP S/4HANA connection (2026-09). One singleton doc, third plane in this
+# index. It used to be the ``sap_s4hana`` section of config/settings.json, which
+# kept a CLEARTEXT SAP password in a file three services mounted.
+SAP_TARGET = "sap_s4hana"
+
 # Whitelist of the FIXED doc ids the index holds. Connection docs
 # (``dbconn:*`` / ``llmconn:*``) and the pointer docs are allowed by pattern in
 # ``_validate_target``.
-_KNOWN_TARGETS: frozenset[str] = frozenset({"llm", "embedder"}) | _DB_TARGETS
+_KNOWN_TARGETS: frozenset[str] = frozenset({"llm", "embedder", SAP_TARGET}) | _DB_TARGETS
 
 
 _MAPPING: dict[str, Any] = {
@@ -447,13 +452,22 @@ def _is_db_target(target: str | None) -> bool:
     return bool(target) and (target in _DB_TARGETS or str(target).startswith(CONN_PREFIX))
 
 
+def _is_sap_target(target: str | None) -> bool:
+    """True for the single SAP S/4HANA connection doc, which has its own
+    registry: it is not a "provider", so neither provider-keyed dict fits."""
+    return target == SAP_TARGET
+
+
 def _registry_entries(target: str | None, provider: str) -> dict[str, bool]:
     """Return ``{field_name: is_sensitive}`` for ``provider`` under ``target``.
 
     DB targets (``db_dev`` / ``db_prod`` / ``dbconn:*``) route through the DB
     registry — the LLM registry would collide on shared ids like ``databricks``.
+    The SAP target has its own list and ignores ``provider`` entirely.
     Everything else uses the LLM/embedder registry.
     """
+    if _is_sap_target(target):
+        return {fname: sensitive for fname, sensitive, _kind in sap_fields()}
     if _is_db_target(target):
         return {fname: sensitive for fname, sensitive, _kind in db_provider_fields(provider)}
     return {fname: sensitive for fname, sensitive in provider_fields(provider)}

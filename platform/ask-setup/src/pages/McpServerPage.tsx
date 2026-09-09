@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Server, RefreshCw, Save, Loader2, CheckCircle, XCircle, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { configApi, mcpApi } from '@/api/client'
+import { mcpApi, sapApi } from '@/api/client'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface McpTestResult {
@@ -34,10 +34,13 @@ export function McpServerPage() {
   async function load() {
     setLoading(true)
     try {
-      const res = await configApi.get()
-      const s4 = res.config.sap_s4hana as Record<string, unknown> | undefined
-      if (s4?.mcp_url) setMcpUrl(String(s4.mcp_url))
-      if (s4?.port) setPort(String(s4.port))
+      // The MCP server lives in the SAP connection section, because it is the
+      // thing that talks to that SAP system. Reading it through the dedicated
+      // endpoint rather than the generic config route is what let sap_s4hana
+      // move into the encrypted store.
+      const res = await sapApi.get()
+      if (res.config.mcp_url) setMcpUrl(String(res.config.mcp_url))
+      if (res.config.port) setPort(String(res.config.port))
     } catch (err) {
       toast.error(`Failed to load: ${(err as Error).message}`)
     } finally {
@@ -48,11 +51,10 @@ export function McpServerPage() {
   async function save() {
     setSaving(true)
     try {
-      await configApi.save({
-        sap_s4hana: {
-          mcp_url: mcpUrl.trim().replace(/\/$/, ''),
-          port: Number(port) || 4004,
-        },
+      // A partial update: the SAP host, user and password are left untouched.
+      await sapApi.save({
+        mcp_url: mcpUrl.trim().replace(/\/$/, ''),
+        port: Number(port) || 4004,
       })
       toast.success(t('mcp_toast_saved'))
     } catch (err) {

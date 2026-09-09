@@ -204,3 +204,39 @@ def db_provider_fields(db_type: str) -> list[tuple[str, bool, str]]:
 def known_db_types() -> list[str]:
     """All DB backends the registry knows about."""
     return sorted(_DB_PROVIDER_FIELDS.keys())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAP S/4HANA connection plane (2026-09).
+#
+# Third plane in the same ``ask-system-settings-v1`` index, under the single
+# target ``sap_s4hana``. It gets its own registry for the same reason the DB
+# plane does: it is not a "provider" at all, so keying it by provider name in
+# either dict above would be a lie.
+#
+# It used to live in ``config/settings.json`` under ``sap_s4hana``, which put a
+# CLEARTEXT SAP password on disk in a file three services mounted. Moving it
+# here encrypts the password and removes the last reason for those services to
+# share a writable volume (ITERATION_K8S_MULTICLOUD_PLAN section 3).
+#
+# ``mcp_url`` and ``port`` belong to the same section because the MCP server is
+# the thing that talks to this SAP system; they were always stored together.
+#
+# Same ``(field_name, is_sensitive, kind)`` shape as the DB plane, so ``port``
+# comes back as an int rather than the string the store holds.
+# ─────────────────────────────────────────────────────────────────────────────
+SAP_PROVIDER = "sap_s4hana"
+
+_SAP_FIELDS: list[tuple[str, bool, str]] = [
+    ("host", False, "str"),
+    ("odata_path", False, "str"),
+    ("username", False, "str"),
+    ("password", True, "str"),
+    ("mcp_url", False, "str"),
+    ("port", False, "int"),
+]
+
+
+def sap_fields() -> list[tuple[str, bool, str]]:
+    """Return ``[(field_name, is_sensitive, kind), ...]`` for the SAP section."""
+    return list(_SAP_FIELDS)

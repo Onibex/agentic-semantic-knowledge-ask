@@ -46,9 +46,22 @@ def build_default_action_service() -> ActionExecutionApplicationService:
 
 
 def _build_adapter(cfg: dict[str, Any]) -> SapMcpAdapter | None:
-    s4 = cfg.get("sap_s4hana") or {}
-    mcp_url = (s4.get("mcp_url") or "").strip()
+    """The MCP adapter, or None when no ``mcp_url`` is configured.
+
+    Reads the encrypted store, not ``cfg``: the SAP section moved there so the
+    password would stop living in cleartext on a shared volume. ``cfg`` is still
+    taken so the signature stays stable for the LLM half of the factory.
+
+    Note this failure is INVISIBLE: no screen reports a missing adapter, chat
+    just quietly loses action execution. Hence the explicit log line.
+    """
+    from ask_llm_gateway.infrastructure.secrets import resolve_sap_config
+
+    mcp_url = str(resolve_sap_config().get("mcp_url") or "").strip()
     if not mcp_url:
+        logging.getLogger(__name__).info(
+            "No mcp_url configured; action execution runs without an MCP adapter"
+        )
         return None
     if not mcp_url.startswith("http"):
         mcp_url = f"http://{mcp_url}"
