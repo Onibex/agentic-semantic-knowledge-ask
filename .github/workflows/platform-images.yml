@@ -1,0 +1,240 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+name: platform-images
+
+# Builds and publishes the seven first-party images so a Kubernetes cluster has
+# something to pull. Kubernetes never builds: it pulls. See
+# platform/_internal/docs/ImplementationPlan/ITERATION_K8S_MULTICLOUD_PLAN.md
+# phase 1.
+#
+# Manual and tag-driven ON PURPOSE. Seven images per run costs real build
+# minutes, and nothing in a cluster tracks `main`, so publishing on every
+# commit would burn them on images nobody pulls.
+#
+# Images are tagged by commit SHA and, on a `v*` tag, by that tag. There is
+# deliberately NO `latest`: the manifests pin a SHA and use
+# imagePullPolicy: IfNotPresent, because Docker Hub throttles pulls and a
+# cluster that restarts pods against `latest` + `Always` eats the limit.
+
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: 'Registry namespace (Docker Hub user or org). Moving to the corporate account is a change to this one value.'
+        required: false
+        default: ''
+      push_images:
+        description: 'Push to the registry. Set false for a build-only dry run that validates every Dockerfile without publishing.'
+        type: boolean
+        required: false
+        default: true
+      platforms:
+        description: 'Target platforms. linux/arm64 is only needed for Graviton nodes and roughly doubles build time.'
+        required: false
+        default: 'linux/amd64'
+      executor_extras:
+        description: 'SQL driver extras. MUST be identical for ask-orchestrator and ask-admin-api, or a green "Test connection" in Studio will not mean chat can connect.'
+        required: false
+        default: '[snowflake,databricks,clickhouse,bigquery]'
+      gateway_extras:
+        description: 'LLM gateway extras. [huggingface] pulls torch and makes the image very large; empty is correct unless testing the local embedder.'
+        required: false
+        default: ''
+  # Publishing a GitHub release publishes the images, tagged with the release
+  # tag. This is a separate trigger from `push` ON PURPOSE: a `paths` filter is
+  # also evaluated on tag pushes, and the comparison is unreliable there, so
+  # `push.tags` combined with `paths` can silently skip a release build.
+  release:
+    types: [published]
+
+  # A feature branch that changes what goes INTO an image gets its seven
+  # Dockerfiles validated, build-only, never published (see PUSH_IMAGES below).
+  # This is also the only way to exercise this workflow before it reaches
+  # `main`: the workflow_dispatch button does not appear until the file is on
+  # the default branch.
+  push:
+    branches: ['feat/**', 'fix/**', 'chore/**']
+    paths:
+      - '.github/workflows/platform-images.yml'
+      - 'platform/**/Dockerfile'
+      - 'platform/**/Dockerfile.*'
+      - 'platform/**/.dockerignore'
+      - 'platform/requirements.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-images-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every input is resolved here with a fallback, because a `push: tags` run
+# carries NO inputs. Reading inputs directly further down would silently build
+# the backends with no SQL drivers on a tag release.
+env:
+  # Publishing is deliberately narrow. A dispatch honours its own input; a
+  # published release always publishes; a branch push NEVER does. So a feature
+  # branch can validate its Dockerfiles without ever putting an image on a
+  # public registry, which is the failure this ordering exists to prevent.
+  PUSH_IMAGES: ${{ (github.event_name == 'workflow_dispatch' && inputs.push_images) || github.event_name == 'release' }}
+  NAMESPACE:        ${{ inputs.namespace        || vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}
+  PLATFORMS:        ${{ inputs.platforms       || 'linux/amd64' }}
+  EXECUTOR_EXTRAS:  ${{ inputs.executor_extras || '[snowflake,databricks,clickhouse,bigquery]' }}
+  GATEWAY_EXTRAS:   ${{ inputs.gateway_extras  || '' }}
+  # The SPAs still bake their auth config at build time. Placeholders are
+  # correct here: these images are cluster-agnostic only after phase 3 of the
+  # plan ships /config.js + window.__ENV__, at which point these three args and
+  # this block are deleted. Until then, a cluster-specific SPA image needs a
+  # dispatch run with the real values.
+  VITE_AUTH_MODE:      'keycloak'
+  VITE_KEYCLOAK_URL:   'http://localhost:8180'
+  VITE_KEYCLOAK_REALM: 'ask-platform'
+  VITE_SETUP_SPA_URL:  'http://localhost:5175'
+
+jobs:
+  build:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Backends. Context is platform/ so the root .dockerignore applies:
+          # that is what keeps config/settings.json out of the orchestrator
+          # image, which bakes config/ (Dockerfile:141). Do not change the
+          # context without re-checking that.
+          - image: ask-orchestrator
+            context: platform
+            dockerfile: platform/deploy/ask-orchestrator-deploy/Dockerfile
+            kind: backend
+          - image: ask-admin-api
+            context: platform
+            dockerfile: platform/Dockerfile.admin
+            kind: backend
+
+          # SPAs. Each one builds from its own folder, so the .dockerignore
+          # that applies is the one inside that folder, not the root one.
+          - image: ask-studio
+            context: platform/ask-studio
+            dockerfile: platform/ask-studio/Dockerfile
+            kind: spa
+            wants_setup_url: 'true'
+          - image: ask-chat
+            context: platform/ask-chat
+            dockerfile: platform/ask-chat/Dockerfile
+            kind: spa
+            wants_setup_url: 'false'
+          - image: ask-setup
+            context: platform/ask-setup
+            dockerfile: platform/ask-setup/Dockerfile
+            kind: spa
+            wants_setup_url: 'false'
+
+          # No build arguments.
+          - image: ask-teams-bot
+            context: platform
+            dockerfile: platform/Dockerfile.teams-bot
+            kind: plain
+          - image: ask-mcp
+            context: platform
+            dockerfile: platform/Dockerfile.mcp
+            kind: plain
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Fail early if the namespace is unresolved
+        if: env.PUSH_IMAGES == 'true' && env.NAMESPACE == ''
+        run: |
+          echo "::error::No registry namespace. Set the repository variable DOCKERHUB_NAMESPACE, or pass the namespace input, or set the DOCKERHUB_USERNAME secret."
+          exit 1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: env.PUSH_IMAGES == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Resolve tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # The fallback keeps a build-only run well formed when no namespace is
+          # configured yet. It can never reach a registry: the guard above
+          # refuses an empty NAMESPACE whenever PUSH_IMAGES is true.
+          images: ${{ env.NAMESPACE || 'onibex-unpublished' }}/${{ matrix.image }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=tag
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.vendor=Onibex, LLC
+
+      - name: Resolve build arguments
+        id: args
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'value<<ARGS_EOF'
+            case '${{ matrix.kind }}' in
+              backend)
+                echo "GATEWAY_EXTRAS=${GATEWAY_EXTRAS}"
+                echo "EXECUTOR_EXTRAS=${EXECUTOR_EXTRAS}"
+                ;;
+              spa)
+                echo "VITE_AUTH_MODE=${VITE_AUTH_MODE}"
+                echo "VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}"
+                echo "VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}"
+                if [ '${{ matrix.wants_setup_url }}' = 'true' ]; then
+                  echo "VITE_SETUP_SPA_URL=${VITE_SETUP_SPA_URL}"
+                fi
+                ;;
+            esac
+            echo 'ARGS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build${{ env.PUSH_IMAGES == 'true' && ' and push' || ' only, no publish' }}
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ env.PLATFORMS }}
+          push: ${{ env.PUSH_IMAGES == 'true' }}
+          build-args: ${{ steps.args.outputs.value }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          # Keeps the registry listing to real platforms instead of adding an
+          # "unknown/unknown" attestation entry that reads as a broken image.
+          provenance: false
+
+      - name: Summary
+        if: always() && steps.build.conclusion == 'success'
+        shell: bash
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo ''
+            echo '```'
+            echo '${{ steps.meta.outputs.tags }}'
+            echo '```'
+            if [ -n '${{ steps.build.outputs.digest }}' ]; then
+              echo ''
+              echo "Digest: \`${{ steps.build.outputs.digest }}\`"
+              echo ''
+              echo "Pin this digest in the chart values. A digest cannot drift; a tag can."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
