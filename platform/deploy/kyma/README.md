@@ -55,8 +55,24 @@ first. On EKS and AKS there is no external entry point yet: reach a pod with
 
 Written down here so the next person does not have to rediscover it:
 
-* **`AUTH_MODE=xsuaa`** in both backends. They ship `keycloak`, which is the
-  EKS path. The value is read on every request, so it is a plain edit.
+* **`AUTH_MODE`, and it is a decision, not a copy.** The two backends ship
+  `keycloak`, which is the EKS path. A Kyma deployment fronted by SAP SSO wants
+  `xsuaa`. The value is read on every request, so switching it is a plain edit
+  and no restart.
+
+  **It will never accept `both`.** The validator is an `if` / `elif` with no
+  `else` (`auth/validator.py:338`, identical in both backends), so any value
+  that is not `keycloak` or `xsuaa` matches no branch, `claims` stays `None`,
+  and **every request 401s while the pods report healthy**. `both` was set in
+  the admin API manifest until 2026-09-09 for exactly this reason: it looked
+  like it meant "accept either".
+
+  Which value is right depends entirely on how SSO ends up configured on the
+  BTP side, so it cannot be decided before that tenant exists. If the answer
+  turns out to be "accept an SAP token from some clients and a Keycloak one
+  from others", **that is a code change**, not a values one: the validator has
+  to try each configured issuer in turn, with a test pinning that a token one
+  issuer rejects is still accepted by the other. Do not assume it works today.
 * **The `xsuaa-ask-secret` filled in.** Every XSUAA reference in the two
   Deployments is marked `optional: true` precisely so their absence does not
   block a non-BTP cluster. On Kyma they stop being optional in practice: with
