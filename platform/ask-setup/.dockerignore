@@ -1,0 +1,27 @@
+# The .dockerignore that applies to a build is the one at the root of its build
+# CONTEXT, and this SPA builds from its own folder (docker-compose.yml
+# `context: ./ask-setup`), so platform/.dockerignore never reaches it. Without
+# this file the `COPY . .` in the Dockerfile copies the whole folder.
+#
+# node_modules is the one that matters: the Dockerfile runs `npm ci` BEFORE
+# `COPY . .`, so a host node_modules overwrites the freshly installed Linux
+# dependencies with whatever the developer's machine built, which on Windows
+# means win32 binaries inside an Alpine image.
+
+node_modules
+dist
+.git
+.gitignore
+
+# Vite reads .env / .env.local for VITE_* values. These images are published to
+# a public registry: nothing that carries a real value belongs in the context.
+.env
+.env.*
+!.env.example
+
+*.md
+*.log
+coverage
+.vscode
+.idea
+.DS_Store
