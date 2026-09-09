@@ -64,9 +64,9 @@ class CatalogService:
         Devuelve el catálogo. Primera llamada hace fetch a OpenSearch.
 
         Args:
-            allowed_ids: si se provee, filtra a sólo esos IDs (profile scope).
-                Útil para restringir el catálogo al scope del perfil activo
-                (config.pipeline_v2.active_profile — unión de sus data_products + extras).
+            allowed_ids: si se provee, filtra a sólo esos IDs. Hoy siempre es
+                el scope del workspace activo, que resuelve el orquestador
+                (workspace_scope.get_entity_ids) y llega por ResolutionRequest.
             force_refresh: re-fetch desde OpenSearch.
         """
         if self._cache is None or force_refresh:
@@ -80,29 +80,6 @@ class CatalogService:
                 version=self._cache.version,
             )
         return self._cache
-
-    @staticmethod
-    def resolve_active_entity_ids(config: dict) -> set[str] | None:
-        """
-        Lee config.pipeline_v2.{active_profile, profiles, data_products} y devuelve
-        el set de entity IDs del perfil activo: unión de los entity_ids de cada
-        data product listado en el perfil + sus extra_entity_ids.
-
-        Returns None si no hay perfil activo configurado (catálogo completo).
-        """
-        pv2 = (config or {}).get("pipeline_v2") or {}
-        active = pv2.get("active_profile")
-        profiles = pv2.get("profiles") or {}
-        dps = pv2.get("data_products") or {}
-        if not active or active not in profiles:
-            return None
-        profile = profiles[active] or {}
-        ids: set[str] = set()
-        for dp_name in profile.get("data_products") or []:
-            dp = dps.get(dp_name) or {}
-            ids.update(dp.get("entity_ids") or [])
-        ids.update(profile.get("extra_entity_ids") or [])
-        return ids or None
 
     def refresh(self) -> Catalog:
         """Invalida cache y re-fetch."""

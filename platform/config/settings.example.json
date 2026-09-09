@@ -1,18 +1,4 @@
 {
-  "schema_mode": "yaml",
-  "ingestion": {
-    "column_naming": "technical"
-  },
-  "semantic_layer": {
-    "language": "en"
-  },
-  "opensearch": {
-    "host": "opensearch",
-    "port": 9200,
-    "use_ssl": false,
-    "pool_maxsize": 20,
-    "embedding_dim": 1024
-  },
   "hybrid_pipeline": {
     "anchor_top_k": 3,
     "expand_max_hops": 1,
@@ -22,12 +8,5 @@
   },
   "sap_ai_core": {
     "config_path": "config/aicore_config.json"
-  },
-  "sap_s4hana": {
-    "host": "https://<SAP_S4HANA_HOST>:44300",
-    "odata_path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV",
-    "username": "<SAP_USERNAME>",
-    "mcp_url": "http://ask-mcp:4004",
-    "port": 4004
   }
 }

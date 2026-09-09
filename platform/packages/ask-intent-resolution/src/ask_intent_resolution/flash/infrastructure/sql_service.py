@@ -260,17 +260,24 @@ def generate_sql(
     llm,
     db_type: str,
     conversation_history: str = "",
-    schema_mode: str = "both",
+    schema_mode: str = "yaml",
     hana_schema: str = "",
     allowed_ids: list | None = None,
     user_context: str = "",
 ) -> dict:
+    # ``yaml`` is the only mode with anything behind it: the publish path writes
+    # exactly one doc_type (``yaml_data_product``, rag_text_renderer), so the
+    # other two entries filter on types nothing has ever written. The default
+    # was ``both``, which meant every Flash query carried a dead type in its
+    # filter, and runtime_settings already declared ``yaml``, so the two
+    # disagreed. The parameter survives for a future mode; the settings.json
+    # lookup that fed it does not.
     _mode_to_types = {
         "documents": ["schema_technical", "business_semantic"],
         "yaml": ["yaml_data_product"],
         "both": ["schema_technical", "yaml_data_product"],
     }
-    doc_types = _mode_to_types.get(schema_mode, _mode_to_types["both"])
+    doc_types = _mode_to_types.get(schema_mode, _mode_to_types["yaml"])
 
     if len(doc_types) == 1:
         _filter = {"term": {"metadata.doc_type": doc_types[0]}}

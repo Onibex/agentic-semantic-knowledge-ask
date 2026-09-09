@@ -93,14 +93,12 @@ class SmartStrategy:
             catalog_service = CatalogService(os_repository=os_repo)
             entity_selector = EntitySelectorService(llm=llm, catalog_service=catalog_service)
             path_resolver = PathResolver(os_repository=os_repo)
-            allowed_ids = CatalogService.resolve_active_entity_ids(cfg)
             bundle = {
                 "catalog_service": catalog_service,
                 "entity_selector": entity_selector,
                 "path_resolver": path_resolver,
                 "kg_reader": kg_reader,  # Iter 4 — replaces direct os_repo.client.mget
                 "os_repo": os_repo,  # legacy v2 services still receive this
-                "allowed_ids": allowed_ids,
                 "llm": llm,
             }
             # Evict superseded revisions so a process that has seen several model
@@ -119,17 +117,24 @@ class SmartStrategy:
             for turn in (request.conversation_history or [])
         )
 
-        # Workspace scope (Iter 1): when the orchestrator resolved the active
-        # workspace's entity_ids, use them directly. Falls back to the legacy
-        # ``pipeline_v2.active_profile`` allowlist for CLI / batch callers that
-        # don't pass a workspace.
-        if request.allowed_entity_ids is not None:
-            # Scope contract: an empty list is a REAL empty scope (the workspace
-            # resolves to no entities answerable in this env → return nothing).
-            # Do NOT coerce ``set()`` to None — that would open the whole catalog.
-            _resolved_allowed_ids: set[str] | None = set(request.allowed_entity_ids)
-        else:
-            _resolved_allowed_ids = bundle["allowed_ids"]
+        # Workspace scope (Iter 1): the orchestrator resolved the active
+        # workspace's entity_ids and they are the only source. The three-valued
+        # contract in ``domain.ports`` is preserved exactly:
+        #   None → unscoped, the whole registry
+        #   []   → a REAL empty scope, return nothing. Do NOT coerce to None,
+        #          that would open the whole catalog.
+        #
+        # This used to fall back to the ``pipeline_v2.active_profile`` allowlist
+        # from settings.json "for CLI / batch callers that don't pass a
+        # workspace". Those callers never existed: ResolutionRequest is built in
+        # exactly one place (orchestrator routers/query.py), where workspace_id
+        # is a required field and the handler 404s on an unknown workspace and
+        # 400s on one resolving to zero entities, both BEFORE reaching here. So
+        # the branch was unreachable, and a deployment with no active profile
+        # configured resolved to None anyway, which is what None still means.
+        _resolved_allowed_ids: set[str] | None = (
+            set(request.allowed_entity_ids) if request.allowed_entity_ids is not None else None
+        )
 
         # ── Phase 1: entity selection (LLM-as-retriever) ────────────────────
         # DEBUG catalog visibility
