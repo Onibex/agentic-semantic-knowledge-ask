@@ -7,8 +7,12 @@
 
 """``POST /v1/admin/mcp/test`` — test MCP server health endpoint.
 
-Reads ``config/settings.json`` for ``sap_s4hana.mcp_url`` and makes a GET
-request to ``{mcp_url}/health`` to verify the MCP server is reachable.
+Reads ``mcp_url`` from the encrypted store's ``sap_s4hana`` section (the MCP
+server is the thing that talks to that SAP system, so they are stored together)
+and makes a GET request to ``{mcp_url}/health`` to verify it is reachable.
+
+That section used to live in ``config/settings.json``; see
+``routers/sap_connection`` for why it moved.
 """
 
 from __future__ import annotations
@@ -22,6 +26,8 @@ from typing import Any
 import requests
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from ask_llm_gateway.infrastructure.secrets import resolve_sap_config
 
 from ..auth.validator import TokenClaims, validate_token
 
@@ -71,9 +77,10 @@ async def test_mcp_connection(
         extra={"trace_id": trace_id, "auth_email": user.email},
     )
 
-    raw = _read_raw()
-    sap_cfg: dict[str, Any] = raw.get("sap_s4hana", {})
-    mcp_url: str = (sap_cfg.get("mcp_url") or "").rstrip("/")
+    # Same source as the SAP connection itself: the encrypted store, not the
+    # file. mcp_url is stored in that section because the MCP server is the
+    # thing that talks to this SAP system.
+    mcp_url: str = str(resolve_sap_config().get("mcp_url") or "").rstrip("/")
 
     if not mcp_url:
         logger.info(

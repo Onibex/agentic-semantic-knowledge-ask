@@ -7,22 +7,43 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
+/**
+ * The stored SAP section as GET returns it: `password` arrives masked, never
+ * as the real value.
+ *
+ * Every field is optional because the store holds whatever has been saved so
+ * far, and nothing forces the whole section to be filled in at once: the SAP
+ * form owns host / odata_path / username / password and the MCP page owns
+ * mcp_url / port.
+ */
 export interface SapConnectionConfig {
-  host: string
-  odata_path: string
-  username: string
+  host?: string
+  odata_path?: string
+  username?: string
   password?: string
+  mcp_url?: string
+  port?: number
 }
 
 export interface SapConnectionResponse {
   config: SapConnectionConfig
 }
 
+/**
+ * A PARTIAL update: every field is optional and omitting one leaves it alone.
+ * That is what lets the SAP form and the MCP page each own their half of one
+ * stored section without overwriting each other.
+ *
+ * An empty string clears a field. `password` is the exception: empty, or the
+ * mask a GET returns, both mean "keep the stored one".
+ */
 export interface SapConnectionSaveRequest {
-  host: string
-  odata_path: string
-  username: string
+  host?: string
+  odata_path?: string
+  username?: string
   password?: string
+  mcp_url?: string
+  port?: number
 }
 
 export interface TestConnectionResult {

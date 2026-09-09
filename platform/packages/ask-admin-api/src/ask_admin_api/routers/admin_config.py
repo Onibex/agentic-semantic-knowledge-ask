@@ -31,7 +31,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth.validator import TokenClaims, validate_token
 
@@ -48,8 +48,14 @@ _SENSITIVE_PATHS: list[tuple[str, ...]] = [
     ("postgresql", "password"),
     ("opensearch", "password"),
     ("ias", "client_secret"),
-    ("sap_s4hana", "password"),
 ]
+
+# Sections that USED to live in this file and now live in the encrypted store.
+# Accepting one here would return 200 and write a file nothing reads, which is
+# worse than an error: the admin would believe the value took effect.
+_MOVED_SECTIONS: dict[str, str] = {
+    "sap_s4hana": "PUT /v1/admin/sap-connection",
+}
 
 # ── Mask sentinel ────────────────────────────────────────────────────────────
 _MASK = "••••••••"
@@ -120,7 +126,7 @@ def _merge_config(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[st
 
     result = copy.deepcopy(existing)
 
-    _ONE_LEVEL_DEEP_MERGE_KEYS = {"deployments", "sap_ai_core", "sap_s4hana"}
+    _ONE_LEVEL_DEEP_MERGE_KEYS = {"deployments", "sap_ai_core"}
 
     for top_key, top_val in incoming.items():
         if top_key in _ONE_LEVEL_DEEP_MERGE_KEYS and isinstance(top_val, dict):
@@ -224,6 +230,16 @@ async def save_config(
     logger.info(
         "[%s] POST /v1/admin/config user=%s keys=%s", trace_id, auth_email, list(body.config.keys())
     )
+
+    # Refuse a section that moved to the encrypted store. Merging it here would
+    # return 200 and write a file nothing reads any more, so the admin would
+    # believe the value took effect. An error naming the right endpoint is the
+    # whole point.
+    moved = [key for key in body.config if key in _MOVED_SECTIONS]
+    if moved:
+        detail = "; ".join(f"{key} is now written through {_MOVED_SECTIONS[key]}" for key in moved)
+        logger.warning("[%s] rejected a moved section: %s", trace_id, detail)
+        raise HTTPException(status_code=400, detail=detail)
 
     existing = _read_raw()
     merged = _merge_config(existing, body.config)

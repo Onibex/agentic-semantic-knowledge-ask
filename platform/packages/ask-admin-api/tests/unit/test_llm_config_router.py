@@ -5,11 +5,15 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""Tests for the multi-provider LLM config router (Tier 2 extensions).
+"""Tests for the multi-provider LLM config router.
 
-Focus: the new fields (api_base, api_version, params) and the /test endpoint.
-The aicore-specific endpoints already worked pre-refactor and stay untested
-here — covered manually in the Setup wizard flow.
+Focus: the ``/test`` endpoint. The aicore-specific endpoints already worked
+pre-refactor and stay untested here, covered manually in the Setup wizard flow.
+
+The ``GET`` / ``POST /v1/admin/llm/config`` tests that used to live here went
+with those endpoints (2026-09). They wrote provider config, api_key included,
+in CLEARTEXT to ``config/settings.json``; the Setup SPA has used the encrypted
+``/v1/admin/secrets/llm`` plane for a while and nothing called the old pair.
 """
 
 from __future__ import annotations
@@ -52,108 +56,6 @@ def llm_client(tmp_path: Path, monkeypatch) -> TestClient:
     from ask_admin_api.main import app
 
     return TestClient(app)
-
-
-# ── GET /admin/llm/config ────────────────────────────────────────────────────
-
-
-def test_get_config_returns_all_fields_with_api_key_masked(llm_client: TestClient):
-    resp = llm_client.get("/v1/admin/llm/config")
-    assert resp.status_code == 200
-    body = resp.json()
-
-    # Stack mode + LLM section
-    assert body["stack_mode"]["value"] == "direct"
-    assert body["llm_provider"]["value"] == "openai"
-    assert body["llm_model"]["value"] == "gpt-4o"
-    # api_key is sensitive — returned as '***' regardless of source
-    assert body["llm_api_key"]["value"] == "***"
-    assert body["llm_api_key"]["masked"] is True
-
-    # New fields exist + default to empty when not in settings.json
-    assert body["llm_api_base"]["value"] == ""
-    assert body["llm_api_version"]["value"] == ""
-    assert body["llm_params"] == {}
-    assert body["embedder_params"] == {}
-
-
-# ── POST /admin/llm/config ───────────────────────────────────────────────────
-
-
-def test_save_writes_api_base_and_api_version(llm_client: TestClient, tmp_path: Path):
-    resp = llm_client.post(
-        "/v1/admin/llm/config",
-        json={
-            "llm_provider": "azure",
-            "llm_model": "azure/my-gpt-4o-deployment",
-            "llm_api_base": "https://my-resource.openai.azure.com",
-            "llm_api_version": "2024-08-01-preview",
-        },
-    )
-    assert resp.status_code == 200, resp.text
-
-    # Verify it actually landed in settings.json
-    settings_path = tmp_path / "config" / "settings.json"
-    cfg = json.loads(settings_path.read_text())
-    assert cfg["llm"]["provider"] == "azure"
-    assert cfg["llm"]["api_base"] == "https://my-resource.openai.azure.com"
-    assert cfg["llm"]["api_version"] == "2024-08-01-preview"
-    # Untouched fields are preserved
-    assert cfg["llm"]["api_key"] == "sk-old"
-
-
-def test_save_params_dict_replaces_existing(llm_client: TestClient, tmp_path: Path):
-    resp = llm_client.post(
-        "/v1/admin/llm/config",
-        json={
-            "llm_provider": "bedrock",
-            "llm_params": {
-                "AWS_BEARER_TOKEN_BEDROCK": "ABSK...",
-                "AWS_REGION": "us-east-2",
-            },
-        },
-    )
-    assert resp.status_code == 200
-
-    cfg = json.loads((tmp_path / "config" / "settings.json").read_text())
-    assert cfg["llm"]["params"] == {
-        "AWS_BEARER_TOKEN_BEDROCK": "ABSK...",
-        "AWS_REGION": "us-east-2",
-    }
-
-
-def test_save_empty_params_clears_block(llm_client: TestClient, tmp_path: Path):
-    # Seed a params dict first
-    settings_path = tmp_path / "config" / "settings.json"
-    cfg = json.loads(settings_path.read_text())
-    cfg["llm"]["params"] = {"OLD_KEY": "old_value"}
-    settings_path.write_text(json.dumps(cfg))
-
-    # Send {} — should reset the params block to empty
-    resp = llm_client.post("/v1/admin/llm/config", json={"llm_params": {}})
-    assert resp.status_code == 200
-
-    cfg = json.loads(settings_path.read_text())
-    assert cfg["llm"]["params"] == {}
-
-
-def test_save_null_params_preserves_existing(llm_client: TestClient, tmp_path: Path):
-    # Seed
-    settings_path = tmp_path / "config" / "settings.json"
-    cfg = json.loads(settings_path.read_text())
-    cfg["llm"]["params"] = {"KEEP_ME": "yes"}
-    settings_path.write_text(json.dumps(cfg))
-
-    # Send NOTHING for llm_params — existing should survive
-    resp = llm_client.post(
-        "/v1/admin/llm/config",
-        json={"llm_model": "different-model"},
-    )
-    assert resp.status_code == 200
-
-    cfg = json.loads(settings_path.read_text())
-    assert cfg["llm"]["params"] == {"KEEP_ME": "yes"}
-    assert cfg["llm"]["model"] == "different-model"
 
 
 # ── POST /admin/llm/test ─────────────────────────────────────────────────────

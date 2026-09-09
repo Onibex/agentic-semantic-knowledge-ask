@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { configApi, llmConnApi, dbApi, setupApi } from '@/api/client'
+import { configApi, llmConnApi, dbApi, sapApi, setupApi } from '@/api/client'
 import { authConfig } from '@/auth/config'
 import { useTranslation } from '@/hooks/useTranslation'
 import type { AppConfig } from '@/api/types'
@@ -103,14 +103,19 @@ export function HomePage() {
   async function load() {
     setLoading(true)
     try {
-      const [cfgRes, llmRes, dbRes, setupRes] = await Promise.allSettled([
+      const [cfgRes, sapRes, llmRes, dbRes, setupRes] = await Promise.allSettled([
         configApi.get(),
+        sapApi.get(),
         llmConnApi.list(),
         dbApi.list(),
         setupApi.effective(),
       ])
       if (cfgRes.status === 'fulfilled') {
-        setConfig(cfgRes.value.config)
+        // sap_s4hana moved into the encrypted store, so it no longer comes back
+        // with the generic config. Merging it in here keeps the two card checks
+        // (isSapConfigured / isMcpConfigured) working unchanged.
+        const sap = sapRes.status === 'fulfilled' ? sapRes.value.config : {}
+        setConfig({ ...cfgRes.value.config, sap_s4hana: sap } as AppConfig)
         // contracts count from config
         const apis = (cfgRes.value.config as Record<string, unknown>).contracts
         if (Array.isArray(apis)) setContractCount(apis.length)
