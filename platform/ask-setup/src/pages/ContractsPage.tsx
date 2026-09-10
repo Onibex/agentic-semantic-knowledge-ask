@@ -57,16 +57,50 @@ function extractFields(spec: Record<string, unknown>, schema: Record<string, unk
   })
 }
 
+/**
+ * The OData service path out of an OpenAPI `servers[0].url`, WITHOUT constructing
+ * a URL.
+ *
+ * This used to be `new URL(serverUrl).pathname` inside `catch { /* ignore *\/ }`,
+ * which lost the path for every spec published on api.sap.com. Those declare a
+ * templated Server Object, which is standard OpenAPI 3:
+ *
+ *     "url": "https://{host}:{port}/sap/opu/odata/sap/API_SALES_ORDER_SRV",
+ *     "variables": { "host": {"default": ""}, "port": {"default": ""} }
+ *
+ * `new URL` throws `Invalid URL` on it because `{port}` is not a numeric port,
+ * the catch swallowed the throw, and `pathPrefix` stayed `''`. The stored
+ * contract then addressed the host root, and SAP answered 404 with an HTML error
+ * page, which reached the chat as "Service cannot be reached". Measured
+ * 2026-09-10 against a live system: with the path restored, the same request
+ * returns 200 and rows.
+ *
+ * Substituting the variables is NOT enough: `{host}`/`{port}` replaced with any
+ * placeholder still yields `https://x:x/...`, which throws again for the same
+ * reason. Matching the path after the authority sidesteps URL parsing entirely,
+ * and the host is irrelevant here because the SAP destination supplies it.
+ *
+ * Returns '' only when there genuinely is no path to take, which the caller
+ * surfaces rather than storing silently.
+ */
+export function servicePathOf(serverUrl: string): string {
+  if (!serverUrl) return ''
+  // scheme://authority/rest, where the authority may contain {template} segments.
+  const withAuthority = serverUrl.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^/]*(\/.*)$/)
+  if (withAuthority) return withAuthority[1].replace(/\/$/, '')
+  // A relative server url is also legal OpenAPI, resolved against the host
+  // serving the document. There the whole value IS the path.
+  if (serverUrl.startsWith('/')) return serverUrl.replace(/\/$/, '')
+  return ''
+}
+
 function parseOpenApi(spec: Record<string, unknown>, filename: string): ContractApi | null {
   const info = (spec.info as Record<string, string>) ?? {}
   const paths = (spec.paths as Record<string, unknown>) ?? {}
   const servers = (spec.servers as Array<Record<string, string>>) ?? [{}]
 
   const serverUrl = servers[0]?.url ?? ''
-  let pathPrefix = ''
-  try {
-    pathPrefix = new URL(serverUrl).pathname.replace(/\/$/, '')
-  } catch { /* ignore */ }
+  const pathPrefix = servicePathOf(serverUrl)
 
   const rawName = info.title ?? filename.split('.')[0]
   const apiName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/, '').slice(0, 40)
@@ -252,6 +286,13 @@ export function ContractsPage() {
       return
     }
     setPreview(parsed)
+    // An empty service path is not a detail, it is a contract that cannot work:
+    // every call would address the host root and SAP answers 404 with an HTML
+    // error page. Say so at upload time, where the file is still in hand, rather
+    // than letting it surface later as a failed action in chat.
+    if (!parsed.pathPrefix) {
+      toast.warning(t('cont_toast_no_service_path'), { duration: 12000 })
+    }
     toast.success(
       t('cont_preview_entity_sets')
         .replace('{n}', String(parsed.entitySets.length))
