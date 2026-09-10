@@ -209,6 +209,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
             detect --source /repo --redact --no-banner --verbose \
+            --config /repo/.gitleaks.toml \
             --gitleaks-ignore-path /repo \
             --log-opts "--no-merges ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
@@ -227,6 +228,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
             detect --source /repo --redact --no-banner --verbose \
+            --config /repo/.gitleaks.toml \
             --gitleaks-ignore-path /repo
 
   frontend:

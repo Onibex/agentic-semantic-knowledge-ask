@@ -41,13 +41,15 @@
 # NOT A CREDENTIAL, so the rotate-first rule above does not apply here. Read
 # this before assuming the entry hides something live.
 #
-# `INDEX_API_CONTRACTS = "ask-api-contracts-v1"` is the name of an OpenSearch
-# index. The generic-api-key rule fires on it because the constant's name
-# contains API and the value scores 3.55 entropy, which is what an index name
-# with three hyphenated words scores. There is nothing to rotate and nothing
-# was exposed: the value is a public identifier that appears in the index
-# mapping, in the migration script and in the commit message that introduced
-# it.
+# The finding is the INDEX_API_CONTRACTS constant in contracts_repository.py,
+# and its value is the name of an OpenSearch index. The generic-api-key rule
+# fires because the constant's name contains API and the value scores 3.55
+# entropy, which is what any three-word hyphenated identifier scores. There is
+# nothing to rotate and nothing was exposed: the value is a public identifier
+# that also appears in the index mapping and in the migration script.
+#
+# The value is deliberately NOT quoted here. Quoting it verbatim is what made
+# this comment itself a second finding on the first attempt.
 #
 # The line itself now carries a `gitleaks:allow` marker, which is the durable
 # half of the fix: it travels with the line, so an edit that moves it does not
