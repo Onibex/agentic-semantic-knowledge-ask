@@ -5,14 +5,17 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""``POST /v1/admin/mcp/test`` — test MCP server health endpoint.
+"""``POST /v1/admin/mcp/test`` and ``/mcp/restart`` — the MCP server controls.
 
-Reads ``mcp_url`` from the encrypted store's ``sap_s4hana`` section (the MCP
-server is the thing that talks to that SAP system, so they are stored together)
-and makes a GET request to ``{mcp_url}/health`` to verify it is reachable.
-
-That section used to live in ``config/settings.json``; see
+``test`` reads ``mcp_url`` from the encrypted store's ``sap_s4hana`` section
+(the MCP server is the thing that talks to that SAP system, so they are stored
+together) and makes a GET request to ``{mcp_url}/health`` to verify it is
+reachable. That section used to live in ``config/settings.json``; see
 ``routers/sap_connection`` for why it moved.
+
+``restart`` backs the "Restart MCP" button on ASK Setup's Contracts page. The
+container work lives in ``application/container_control``, shared with the SAP
+save, which needs the same restart for the same reason.
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from pydantic import BaseModel
 
 from ask_llm_gateway.infrastructure.secrets import resolve_sap_config
 
+from ..application.container_control import MCP_CONTAINER, restart_container
 from ..auth.validator import TokenClaims, validate_token
 
 logger = logging.getLogger(__name__)
@@ -58,6 +62,10 @@ class ConnectionTestResult(BaseModel):
 class RestartResult(BaseModel):
     ok: bool
     message: str = ""
+    # Which of the four cases produced this answer, so a caller can tell "this
+    # deployment has no Docker" from "the restart broke" without parsing the
+    # message. Additive: the SPA reads ok + message and keeps working.
+    outcome: str = ""
 
 
 # ── Endpoint ──────────────────────────────────────────────────────────────────
@@ -133,35 +141,38 @@ async def test_mcp_connection(
 async def restart_mcp(
     user: TokenClaims = Depends(validate_token),
 ) -> RestartResult:
-    import subprocess
+    """Restart ask-mcp so it re-reads the stored API contracts.
 
+    Since the contracts moved into OpenSearch, the MCP fetches them from
+    ``GET /v1/internal/api-contracts`` at boot and there is no file to reload,
+    so a restart IS how a newly saved contract reaches it. That makes this
+    button more useful than it was, not less.
+
+    It used to shell out to the ``docker`` CLI, which the image does not carry,
+    so it answered "docker CLI not found on this host" everywhere. See
+    ``application/container_control`` for the measurement and the reasoning.
+    """
     trace_id = uuid.uuid4().hex
     logger.info(
         "POST /v1/admin/mcp/restart",
         extra={"trace_id": trace_id, "auth_email": user.email},
     )
 
-    try:
-        result = subprocess.run(
-            ["docker", "ps", "--filter", "name=mcp", "--format", "{{.Names}}"],
-            capture_output=True, text=True, timeout=10,
-        )
-        containers = [c.strip() for c in result.stdout.strip().splitlines() if c.strip()]
-        if not containers:
-            return RestartResult(ok=False, message="No container matching 'mcp' found.")
-        container = containers[0]
-        r = subprocess.run(
-            ["docker", "restart", container],
-            capture_output=True, text=True, timeout=60,
-        )
-        if r.returncode == 0:
-            logger.info("[%s] MCP container '%s' restarted", trace_id, container)
-            return RestartResult(ok=True, message=f"Container '{container}' restarted.")
-        return RestartResult(ok=False, message=r.stderr.strip() or "docker restart failed.")
-    except FileNotFoundError:
-        return RestartResult(ok=False, message="docker CLI not found on this host.")
-    except subprocess.TimeoutExpired:
-        return RestartResult(ok=False, message="Timeout waiting for docker restart.")
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("[%s] MCP restart failed: %s", trace_id, exc)
-        return RestartResult(ok=False, message=str(exc))
+    # Synchronous on purpose, unlike the SAP save: here the restart IS the
+    # request, and the user is watching a spinner for its outcome.
+    report = restart_container(MCP_CONTAINER)
+
+    log = logger.info if report.ok else logger.warning
+    log(
+        "[%s] MCP restart: %s (%s)",
+        trace_id,
+        report.message,
+        report.outcome.value,
+        extra={"trace_id": trace_id, "auth_email": user.email},
+    )
+
+    return RestartResult(
+        ok=report.ok,
+        message=report.message,
+        outcome=report.outcome.value,
+    )
