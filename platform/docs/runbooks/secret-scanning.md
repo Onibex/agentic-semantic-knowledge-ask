@@ -40,8 +40,12 @@ under **Security › Secret scanning alerts**.
 
 The job is deliberately **not** a required status check yet. A new check should report the
 truth on its first runs rather than block the pull request that introduces it, which is how
-`Package test suites` was added and then promoted. Promote it in the `protect-main` ruleset
-once the history findings below are resolved.
+`Package test suites` was added and then promoted.
+
+**It is ready to promote.** The three history findings are recorded in `.gitleaksignore`, each
+one verified as a false positive, so the job now passes on both a pull request and a push to
+`main`. Promote it in the `protect-main` ruleset, which takes the required checks from six to
+seven.
 
 `gitleaks` runs with `--redact`, so matched values never reach the CI log. The fingerprints it
 prints are safe to copy.
@@ -67,11 +71,33 @@ it only makes the credential harder to find while it is still live.
 ### History is not rewritten
 
 Not with `filter-repo`, not with `filter-branch`. A rewrite breaks every clone and every fork,
-and once the values are dead it is theatre. The archived BTP material under
-`platform/_internal/archive` was tracked before it was archived, so `kubeconfig.yaml`,
-`xs-security.json` and a script with hardcoded SAP credentials are in history permanently.
-Every credential they reference is considered compromised and needs rotation, which is the only
-remediation that is real.
+and once the values are dead it is theatre.
+
+### What the history actually contains, measured
+
+The first version of this page stated that the archived BTP material under
+`platform/_internal/archive` had been tracked before it was archived, and that its credentials
+were therefore compromised. **That was wrong, and the correction matters more than the claim
+did, because this repository is public.**
+
+Measured on 2026-09-10 against every path that has ever existed in the history
+(`git log --all --name-only`, 1456 distinct paths): **no path under `_internal/` or
+`archive/` has ever been committed.** `_internal/` entered `platform/.gitignore` in the same
+commit that brought the platform into this repository, so the archive never had a window in
+which it could be staged.
+
+The first full-history `gitleaks` run agrees. It found three findings, all of them
+documentation or identifiers and none of them a credential: a `localStorage` key name, a
+`curl` example, and a markdown heading that happens to read `## Smoke test with curl`.
+
+What the archive does contain is **one** real hardcoded credential, in
+`k8s/workforce/create-secrets.ps1`: an SAP S/4HANA host, a username and a password written
+into a `kubectl create secret` call. It was never pushed, so it is not an incident. It is
+still worth rotating on hygiene grounds, because a password of that shape does not need a
+leak to be guessed. Everything else in the archive reads credentials at run time rather than
+carrying them: the kubeconfig authenticates through an `exec` plugin, `xs-security.json` is an
+application definition with no client secret, `create-vcap-secret.ps1` reads from the cluster,
+and `k8s/secret.yaml` is a comment block saying it is no longer used for credentials.
 
 ### What protects that archive now
 
