@@ -296,7 +296,22 @@ services:
       # A missing .git is auto-initialised at boot (SEMANTIC_LAYER_AUTO_INIT,
       # default true in compose).
       - ${SEMANTIC_LAYER_HOST_PATH:?set SEMANTIC_LAYER_HOST_PATH in .env to the absolute path of your semantic-layer repo}:/app/semantic-layer
-      # Docker socket: lets the admin API restart ask-mcp after SAP credentials change.
+      # Docker socket: lets the admin API restart ask-mcp, both after a SAP
+      # credentials change (the proxy reads them from its environment at boot)
+      # and from the "Restart MCP" button on ASK Setup's Contracts page.
+      #
+      # BE AWARE OF WHAT THIS GRANTS. A process that can write to this socket
+      # can do anything the daemon can, including starting a container that
+      # mounts the host filesystem. It is the largest privilege in this file.
+      # The code path that holds it is deliberately one verb wide: see
+      # packages/ask-admin-api/.../application/container_control.py, which
+      # restarts a container by exact name and exposes nothing else.
+      #
+      # NOT PORTABLE, on purpose. There is no Docker socket in a Kubernetes pod
+      # and platform/deploy/ mounts none, so the restart reports itself as
+      # unsupported there rather than broken. Removing this line for good means
+      # giving the MCP its own reload endpoint, the way the orchestrator already
+      # has /v1/internal/reload. Tracked in group W of the backlog.
       - /var/run/docker.sock:/var/run/docker.sock
     networks: [ ask-net ]
     depends_on:
@@ -444,7 +459,14 @@ services:
     networks: [ ask-net ]
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8085/health || exit 1" ]
+      # python3, NOT wget. This is a python:slim image and it carries neither
+      # wget nor curl, so the probe could never run: measured 2026-09-10 with a
+      # failing streak of 106 while the service answered 200 on /health the
+      # whole time. The container was permanently "unhealthy" for want of a
+      # binary, which is the same defect the MCP restart button had. The Keycloak
+      # service above already documents this trap for UBI minimal; teams-bot just
+      # never had it applied.
+      test: [ "CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8085/health', timeout=4).status==200 else 1)\" || exit 1" ]
       interval: 30s
       timeout: 5s
       retries: 3

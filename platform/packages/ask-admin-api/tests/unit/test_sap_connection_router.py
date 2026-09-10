@@ -69,10 +69,13 @@ def sap_client(monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, _FakeRepo]:
             return None
 
     monkeypatch.setattr(sap_connection, "get_secrets_provider", lambda: _Provider())
-    # The MCP container restart fires in a daemon thread; keep it out of tests.
-    monkeypatch.setattr(sap_connection.threading, "Thread", lambda **kw: type(
-        "_NoThread", (), {"start": lambda self: None}
-    )())
+    # Saving the section fires an MCP restart as a side effect. Stub the whole
+    # call, not `threading.Thread`: the thread is an implementation detail of
+    # `application.container_control`, and patching it here used to couple this
+    # test to that choice. What this file asserts is the merge, not the restart.
+    monkeypatch.setattr(
+        sap_connection, "restart_container_in_background", lambda *a, **kw: None
+    )
 
     app = FastAPI()
 

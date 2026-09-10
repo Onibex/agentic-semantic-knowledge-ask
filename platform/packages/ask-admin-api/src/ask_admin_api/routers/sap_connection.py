@@ -42,7 +42,6 @@ Rules
 from __future__ import annotations
 
 import logging
-import threading
 import uuid
 from typing import Any
 
@@ -59,6 +58,10 @@ from ask_llm_gateway.infrastructure.secrets import (
     sap_fields,
 )
 
+from ..application.container_control import (
+    MCP_CONTAINER,
+    restart_container_in_background,
+)
 from ..auth.validator import TokenClaims, validate_token
 
 logger = logging.getLogger(__name__)
@@ -189,31 +192,11 @@ async def save_sap_connection(
     get_secrets_provider().invalidate(SAP_TARGET)
     logger.info("[%s] SAP connection updated", trace_id, extra={"trace_id": trace_id})
 
-    def _restart_mcp(tid: str) -> None:
-        import httpx
-
-        try:
-            transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
-            with httpx.Client(transport=transport, base_url="http://docker", timeout=30) as client:
-                resp = client.post("/containers/ask-mcp/restart")
-            if resp.status_code == 204:
-                logger.info("[%s] ask-mcp restarted via Docker API", tid, extra={"trace_id": tid})
-            else:
-                logger.warning(
-                    "[%s] MCP restart returned %d",
-                    tid,
-                    resp.status_code,
-                    extra={"trace_id": tid},
-                )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                "[%s] MCP restart failed (run manually: docker restart ask-mcp): %s",
-                tid,
-                exc,
-                extra={"trace_id": tid},
-            )
-
-    threading.Thread(target=_restart_mcp, args=(trace_id,), daemon=True).start()
+    # The credentials reach the OData proxy through SAP_S4_SALESORDER_* in the
+    # environment, which patch.js reads at boot, so a save only takes effect on
+    # a restart. In the background because the user asked to STORE credentials:
+    # a missing or slow MCP must not make a successful save look like a failure.
+    restart_container_in_background(MCP_CONTAINER, trace_id=trace_id)
 
     return SapConnectionResponse(config=_masked_section())
 
