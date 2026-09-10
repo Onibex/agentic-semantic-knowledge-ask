@@ -1,0 +1,62 @@
+# Allowlist for the `Secret scanning` job in .github/workflows/platform-ci.yml.
+#
+# THE RULE: one entry per finding, each carrying the commit, what it is, and
+# why it is allowed. Never a wildcard, never a whole path, never a rule id on
+# its own. A blanket ignore makes the job green while checking nothing, which
+# is worse than not having the job, because it also removes the incentive to
+# look.
+#
+# Format is one gitleaks fingerprint per line:
+#
+#     <commit sha>:<file path>:<rule id>:<line number>
+#
+# Get the exact fingerprints from the job's own output. They are printed with
+# the values redacted, so it is safe to copy them from the CI log.
+#
+# WHAT IS EXPECTED TO SHOW UP, AND WHAT TO DO ABOUT IT
+#
+# The archived BTP material under platform/_internal/archive (kubeconfig.yaml,
+# xs-security.json, DEPLOY_SSO.md and a script with hardcoded SAP credentials)
+# was tracked in git before it was archived. It is in history permanently, so
+# the full-history scan WILL find its ancestors. Those are true positives and
+# every credential they reference is considered compromised.
+#
+# The order of operations is not negotiable:
+#
+#   1. ROTATE the credential. This is the only real remediation, and it is the
+#      part a scanner cannot do.
+#   2. THEN record the finding here, with the commit and the note that it was
+#      rotated on a given date.
+#
+# Never the other way round. An entry added before rotation hides a live
+# credential and reads, to the next person, exactly like one that is safe.
+#
+# History is deliberately NOT rewritten. filter-repo and filter-branch break
+# every clone and fork, and once the values are dead the rewrite is theatre.
+#
+# See platform/docs/runbooks/secret-scanning.md for the full procedure.
+
+# ── Entries ──────────────────────────────────────────────────────────────────
+#
+# NOT A CREDENTIAL, so the rotate-first rule above does not apply here. Read
+# this before assuming the entry hides something live.
+#
+# The finding is the INDEX_API_CONTRACTS constant in contracts_repository.py,
+# and its value is the name of an OpenSearch index. The generic-api-key rule
+# fires because the constant's name contains API and the value scores 3.55
+# entropy, which is what any three-word hyphenated identifier scores. There is
+# nothing to rotate and nothing was exposed: the value is a public identifier
+# that also appears in the index mapping and in the migration script.
+#
+# The value is deliberately NOT quoted here. Quoting it verbatim is what made
+# this comment itself a second finding on the first attempt.
+#
+# The line itself now carries a `gitleaks:allow` marker, which is the durable
+# half of the fix: it travels with the line, so an edit that moves it does not
+# raise the same false positive again. This fingerprint is the other half,
+# needed because the pull request scan reads each commit's diff as it was
+# written, and commit ffac9b3 predates the marker.
+ffac9b3e7d14d7947059a10dd9ce792ba2153bc3:platform/packages/ask-admin-api/src/ask_admin_api/application/contracts_repository.py:generic-api-key:65
+#
+# (The full-history findings for the archived BTP material are still to come:
+# the first run on main produces that list, and each one needs rotation first.)

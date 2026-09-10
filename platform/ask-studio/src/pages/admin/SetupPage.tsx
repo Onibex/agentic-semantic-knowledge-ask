@@ -17,6 +17,7 @@ import {
   testSecrets,
 } from '@/api/client'
 import type { ConfigSection } from '@/api/types'
+import { runtimeEnv } from '@/auth/config'
 import { ConfigCard, type TestResult } from '@/components/admin/setup/ConfigCard'
 import { EmbedderDrawer } from '@/components/admin/setup/EmbedderDrawer'
 import { providerColor } from '@/components/admin/setup/providerMeta'
@@ -131,7 +132,7 @@ export default function SetupPage() {
 
   // Cross-app link to ASK Setup's LLM Providers page. Falls back to a muted
   // text hint when the deployment does not set the URL (no broken link).
-  const setupSpaUrl = (import.meta.env.VITE_SETUP_SPA_URL as string | undefined)?.replace(/\/$/, '')
+  const setupSpaUrl = runtimeEnv().SETUP_SPA_URL?.replace(/\/$/, '') || undefined
   const llmManageHref = setupSpaUrl ? `${setupSpaUrl}/llm-providers` : undefined
 
   return (

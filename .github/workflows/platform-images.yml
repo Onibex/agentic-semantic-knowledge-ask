@@ -86,15 +86,10 @@ env:
   PLATFORMS:        ${{ inputs.platforms       || 'linux/amd64' }}
   EXECUTOR_EXTRAS:  ${{ inputs.executor_extras || '[snowflake,databricks,clickhouse,bigquery]' }}
   GATEWAY_EXTRAS:   ${{ inputs.gateway_extras  || '' }}
-  # The SPAs still bake their auth config at build time. Placeholders are
-  # correct here: these images are cluster-agnostic only after phase 3 of the
-  # plan ships /config.js + window.__ENV__, at which point these three args and
-  # this block are deleted. Until then, a cluster-specific SPA image needs a
-  # dispatch run with the real values.
-  VITE_AUTH_MODE:      'keycloak'
-  VITE_KEYCLOAK_URL:   'http://localhost:8180'
-  VITE_KEYCLOAK_REALM: 'ask-platform'
-  VITE_SETUP_SPA_URL:  'http://localhost:5175'
+  # The SPAs used to bake their auth config in here, which made every image
+  # cluster-specific. They now render /config.js from the environment at
+  # container start, so the VITE_* arguments are gone and one SPA image runs
+  # against any cluster. This block is deliberately empty of SPA arguments.
 
 jobs:
   build:
@@ -123,17 +118,14 @@ jobs:
             context: platform/ask-studio
             dockerfile: platform/ask-studio/Dockerfile
             kind: spa
-            wants_setup_url: 'true'
           - image: ask-chat
             context: platform/ask-chat
             dockerfile: platform/ask-chat/Dockerfile
             kind: spa
-            wants_setup_url: 'false'
           - image: ask-setup
             context: platform/ask-setup
             dockerfile: platform/ask-setup/Dockerfile
             kind: spa
-            wants_setup_url: 'false'
 
           # No build arguments.
           - image: ask-teams-bot
@@ -192,14 +184,8 @@ jobs:
                 echo "GATEWAY_EXTRAS=${GATEWAY_EXTRAS}"
                 echo "EXECUTOR_EXTRAS=${EXECUTOR_EXTRAS}"
                 ;;
-              spa)
-                echo "VITE_AUTH_MODE=${VITE_AUTH_MODE}"
-                echo "VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}"
-                echo "VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}"
-                if [ '${{ matrix.wants_setup_url }}' = 'true' ]; then
-                  echo "VITE_SETUP_SPA_URL=${VITE_SETUP_SPA_URL}"
-                fi
-                ;;
+              # `spa` takes no build arguments any more: the auth config is
+              # read from the environment at container start, not baked in.
             esac
             echo 'ARGS_EOF'
           } >> "$GITHUB_OUTPUT"

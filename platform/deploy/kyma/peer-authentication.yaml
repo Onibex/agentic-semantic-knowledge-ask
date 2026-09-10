@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# Istio only, so Kyma only. See README.md in this folder.
+#
+# PERMISSIVE lets the orchestrator accept both mTLS and plain traffic, which is
+# what allows a caller outside the mesh (a probe, an ingest client) to reach it.
+#
+# FIXED 2026-09-09: this declared `namespace: workforce`, which no other
+# manifest in the repo uses and which nothing creates. The selector therefore
+# matched no pod, and applying the file failed outright on a cluster where that
+# namespace was absent. `workforce` was the namespace name before the move to
+# onibex-ask and the rename never reached this file.
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: ask-orchestrator-permissive
+  namespace: onibex-ask
+spec:
+  selector:
+    matchLabels:
+      app: ask-orchestrator
+  mtls:
+    mode: PERMISSIVE

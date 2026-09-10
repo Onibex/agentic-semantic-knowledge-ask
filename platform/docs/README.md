@@ -76,6 +76,7 @@ required; the rest are optional or read-only.
 ### [Operating the platform](runbooks/README.md)
 - [Local development](runbooks/local-development.md). Running the services natively instead of in Docker
 - [Orchestrator troubleshooting](runbooks/orchestrator-troubleshooting.md). On-call diagnosis for the chat backend
+- [Secret scanning and credential rotation](runbooks/secret-scanning.md). Keeping credentials out of the repository, and what to do when one gets in
 
 ### [Reference](reference/README.md)
 - [Glossary](reference/glossary.md)

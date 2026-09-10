@@ -160,6 +160,77 @@ jobs:
         # above, which the lint job does not have.
         run: pytest packages/*/tests tests/integration -q --import-mode=importlib --durations=10
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # Secret scanning, the repository-side half.
+  #
+  # The other half, rotating what was already committed, is not automatable and
+  # is tracked in the runbook. This job is the part that stops it recurring.
+  #
+  # Why this exists when GitHub offers push protection: push protection can be
+  # bypassed by a pusher, does not apply to forks the same way, and is a
+  # setting somebody can switch off in a menu. A CI job lives in the repository
+  # and travels with it. Belt and braces is correct here, not redundant.
+  #
+  # NOT a required status check yet, deliberately, the same way `Package test
+  # suites` was added: a new check should report the truth on its first runs
+  # rather than block the PR that introduces it. Promote it in `protect-main`
+  # once the history findings below are resolved.
+  #
+  # --redact is not optional. Without it gitleaks prints the matched secret,
+  # which would put real values into a CI log that is far more widely readable
+  # than the file they came from.
+  # ───────────────────────────────────────────────────────────────────────────
+  secret-scanning:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    env:
+      # Pinned to an exact version, like every other tool here. The official
+      # gitleaks-action is deliberately NOT used: it requires a paid licence
+      # key for organisation-owned repositories, so it would fail closed for
+      # this repo for a reason that has nothing to do with secrets.
+      GITLEAKS_IMAGE: zricethezav/gitleaks:v8.28.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The history scan needs the history. Cheap enough for this repo.
+          fetch-depth: 0
+
+      # --gitleaks-ignore-path is not optional, and leaving it out is a silent
+      # failure rather than an error. The image declares no WORKDIR, so the
+      # container starts in / and gitleaks looks for /.gitleaksignore, which
+      # will never exist. The allowlist would be read as empty, every recorded
+      # false positive would come back, and the only symptom would be a job
+      # that stays red no matter what anybody writes in the file.
+      #
+      # The gate that matters day to day: nothing new gets in. This is expected
+      # to stay green, because it only looks at what the pull request adds.
+      - name: Scan the pull request diff
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
+            detect --source /repo --redact --no-banner --verbose \
+            --config /repo/.gitleaks.toml \
+            --gitleaks-ignore-path /repo \
+            --log-opts "--no-merges ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
+      # The full history, on main only, so a true positive from the past never
+      # blocks an unrelated pull request.
+      #
+      # EXPECT THIS TO BE RED at first. The archived BTP material
+      # (kubeconfig.yaml, xs-security.json, a script with hardcoded SAP
+      # credentials) was tracked before it was archived, so it is in history
+      # permanently and every credential it references is compromised. Those
+      # are true positives. The fix is rotation, then one .gitleaksignore entry
+      # per finding recorded with its reason. It is NOT a wildcard ignore that
+      # makes this job green while checking nothing.
+      - name: Scan the full history
+        if: github.event_name == 'push'
+        run: |
+          docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
+            detect --source /repo --redact --no-banner --verbose \
+            --config /repo/.gitleaks.toml \
+            --gitleaks-ignore-path /repo
+
   frontend:
     name: ${{ matrix.app }} typecheck + build
     runs-on: ubuntu-latest

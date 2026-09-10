@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Browser-facing configuration for ASK Studio, read at CONTAINER START.
+#
+# The SPA image no longer bakes its auth configuration into the bundle. Its
+# entrypoint renders /config.js from these variables, so one image serves every
+# cluster and changing a domain is a rollout instead of a rebuild.
+#
+# WHY THIS FILE EXISTS AT ALL
+#
+# The ask-studio Deployment declared no environment at all, because the change
+# that removed the build arguments and the change that fixed these manifests
+# landed from different branches on the same day. With the new image and no
+# environment the pod stops at startup with "ASK_AUTH_MODE is not set" and
+# never becomes Ready.
+#
+# EMPTY VALUES BELOW ARE DELIBERATE, AND THEY STOP THE POD
+#
+# ASK_KEYCLOAK_URL is empty because only the operator knows it. The entrypoint
+# refuses to start on an empty required value and names the variable in the
+# container log, so `kubectl logs` says exactly what is missing.
+#
+# It would be easy to put https://keycloak.example.com here instead and let the
+# pod reach Ready. That is the trap this whole line of work removed: the old
+# image defaulted to http://localhost:8180, so a deployment that forgot a value
+# did not fail, it served a login page pointing at a host that does not exist,
+# with nothing reporting it. A pod that will not start is the better outcome.
+#
+# THESE ARE BROWSER URLs, NOT SERVICE NAMES
+#
+# The OAuth exchange happens in the browser, so ask-keycloak:8080 is
+# unreachable from it. Use the public address, and the same one the Keycloak
+# issuer uses, or token validation fails on the issuer claim.
+#
+# The Helm chart, phase 4, replaces this with a values file per target. Until
+# then an operator edits this file and rolls out ask-studio.
+# ─────────────────────────────────────────────────────────────────────────────
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ask-spa-config
+  namespace: onibex-ask
+  labels:
+    app.kubernetes.io/part-of: onibex-ask
+data:
+  # keycloak | xsuaa | none. There is no default and no other accepted value:
+  # the entrypoint stops on anything else rather than guessing. `none` means no
+  # login and has to be chosen on purpose. The first cluster target is EKS with
+  # Keycloak.
+  ASK_AUTH_MODE: "keycloak"
+
+  # REQUIRED, and empty on purpose. The public origin of Keycloak as the
+  # BROWSER reaches it, scheme included, no trailing slash.
+  #   e.g.  https://auth.ask.example.com
+  ASK_KEYCLOAK_URL: ""
+
+  ASK_KEYCLOAK_REALM: "ask-platform"
+  ASK_KEYCLOAK_CLIENT_ID: "ask-studio"
+
+  # Optional cross-app links. Empty HIDES the link rather than breaking it,
+  # which is the right behaviour when ASK Setup or ASK Chat is not deployed in
+  # this cluster. Neither has a manifest in this folder yet; the chart adds
+  # them.
+  ASK_SETUP_SPA_URL: ""
+  ASK_CHAT_URL: ""

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# Kyma only. See README.md in this folder.
+#
+# noAuth: true is deliberate. The SPA authenticates in the browser with PKCE
+# and every API call is proxied by its own nginx to ask-admin-api inside the
+# cluster, so there is no server-side token check to delegate to the gateway.
+---
+apiVersion: gateway.kyma-project.io/v2
+kind: APIRule
+metadata:
+  name: ask-studio-apirule
+  namespace: onibex-ask
+spec:
+  hosts:
+    - ask-studio.<YOUR_CLUSTER_DOMAIN>
+  service:
+    name: ask-studio-service
+    port: 80
+  gateway: kyma-system/kyma-gateway
+  rules:
+    - path: /*
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+      noAuth: true

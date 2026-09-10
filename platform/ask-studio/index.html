@@ -14,6 +14,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ASK Studio</title>
+    <!--
+      Runtime configuration, rendered by the container entrypoint from the
+      environment. Loaded synchronously and BEFORE the app bundle on purpose:
+      fetching it asynchronously would add a loading state and a new failure
+      mode to every page load.
+    -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>

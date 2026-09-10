@@ -68,14 +68,18 @@ When a real provider is active, the **OIDC configuration** card lists the connec
 | **End-session endpoint** | Where sign-out (RP-initiated logout) is sent. |
 
 An information note under the table explains the wiring: the SPA reads the provider from
-**`VITE_AUTH_MODE`** (compiled into the bundle at build), and the backend validates tokens using
-**`AUTH_MODE`** plus **`KEYCLOAK_JWKS_URL`** / **`XSUAA_*`**. *"To switch providers, change the env
-vars and rebuild. There is nothing to edit here by design."*
+**`ASK_AUTH_MODE`** at container start, and the backend validates tokens using **`AUTH_MODE`** plus
+**`KEYCLOAK_JWKS_URL`** / **`XSUAA_*`**. *"To switch providers, change the env vars and restart the
+containers. No rebuild, and nothing to edit here by design."*
 
-> **Note, dev bypass looks different.** When the platform runs with authentication bypassed
-> (`VITE_AUTH_MODE` unset), this card is replaced by an amber notice telling you to set the mode to
-> `keycloak` or `xsuaa` and rebuild to enable a real identity provider. There is no session panel in
+> **Note, no login looks different.** When the platform runs with authentication bypassed
+> (`ASK_AUTH_MODE=none`), this card is replaced by an amber notice telling you to set the mode to
+> `keycloak` or `xsuaa` and restart to enable a real identity provider. There is no session panel in
 > that mode.
+>
+> `none` has to be set on purpose. The SPA accepts only `keycloak`, `xsuaa` or `none` and stops at
+> startup on anything else, naming the variable, so a deployment cannot arrive at no login by
+> leaving a value out or mistyping it.
 
 ## 4. Check your session and roles
 
@@ -96,9 +100,10 @@ The **Supported providers** list shows the two production identity providers, **
 informational: it tells you what the platform can be built against, not a menu you select from.
 
 > **Warning, switching providers is an operations task.** Changing the identity provider means
-> updating the build-time and backend environment variables (`VITE_AUTH_MODE` / `AUTH_MODE` and the
-> matching `KEYCLOAK_*` or `XSUAA_*` values), **rebuilding the SPA**, and restarting the backend. It
-> cannot be done from this page.
+> updating the SPA and backend environment variables (`ASK_AUTH_MODE` / `AUTH_MODE` and the
+> matching `KEYCLOAK_*` or `XSUAA_*` values) and restarting the containers. It cannot be done from
+> this page. It no longer needs an image rebuild: the SPAs read this configuration at container
+> start rather than baking it into the bundle.
 
 ---
 

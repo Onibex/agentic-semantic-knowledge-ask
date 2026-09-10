@@ -6,40 +6,19 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-# Startup script: use api-config.json from PVC if available, else seed default.
-CONFIG_DIR=/app/config
-DEFAULT_CONFIG=/app/api-config.json
-ACTIVE_CONFIG=$CONFIG_DIR/api-config.json
+# The API contracts come from the admin API, fetched once at boot, and there is
+# no file to fall back to. fetch-contracts.js retries with backoff and only
+# returns once it has written /app/api-config.json, so an unreachable admin API
+# or an environment with no contracts saved keeps this container unready rather
+# than starting it with zero tools.
+#
+# What used to be here: a copy of api-config.json out of a mounted config
+# volume, and a read of sap_s4hana credentials out of config/settings.json.
+# Both are gone. The SAP connection moved to the encrypted store on 2026-09-09,
+# so that settings.json read had already stopped finding anything; the
+# credentials reach the proxy through SAP_S4_SALESORDER_* in the environment,
+# which is what patch.js reads.
 
-if [ -f "$ACTIVE_CONFIG" ]; then
-  echo "[startup] api-config.json found in config volume — using it."
-  cp "$ACTIVE_CONFIG" "$DEFAULT_CONFIG"
-else
-  echo "[startup] No api-config.json in config volume — seeding default."
-  mkdir -p "$CONFIG_DIR"
-  cp "$DEFAULT_CONFIG" "$ACTIVE_CONFIG"
-fi
-
-# Read SAP credentials from settings.json (Docker Compose / local env).
-# Env vars set explicitly always take precedence; this only fills the gaps.
-SETTINGS=$CONFIG_DIR/settings.json
-if [ -f "$SETTINGS" ]; then
-  _host=$(node -e "try{const s=require('$SETTINGS');process.stdout.write(s.sap_s4hana&&s.sap_s4hana.host||'')}catch(e){}" 2>/dev/null)
-  _user=$(node -e "try{const s=require('$SETTINGS');process.stdout.write(s.sap_s4hana&&s.sap_s4hana.username||'')}catch(e){}" 2>/dev/null)
-  _pass=$(node -e "try{const s=require('$SETTINGS');process.stdout.write(s.sap_s4hana&&s.sap_s4hana.password||'')}catch(e){}" 2>/dev/null)
-  if [ -n "$_host" ]; then
-    export SAP_S4_SALESORDER_BASE_URL="$_host"
-    export SAP_S4_SALESORDER_URL="$_host"
-    echo "[startup] SAP host loaded from settings.json: $_host"
-  fi
-  if [ -n "$_user" ]; then
-    export SAP_S4_SALESORDER_USERNAME="$_user"
-    echo "[startup] SAP username loaded from settings.json."
-  fi
-  if [ -n "$_pass" ]; then
-    export SAP_S4_SALESORDER_PASSWORD="$_pass"
-    echo "[startup] SAP password loaded from settings.json."
-  fi
-fi
+node /app/fetch-contracts.js || exit 1
 
 exec npm start

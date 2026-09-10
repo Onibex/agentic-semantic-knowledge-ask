@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# Configuration for the `Secret scanning` job in
+# .github/workflows/platform-ci.yml.
+#
+# It exists for one reason, and the reason is not a workaround: a file that
+# records secret-scanner findings will always contain text shaped like a
+# finding, so scanning it produces a false positive for every entry it holds.
+#
+# That is not hypothetical. It already happened twice in one day:
+#
+#   1. .gitleaksignore carried an explanatory comment quoting the offending
+#      line verbatim, so the scanner flagged the explanation of the false
+#      positive as a new false positive.
+#   2. Every fingerprint is `<sha>:<path>:<rule id>:<line>`, which pairs a
+#      40 character hex string with a rule name like `generic-api-key` or
+#      `private-key`. The archived BTP findings still to be recorded will trip
+#      the same rules the moment somebody adds them.
+#
+# Without this exclusion the allowlist cannot be used for its own purpose, and
+# the failure looks like the job being broken rather than like a design gap.
+
+[extend]
+# Keep every default rule. This file subtracts one path from the scan; it does
+# not replace the rule set, and it must never grow into a way of doing that.
+useDefault = true
+
+[allowlist]
+description = "The scanner does not scan its own allowlist"
+paths = [
+  # Only this exact file, anchored at both ends. Not a directory, not a glob
+  # over a tree. If a real credential is ever pasted into .gitleaksignore it
+  # will not be caught here, which is the accepted cost: the file is small,
+  # every change to it is read in review, and it holds nothing but redacted
+  # fingerprints and prose.
+  '''^\.gitleaksignore$''',
+]
