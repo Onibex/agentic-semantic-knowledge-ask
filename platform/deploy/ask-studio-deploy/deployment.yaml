@@ -17,12 +17,15 @@
 #   /api/admin/*  →  ask-admin-api:8081/v1/admin/*
 #   /api/*        →  ask-admin-api:8081/v1/viz/*
 #
-# Auth env-vars (VITE_*) are baked at image build time via Dockerfile ARGs.
-# To use a different IDP, rebuild the image with:
-#   docker build --build-arg VITE_AUTH_MODE=xsuaa \
-#                --build-arg VITE_XSUAA_URL=https://... \
-#                --build-arg VITE_XSUAA_CLIENT_ID=... \
-#                -t <your-registry>/onibex-ask-studio:latest .
+# Auth configuration is read at CONTAINER START from the ask-spa-config
+# ConfigMap, not baked into the image. To use a different IDP, edit that
+# ConfigMap and roll out:
+#   kubectl -n onibex-ask edit configmap ask-spa-config
+#   kubectl -n onibex-ask rollout restart deployment/ask-studio
+#
+# One image therefore serves every cluster. ASK_KEYCLOAK_URL ships EMPTY on
+# purpose: the entrypoint stops the container and names the variable rather
+# than falling back to a host that does not exist. See the ConfigMap for why.
 # ─────────────────────────────────────────────────────────────────────────────
 ---
 apiVersion: apps/v1
@@ -50,6 +53,46 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 80
+          # Rendered into /config.js by the entrypoint at container start.
+          # Listed one by one rather than with envFrom so that the four the
+          # image actually requires are visible here: a reader should not have
+          # to open the ConfigMap to learn what makes this pod refuse to boot.
+          env:
+            - name: ASK_AUTH_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_AUTH_MODE
+            - name: ASK_KEYCLOAK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_KEYCLOAK_URL
+            - name: ASK_KEYCLOAK_REALM
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_KEYCLOAK_REALM
+            - name: ASK_KEYCLOAK_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_KEYCLOAK_CLIENT_ID
+            # Optional: empty hides the cross-app link instead of breaking it.
+            # `optional: true` so the pod still starts if a cluster's ConfigMap
+            # predates these keys.
+            - name: ASK_SETUP_SPA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_SETUP_SPA_URL
+                  optional: true
+            - name: ASK_CHAT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ask-spa-config
+                  key: ASK_CHAT_URL
+                  optional: true
           resources:
             requests:
               memory: "64Mi"

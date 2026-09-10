@@ -45,7 +45,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
 | Service | Module | Port | What it does |
 |---|---|---|---|
 | `opensearch` | external | 9200 | Vector + KG store; also hosts `ask-system-settings-v1` (encrypted secrets) and `ask-workspaces-v1` |
-| `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `VITE_AUTH_MODE=keycloak`. Skip in pure dev. |
+| `keycloak` | external (optional) | 8180 | Local IdP for the SPAs when `ASK_AUTH_MODE=keycloak`. Skip in pure dev. |
 | `ask-orchestrator` | `ask_orchestrator.main:app` | 8080 | Chat backend (intent → SQL → exec) |
 | `ask-admin-api` | `ask_admin_api.main:app` | 8081 | Admin backend (dictionary, KG ingestion, embeddings, secrets, prompts, enrichment, workspaces, organization) |
 | `ask-studio` | `ask-studio/` (Vite dev or Nginx) | 5173 | ASK Studio. Workspaces, Organization, YAML editor + AI Assist, docs ingestion |
@@ -399,7 +399,9 @@ npm run dev
 
 → Browser: **http://localhost:5173**
 
-**Auth mode:** default `dev` (no Keycloak). Set `VITE_AUTH_MODE=keycloak` in `ask-studio/.env.local` if you want the real login flow + a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180).
+**Auth mode:** set `ASK_AUTH_MODE` in `ask-studio/.env.local`. Use `none` for no login, or `keycloak` for the real login flow plus a local Keycloak (see `docker-compose.yml` for the `keycloak` service on port 8180), which also needs `ASK_KEYCLOAK_URL`, `ASK_KEYCLOAK_REALM` and `ASK_KEYCLOAK_CLIENT_ID`.
+
+There is no default and that is deliberate: leaving it unset stops the app with a message naming the variable, in the dev server and in the container alike. It used to fall back to no login, so a missing value shipped a page with the login quietly removed. The variables are named `ASK_*`, not `VITE_*`; the `VITE_*` names were removed when the SPAs stopped baking configuration into the bundle.
 
 Pages available:
 
@@ -552,8 +554,9 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
 | OpenSearch connection refused | `Test-NetConnection localhost -Port 9200` to confirm it's listening |
 | Setup save doesn't refresh the orchestrator's cached config | The admin-api broadcasts `/v1/internal/reload`; make sure `ASK_ORCHESTRATOR_URL` is exported in the **admin-api** terminal so the broadcast reaches the chat backend |
 | Port already in use after killed run | Use the `Get-NetTCPConnection` one-liner above to free 8080/8081/5173/5174/5175 |
-| SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2 + that `VITE_API_BASE_URL` (if set in `.env.local`) matches `http://127.0.0.1:8081` |
-| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `VITE_AUTH_MODE=dev` in `ask-studio/.env.local` |
+| SPA shows `Network Error` on every call | The Vite proxy needs admin-api up; check terminal 2. The SPA calls the relative path `/api`, so there is no base-URL variable to set: the proxy target lives in `vite.config.ts` |
+| SPA login redirects to Keycloak but you don't have it running | Either start the `keycloak` docker-compose service (`docker compose up -d keycloak`) or set `ASK_AUTH_MODE=none` in `ask-studio/.env.local` |
+| SPA or container stops with `ASK_AUTH_MODE is not set` | Working as intended. Set it to `keycloak`, `xsuaa` or `none`; there is no default, so a deployment cannot lose its login by accident |
 | ASK Chat (`ask-chat`) shows blank page or 502 on `/api/orchestrator/*` | Orchestrator (T1) must be up at `:8080`. The Vite proxy for ASK Chat only works while `npm run dev` is running. The proxy is not active in the production build. |
 | ASK Chat workspace dropdown is empty | Admin API (T2) at `:8081` is needed to fetch `/v1/admin/workspaces`. Start it or create a workspace first via ASK Studio at `:5173`. |
 | Port 5174 already in use | `Get-NetTCPConnection -LocalPort 5174 -State Listen \| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }` |

@@ -227,8 +227,8 @@ export const translations = {
     idp_field_auth_endpoint: 'Authorization endpoint',
     idp_field_token_endpoint: 'Token endpoint',
     idp_field_end_session: 'End-session endpoint',
-    idp_dev_warning: 'Authentication is bypassed for local development (VITE_AUTH_MODE is unset). Set it to keycloak or xsuaa and rebuild to enable a real identity provider.',
-    idp_callout: 'The SPA reads the provider from VITE_AUTH_MODE (compiled into the bundle at build), and the backend validates tokens using AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. To switch providers, change the env vars and rebuild — there is nothing to edit here by design.',
+    idp_dev_warning: 'Authentication is bypassed on this deployment (ASK_AUTH_MODE is none). Set it to keycloak or xsuaa and restart to enable a real identity provider.',
+    idp_callout: 'The SPA reads the provider from ASK_AUTH_MODE at container start, and the backend validates tokens using AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. To switch providers, change the env vars and restart the containers. No rebuild, and nothing to edit here by design.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'SAP S/4HANA Connection',
@@ -510,8 +510,8 @@ export const translations = {
     idp_field_auth_endpoint: 'Endpoint de autorización',
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de cierre de sesión',
-    idp_dev_warning: 'La autenticación está deshabilitada para desarrollo local (VITE_AUTH_MODE no está definido). Defínelo como keycloak o xsuaa y reconstruye para habilitar un proveedor de identidad real.',
-    idp_callout: 'La SPA lee el proveedor desde VITE_AUTH_MODE (compilado en el bundle al construir), y el backend valida los tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para cambiar de proveedor, cambia las variables de entorno y reconstruye — no hay nada que editar aquí por diseño.',
+    idp_dev_warning: 'La autenticación está deshabilitada en este despliegue (ASK_AUTH_MODE es none). Defínelo como keycloak o xsuaa y reinicia para habilitar un proveedor de identidad real.',
+    idp_callout: 'La SPA lee el proveedor desde ASK_AUTH_MODE al arrancar el contenedor, y el backend valida los tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para cambiar de proveedor, cambia las variables de entorno y reinicia los contenedores. No hace falta reconstruir, y no hay nada que editar aquí por diseño.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'Conexión SAP S/4HANA',
@@ -793,8 +793,8 @@ export const translations = {
     idp_field_auth_endpoint: 'Endpoint de autorização',
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de fim de sessão',
-    idp_dev_warning: 'A autenticação está desabilitada para desenvolvimento local (VITE_AUTH_MODE não está definido). Defina como keycloak ou xsuaa e reconstrua para habilitar um provedor de identidade real.',
-    idp_callout: 'A SPA lê o provedor de VITE_AUTH_MODE (compilado no bundle ao construir), e o backend valida os tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para trocar de provedor, altere as variáveis de ambiente e reconstrua — não há nada para editar aqui por design.',
+    idp_dev_warning: 'A autenticação está desabilitada neste deployment (ASK_AUTH_MODE é none). Defina como keycloak ou xsuaa e reinicie para habilitar um provedor de identidade real.',
+    idp_callout: 'A SPA lê o provedor de ASK_AUTH_MODE ao iniciar o contêiner, e o backend valida os tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para trocar de provedor, altere as variáveis de ambiente e reinicie os contêineres. Não é preciso reconstruir, e não há nada para editar aqui por design.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'Conexão SAP S/4HANA',
