@@ -13,15 +13,26 @@
 # Get the exact fingerprints from the job's own output. They are printed with
 # the values redacted, so it is safe to copy them from the CI log.
 #
-# WHAT IS EXPECTED TO SHOW UP, AND WHAT TO DO ABOUT IT
+# WHAT THE HISTORY ACTUALLY CONTAINS
 #
-# The archived BTP material under platform/_internal/archive (kubeconfig.yaml,
-# xs-security.json, DEPLOY_SSO.md and a script with hardcoded SAP credentials)
-# was tracked in git before it was archived. It is in history permanently, so
-# the full-history scan WILL find its ancestors. Those are true positives and
-# every credential they reference is considered compromised.
+# This header used to say that the archived BTP material under
+# platform/_internal/archive had been tracked in git and that the full-history
+# scan would therefore find compromised credentials. THAT WAS WRONG.
 #
-# The order of operations is not negotiable:
+# Measured 2026-09-10 against every path that has ever existed
+# (git log --all --name-only, 1456 distinct paths): nothing under _internal/ or
+# archive/ has ever been committed. _internal/ entered platform/.gitignore in
+# the same commit that brought the platform into this repository, so the archive
+# never had a window in which it could be staged. The first full-history run
+# agrees: three findings, all documentation or identifiers, none a credential.
+#
+# The archive does hold one real hardcoded credential, in
+# k8s/workforce/create-secrets.ps1. It was never pushed, so it is not an
+# incident and there is nothing for this file to record about it. It is still
+# worth rotating on hygiene grounds. See
+# platform/docs/runbooks/secret-scanning.md.
+#
+# WHEN A REAL FINDING DOES APPEAR, the order of operations is not negotiable:
 #
 #   1. ROTATE the credential. This is the only real remediation, and it is the
 #      part a scanner cannot do.
@@ -57,6 +68,23 @@
 # needed because the pull request scan reads each commit's diff as it was
 # written, and commit ffac9b3 predates the marker.
 ffac9b3e7d14d7947059a10dd9ce792ba2153bc3:platform/packages/ask-admin-api/src/ask_admin_api/application/contracts_repository.py:generic-api-key:65
+
+# ── The three findings from the first full-history run on main ───────────────
 #
-# (The full-history findings for the archived BTP material are still to come:
-# the first run on main produces that list, and each one needs rotation first.)
+# All from 140ad0376f5, the commit that imported the platform. All three
+# verified by reading the line at that commit. NOT credentials, so there is
+# nothing to rotate and the rotate-first rule does not apply.
+#
+# 1. A localStorage key name: `ARTIFACTS_KEY = 'onibex_artifacts_v1'`.
+#    generic-api-key fired on a quoted identifier with enough entropy.
+140ad0376f585f0f90d742e3dc0b6463e97e2f2b:platform/ask-chat-spa/src/pages/ArtifactsPage.tsx:generic-api-key:942
+
+# 2. A documentation example: `curl -X POST http://127.0.0.1:8080/v1/query`.
+#    The Authorization header a few lines below it reads `Bearer
+#    fake.jwt.token`, which is what curl-auth-header actually matched.
+140ad0376f585f0f90d742e3dc0b6463e97e2f2b:platform/docs/runbooks/orchestrator-troubleshooting.md:curl-auth-header:128
+
+# 3. A markdown heading: `## Smoke test with curl`. Worth stating plainly,
+#    because it is the clearest evidence that curl-auth-header keys off the
+#    word rather than off any secret.
+140ad0376f585f0f90d742e3dc0b6463e97e2f2b:platform/packages/ask-admin-api/docs/kafka_connect_http_sink.md:curl-auth-header:147

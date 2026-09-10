@@ -216,13 +216,16 @@ jobs:
       # The full history, on main only, so a true positive from the past never
       # blocks an unrelated pull request.
       #
-      # EXPECT THIS TO BE RED at first. The archived BTP material
-      # (kubeconfig.yaml, xs-security.json, a script with hardcoded SAP
-      # credentials) was tracked before it was archived, so it is in history
-      # permanently and every credential it references is compromised. Those
-      # are true positives. The fix is rotation, then one .gitleaksignore entry
-      # per finding recorded with its reason. It is NOT a wildcard ignore that
-      # makes this job green while checking nothing.
+      # This comment used to predict that the run would be red because the
+      # archived BTP material had been committed. It never was: nothing under
+      # _internal/ or archive/ appears in any of the 1456 paths that have ever
+      # existed, measured 2026-09-10.
+      #
+      # The first run found three findings and all three are false positives, a
+      # localStorage key name and two curl-shaped lines in documentation, each
+      # recorded in .gitleaksignore with the reason. A real finding is fixed by
+      # rotation first and one entry second. It is NOT fixed by a wildcard
+      # ignore that makes this job green while checking nothing.
       - name: Scan the full history
         if: github.event_name == 'push'
         run: |
