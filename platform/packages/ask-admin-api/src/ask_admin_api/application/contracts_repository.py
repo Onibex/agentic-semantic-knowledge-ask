@@ -62,7 +62,13 @@ from .env_targets import opensearch_index_for
 
 logger = logging.getLogger(__name__)
 
-INDEX_API_CONTRACTS = "ask-api-contracts-v1"
+# The `gitleaks:allow` is not decoration. The generic-api-key rule fires on
+# this line because the constant's name contains API and the value scores 3.55
+# entropy, so an OpenSearch index name reads to the scanner as a credential.
+# The inline marker travels with the line, which a .gitleaksignore fingerprint
+# cannot: a fingerprint is pinned to a commit and a line number, so the next
+# edit that moves this line would raise the same false positive again.
+INDEX_API_CONTRACTS = "ask-api-contracts-v1"  # gitleaks:allow
 
 # One document per environment, so the id is a constant. The environment lives
 # in the index name, not in the id, which is what every other env-scoped index

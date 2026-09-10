@@ -195,6 +195,13 @@ jobs:
           # The history scan needs the history. Cheap enough for this repo.
           fetch-depth: 0
 
+      # --gitleaks-ignore-path is not optional, and leaving it out is a silent
+      # failure rather than an error. The image declares no WORKDIR, so the
+      # container starts in / and gitleaks looks for /.gitleaksignore, which
+      # will never exist. The allowlist would be read as empty, every recorded
+      # false positive would come back, and the only symptom would be a job
+      # that stays red no matter what anybody writes in the file.
+      #
       # The gate that matters day to day: nothing new gets in. This is expected
       # to stay green, because it only looks at what the pull request adds.
       - name: Scan the pull request diff
@@ -202,6 +209,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
             detect --source /repo --redact --no-banner --verbose \
+            --gitleaks-ignore-path /repo \
             --log-opts "--no-merges ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
       # The full history, on main only, so a true positive from the past never
@@ -218,7 +226,8 @@ jobs:
         if: github.event_name == 'push'
         run: |
           docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" \
-            detect --source /repo --redact --no-banner --verbose
+            detect --source /repo --redact --no-banner --verbose \
+            --gitleaks-ignore-path /repo
 
   frontend:
     name: ${{ matrix.app }} typecheck + build
