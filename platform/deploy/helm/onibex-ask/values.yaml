@@ -416,6 +416,20 @@ mcpServer:
   # zero tools.
   enabled: false
   replicas: 1
+
+  # The SAP destination, as a Secret whose keys become environment variables.
+  #   kubectl -n <ns> create secret generic ask-sap-destination   #     --from-literal=SAP_S4_SALESORDER_BASE_URL=https://...   #     --from-literal=SAP_S4_SALESORDER_URL=/sap/opu/odata/sap/API_SALES_ORDER_SRV   #     --from-literal=SAP_S4_SALESORDER_USERNAME=...   #     --from-literal=SAP_S4_SALESORDER_PASSWORD=...
+  #
+  # THE MCP SERVER AND ASK SETUP DO NOT READ THE SAME PLACE, and this is a known
+  # defect rather than a design. Setup writes the SAP connection to the
+  # encrypted store in OpenSearch; the MCP resolves its destination from these
+  # environment variables and knows nothing about that store. Saving the
+  # connection in the UI therefore does not make a tool call work, and the tool
+  # answers `Failed to resolve destination ... environment variable is not set`
+  # while Setup shows the connection as configured. Until the MCP reads the
+  # store, both have to be filled in.
+  existingSecret: ""
+
   resources:
     requests:
       cpu: 50m

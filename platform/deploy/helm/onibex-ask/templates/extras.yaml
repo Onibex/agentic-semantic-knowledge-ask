@@ -86,6 +86,13 @@ spec:
             {{- with .Values.mcpServer.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- with .Values.mcpServer.existingSecret }}
+          # The SAP destination. Its keys ARE the variable names, so the Secret
+          # is the contract and the chart does not restate it.
+          envFrom:
+            - secretRef:
+                name: {{ . }}
+          {{- end }}
           resources:
             {{- toYaml .Values.mcpServer.resources | nindent 12 }}
           readinessProbe:
