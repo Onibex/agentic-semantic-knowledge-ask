@@ -1,0 +1,59 @@
+Onibex ASK {{ .Chart.AppVersion }} is installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+Nothing is exposed outside the cluster. This chart renders no Ingress, no load
+balancer and no cloud annotation, on purpose: that belongs in a per-target
+values file. Reach the apps with port-forward until one exists.
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/ask-studio 5173:80
+  kubectl -n {{ .Release.Namespace }} port-forward svc/ask-chat 5174:80
+  kubectl -n {{ .Release.Namespace }} port-forward svc/ask-setup 5175:80
+{{- if .Values.keycloak.enabled }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "onibex-ask.fullname" . }}-keycloak 8180:8080
+{{- end }}
+
+Watch it come up:
+
+  kubectl -n {{ .Release.Namespace }} get pods -w
+
+The order that matters: OpenSearch has to be Ready before either backend can
+finish its own boot, and the admin API has to be Ready before the MCP server
+stops retrying its contract fetch.
+
+{{- if not .Values.semanticLayer.persistence.enabled }}
+
+WARNING: semanticLayer.persistence.enabled is false, so the semantic layer lives
+in an emptyDir. Any YAML authored in ASK Studio and not yet pushed to the git
+remote is lost when the admin API pod restarts.
+{{- end }}
+{{- if and .Values.keycloak.enabled (not .Values.keycloak.production) }}
+
+WARNING: Keycloak is running start-dev, which is explicitly not a production
+mode and keeps its state in an embedded file inside the pod. Every user, client
+and realm change is lost when the pod is replaced. Set keycloak.production=true
+with a real database before anyone depends on this.
+{{- end }}
+{{- if .Values.secrets.create }}
+
+WARNING: the chart created the platform Secret, so the encryption key is stored
+in this release's manifest and is readable by anyone who can read Secrets or
+release history in this namespace. Move to secrets.existingSecret before this
+holds anything real.
+{{- end }}
+{{- if eq (default .Values.auth.mode .Values.auth.chatMode) "none" }}
+
+WARNING: ASK Chat is deployed with no login (auth.chatMode=none). Anyone who can
+reach it can ask questions of your data.
+{{- end }}
+
+The three things to check first when a pod does not reach Ready:
+
+  1. kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "onibex-ask.fullname" . }}-studio
+     The SPA entrypoint names the missing variable and stops rather than serving
+     a login page that points nowhere.
+
+  2. Is the encryption key the SAME one this environment was installed with?
+     A changed key is not a rotation, it is a data-loss event: every stored
+     credential stops decrypting and has to be entered again in ASK Setup.
+
+  3. Does auth.publicUrl match the issuer in the tokens? A mismatch shows up as
+     every request being rejected while the pods report healthy.

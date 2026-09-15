@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Studio, ASK Chat and ASK Setup: three nginx images serving a built bundle
+# and proxying /api to the backends by Service name.
+#
+# They are rendered from one loop because they differ only in name, client id
+# and a couple of links. Each one reads its configuration from the environment
+# at CONTAINER START and renders /config.js, so one image serves every cluster
+# and changing a domain is a rollout instead of a rebuild of nine images.
+#
+# The entrypoint refuses to start on an empty required value and names the
+# variable in the log. That is the intended behaviour: the old image defaulted
+# to localhost, so a deployment that forgot a value did not fail, it served a
+# login page pointing at a host that does not exist with nothing reporting it.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- $root := . }}
+{{- range $key := list "studio" "chat" "setup" }}
+{{- $spa := index $root.Values $key }}
+{{- if $spa.enabled }}
+{{- $component := printf "ask-%s" $key }}
+{{- $mode := $root.Values.auth.mode }}
+{{- if eq $key "chat" }}
+{{- $mode = default $root.Values.auth.mode $root.Values.auth.chatMode }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $component }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" $root "component" $component) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" $root "component" $component) | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" $root }}-{{ $key }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" $root "component" $component) | nindent 4 }}
+spec:
+  replicas: {{ $spa.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" $root "component" $component) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" $root "component" $component) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" $root }}
+      {{- include "onibex-ask.imagePullSecrets" $root | nindent 6 }}
+      securityContext:
+        {{- toYaml $root.Values.spaSecurityContext.pod | nindent 8 }}
+      {{- include "onibex-ask.topologySpread" (dict "ctx" $root "component" $component "replicas" $spa.replicas) | nindent 6 }}
+      containers:
+        - name: {{ $component }}
+          image: {{ include "onibex-ask.image" (dict "ctx" $root "repository" (index $root.Values.image.repositories $key)) | quote }}
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml $root.Values.spaSecurityContext.container | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            {{- include "onibex-ask.spaEnv" (dict "ctx" $root "mode" $mode "clientId" $spa.clientId) | nindent 12 }}
+            {{- if eq $key "studio" }}
+            # Cross-app links. Empty HIDES the link rather than breaking it,
+            # which is right when that app is not deployed in this cluster.
+            - name: ASK_SETUP_SPA_URL
+              value: {{ $root.Values.publicUrls.setup | quote }}
+            - name: ASK_CHAT_URL
+              value: {{ $root.Values.publicUrls.chat | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml $spa.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+{{- end }}
+{{- end }}

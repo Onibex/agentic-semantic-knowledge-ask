@@ -1,0 +1,466 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Default values for the onibex-ask chart.
+#
+# This file is also the configuration surface an operator reads, so every value
+# that can break a deployment carries the reason next to it rather than in a
+# separate document.
+#
+# THREE VALUES HAVE NO DEFAULT AND STOP THE INSTALL
+#
+#   auth.publicUrl        the browser-facing origin of the identity provider
+#   secrets.existingSecret   or secrets.create with real values
+#   image.namespace       the registry account the images were published under
+#
+# They fail at `helm template` time with the name of the value, because the
+# alternative is a pod that reaches Ready while serving a login page pointing at
+# a host that does not exist. That trap is what this line of work removed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Images ──────────────────────────────────────────────────────────────────
+# The registry is a value from day one so that moving from Docker Hub to ACR,
+# ECR or a corporate account is one line per target rather than a rebuild.
+image:
+  # Registry host. Empty means Docker Hub's implicit default.
+  registry: docker.io
+  # REQUIRED. The account or organisation the seven images live under, for
+  # example "onibex". Rendered as <registry>/<namespace>/<repository>:<tag>.
+  namespace: ""
+  # Defaults to .Chart.AppVersion. The image workflow publishes no `latest`
+  # tag on purpose, so an empty tag here resolves to a real version.
+  tag: ""
+  pullPolicy: IfNotPresent
+  # Names of pre-created image pull secrets. Public images need none.
+  pullSecrets: []
+  repositories:
+    orchestrator: ask-orchestrator
+    adminApi: ask-admin-api
+    studio: ask-studio
+    chat: ask-chat
+    setup: ask-setup
+    mcpServer: ask-mcp
+    teamsBot: ask-teams-bot
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ── Identity ────────────────────────────────────────────────────────────────
+auth:
+  # keycloak | xsuaa. These are the only two values the token validators
+  # understand; anything else matches no branch, leaves claims unset and 401s
+  # every request while the pods report healthy. There is no "both": accepting
+  # two issuers at once is a code change, not a values one.
+  mode: keycloak
+
+  # REQUIRED when mode is keycloak. The public origin of the identity provider
+  # AS THE BROWSER REACHES IT, scheme included and no trailing slash. The OAuth
+  # exchange happens in the browser, so an in-cluster Service name is
+  # unreachable from it, and this must match the issuer Keycloak stamps into
+  # its tokens or validation fails on the issuer claim.
+  #   e.g. https://auth.ask.example.com
+  publicUrl: ""
+
+  realm: ask-platform
+
+  # What the backends actually read is KEYCLOAK_JWKS_URL. Left empty it is
+  # derived from publicUrl and realm, which is right whenever the browser and
+  # the pods can use the same address. Set it explicitly when they cannot, for
+  # example when the pods should reach Keycloak over the in-cluster Service
+  # while the browser uses the public name.
+  jwksUrl: ""
+
+  # ASK Chat can run without a login while the other two stay on Keycloak.
+  # That exists for one reason: PKCE needs crypto.subtle, which the browser
+  # only exposes in a secure context, so a plain-HTTP host cannot complete the
+  # login. Accepted values are keycloak, xsuaa and none. Empty follows
+  # auth.mode.
+  chatMode: ""
+
+# Browser-facing URLs of the three SPAs, used for the cross-app links. Empty
+# HIDES a link rather than breaking it, which is the right behaviour when that
+# app is not deployed here.
+publicUrls:
+  studio: ""
+  chat: ""
+  setup: ""
+
+# ── Secrets ─────────────────────────────────────────────────────────────────
+# Only three things are irreducible, because each is needed BEFORE the store
+# that holds everything else can be read. LLM keys, embedder credentials,
+# database connections and the SAP password are Fernet-encrypted inside
+# OpenSearch and entered through ASK Setup, so they are not here.
+secrets:
+  # Recommended: create the Secret out of band and name it here, so no
+  # credential passes through a values file.
+  #   kubectl -n <ns> create secret generic ask-platform-secret \
+  #     --from-literal=encryption-key=... \
+  #     --from-literal=opensearch-user=admin \
+  #     --from-literal=opensearch-password=... \
+  #     --from-literal=keycloak-admin-password=...
+  existingSecret: ""
+
+  # The escape hatch for a throwaway environment. Anything set here lands in
+  # the release's stored manifest, which is readable by anyone who can read
+  # Secrets in the namespace.
+  create: false
+
+  # A 44-character urlsafe-base64 Fernet key.
+  #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  #
+  # IT MUST BE BYTE-IDENTICAL ACROSS UPGRADES. Changing it is not a rotation,
+  # it is a data-loss event: every stored secret stops decrypting and has to be
+  # re-entered by hand. Generate it once per environment and keep it in a vault.
+  encryptionKey: ""
+  opensearchUser: "admin"
+  opensearchPassword: ""
+  keycloakAdminPassword: ""
+
+  # Key names inside the Secret. Override only to adopt a Secret that already
+  # exists with different names.
+  keys:
+    encryptionKey: encryption-key
+    opensearchUser: opensearch-user
+    opensearchPassword: opensearch-password
+    keycloakAdminPassword: keycloak-admin-password
+
+# ── OpenSearch ──────────────────────────────────────────────────────────────
+opensearch:
+  # false points the platform at an endpoint outside the cluster: Amazon
+  # OpenSearch Service, a managed cluster, or one someone else operates. That
+  # takes the most delicate piece out of the chart.
+  enabled: true
+
+  # Read by both backends as OPENSEARCH_HOST / PORT / USE_SSL. Left empty with
+  # enabled=true they resolve to this release's own Service. Host and port are
+  # not secrets, so they live here; only the user and password come from the
+  # Secret above.
+  host: ""
+  port: 9200
+  useSsl: false
+
+  image:
+    repository: opensearchproject/opensearch
+    tag: "3.3.0"
+    pullPolicy: IfNotPresent
+
+  # Matching the compose file, whose sizing was learned from two OOM crash
+  # loops: heap must stay at or below half the container, and 1g proved too
+  # tight once off-heap, metaspace and Lucene were counted.
+  javaOpts: "-Xms512m -Xmx512m -XX:+UseG1GC"
+
+  # The security plugin is off, which is why opensearchUser and
+  # opensearchPassword can be empty on a cluster-internal deployment. Turning
+  # it on is a separate piece of work: it needs certificates and an internal
+  # users file, neither of which this chart renders.
+  disableSecurityPlugin: true
+
+  # bootstrap.memory_lock needs an unlimited memlock ulimit, which a pod cannot
+  # request without privileges that the baseline Pod Security Standard forbids.
+  # It is off here for that reason. The JVM then runs without mlockall, which
+  # is the normal trade in Kubernetes.
+  memoryLock: false
+
+  persistence:
+    enabled: true
+    size: 20Gi
+    # Empty uses the cluster's default StorageClass. Naming one here would make
+    # the chart cloud-specific, which is the whole thing this chart avoids, so
+    # set it in the per-target values file.
+    storageClassName: ""
+    accessModes: [ReadWriteOnce]
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1536Mi
+    limits:
+      memory: 2Gi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ── Keycloak ────────────────────────────────────────────────────────────────
+keycloak:
+  # false when the identity provider lives outside the release: an existing
+  # Keycloak, SAP IAS, or XSUAA on the BTP target. The backends then need
+  # auth.jwksUrl, or auth.mode=xsuaa plus the XSUAA Secret.
+  enabled: true
+
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "24.0.5"
+    pullPolicy: IfNotPresent
+
+  # false runs `start-dev`, which keeps state in an embedded file database and
+  # is explicitly not a production mode. true runs `start` against the external
+  # database below, which is what a real deployment wants.
+  production: false
+
+  adminUser: admin
+
+  database:
+    # Only read when production is true.
+    vendor: postgres
+    host: ""
+    port: 5432
+    name: keycloak
+    user: keycloak
+    # Name and key of a Secret holding the database password.
+    existingSecret: ""
+    passwordKey: password
+
+  # Keycloak behind a reverse proxy or an Ingress generates http redirects and
+  # breaks the login flow unless it is told the traffic was terminated
+  # upstream. This is the classic failure of exactly this migration, so the
+  # safe value is the default.
+  proxyHeaders: xforwarded
+  httpEnabled: true
+
+  # A ConfigMap holding a realm JSON, imported on first boot only. Create it
+  # from the file in the repository:
+  #   kubectl -n <ns> create configmap ask-realm \
+  #     --from-file=ask-platform-realm.json=packages/ask-admin-api/keycloak-realm-config.json
+  # Leave empty to configure the realm by hand in the admin console.
+  realmImportConfigMap: ""
+
+  # Keycloak sizes its heap from HOST memory by default, so on a large node it
+  # takes about 2GB it does not need.
+  javaOpts: "-Xms128m -Xmx384m"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 768Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ── The semantic layer ──────────────────────────────────────────────────────
+semanticLayer:
+  # The ASK YAML corpus is a git working tree that ONLY the admin API touches,
+  # which is why it never needed the shared volume that once forced a
+  # podAffinity. A ReadWriteOnce volume is correct here precisely because
+  # nothing else mounts it.
+  persistence:
+    # false falls back to an emptyDir. Be clear about what that costs: the
+    # working tree is lost on every pod restart, and with it any YAML authored
+    # and not yet pushed to the git remote. It is the right choice only for a
+    # throwaway environment or when the git remote is the source of truth.
+    enabled: true
+    size: 5Gi
+    storageClassName: ""
+    accessModes: [ReadWriteOnce]
+
+  # Initialise the git repository when the mount has no .git, so a clean
+  # cluster reaches Ready without a manual step.
+  autoInit: true
+
+# ── settings.json ───────────────────────────────────────────────────────────
+# Mounted read-only from a ConfigMap, one file at a time via subPath so it does
+# not shadow the rest of /app/config that the image bakes.
+#
+# It carries exactly the sections that still have live readers. There is no
+# opensearch section on purpose: every client resolves OPENSEARCH_* from the
+# environment, and a section here would be read by nothing while misleading the
+# next operator.
+settings:
+  hybrid_pipeline:
+    anchor_top_k: 3
+    expand_max_hops: 1
+    expand_max_total: 5
+    use_two_pass_flow: true
+    max_expansion_rounds: 1
+  sap_ai_core:
+    # Points at the SAP AI Core service key, which is a credential and is
+    # therefore NOT in the ConfigMap and not in any image. Selecting the SAP AI
+    # Core embedder without mounting it raises a named error, which is loud and
+    # correct. Mount it with sapAiCore.existingSecret below.
+    config_path: config/aicore_config.json
+
+sapAiCore:
+  # Name of a Secret whose key `aicore_config.json` holds the service key JSON.
+  # Empty mounts nothing, which is right until the SAP AI Core embedder is used.
+  existingSecret: ""
+  key: aicore_config.json
+
+# ── Platform-wide settings ──────────────────────────────────────────────────
+platform:
+  # en | es. The language the semantic layer is authored in. The IR generator
+  # extracts its retrieval terms in this language and the two must match, or
+  # retrieval degrades silently.
+  semanticLanguage: en
+  # technical (vbeln_vbak) | alias (documento_ventas_vbak). Fixed BEFORE the
+  # first ingest.
+  columnNaming: technical
+  logLevel: INFO
+  environment: production
+  # dev | prod. Selects the environment suffix on the OpenSearch indices.
+  askEnv: dev
+
+# ── Workloads ───────────────────────────────────────────────────────────────
+orchestrator:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  extraEnv: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+adminApi:
+  # Pinned at 1 and not a value by accident. The admin API owns a git working
+  # tree on a ReadWriteOnce volume, and two replicas would either fail to
+  # schedule across nodes or race on the same checkout. Horizontal scaling here
+  # needs the git remote to become the source of truth first.
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  extraEnv: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+studio:
+  enabled: true
+  replicas: 1
+  clientId: ask-studio
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+chat:
+  enabled: true
+  replicas: 1
+  clientId: ask-chat
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+setup:
+  enabled: true
+  replicas: 1
+  clientId: ask-setup
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# Opt-in, exactly as the compose `extras` profile is.
+mcpServer:
+  # Needs SAP S/4HANA credentials, which are entered in ASK Setup and stored
+  # encrypted in OpenSearch. The container fetches its API contracts from the
+  # admin API at boot and stays unready, retrying, rather than starting with
+  # zero tools.
+  enabled: false
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  extraEnv: []
+
+teamsBot:
+  # Needs a Microsoft app registration.
+  enabled: false
+  replicas: 1
+  # Name and keys of a Secret holding the bot credentials.
+  existingSecret: ""
+  appIdKey: app-id
+  appPasswordKey: app-password
+  mode: smart
+  timeoutSeconds: 180
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 192Mi
+
+# ── XSUAA, BTP only ─────────────────────────────────────────────────────────
+# Every reference is optional, so the pods start when this Secret is absent,
+# which is the case on every target that is not Kyma.
+xsuaa:
+  existingSecret: ""
+
+# ── Cluster-level knobs ─────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Applied to any workload whose replica count is above one. There is no
+# podAffinity anywhere in this chart: the rule that used to exist pointed at a
+# pod that had been deleted, and both backends sat unschedulable forever with
+# an error that named nothing useful.
+topologySpread:
+  enabled: true
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+podDisruptionBudget:
+  # A PDB with a single replica blocks voluntary node drains, so it is only
+  # rendered for workloads that actually have more than one.
+  enabled: true
+  minAvailable: 1
+
+# Applied to the Python backends, the MCP server and the Teams bot.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+# The three SPAs need their own, and the reason is worth stating rather than
+# discovering: their images are stock nginx, which binds port 80 and renders
+# /config.js into the web root at container start. runAsNonRoot and a read-only
+# root filesystem each break that, so neither is set here.
+#
+# This IS a gap, not a preference. Closing it means rebuilding the three images
+# on nginx-unprivileged listening on 8080, which is image work rather than chart
+# work and would change the Service target port. Until then the pods run as
+# root inside the container, with every capability dropped except the one that
+# binds the port.
+spaSecurityContext:
+  pod:
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+      add: [NET_BIND_SERVICE]
+
+commonLabels: {}
+commonAnnotations: {}

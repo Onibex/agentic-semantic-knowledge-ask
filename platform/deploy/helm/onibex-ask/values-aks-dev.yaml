@@ -1,0 +1,162 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Azure AKS, development, on a SHARED cluster.
+#
+# Written against a measured cluster on 2026-09-14, not from a template, and the
+# measurements are the reason for every number below.
+#
+# THE SITUATION THIS FILE IS FOR
+#
+# One node, four vCPU, shared with other teams. Requests on that node were at
+# 99% while actual usage across the whole cluster was about 85 millicores, which
+# is 2%. Everything there reserves far more than it uses, and limits were
+# already 480% oversubscribed, so the constraint is the scheduler's bookkeeping
+# rather than real contention.
+#
+# The consequence is the shape of this file: requests are cut to what the
+# scheduler needs to let the pods in, and limits are left generous so the
+# workloads still get CPU when they need it. Requests are a reservation, not a
+# cap. This is a development profile and it says so; do not copy it to anything
+# that carries load.
+#
+# It fits in roughly 525 millicores of requests and about 3.2GB of memory.
+#
+# WHAT IT DOES NOT DO
+#
+# No Ingress and no cert-manager annotation yet, because nothing here has been
+# verified against a live cluster. Use port-forward, get the stack green, and
+# add the entry point as a separate, reviewable step.
+# ─────────────────────────────────────────────────────────────────────────────
+
+image:
+  # REQUIRED. Set it to the Docker Hub account the images were published under.
+  # Nothing has been published yet, so an install will fail on ImagePullBackOff
+  # until the platform-images workflow has been run from `main`.
+  namespace: ""
+
+auth:
+  mode: keycloak
+  # REQUIRED before install. With port-forward on 8180 this is
+  # http://localhost:8180, which works for a single operator and for nobody
+  # else, because the browser of anyone else cannot reach that address.
+  publicUrl: ""
+
+secrets:
+  # Create it out of band, so no key passes through a values file:
+  #   kubectl -n onibex-ask create secret generic ask-platform-secret \
+  #     --from-literal=encryption-key="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+  #     --from-literal=opensearch-user=admin \
+  #     --from-literal=opensearch-password="$(openssl rand -base64 24)" \
+  #     --from-literal=keycloak-admin-password="$(openssl rand -base64 24)"
+  existingSecret: ask-platform-secret
+
+platform:
+  environment: development
+  logLevel: INFO
+  askEnv: dev
+
+# ── The sizing, and why ─────────────────────────────────────────────────────
+
+opensearch:
+  enabled: true
+  # 100m of CPU request is far below what a busy OpenSearch wants, and it is
+  # the right number here: measured usage of the busiest pod on this node was
+  # 12 millicores. Memory is NOT cut the same way, because the JVM heap is a
+  # real allocation and an undersized container gets OOM-killed rather than
+  # slowed down. That happened twice on this stack already.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1536Mi
+    limits:
+      memory: 2Gi
+  persistence:
+    enabled: true
+    size: 10Gi
+    # Empty takes the cluster default, which on AKS is managed-csi. Naming it
+    # here would pin the file to one cloud for no gain.
+    storageClassName: ""
+
+keycloak:
+  enabled: true
+  # start-dev, deliberately, and only because this is a scratch environment on
+  # a cluster we do not own. Every realm and user change is lost when the pod is
+  # replaced. Moving to production mode means an Azure Database for PostgreSQL,
+  # which is a resource this account is not authorised to create.
+  production: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 768Mi
+
+orchestrator:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 150m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+adminApi:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+studio:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+chat:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+setup:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# Off, and they stay off here. Each needs credentials this environment does not
+# have, and together they would add another 100 millicores of requests to a node
+# that has none to give.
+mcpServer:
+  enabled: false
+teamsBot:
+  enabled: false
+
+semanticLayer:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: ""
+
+# Every workload is a single replica here, so both of these would render
+# nothing anyway. They are stated rather than left implicit so that raising a
+# replica count later is a deliberate act.
+podDisruptionBudget:
+  enabled: false
+topologySpread:
+  enabled: false

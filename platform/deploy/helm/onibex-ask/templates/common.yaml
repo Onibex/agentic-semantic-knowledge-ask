@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The objects every workload depends on: the ServiceAccount, the read-only
+# settings.json ConfigMap, and the Secret when the chart is asked to create one.
+#
+# The value validation runs from here because this file always renders, whatever
+# is switched off.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- include "onibex-ask.validate" . -}}
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "onibex-ask.serviceAccountName" . }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "shared") | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+# No Role and no RoleBinding. Nothing in ASK talks to the Kubernetes API, and
+# the one feature that used to reach for a container runtime (the Restart MCP
+# button) reports itself as unsupported here rather than being granted the
+# privilege to work.
+automountServiceAccountToken: false
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-config
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "shared") | nindent 4 }}
+data:
+  # Mounted read-only with subPath, so only this one file is overlaid. A whole
+  # directory mount would shadow the rest of /app/config that the image bakes.
+  settings.json: |
+    {{ toJson .Values.settings }}
+{{- if .Values.secrets.create }}
+---
+# Created only when asked. Everything here lands in the release's stored
+# manifest, so the recommended path stays secrets.existingSecret with a Secret
+# made out of band.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "onibex-ask.secretName" . }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "shared") | nindent 4 }}
+type: Opaque
+stringData:
+  {{ .Values.secrets.keys.encryptionKey }}: {{ .Values.secrets.encryptionKey | quote }}
+  {{ .Values.secrets.keys.opensearchUser }}: {{ .Values.secrets.opensearchUser | quote }}
+  {{ .Values.secrets.keys.opensearchPassword }}: {{ .Values.secrets.opensearchPassword | quote }}
+  {{ .Values.secrets.keys.keycloakAdminPassword }}: {{ .Values.secrets.keycloakAdminPassword | quote }}
+{{- end }}

@@ -1,0 +1,175 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The two opt-in services, off by default exactly as the compose `extras`
+# profile is, because each needs credentials the core stack does not.
+#
+#   mcp-server   SAP write operations. Fetches its API contracts from the admin
+#                API at boot and stays unready, retrying with backoff, rather
+#                than starting with zero tools.
+#   teams-bot    The Microsoft Teams bridge onto /external/ask.
+#
+# Neither mounts a container runtime socket. The admin API's Restart MCP button
+# reports itself unsupported here rather than working, and that is the correct
+# outcome: a hostPath onto a Docker socket is root on the node for any pod that
+# lands there, and the baseline Pod Security Standard forbids it.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if .Values.mcpServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ask-mcp
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "mcp-server") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "mcp-server") | nindent 4 }}
+  ports:
+    - name: http
+      port: 4004
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-mcp-server
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "mcp-server") | nindent 4 }}
+spec:
+  replicas: {{ .Values.mcpServer.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "mcp-server") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "mcp-server") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mcp-server
+          image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.mcpServer) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 4004
+          env:
+            - name: ASK_ADMIN_API_URL
+              value: http://ask-admin-api:8081
+            - name: ASK_ENV
+              value: {{ .Values.platform.askEnv | quote }}
+            {{- with .Values.mcpServer.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.mcpServer.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            # Generous on purpose: the boot path retries the contract fetch
+            # against the admin API, so a slow admin API start must not turn
+            # into a restart loop here.
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+{{- end }}
+{{- if .Values.teamsBot.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ask-teams-bot
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "teams-bot") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "teams-bot") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8085
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-teams-bot
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "teams-bot") | nindent 4 }}
+spec:
+  replicas: {{ .Values.teamsBot.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "teams-bot") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "teams-bot") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: teams-bot
+          image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.teamsBot) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8085
+          env:
+            - name: ORCHESTRATOR_URL
+              value: http://ask-orchestrator:8080/external/ask
+            - name: ORCHESTRATOR_MODE
+              value: {{ .Values.teamsBot.mode | quote }}
+            - name: ORCHESTRATOR_TIMEOUT
+              value: {{ .Values.teamsBot.timeoutSeconds | quote }}
+            - name: BOT_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "teamsBot.existingSecret is required when teamsBot.enabled is true." .Values.teamsBot.existingSecret }}
+                  key: {{ .Values.teamsBot.appIdKey }}
+            - name: BOT_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.teamsBot.existingSecret }}
+                  key: {{ .Values.teamsBot.appPasswordKey }}
+          resources:
+            {{- toYaml .Values.teamsBot.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+{{- end }}
