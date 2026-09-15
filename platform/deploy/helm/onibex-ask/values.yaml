@@ -129,6 +129,15 @@ secrets:
   opensearchUser: "admin"
   opensearchPassword: ""
   keycloakAdminPassword: ""
+  # Machine-to-machine callers of /v1/ingest/*: Kafka Connect, webhooks, and
+  # the MCP server fetching its API contracts at boot. Generate with
+  # `openssl rand -hex 32`.
+  #
+  # Leaving it out is not neutral. The admin API answers every /v1/ingest/*
+  # request with 503 "Ingest API key not configured" (chosen over 401 so a
+  # retrying producer keeps trying until the secret appears), and the MCP
+  # server refuses to boot at all, naming the variable.
+  ingestApiKey: ""
 
   # Key names inside the Secret. Override only to adopt a Secret that already
   # exists with different names.
@@ -137,6 +146,7 @@ secrets:
     opensearchUser: opensearch-user
     opensearchPassword: opensearch-password
     keycloakAdminPassword: keycloak-admin-password
+    ingestApiKey: ingest-api-key
 
 # ── OpenSearch ──────────────────────────────────────────────────────────────
 opensearch:

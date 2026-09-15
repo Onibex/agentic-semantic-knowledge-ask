@@ -59,4 +59,5 @@ stringData:
   {{ .Values.secrets.keys.opensearchUser }}: {{ .Values.secrets.opensearchUser | quote }}
   {{ .Values.secrets.keys.opensearchPassword }}: {{ .Values.secrets.opensearchPassword | quote }}
   {{ .Values.secrets.keys.keycloakAdminPassword }}: {{ .Values.secrets.keycloakAdminPassword | quote }}
+  {{ .Values.secrets.keys.ingestApiKey }}: {{ .Values.secrets.ingestApiKey | quote }}
 {{- end }}

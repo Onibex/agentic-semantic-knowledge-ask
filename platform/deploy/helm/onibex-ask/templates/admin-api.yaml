@@ -110,6 +110,19 @@ spec:
               value: {{ .Values.platform.columnNaming | quote }}
             - name: ASK_ENV
               value: {{ .Values.platform.askEnv | quote }}
+            # Machine-to-machine callers of /v1/ingest/*. Without it every one
+            # of those routes answers 503, which is deliberate: a producer that
+            # retries on 5xx keeps trying until the secret appears.
+            - name: ASK_INGEST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "onibex-ask.secretName" . }}
+                  key: {{ .Values.secrets.keys.ingestApiKey }}
+                  # Optional so the app's own behaviour shows through rather
+                  # than a kubelet error: the admin API answers 503 on the
+                  # ingest routes and the MCP server stops at boot naming the
+                  # variable. Both are clearer than CreateContainerConfigError.
+                  optional: true
             # Cross-pod cache invalidation: changing the active LLM makes the
             # admin API tell the orchestrator to rebuild its singletons now
             # instead of waiting out a 60 second TTL. Resolved by Service name.

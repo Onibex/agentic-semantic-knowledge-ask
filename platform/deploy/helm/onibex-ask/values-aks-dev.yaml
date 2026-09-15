@@ -204,6 +204,17 @@ setup:
 # that has none to give.
 mcpServer:
   enabled: false
+  # 10m rather than the chart's 50m. Measured, not guessed: the node has 3860m
+  # allocatable and 3842m already reserved, so there are 18 millicores left and
+  # 25m does not fit. The request is what the scheduler counts, not what the
+  # process needs, and with no CPU limit set this container still bursts as far
+  # as it wants. It boots, fetches its contracts once, and then waits.
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
 teamsBot:
   enabled: false
 
