@@ -67,7 +67,7 @@ spec:
     # Recreate, because a RollingUpdate would briefly run two pods against the
     # same ReadWriteOnce checkout. The cost is a short gap in ASK Studio during
     # an upgrade, which is the honest trade for a single-writer git tree.
-    type: {{ if .Values.semanticLayer.persistence.enabled }}Recreate{{ else }}RollingUpdate{{ end }}
+    type: {{ if .Values.semanticLayer.persistence.enabled }}Recreate{{ else }}{{ .Values.updateStrategy }}{{ end }}
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "admin-api") | nindent 6 }}
@@ -80,8 +80,11 @@ spec:
     spec:
       serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
       {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # Dockerfile.admin declares no USER, so this image runs as root and cannot
+      # take the non-root context the orchestrator takes. See
+      # rootImageSecurityContext in values.yaml for the gap and its one-line fix.
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.rootImageSecurityContext | nindent 8 }}
       containers:
         - name: admin-api
           image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.adminApi) | quote }}

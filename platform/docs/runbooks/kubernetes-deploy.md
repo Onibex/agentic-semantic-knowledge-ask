@@ -27,9 +27,10 @@ That is not an omission, it is the design: those differ per target, and keeping 
 lets the same chart serve AKS, EKS and Kyma. Until a per-target values file adds an entry point,
 you reach the apps with `kubectl port-forward`.
 
-**It has never been applied to a live cluster.** As of this page the chart renders, lints and
-validates against a real Kubernetes API server in strict mode, and that is all it has done.
-Treat a first install as the verification step, not as a routine.
+**It has been installed once, on Azure AKS 1.33**, and all seven services reached Ready: both
+backends answering `/v1/health`, OpenSearch green, and Keycloak serving the imported realm. That
+install is the only evidence there is. It ran with no persistent volumes and no entry point, so
+anything beyond "the stack starts and answers" is still unverified.
 
 ---
 
@@ -138,9 +139,22 @@ behaviour. The entrypoint refuses to start on an empty required value instead of
 `auth.publicUrl` against the issuer in a token, and remember that the browser and the pods must
 be told the same address unless `auth.jwksUrl` is set explicitly.
 
-**The admin API will not start.** It refuses to boot when the semantic-layer paths are empty or
-do not point at a real directory. Check that the volume was bound: `kubectl -n onibex-ask get
-pvc`.
+**The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses
+to boot when the semantic-layer paths are empty or do not point at a real directory, so check
+that the volume was bound with `kubectl -n onibex-ask get pvc`. It also refuses an
+unrecognised `platform.environment`: the settings object accepts `local` or `production` and
+nothing else, so a reasonable-looking `development` crash-loops it forty lines into a pydantic
+error. The chart now stops at render time on that one.
+
+**An app pod crash-loops on `chown(/var/cache/nginx/client_temp) failed`.** nginx starts as
+root, chowns its cache directories and drops its workers to an unprivileged user, so it needs
+CHOWN, SETUID and SETGID kept. Dropping every capability and adding back only NET_BIND_SERVICE
+looks tighter and stops all three apps.
+
+**A rollout hangs with the new pod Pending and `Insufficient cpu`.** A rolling update reserves
+the new pod's requests before releasing the old pod's, so a node with no spare CPU cannot hold
+both. Set `updateStrategy: Recreate`, and read the note in `values.yaml` first: changing it on
+an installed release fails until the Deployments are recreated.
 
 **OpenSearch is Ready but searches behave oddly under load.** Many node images ship
 `vm.max_map_count` at 65530 and OpenSearch wants 262144. Single-node mode skips the check that

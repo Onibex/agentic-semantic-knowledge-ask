@@ -312,6 +312,10 @@ platform:
   # first ingest.
   columnNaming: technical
   logLevel: INFO
+  # local | production, and nothing else. The backends validate this against a
+  # literal and refuse to start on anything they do not recognise, which means a
+  # reasonable-looking `development` crash-loops the admin API with a pydantic
+  # error forty lines into a traceback. The chart checks it up front instead.
   environment: production
   # dev | prod. Selects the environment suffix on the OpenSearch indices.
   askEnv: dev
@@ -440,9 +444,33 @@ podDisruptionBudget:
   enabled: true
   minAvailable: 1
 
-# Applied to the Python backends, the MCP server and the Teams bot.
+# For the images that declare a NUMERIC non-root user: the orchestrator
+# (`useradd --uid 1000 app`), OpenSearch and Keycloak. All three settled on 1000
+# independently, so one value covers them.
+#
+# The user has to be numeric here, and that is not a style preference. Kubernetes
+# refuses to start a container with `runAsNonRoot` whose image names its user as
+# a string, because it cannot prove the name is not root: the container never
+# starts and the message is "image has non-numeric user (app), cannot verify user
+# is non-root".
 podSecurityContext:
   runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# For the images that declare NO user at all and therefore run as root: the admin
+# API (`Dockerfile.admin`), the MCP server and the Teams bot.
+#
+# This IS a gap, like the one below for the apps, and naming it is the point.
+# Forcing a non-root uid from here does not fix it, it moves the failure: the
+# application directories in those images are owned by root, so the process
+# starts and then fails to write. The fix is one line per Dockerfile, a USER with
+# a numeric uid, which is image work rather than chart work.
+rootImageSecurityContext:
+  runAsNonRoot: false
   seccompProfile:
     type: RuntimeDefault
 
@@ -469,7 +497,36 @@ spaSecurityContext:
     allowPrivilegeEscalation: false
     capabilities:
       drop: [ALL]
-      add: [NET_BIND_SERVICE]
+      # The minimum stock nginx needs, measured on a real cluster rather than
+      # assumed. Dropping everything and adding back only NET_BIND_SERVICE
+      # crash-loops all three apps on the first line nginx runs:
+      #   chown("/var/cache/nginx/client_temp", 101) failed (Operation not permitted)
+      #
+      # The master process starts as root, chowns its cache directories and
+      # then drops the workers to the nginx user, which is CHOWN, SETUID and
+      # SETGID. NET_BIND_SERVICE is for port 80. Nothing else is needed, and
+      # the list stays exactly this long.
+      add: [CHOWN, SETUID, SETGID, NET_BIND_SERVICE]
+
+# RollingUpdate | Recreate, for every workload that is not the admin API (which
+# decides for itself: a git working tree on a ReadWriteOnce volume cannot have
+# two writers, however briefly).
+#
+# Recreate exists here for a specific and common situation: a node with no spare
+# CPU. A rolling update asks for the new pod's requests BEFORE releasing the old
+# pod's, so it needs room for both at once, and on a full node the new pod sits
+# Pending while the old one keeps serving. That reads as a stuck deployment and
+# is really an arithmetic problem. Recreate trades a few seconds of downtime for
+# needing the requests only once.
+#
+# CHANGING THIS ON A RELEASE THAT IS ALREADY INSTALLED FAILS, and the message
+# does not say why: "spec.strategy.rollingUpdate: Forbidden: may not be
+# specified when strategy type is 'Recreate'". Kubernetes defaulted the
+# rollingUpdate sub-fields when the Deployment was created, and they cannot
+# coexist with Recreate. The chart never emits them; they are left over from the
+# earlier revision. Delete the Deployments, or uninstall and install again, then
+# upgrade.
+updateStrategy: RollingUpdate
 
 commonLabels: {}
 commonAnnotations: {}

@@ -44,7 +44,7 @@ metadata:
 spec:
   replicas: {{ .Values.mcpServer.replicas }}
   strategy:
-    type: RollingUpdate
+    type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "mcp-server") | nindent 6 }}
@@ -55,8 +55,10 @@ spec:
     spec:
       serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
       {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # Neither image declares a USER, so both run as root. See
+      # rootImageSecurityContext in values.yaml.
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.rootImageSecurityContext | nindent 8 }}
       containers:
         - name: mcp-server
           image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.mcpServer) | quote }}
@@ -119,7 +121,7 @@ metadata:
 spec:
   replicas: {{ .Values.teamsBot.replicas }}
   strategy:
-    type: RollingUpdate
+    type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "teams-bot") | nindent 6 }}
@@ -130,8 +132,10 @@ spec:
     spec:
       serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
       {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # Neither image declares a USER, so both run as root. See
+      # rootImageSecurityContext in values.yaml.
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.rootImageSecurityContext | nindent 8 }}
       containers:
         - name: teams-bot
           image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.teamsBot) | quote }}

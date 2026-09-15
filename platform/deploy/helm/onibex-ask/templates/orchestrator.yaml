@@ -38,7 +38,7 @@ metadata:
 spec:
   replicas: {{ .Values.orchestrator.replicas }}
   strategy:
-    type: RollingUpdate
+    type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "orchestrator") | nindent 6 }}

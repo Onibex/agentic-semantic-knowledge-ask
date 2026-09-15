@@ -60,12 +60,11 @@ spec:
     spec:
       serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
       {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # The image runs as uid 1000, which is what podSecurityContext already
+      # sets, fsGroup included so the data directory is writable once the volume
+      # is attached.
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-        # The image runs as uid 1000 and the data directory has to be writable
-        # by it after the volume is attached.
-        runAsUser: 1000
-        fsGroup: 1000
       containers:
         - name: opensearch
           image: "{{ .Values.opensearch.image.repository }}:{{ .Values.opensearch.image.tag }}"

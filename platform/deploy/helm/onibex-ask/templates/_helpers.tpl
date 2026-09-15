@@ -243,6 +243,10 @@ to diagnose than a failed render.
 {{- fail "keycloak.production is true but keycloak.database.host is empty. Production mode needs a real database; `start-dev` keeps state in an embedded file that does not survive a pod restart. Either point at a managed PostgreSQL or set keycloak.production=false and accept what that means." -}}
 {{- end -}}
 
+{{- if not (has .Values.platform.environment (list "local" "production")) -}}
+{{- fail (printf "platform.environment is %q. The backends validate it against a literal and accept exactly \"local\" or \"production\". A reasonable-looking \"development\" does not crash at render, it crash-loops the admin API forty lines into a pydantic traceback." .Values.platform.environment) -}}
+{{- end -}}
+
 {{- if gt (int .Values.adminApi.replicas) 1 -}}
 {{- fail "adminApi.replicas is above 1. The admin API owns a git working tree on a ReadWriteOnce volume, so a second replica either fails to schedule on another node or races on the same checkout. Scaling it horizontally needs the git remote to become the source of truth first." -}}
 {{- end -}}

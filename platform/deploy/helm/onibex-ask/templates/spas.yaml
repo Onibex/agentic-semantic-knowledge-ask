@@ -53,7 +53,7 @@ metadata:
 spec:
   replicas: {{ $spa.replicas }}
   strategy:
-    type: RollingUpdate
+    type: {{ $root.Values.updateStrategy }}
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" $root "component" $component) | nindent 6 }}

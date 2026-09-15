@@ -57,9 +57,19 @@ secrets:
   existingSecret: ask-platform-secret
 
 platform:
-  environment: development
+  # production, not "development". The backends validate this against a literal
+  # that accepts only `local` or `production`, so the intuitive word crash-loops
+  # the admin API. It says nothing about how carefully this environment is run,
+  # only which branch the settings object takes.
+  environment: production
   logLevel: INFO
   askEnv: dev
+
+# Recreate, because the node has no spare CPU. A rolling update reserves the new
+# pod's requests before releasing the old pod's, so it needs room for both at
+# once; on a node measured at 86% reserved, the new pod sits Pending and the
+# rollout looks stuck when it is really just arithmetic.
+updateStrategy: Recreate
 
 # ── The sizing, and why ─────────────────────────────────────────────────────
 
