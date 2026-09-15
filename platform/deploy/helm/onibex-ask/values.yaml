@@ -232,12 +232,26 @@ keycloak:
   proxyHeaders: xforwarded
   httpEnabled: true
 
-  # A ConfigMap holding a realm JSON, imported on first boot only. Create it
-  # from the file in the repository:
-  #   kubectl -n <ns> create configmap ask-realm \
-  #     --from-file=ask-platform-realm.json=packages/ask-admin-api/keycloak-realm-config.json
-  # Leave empty to configure the realm by hand in the admin console.
+  # A realm JSON, imported on FIRST BOOT ONLY. Editing it afterwards changes
+  # nothing, because Keycloak skips the import when the realm already exists.
+  #
+  # Prefer the Secret. A realm file carries user passwords, and a ConfigMap is
+  # readable by anything that can list ConfigMaps in the namespace. The realm
+  # shipped in this repository is a local demo: its two users have a password
+  # that is published on GitHub, so it must be edited before any deployment the
+  # internet can reach.
+  realmImportSecret: ""
   realmImportConfigMap: ""
+
+  # Keycloak's own state: the realm, the clients, the users and their
+  # passwords. Without it that state lives inside the pod, and every restart
+  # throws it away and re-imports the file, silently undoing anything changed in
+  # the admin console. Survivable while nobody has logged in, a trap the moment
+  # somebody has.
+  persistence:
+    enabled: false
+    size: 1Gi
+    storageClassName: ""
 
   # Keycloak sizes its heap from HOST memory by default, so on a large node it
   # takes about 2GB it does not need.
@@ -416,6 +430,86 @@ teamsBot:
       memory: 128Mi
     limits:
       memory: 192Mi
+
+# ── The public entry point ──────────────────────────────────────────────────
+# A small Caddy in front of the apps. It is the only thing that speaks TLS: the
+# apps keep serving plain HTTP inside the cluster and know nothing about
+# certificates.
+#
+# WHY THERE HAS TO BE ONE AT ALL, and it is not about tidiness. The three apps
+# sign in with PKCE, and `pkceFlow.ts` calls crypto.subtle unconditionally. The
+# browser only exposes crypto.subtle in a SECURE CONTEXT, which means https or
+# localhost and nothing else. On a plain http address the login button throws
+# and nothing happens. That is a browser rule, not a policy, so an entry point
+# without TLS is not a cheaper option, it is a broken one.
+#
+# It stays out of the way of a shared cluster on purpose: no ingress controller,
+# no cluster-wide add-on, no CustomResourceDefinition. One Deployment and one
+# Service per hostname, all inside this namespace, and `helm uninstall` takes
+# every trace of it with them.
+gateway:
+  enabled: false
+
+  image:
+    repository: caddy
+    tag: "2.8-alpine"
+    pullPolicy: IfNotPresent
+
+  # One public hostname per app, because the three apps cannot share one.
+  # Each is built to be served from the root: the API client asks for `/api`,
+  # the bundle asks for `/assets`, and the login comes back to
+  # `<origin>/login/callback` with the path discarded. Under a shared hostname
+  # all three collide, and no router can fix that from outside, because those
+  # addresses are baked into the JavaScript. Serving them from separate origins
+  # is what keeps this a values file instead of three rebuilt images.
+  #
+  # Leave one empty and that app is simply not published.
+  hosts:
+    studio: ""
+    chat: ""
+    setup: ""
+    auth: ""
+
+  service:
+    type: LoadBalancer
+    # Azure gives every public IP a free DNS name of the form
+    # <label>.<region>.cloudapp.azure.com when the Service carries
+    # `service.beta.kubernetes.io/azure-dns-label-name`. That name is a real
+    # public one, so Let's Encrypt will issue for it, and it means no domain of
+    # your own is needed to get a valid certificate. The NAME survives the IP
+    # changing, which is what matters once anything points at it.
+    #
+    # This is cloud-specific by nature and therefore lives in a per-target
+    # values file. The chart itself only knows the word "annotations".
+    annotations: {}
+    # Extra annotations for one hostname only, keyed by app name.
+    perHostAnnotations: {}
+
+  tls:
+    # acme     get real certificates from Let's Encrypt. Needs port 80 reachable
+    #          from the internet, both to issue and to renew every 90 days.
+    # internal Caddy signs them itself. No public access needed, and every
+    #          visitor gets a browser warning until they accept it once. It is
+    #          still a secure context, so the login works.
+    mode: acme
+    # Where expiry warnings go. Let's Encrypt wants one; leave it empty and you
+    # simply do not get told before a renewal stops working.
+    email: ""
+
+  # Certificates live here. An emptyDir loses them on every restart, and Let's
+  # Encrypt allows only five identical certificates per week, so a few restarts
+  # in one afternoon are enough to be locked out until the window rolls over.
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: ""
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
 
 # ── XSUAA, BTP only ─────────────────────────────────────────────────────────
 # Every reference is optional, so the pods start when this Secret is absent,

@@ -27,11 +27,18 @@
 #
 # It fits in roughly 525 millicores of requests and about 3.2GB of memory.
 #
-# WHAT IT DOES NOT DO
+# THE PUBLIC ENTRY POINT
 #
-# No Ingress and no cert-manager annotation yet, because nothing here has been
-# verified against a live cluster. Use port-forward, get the stack green, and
-# add the entry point as a separate, reviewable step.
+# Four hostnames, one per app, each on its own public IP. That is not a
+# preference: Azure gives one free DNS name per public IP and the name cannot
+# have sub-names of its own, so four published apps need four addresses. The
+# apps cannot share one hostname either, for the reasons in the gateway block of
+# values.yaml.
+#
+# Cost, measured against the Azure price list for westus on 2026-09-15: a
+# Standard static public IP is 0.005 USD per hour, so four are about 14.60 USD a
+# month. The node they run on is 194 USD a month. Worth knowing before trimming
+# anything here.
 # ─────────────────────────────────────────────────────────────────────────────
 
 image:
@@ -42,10 +49,9 @@ image:
 
 auth:
   mode: keycloak
-  # REQUIRED before install. With port-forward on 8180 this is
-  # http://localhost:8180, which works for a single operator and for nobody
-  # else, because the browser of anyone else cannot reach that address.
-  publicUrl: ""
+  # The public origin of Keycloak, which is also the issuer in every token it
+  # signs. It has to be the gateway hostname below, character for character.
+  publicUrl: "https://onibex-ask-auth.westus.cloudapp.azure.com"
 
 secrets:
   # Create it out of band, so no key passes through a values file:
@@ -70,6 +76,50 @@ platform:
 # once; on a node measured at 86% reserved, the new pod sits Pending and the
 # rollout looks stuck when it is really just arithmetic.
 updateStrategy: Recreate
+
+
+# ── The public entry point ──────────────────────────────────────────────────
+gateway:
+  enabled: true
+
+  # The four public hostnames. The suffix is fixed by Azure:
+  # <label>.<region>.cloudapp.azure.com, where the label is the annotation
+  # below and the region is where the cluster lives.
+  hosts:
+    chat: "onibex-ask-chat.westus.cloudapp.azure.com"
+    studio: "onibex-ask-studio.westus.cloudapp.azure.com"
+    setup: "onibex-ask-setup.westus.cloudapp.azure.com"
+    auth: "onibex-ask-auth.westus.cloudapp.azure.com"
+
+  service:
+    type: LoadBalancer
+    perHostAnnotations:
+      # THE LABEL HAS TO BE UNIQUE ACROSS THE WHOLE REGION, not just your
+      # subscription, because the zone is shared by every Azure customer. A
+      # taken label leaves the Service without an address and says so only in
+      # its events, so check there first if a hostname never resolves.
+      chat:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-chat
+      studio:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-studio
+      setup:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-setup
+      auth:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-auth
+
+  tls:
+    mode: acme
+    email: ""
+
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# The cross-app links, which are what ASK Studio uses to offer the other two.
+publicUrls:
+  chat: "https://onibex-ask-chat.westus.cloudapp.azure.com"
+  studio: "https://onibex-ask-studio.westus.cloudapp.azure.com"
+  setup: "https://onibex-ask-setup.westus.cloudapp.azure.com"
 
 # ── The sizing, and why ─────────────────────────────────────────────────────
 

@@ -18,6 +18,26 @@
 # once in auth.publicUrl, is what keeps the two halves in step.
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if .Values.keycloak.enabled }}
+{{- if .Values.keycloak.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-keycloak
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "keycloak") | nindent 4 }}
+  annotations:
+    # Kept on uninstall: this is where the users and their passwords live.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.keycloak.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.keycloak.persistence.size }}
+---
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -67,7 +87,7 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           args:
             - {{ if .Values.keycloak.production }}start{{ else }}start-dev{{ end }}
-            {{- if .Values.keycloak.realmImportConfigMap }}
+            {{- if or .Values.keycloak.realmImportSecret .Values.keycloak.realmImportConfigMap }}
             - --import-realm
             {{- end }}
           ports:
@@ -139,20 +159,34 @@ spec:
               port: http
             initialDelaySeconds: 90
             periodSeconds: 30
-          {{- if .Values.keycloak.realmImportConfigMap }}
           volumeMounts:
+            {{- if or .Values.keycloak.realmImportSecret .Values.keycloak.realmImportConfigMap }}
             - name: realm-import
               mountPath: /opt/keycloak/data/import
               readOnly: true
-          {{- end }}
-      {{- if .Values.keycloak.realmImportConfigMap }}
+            {{- end }}
+            {{- if .Values.keycloak.persistence.enabled }}
+            - name: data
+              mountPath: /opt/keycloak/data
+              subPath: keycloak
+            {{- end }}
       volumes:
-        # Imported on FIRST boot only. Editing the ConfigMap afterwards changes
-        # nothing, because Keycloak skips the import when the realm exists.
+        {{- if .Values.keycloak.realmImportSecret }}
+        # A realm file carries user passwords, so a Secret is its right home.
+        # Imported on FIRST boot only.
+        - name: realm-import
+          secret:
+            secretName: {{ .Values.keycloak.realmImportSecret }}
+        {{- else if .Values.keycloak.realmImportConfigMap }}
         - name: realm-import
           configMap:
             name: {{ .Values.keycloak.realmImportConfigMap }}
-      {{- end }}
+        {{- end }}
+        {{- if .Values.keycloak.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "onibex-ask.fullname" . }}-keycloak
+        {{- end }}
       {{- with .Values.keycloak.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

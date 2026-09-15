@@ -1,0 +1,188 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The public entry point: one Caddy, one Service per published hostname.
+#
+# Caddy is the only thing here that speaks TLS. Everything behind it keeps
+# serving plain HTTP over the cluster network, which is why publishing the
+# platform changes no application and rebuilds no image.
+#
+# ONE SERVICE PER HOSTNAME, ALL POINTING AT THE SAME POD. That looks redundant
+# and is not: each Service is what makes the cloud allocate a public address,
+# and each address is what carries one hostname. Caddy then tells them apart by
+# the Host header the browser sends. Fewer Services would mean fewer public
+# names, and the three apps cannot share one.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if .Values.gateway.enabled }}
+{{- $root := . }}
+{{- $backends := dict
+    "studio" (dict "service" "ask-studio" "port" 80)
+    "chat"   (dict "service" "ask-chat" "port" 80)
+    "setup"  (dict "service" "ask-setup" "port" 80)
+    "auth"   (dict "service" (printf "%s-keycloak" (include "onibex-ask.fullname" .)) "port" 8080)
+}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-gateway
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "gateway") | nindent 4 }}
+data:
+  Caddyfile: |
+    {
+      admin off
+      {{- if eq .Values.gateway.tls.mode "acme" }}
+      {{- with .Values.gateway.tls.email }}
+      email {{ . }}
+      {{- end }}
+      {{- end }}
+    }
+    {{- range $app, $host := .Values.gateway.hosts }}
+    {{- if $host }}
+    {{- $backend := index $backends $app }}
+    {{ $host }} {
+      {{- if eq $root.Values.gateway.tls.mode "internal" }}
+      # Signed by Caddy's own authority. Every visitor sees a browser warning
+      # until they accept it once, and the origin still counts as secure, so
+      # the login works.
+      tls internal
+      {{- end }}
+      # X-Forwarded-Proto travels with this, which is what stops Keycloak
+      # answering an https request with an http redirect. Keycloak is told to
+      # trust it through KC_PROXY_HEADERS.
+      reverse_proxy {{ $backend.service }}:{{ $backend.port }}
+    }
+    {{- end }}
+    {{- end }}
+{{- if .Values.gateway.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-gateway-data
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "gateway") | nindent 4 }}
+  annotations:
+    # Kept on uninstall, because what lives here is the issued certificates.
+    # Let's Encrypt allows five identical certificates per week, so losing them
+    # a few times in one afternoon locks the environment out until the window
+    # rolls over.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.gateway.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.gateway.persistence.size }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-gateway
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "gateway") | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    # Recreate, because the certificate store is a ReadWriteOnce volume and two
+    # Caddy processes writing to it would race.
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "gateway") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "gateway") | nindent 8 }}
+      annotations:
+        # Roll when the hostnames change, so editing a value is a rollout.
+        checksum/config: {{ toJson .Values.gateway.hosts | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: caddy
+          image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+          imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+            capabilities:
+              drop: [ALL]
+              # Caddy binds 80 and 443 as an unprivileged user. 80 is not
+              # optional even when everything is served over 443: it is where
+              # Let's Encrypt answers the challenge, at issue and again at every
+              # renewal, and closing it means the certificate expires quietly
+              # ninety days later.
+              add: [NET_BIND_SERVICE]
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          volumeMounts:
+            - name: config
+              mountPath: /etc/caddy
+              readOnly: true
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: https
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: https
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "onibex-ask.fullname" . }}-gateway
+        - name: data
+          {{- if .Values.gateway.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "onibex-ask.fullname" . }}-gateway-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- range $app, $host := .Values.gateway.hosts }}
+{{- if $host }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "onibex-ask.fullname" $root }}-gw-{{ $app }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" $root "component" "gateway") | nindent 4 }}
+  {{- $ann := merge (dict) (default (dict) (index $root.Values.gateway.service.perHostAnnotations $app)) $root.Values.gateway.service.annotations }}
+  {{- with $ann }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $root.Values.gateway.service.type }}
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" $root "component" "gateway") | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
+{{- end }}
+{{- end }}
+{{- end }}

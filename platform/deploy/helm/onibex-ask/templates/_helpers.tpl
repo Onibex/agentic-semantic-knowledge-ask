@@ -243,6 +243,20 @@ to diagnose than a failed render.
 {{- fail "keycloak.production is true but keycloak.database.host is empty. Production mode needs a real database; `start-dev` keeps state in an embedded file that does not survive a pod restart. Either point at a managed PostgreSQL or set keycloak.production=false and accept what that means." -}}
 {{- end -}}
 
+{{- if .Values.gateway.enabled -}}
+{{- $anyHost := false -}}
+{{- range $app, $host := .Values.gateway.hosts }}{{- if $host }}{{- $anyHost = true }}{{- end }}{{- end -}}
+{{- if not $anyHost -}}
+{{- fail "gateway.enabled is true but every gateway.hosts entry is empty, so the gateway would publish nothing. Each app needs its own hostname: they are built to be served from the root and collide on /api, /assets and the login callback when they share one." -}}
+{{- end -}}
+{{- if and .Values.gateway.hosts.auth .Values.keycloak.enabled -}}
+{{- $expected := printf "https://%s" .Values.gateway.hosts.auth -}}
+{{- if ne (trimSuffix "/" .Values.auth.publicUrl) $expected -}}
+{{- fail (printf "auth.publicUrl is %q but the gateway publishes Keycloak at %q. They have to be the same string: auth.publicUrl is the issuer Keycloak stamps into every token, and the backends reject a token whose issuer is not what they were told to expect. The symptom is every request being rejected while all the pods report healthy." .Values.auth.publicUrl $expected) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- if not (has .Values.platform.environment (list "local" "production")) -}}
 {{- fail (printf "platform.environment is %q. The backends validate it against a literal and accept exactly \"local\" or \"production\". A reasonable-looking \"development\" does not crash at render, it crash-loops the admin API forty lines into a pydantic traceback." .Values.platform.environment) -}}
 {{- end -}}

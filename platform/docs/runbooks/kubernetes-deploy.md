@@ -102,6 +102,37 @@ the value and says what goes wrong if it is guessed:
 
 ---
 
+## Publishing it: why there is a gateway, and why TLS is not optional
+
+Set `gateway.enabled` and the chart adds a small Caddy in front, one public Service per
+hostname, and certificates it obtains and renews by itself.
+
+**TLS is not a hardening step here, it is what makes the login work at all.** The three apps
+sign in with PKCE and call `crypto.subtle`, which the browser only exposes in a secure context:
+`https`, or `localhost`. On a plain `http://<ip>` address the login button throws and nothing
+happens. That is a browser rule, so an entry point without TLS is not a cheaper option, it is a
+broken one.
+
+**Each app needs its own hostname.** They are built to be served from the root: the API client
+asks for `/api`, the bundle asks for `/assets`, and the login returns to `<origin>/login/callback`
+with the path discarded. Under one shared hostname all three collide, and no router can fix it
+from outside, because those addresses are compiled into the JavaScript. Serving one hostname
+with paths is possible but it is image work, not chart work.
+
+On AKS, `service.beta.kubernetes.io/azure-dns-label-name` gets a free public name of the form
+`<label>.<region>.cloudapp.azure.com`. It is a real public name, so Let's Encrypt will issue for
+it, which means no domain of your own is needed to get a valid certificate. The label has to be
+unique across the whole region, not just your subscription.
+
+> **Leave port 80 open even when everything is served over 443.** It is where Let's Encrypt
+> answers the challenge, at issue and again at every renewal. Close it and the certificate
+> expires quietly ninety days later.
+
+> **Before the first public address exists, change the realm.** The realm file in this
+> repository is a local demo and its two users have a password published on GitHub. Edit it,
+> load it with `keycloak.realmImportSecret`, and add the public origins to each client's
+> redirect URIs, or the login fails with `Invalid parameter: redirect_uri`.
+
 ## Reach the apps
 
 ```sh
