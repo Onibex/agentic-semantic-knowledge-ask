@@ -7,13 +7,28 @@
 > environment.
 > **Scope:** the chart in `deploy/helm/onibex-ask`, the values it needs, and what to look at
 > when a pod does not start.
+> **Shell:** bash, on Linux or macOS, which is where a deployment normally runs.
+> **Windows:** every `kubectl` and `helm` line is identical; the handful that are not have
+> PowerShell equivalents at the end.
 
 | | |
 |---|---|
 | **Who** | Whoever holds cluster credentials and the platform encryption key |
 | **Time** | ~30 minutes for a first install, most of it waiting for images to pull |
-| **Prerequisites** | `kubectl` and `helm` 3 or later, a namespace you can create objects in, and the seven ASK images published to a registry the cluster can pull from |
 | **You'll end with** | The nine services running, reachable through `kubectl port-forward` |
+
+### What has to be installed
+
+| Tool | Version | Used for |
+|---|---|---|
+| `kubectl` | Within one minor of the cluster. It is a supported skew of exactly one, so 1.28 against a 1.33 server works for simple commands and misbehaves on others | Everything |
+| `helm` | 3 or later | Installing the chart |
+| `python` | 3.10 or later | `scripts/make_realm_import.py`, and generating the encryption key |
+| `openssl` | any | Generating passwords. Present on Linux and macOS; on Windows it ships with Git for Windows |
+| `curl` | any | The checks at the end. **Not the `curl` in Windows PowerShell 5.1**, which is an alias for `Invoke-WebRequest` and takes different arguments |
+
+Plus a namespace you can create objects in, and the seven ASK images published to a registry
+the cluster can pull from.
 
 ---
 
@@ -27,10 +42,11 @@ That is not an omission, it is the design: those differ per target, and keeping 
 lets the same chart serve AKS, EKS and Kyma. Until a per-target values file adds an entry point,
 you reach the apps with `kubectl port-forward`.
 
-**It has been installed once, on Azure AKS 1.33**, and all seven services reached Ready: both
-backends answering `/v1/health`, OpenSearch green, and Keycloak serving the imported realm. That
-install is the only evidence there is. It ran with no persistent volumes and no entry point, so
-anything beyond "the stack starts and answers" is still unverified.
+**It has been installed on Azure AKS 1.33**, with persistent volumes and a public entry point:
+all seven services Ready, both backends answering `/v1/health`, OpenSearch green, four hostnames
+answering over https with Let's Encrypt certificates, and the realm accepting the public redirect
+URIs while rejecting an unlisted one. Everything beyond that, a data product published and a
+question answered end to end, is still unverified.
 
 ---
 
@@ -51,14 +67,14 @@ different ones and neither is `latest`:
 Leaving `image.tag` empty falls back to the chart's `appVersion`, which exists only after a
 release. Check what is actually there before installing:
 
-```sh
+```bash
 docker buildx imagetools inspect <registry>/<namespace>/ask-studio:<tag>
 ```
 
 **2. Create the Secret out of band.** Three things cannot live anywhere else, because each is
 needed before the store that holds everything else can be read.
 
-```sh
+```bash
 kubectl create namespace onibex-ask
 
 kubectl -n onibex-ask create secret generic ask-platform-secret \
@@ -81,7 +97,7 @@ in-cluster Service name will not do: the OAuth exchange happens in the browser.
 
 ## Install
 
-```sh
+```bash
 helm install ask deploy/helm/onibex-ask \
   --namespace onibex-ask \
   --values deploy/helm/onibex-ask/values-aks-dev.yaml \
@@ -135,7 +151,7 @@ its redirect URIs list `localhost` ports. Deploying it unchanged puts that passw
 address the platform answers on, and the login stops with `Invalid parameter: redirect_uri`
 after the user has already typed it.
 
-```sh
+```bash
 python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
   --host studio=https://studio.example.com \
   --host chat=https://chat.example.com \
@@ -154,7 +170,7 @@ person has used it.
 The Keycloak administrator is separate: its password comes from the platform Secret, and it is
 not covered by the realm file. Give it the same treatment by hand, once:
 
-```sh
+```bash
 curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
   "$AUTH/admin/realms/master/users/$ADMIN_ID"
@@ -168,7 +184,7 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json
 
 ## Reach the apps
 
-```sh
+```bash
 kubectl -n onibex-ask port-forward svc/ask-studio 5173:80
 kubectl -n onibex-ask port-forward svc/ask-chat 5174:80
 kubectl -n onibex-ask port-forward svc/ask-setup 5175:80
@@ -188,7 +204,7 @@ name, inside the cluster.
    `0/1 Running` there is expected while the admin API is still starting.
 3. **The apps** start independently. They serve a bundle and do not wait for anything.
 
-```sh
+```bash
 kubectl -n onibex-ask get pods -w
 kubectl -n onibex-ask logs deploy/ask-onibex-ask-studio
 ```
@@ -234,14 +250,14 @@ root on the node for anything that lands there.
 
 ## Uninstall, and what survives
 
-```sh
+```bash
 helm uninstall ask --namespace onibex-ask
 ```
 
 The semantic-layer volume is kept on purpose: it can hold YAML that was authored and not yet
 pushed, and a chart should not decide to delete that. Remove it deliberately when you mean to:
 
-```sh
+```bash
 kubectl -n onibex-ask delete pvc ask-onibex-ask-semantic-layer
 ```
 
@@ -258,6 +274,53 @@ The Secret is yours, not the chart's, and is not removed either.
 - **The apps run as root inside their container.** Their images are stock nginx on port 80.
   Fixing it means rebuilding them on an unprivileged base, which is image work rather than chart
   work.
+
+---
+
+## On Windows and PowerShell
+
+Every `kubectl` and `helm` line above runs unchanged. What differs is the shell around them, and
+these are the four places it bites.
+
+**`curl` is not curl.** In Windows PowerShell 5.1 it is an alias for `Invoke-WebRequest`, which
+takes different arguments and fails confusingly on `-X` or `-H`. Call the real one by its full
+name, `curl.exe`, or run the checks from Git Bash.
+
+**There is no command substitution with `$(...)`, and no `\` line continuation.** Build the value
+first, then pass it:
+
+```powershell
+$rng = [System.Security.Cryptography.RNGCryptoServiceProvider]::Create()
+$b = New-Object byte[] 32; $rng.GetBytes($b)
+$key = [Convert]::ToBase64String($b).Replace('+','-').Replace('/','_')
+$p1 = New-Object byte[] 18; $rng.GetBytes($p1)
+$p2 = New-Object byte[] 18; $rng.GetBytes($p2)
+
+kubectl -n onibex-ask create secret generic ask-platform-secret `
+  --from-literal=encryption-key=$key `
+  --from-literal=opensearch-user=admin `
+  --from-literal=opensearch-password=$([Convert]::ToBase64String($p1)) `
+  --from-literal=keycloak-admin-password=$([Convert]::ToBase64String($p2))
+```
+
+> `RandomNumberGenerator::Fill` and `SHA256::HashData` do not exist in Windows PowerShell 5.1.
+> They fail at the call and leave the surrounding command running with an EMPTY value, which
+> creates a Secret that looks fine and holds nothing. Check what you wrote:
+> `kubectl -n onibex-ask get secret ask-platform-secret -o jsonpath='{.data.encryption-key}'`
+> decoded should be 44 characters.
+
+**Reading a value back out of a Secret**, which is the equivalent of `| base64 -d`:
+
+```powershell
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String((kubectl -n onibex-ask get secret ask-platform-secret -o "jsonpath={.data.encryption-key}")))
+```
+
+**Paths and deletion.** `/tmp/realm.json` is `$env:TEMP\realm.json`, and `rm` is `Remove-Item`.
+The realm file carries passwords, so deleting it after loading the Secret is part of the
+procedure, not tidying.
+
+Git Bash, WSL or a Linux shell avoids all four. If you have one, use it: the commands in this
+page are then literal.
 
 ---
 
