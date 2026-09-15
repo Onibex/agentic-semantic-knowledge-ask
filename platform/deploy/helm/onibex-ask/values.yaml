@@ -417,18 +417,22 @@ mcpServer:
   enabled: false
   replicas: 1
 
-  # The SAP destination, as a Secret whose keys become environment variables.
-  #   kubectl -n <ns> create secret generic ask-sap-destination   #     --from-literal=SAP_S4_SALESORDER_BASE_URL=https://...   #     --from-literal=SAP_S4_SALESORDER_URL=/sap/opu/odata/sap/API_SALES_ORDER_SRV   #     --from-literal=SAP_S4_SALESORDER_USERNAME=...   #     --from-literal=SAP_S4_SALESORDER_PASSWORD=...
+  # The SAP destination is NOT configured here any more. The MCP server reads
+  # it from the encrypted store through the admin API and refreshes on a timer,
+  # so a connection saved on the ASK Setup SAP page reaches it within a minute
+  # and without a restart. That matters on Kubernetes, where the Restart MCP
+  # button cannot work: it drives a container runtime socket and a pod has none.
   #
-  # THE MCP SERVER AND ASK SETUP DO NOT READ THE SAME PLACE, and this is a known
-  # defect rather than a design. Setup writes the SAP connection to the
-  # encrypted store in OpenSearch; the MCP resolves its destination from these
-  # environment variables and knows nothing about that store. Saving the
-  # connection in the UI therefore does not make a tool call work, and the tool
-  # answers `Failed to resolve destination ... environment variable is not set`
-  # while Setup shows the connection as configured. Until the MCP reads the
-  # store, both have to be filled in.
+  # This stays as an escape hatch for a deployment with no admin API to ask, or
+  # to pin a destination during a test. Anything set here is overwritten by the
+  # store as soon as the first refresh succeeds.
+  #   kubectl -n <ns> create secret generic ask-sap-destination   #     --from-literal=SAP_S4_SALESORDER_BASE_URL=https://...   #     --from-literal=SAP_S4_SALESORDER_USERNAME=...   #     --from-literal=SAP_S4_SALESORDER_PASSWORD=...
   existingSecret: ""
+
+  # How often the MCP re-reads the SAP connection, in milliseconds. Matches the
+  # 60 second TTL the orchestrator's secrets provider already uses, so a change
+  # made in Setup converges everywhere on the same timescale.
+  destinationRefreshMs: 60000
 
   resources:
     requests:

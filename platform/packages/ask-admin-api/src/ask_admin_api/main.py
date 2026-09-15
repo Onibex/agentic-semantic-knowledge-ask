@@ -269,6 +269,7 @@ app.include_router(ingest.router)  # M2M: own X-API-Key auth (verify_api_key)
 # The MCP server's boot fetch of its API contracts. Same X-API-Key auth as
 # ingest, so it is NOT admin-gated and NOT unauthenticated either.
 app.include_router(contracts.internal_router)
+app.include_router(sap_connection.internal_router)  # M2M: the MCP server's destination
 app.include_router(workspaces.router)  # GET open (chat scoping); writes gated in-router
 
 app.include_router(admin_config.router, dependencies=_ADMIN_ONLY)

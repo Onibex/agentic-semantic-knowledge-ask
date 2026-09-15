@@ -83,6 +83,8 @@ spec:
                   optional: true
             - name: ASK_ENV
               value: {{ .Values.platform.askEnv | quote }}
+            - name: SAP_DESTINATION_REFRESH_MS
+              value: {{ .Values.mcpServer.destinationRefreshMs | quote }}
             {{- with .Values.mcpServer.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

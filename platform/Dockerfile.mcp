@@ -22,6 +22,7 @@ RUN npm ci
 # the defect being removed: two sources of truth, one silently shadowing the
 # other.
 COPY services/ask-mcp-server/fetch-contracts.js .
+COPY services/ask-mcp-server/sap-destination.js .
 
 # Startup script: fetches the contracts, then starts the proxy
 COPY services/ask-mcp-server/start.sh .

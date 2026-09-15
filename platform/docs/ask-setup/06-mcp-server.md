@@ -53,6 +53,15 @@ The **Connection Settings** card holds two fields:
 Enter your values, then click **Save**. A confirmation toast, *"MCP Server configuration
 saved"*, reports success.
 
+> **The SAP credentials are not configured here, and not in a deployment file either.**
+> The MCP server reads the connection you save on the SAP page from the encrypted store,
+> through the admin API, and re-reads it about once a minute. A change therefore takes effect
+> on its own: there is nothing to restart, and nothing to copy into an environment variable.
+>
+> If a SAP tool ever answers that `SAP_S4_SALESORDER_BASE_URL` is not set while this page and
+> the SAP page both look correct, the server is not reading the store. Check that the admin API
+> is reachable from it and that both share the same ingest API key.
+
 > **Tip: internal address, not a public URL.** The default host (`ask-mcp`) is an internal
 > name: the Kubernetes Service in a cluster, the container name under Docker Compose. It is
 > the same word in both on purpose, so this field is correct as it stands wherever the
