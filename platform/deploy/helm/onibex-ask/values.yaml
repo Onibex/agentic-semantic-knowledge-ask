@@ -32,8 +32,17 @@ image:
   # REQUIRED. The account or organisation the seven images live under, for
   # example "onibex". Rendered as <registry>/<namespace>/<repository>:<tag>.
   namespace: ""
-  # Defaults to .Chart.AppVersion. The image workflow publishes no `latest`
-  # tag on purpose, so an empty tag here resolves to a real version.
+  # Empty falls back to the chart's appVersion, which is right ONLY after a
+  # release, and is the single most likely cause of an ImagePullBackOff on a
+  # first install. Know which tag actually exists before you install:
+  #
+  #   run the workflow by hand  ->  it publishes ONLY `sha-<short commit>`
+  #   publish a release         ->  it publishes the git tag, e.g. 1.1.0
+  #
+  # There is no `latest`, on purpose, so a wrong value here fails loudly at the
+  # pull instead of quietly running an image nobody can identify later.
+  # Read the tags that exist with:
+  #   docker buildx imagetools inspect <registry>/<namespace>/ask-studio:<tag>
   tag: ""
   pullPolicy: IfNotPresent
   # Names of pre-created image pull secrets. Public images need none.

@@ -35,9 +35,24 @@ Treat a first install as the verification step, not as a routine.
 
 ## Before you start
 
-**1. The images have to exist.** Kubernetes builds nothing, it pulls. Run the
-`platform-images` workflow from the default branch and note the account you published under;
-that account is `image.namespace`. Without this step every pod sits in `ImagePullBackOff`.
+**1. The images have to exist, and you have to know their tag.** Kubernetes builds nothing, it
+pulls. Run the `platform-images` workflow from the default branch, then note two things: the
+account you published under, which is `image.namespace`, and the tag, which is `image.tag`.
+
+The tag is where a first install usually fails, because the two ways of publishing produce
+different ones and neither is `latest`:
+
+| How it was published | Tag on the image |
+|---|---|
+| The workflow run by hand | `sha-<short commit>` only |
+| A GitHub release | The git tag, for example `1.1.0` |
+
+Leaving `image.tag` empty falls back to the chart's `appVersion`, which exists only after a
+release. Check what is actually there before installing:
+
+```sh
+docker buildx imagetools inspect <registry>/<namespace>/ask-studio:<tag>
+```
 
 **2. Create the Secret out of band.** Three things cannot live anywhere else, because each is
 needed before the store that holds everything else can be read.
