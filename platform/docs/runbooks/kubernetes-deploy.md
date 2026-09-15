@@ -128,10 +128,43 @@ unique across the whole region, not just your subscription.
 > answers the challenge, at issue and again at every renewal. Close it and the certificate
 > expires quietly ninety days later.
 
-> **Before the first public address exists, change the realm.** The realm file in this
-> repository is a local demo and its two users have a password published on GitHub. Edit it,
-> load it with `keycloak.realmImportSecret`, and add the public origins to each client's
-> redirect URIs, or the login fails with `Invalid parameter: redirect_uri`.
+### Build the realm before the first public address exists
+
+The realm committed here is a local demo: its users carry a password published on GitHub, and
+its redirect URIs list `localhost` ports. Deploying it unchanged puts that password on whatever
+address the platform answers on, and the login stops with `Invalid parameter: redirect_uri`
+after the user has already typed it.
+
+```sh
+python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
+  --host studio=https://studio.example.com \
+  --host chat=https://chat.example.com \
+  --host setup=https://setup.example.com \
+  --out /tmp/realm.json
+
+kubectl -n onibex-ask create secret generic ask-realm \
+  --from-file=ask-platform-realm.json=/tmp/realm.json
+rm /tmp/realm.json
+```
+
+Then set `keycloak.realmImportSecret=ask-realm`. Every password it writes is **temporary**, so
+Keycloak requires a change at first sign-in and the shared initial value stops working once each
+person has used it.
+
+The Keycloak administrator is separate: its password comes from the platform Secret, and it is
+not covered by the realm file. Give it the same treatment by hand, once:
+
+```sh
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
+  "$AUTH/admin/realms/master/users/$ADMIN_ID"
+```
+
+> **A realm is imported only on a first boot.** Once `keycloak.persistence` is on, the file is
+> ignored on every later start and changes belong in the admin console. To re-import, scale
+> Keycloak to zero, delete its PersistentVolumeClaim, and let the chart recreate it. That is
+> also the only way to change the administrator password from the Secret, because Keycloak
+> creates that user once and never revisits the variable.
 
 ## Reach the apps
 
