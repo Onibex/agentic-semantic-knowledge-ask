@@ -178,8 +178,9 @@ covers the ones that have actually happened.
 Open ASK Setup at the address from step 2 and sign in with the initial password from step 3.
 Keycloak asks for a new one immediately; that is the shared value retiring.
 
-From there the platform is empty and the [ASK Setup guide](../ask-setup/README.md) takes over:
-the database, the model provider, then the semantic layer in ASK Studio.
+From there the platform is empty and
+[Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
+model provider, then the semantic layer in ASK Studio.
 
 > **Leave port 80 open even when everything is served over 443.** It is where Let's Encrypt
 > answers the challenge, at issue and again at every renewal. Close it and the certificate expires

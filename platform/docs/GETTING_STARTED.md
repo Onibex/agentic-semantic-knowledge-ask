@@ -26,9 +26,10 @@ question has been answered.
 ## Step 1: Bring the stack up
 
 This tutorial runs the stack on your own machine with Docker Compose, which is the quickest way
-to a first answer. **To put it on a cluster instead, read [Deploy on Kubernetes with
-Helm](runbooks/kubernetes-deploy.md):** six steps, one chart, using the published images. The
-rest of this page then applies unchanged, because everything after step 1 happens in the browser.
+to a first answer. To put it on a cluster instead, read
+[Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md):
+six steps, one chart, using the published images. The rest of this page then applies unchanged,
+because everything after step 1 happens in the browser.
 
 The stack lives in `platform/`, next to its `docker-compose.yml`. From your clone:
 

@@ -11,9 +11,9 @@
 > pass, follow [Getting Started](GETTING_STARTED.md) instead, and come back here when you need
 > a variable explained or a service will not start.
 >
-> **This page is Docker on one machine.** For a cluster, read [Deploy on Kubernetes with
-> Helm](runbooks/kubernetes-deploy.md): a different procedure with its own chart and its own
-> values, not a variation on this one.
+> **This page is Docker on one machine.** For a cluster, read
+> [Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md):
+> a different procedure with its own chart and its own values, not a variation on this one.
 
 | | |
 |---|---|
