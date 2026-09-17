@@ -53,8 +53,12 @@ question answered end to end, is still unverified.
 ## Before you start
 
 **1. The images have to exist, and you have to know their tag.** Kubernetes builds nothing, it
-pulls. Run the `platform-images` workflow from the default branch, then note two things: the
-account you published under, which is `image.namespace`, and the tag, which is `image.tag`.
+pulls. The official images are published under `onibexenjoy`, all seven public, and that is the
+`image.namespace` default, so a stock install needs no registry credentials and no pull secret.
+Running your own build means running the `platform-images` workflow and setting
+`image.namespace` to the account it published under.
+
+Either way the tag is yours to supply, because there is no default that always exists.
 
 The tag is where a first install usually fails, because the two ways of publishing produce
 different ones and neither is `latest`:
@@ -101,16 +105,19 @@ in-cluster Service name will not do: the OAuth exchange happens in the browser.
 helm install ask deploy/helm/onibex-ask \
   --namespace onibex-ask \
   --values deploy/helm/onibex-ask/values-aks-dev.yaml \
-  --set image.namespace=<your-registry-account> \
   --set auth.publicUrl=https://auth.example.com
 ```
+
+`values-aks-dev.yaml` pins both `image.namespace` and `image.tag`, so nothing about the registry
+is passed on the command line. Add `--set image.namespace=...` and `--set image.tag=...` only
+when running images you built yourself.
 
 The install refuses to render rather than producing something half-working. Each refusal names
 the value and says what goes wrong if it is guessed:
 
 | If this is missing | Why the chart stops |
 |---|---|
-| `image.namespace` | There is no sensible default, and the wrong account fails late as a pull error that names nothing |
+| `image.namespace` set to empty | The wrong account fails late as a pull error that names nothing. It has a default, so this only fires if you clear it |
 | `auth.publicUrl` | An empty value used to serve a login page pointing at a host that does not exist, with nothing reporting it |
 | A secret source | The backends refuse to boot without the encryption key anyway; failing here is faster to read |
 | A valid `auth.mode` | The token validators accept exactly `keycloak` or `xsuaa`. Anything else matches no branch and every request is rejected while the pods report healthy |

@@ -29,9 +29,11 @@
 image:
   # Registry host. Empty means Docker Hub's implicit default.
   registry: docker.io
-  # REQUIRED. The account or organisation the seven images live under, for
-  # example "onibex". Rendered as <registry>/<namespace>/<repository>:<tag>.
-  namespace: ""
+  # The account or organisation the seven images live under. Rendered as
+  # <registry>/<namespace>/<repository>:<tag>. The default is where the official
+  # images are published, all seven public, so no pull secret is needed. Point
+  # it at your own account or a private registry to run images you built.
+  namespace: onibexenjoy
   # Empty falls back to the chart's appVersion, which is right ONLY after a
   # release, and is the single most likely cause of an ImagePullBackOff on a
   # first install. Know which tag actually exists before you install:

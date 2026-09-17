@@ -42,10 +42,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 image:
-  # REQUIRED. Set it to the Docker Hub account the images were published under.
-  # Nothing has been published yet, so an install will fail on ImagePullBackOff
-  # until the platform-images workflow has been run from `main`.
-  namespace: ""
+  # The account the images are published under, all seven public. Inherited from
+  # values.yaml; restated here because this file is meant to be readable on its
+  # own by whoever installs into this cluster.
+  namespace: onibexenjoy
+  # Pinned rather than left to appVersion, which resolves to a tag that has
+  # never been published. This is the set that was installed and measured.
+  # Read what exists before changing it:
+  #   docker buildx imagetools inspect docker.io/onibexenjoy/ask-studio:<tag>
+  tag: sha-eabc833
 
 auth:
   mode: keycloak
@@ -199,11 +204,12 @@ setup:
     limits:
       memory: 128Mi
 
-# Off, and they stay off here. Each needs credentials this environment does not
-# have, and together they would add another 100 millicores of requests to a node
-# that has none to give.
+# On. It needs no credentials of its own: it reads the SAP connection from the
+# encrypted store through the admin API and re-reads it about once a minute, so
+# the only thing it wants from this file is somewhere to run. Without it the
+# platform still answers questions, and every SAP action fails.
 mcpServer:
-  enabled: false
+  enabled: true
   # 10m rather than the chart's 50m. Measured, not guessed: the node has 3860m
   # allocatable and 3842m already reserved, so there are 18 millicores left and
   # 25m does not fit. The request is what the scheduler counts, not what the
@@ -215,6 +221,8 @@ mcpServer:
       memory: 128Mi
     limits:
       memory: 256Mi
+# Off. It needs a Bot Framework app id and password this environment does not
+# have, and it is the one component nothing else depends on.
 teamsBot:
   enabled: false
 
