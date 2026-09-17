@@ -25,6 +25,11 @@ question has been answered.
 
 ## Step 1: Bring the stack up
 
+This tutorial runs the stack on your own machine with Docker Compose, which is the quickest way
+to a first answer. **To put it on a cluster instead, read [Deploy on Kubernetes with
+Helm](runbooks/kubernetes-deploy.md):** six steps, one chart, using the published images. The
+rest of this page then applies unchanged, because everything after step 1 happens in the browser.
+
 The stack lives in `platform/`, next to its `docker-compose.yml`. From your clone:
 
 ```bash
@@ -154,6 +159,7 @@ You now have the whole loop working on one table. Where to go depends on what yo
 | Understand what just happened | [Concepts and architecture](02-concepts.md) |
 | Know why the answer is trustworthy | [The three chat engines](explain/engines.md) |
 | Author a real semantic layer | [Onibex Agentic Semantic Knowledge Definition](../../definition/README.md) |
+| Put it on a cluster instead of your laptop | [Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md) |
 | Look up a term | [Glossary](reference/glossary.md) |
 
 ---
