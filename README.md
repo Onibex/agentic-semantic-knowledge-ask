@@ -98,6 +98,8 @@ Everything is Markdown and renders on GitHub. Nothing has to be downloaded to be
 
 - [Getting Started](platform/docs/GETTING_STARTED.md) and
   [Install and run the platform](platform/docs/01-installation.md)
+- [Deploy on Kubernetes with Helm](platform/docs/runbooks/kubernetes-deploy.md), one chart for
+  Azure AKS, AWS EKS and SAP BTP Kyma
 - [Concepts and architecture](platform/docs/02-concepts.md)
 - [Configure the platform first · ASK Setup](platform/docs/ask-setup/README.md)
 - [Author the semantic layer · ASK Studio](platform/docs/ask-studio/README.md)
@@ -120,7 +122,8 @@ are trying to do.
 | **Here to see the product** | [Using the Chat](platform/docs/ask-chat/02-chat.md). Ask a question, read the answer, see the SQL behind it |
 | **Asking how governed the answers are** | [The three chat engines](platform/docs/explain/engines.md). What is computed rather than guessed |
 | **Trying it for the first time** | [Getting Started](platform/docs/GETTING_STARTED.md). One guided path, empty machine to a real answer, about 45 minutes |
-| **Installing it** | [Install and run the platform](platform/docs/01-installation.md). Every variable, the startup order, the gotchas |
+| **Installing it on one machine** | [Install and run the platform](platform/docs/01-installation.md). Every variable, the startup order, the gotchas |
+| **Deploying it on a cluster** | [Deploy on Kubernetes with Helm](platform/docs/runbooks/kubernetes-deploy.md). Six steps, one chart, the published images |
 | **Configuring it** | [Configure the platform first · ASK Setup](platform/docs/ask-setup/README.md). The database, the model provider, identity |
 | **Authoring a semantic layer** | [Author the semantic layer · ASK Studio](platform/docs/ask-studio/README.md). The nine flows, and the order to read them in |
 | **Reading the whole manual** | [The manual](platform/docs/README.md). Every page, grouped by what you are trying to do |

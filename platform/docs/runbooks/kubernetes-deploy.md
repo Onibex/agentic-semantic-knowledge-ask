@@ -3,80 +3,42 @@
 [Manual](../README.md) › [Operating the platform](../README.md#operating-the-platform) › **Deploy on Kubernetes with Helm**
 
 > **How to.** Install the whole platform on a Kubernetes cluster from one Helm chart, on Azure
-> AKS, AWS EKS or SAP BTP Kyma. For the person who has cluster access and is standing up an
-> environment.
-> **Scope:** the chart in `deploy/helm/onibex-ask`, the values it needs, and what to look at
-> when a pod does not start.
-> **Shell:** bash, on Linux or macOS, which is where a deployment normally runs.
-> **Windows:** every `kubectl` and `helm` line is identical; the handful that are not have
-> PowerShell equivalents at the end.
+> AKS, AWS EKS or SAP BTP Kyma. Six steps, using the images Onibex publishes.
+> **Shell:** bash, on Linux or macOS. Every `kubectl` and `helm` line is identical on Windows;
+> the handful of surrounding commands that are not have PowerShell equivalents at the end.
 
 | | |
 |---|---|
-| **Who** | Whoever holds cluster credentials and the platform encryption key |
-| **Time** | ~30 minutes for a first install, most of it waiting for images to pull |
-| **You'll end with** | The nine services running, reachable through `kubectl port-forward` |
+| **Who** | Whoever holds cluster credentials |
+| **Time** | About 30 minutes, most of it waiting for images to pull |
+| **You'll end with** | Nine services running, and the three apps open in a browser with a working sign-in |
 
-### What has to be installed
+---
+
+## What you need
+
+**You do not build anything.** The seven images are already published on Docker Hub under
+`onibexenjoy`, all public, and the chart points at them by default. Kubernetes pulls; nothing is
+compiled here. (If you do need your own build, see [Running images you built
+yourself](#running-images-you-built-yourself) at the end. Skip it otherwise.)
 
 | Tool | Version | Used for |
 |---|---|---|
-| `kubectl` | Within one minor of the cluster. It is a supported skew of exactly one, so 1.28 against a 1.33 server works for simple commands and misbehaves on others | Everything |
+| `kubectl` | Within one minor of the cluster | Everything |
 | `helm` | 3 or later | Installing the chart |
-| `python` | 3.10 or later | `scripts/make_realm_import.py`, and generating the encryption key |
-| `openssl` | any | Generating passwords. Present on Linux and macOS; on Windows it ships with Git for Windows |
-| `curl` | any | The checks at the end. **Not the `curl` in Windows PowerShell 5.1**, which is an alias for `Invoke-WebRequest` and takes different arguments |
+| `python` | 3.10 or later | The encryption key and the realm file |
+| `openssl` | any | Generating passwords. On Windows it ships with Git for Windows |
+| `curl` | any | The checks at the end. **Not PowerShell 5.1's `curl`**, which is an alias for `Invoke-WebRequest` |
 
-Plus a namespace you can create objects in, and the seven ASK images published to a registry
-the cluster can pull from.
-
----
-
-## What this chart is, and what it deliberately is not
-
-One chart renders every service the compose file runs: the two Python backends, the three
-single-page apps, OpenSearch, Keycloak, and the two opt-in services.
-
-**It names no cloud.** No Ingress, no storage class, no load balancer, no provider annotation.
-That is not an omission, it is the design: those differ per target, and keeping them out is what
-lets the same chart serve AKS, EKS and Kyma. Until a per-target values file adds an entry point,
-you reach the apps with `kubectl port-forward`.
-
-**It has been installed on Azure AKS 1.33**, with persistent volumes and a public entry point:
-all seven services Ready, both backends answering `/v1/health`, OpenSearch green, four hostnames
-answering over https with Let's Encrypt certificates, and the realm accepting the public redirect
-URIs while rejecting an unlisted one. Everything beyond that, a data product published and a
-question answered end to end, is still unverified.
+Plus a cluster you can create a namespace in, and about 600 millicores and 4 GiB of memory free
+on a node.
 
 ---
 
-## Before you start
+## Step 1. Create the namespace and the Secret
 
-**1. The images have to exist, and you have to know their tag.** Kubernetes builds nothing, it
-pulls. The official images are published under `onibexenjoy`, all seven public, and that is the
-`image.namespace` default, so a stock install needs no registry credentials and no pull secret.
-Running your own build means running the `platform-images` workflow and setting
-`image.namespace` to the account it published under.
-
-Either way the tag is yours to supply, because there is no default that always exists.
-
-The tag is where a first install usually fails, because the two ways of publishing produce
-different ones and neither is `latest`:
-
-| How it was published | Tag on the image |
-|---|---|
-| The workflow run by hand | `sha-<short commit>` only |
-| A GitHub release | The git tag, for example `1.1.0` |
-
-Leaving `image.tag` empty falls back to the chart's `appVersion`, which exists only after a
-release. Check what is actually there before installing:
-
-```bash
-docker buildx imagetools inspect <registry>/<namespace>/ask-studio:<tag>
-```
-
-**2. Create the Secret out of band.** Three things cannot live anywhere else, because each is
-needed before the store that holds everything else can be read.
+Three values cannot live in the chart, because each is needed before the store that holds
+everything else can be read.
 
 ```bash
 kubectl create namespace onibex-ask
@@ -89,74 +51,53 @@ kubectl -n onibex-ask create secret generic ask-platform-secret \
 ```
 
 > **The encryption key is not rotatable in place.** It decrypts every credential the platform
-> stores in OpenSearch: the LLM provider keys, the database connections, the SAP password.
-> Changing it is not a rotation, it is a data-loss event, and everything has to be entered again
-> by hand in ASK Setup. Generate it once per environment and put it in a vault the same day.
-
-**3. Decide the public address of the identity provider.** `auth.publicUrl` is the origin the
-**browser** uses to reach Keycloak, and it is also the issuer stamped into every token. An
-in-cluster Service name will not do: the OAuth exchange happens in the browser.
+> stores: the LLM provider keys, the database connections, the SAP password. Changing it is not a
+> rotation, it is a data-loss event, and everything has to be entered again by hand in ASK Setup.
+> Generate it once per environment and put it in a vault the same day.
 
 ---
 
-## Install
+## Step 2. Decide the addresses people will use
+
+This decides the next two steps, so settle it before installing. There are two answers and both
+are legitimate.
+
+**A. Public hostnames, one per app.** The chart adds a small Caddy in front, one public Service
+per hostname, and certificates it obtains and renews by itself. On AKS you get the hostnames free:
+the annotation `service.beta.kubernetes.io/azure-dns-label-name` yields
+`<label>.<region>.cloudapp.azure.com`, a real public name Let's Encrypt will issue for, so no
+domain of your own is needed. The label has to be unique across the whole region.
+
+`values-aks-dev.yaml` is set up this way. Edit the four labels in its `gateway.hosts` block, then
+use those four addresses in step 3.
+
+**B. No public address, reached through a tunnel.** Install with `gateway.enabled=false` and
+forward the ports to your own machine. Good for a first look and for a cluster with no load
+balancer.
 
 ```bash
-helm install ask deploy/helm/onibex-ask \
-  --namespace onibex-ask \
-  --values deploy/helm/onibex-ask/values-aks-dev.yaml \
-  --set auth.publicUrl=https://auth.example.com
+kubectl -n onibex-ask port-forward svc/ask-studio 5173:80
+kubectl -n onibex-ask port-forward svc/ask-chat 5174:80
+kubectl -n onibex-ask port-forward svc/ask-setup 5175:80
+kubectl -n onibex-ask port-forward svc/ask-onibex-ask-keycloak 8180:8080
 ```
 
-`values-aks-dev.yaml` pins both `image.namespace` and `image.tag`, so nothing about the registry
-is passed on the command line. Add `--set image.namespace=...` and `--set image.tag=...` only
-when running images you built yourself.
-
-The install refuses to render rather than producing something half-working. Each refusal names
-the value and says what goes wrong if it is guessed:
-
-| If this is missing | Why the chart stops |
-|---|---|
-| `image.namespace` set to empty | The wrong account fails late as a pull error that names nothing. It has a default, so this only fires if you clear it |
-| `auth.publicUrl` | An empty value used to serve a login page pointing at a host that does not exist, with nothing reporting it |
-| A secret source | The backends refuse to boot without the encryption key anyway; failing here is faster to read |
-| A valid `auth.mode` | The token validators accept exactly `keycloak` or `xsuaa`. Anything else matches no branch and every request is rejected while the pods report healthy |
-| `keycloak.database.host` when production is on | Production mode without a database is a contradiction; development mode keeps state in a file inside the pod |
+> **Why there is no third option.** A plain `http://<ip>` address does not work, and not for
+> security reasons. The three apps sign in with PKCE and call `crypto.subtle`, which browsers
+> expose only in a secure context: `https`, or `localhost`. On plain http the sign-in button
+> throws and nothing happens. That is a browser rule, not a setting. Option B works precisely
+> because `localhost` is on that list.
 
 ---
 
-## Publishing it: why there is a gateway, and why TLS is not optional
+## Step 3. Build the realm for those addresses
 
-Set `gateway.enabled` and the chart adds a small Caddy in front, one public Service per
-hostname, and certificates it obtains and renews by itself.
+The realm committed in this repository is a local demo. Its users carry a password published on
+GitHub, and its redirect URIs list `localhost` ports. Deploying it unchanged puts that password on
+whatever address the platform answers on, and the sign-in stops with `Invalid parameter:
+redirect_uri` after the user has already typed it.
 
-**TLS is not a hardening step here, it is what makes the login work at all.** The three apps
-sign in with PKCE and call `crypto.subtle`, which the browser only exposes in a secure context:
-`https`, or `localhost`. On a plain `http://<ip>` address the login button throws and nothing
-happens. That is a browser rule, so an entry point without TLS is not a cheaper option, it is a
-broken one.
-
-**Each app needs its own hostname.** They are built to be served from the root: the API client
-asks for `/api`, the bundle asks for `/assets`, and the login returns to `<origin>/login/callback`
-with the path discarded. Under one shared hostname all three collide, and no router can fix it
-from outside, because those addresses are compiled into the JavaScript. Serving one hostname
-with paths is possible but it is image work, not chart work.
-
-On AKS, `service.beta.kubernetes.io/azure-dns-label-name` gets a free public name of the form
-`<label>.<region>.cloudapp.azure.com`. It is a real public name, so Let's Encrypt will issue for
-it, which means no domain of your own is needed to get a valid certificate. The label has to be
-unique across the whole region, not just your subscription.
-
-> **Leave port 80 open even when everything is served over 443.** It is where Let's Encrypt
-> answers the challenge, at issue and again at every renewal. Close it and the certificate
-> expires quietly ninety days later.
-
-### Build the realm before the first public address exists
-
-The realm committed here is a local demo: its users carry a password published on GitHub, and
-its redirect URIs list `localhost` ports. Deploying it unchanged puts that password on whatever
-address the platform answers on, and the login stops with `Invalid parameter: redirect_uri`
-after the user has already typed it.
+Generate one for your addresses instead, using the four you chose in step 2:
 
 ```bash
 python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
@@ -170,12 +111,11 @@ kubectl -n onibex-ask create secret generic ask-realm \
 rm /tmp/realm.json
 ```
 
-Then set `keycloak.realmImportSecret=ask-realm`. Every password it writes is **temporary**, so
-Keycloak requires a change at first sign-in and the shared initial value stops working once each
-person has used it.
+Every password it writes is **temporary**, so Keycloak requires a change at first sign-in and the
+shared initial value stops working once each person has used it.
 
-The Keycloak administrator is separate: its password comes from the platform Secret, and it is
-not covered by the realm file. Give it the same treatment by hand, once:
+The Keycloak administrator is separate: its password comes from the Secret in step 1, and the
+realm file does not cover it. Give it the same treatment by hand, once, after the platform is up:
 
 ```bash
 curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
@@ -183,65 +123,150 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json
   "$AUTH/admin/realms/master/users/$ADMIN_ID"
 ```
 
-> **A realm is imported only on a first boot.** Once `keycloak.persistence` is on, the file is
-> ignored on every later start and changes belong in the admin console. To re-import, scale
-> Keycloak to zero, delete its PersistentVolumeClaim, and let the chart recreate it. That is
-> also the only way to change the administrator password from the Secret, because Keycloak
-> creates that user once and never revisits the variable.
+---
 
-## Reach the apps
+## Step 4. Install
 
 ```bash
-kubectl -n onibex-ask port-forward svc/ask-studio 5173:80
-kubectl -n onibex-ask port-forward svc/ask-chat 5174:80
-kubectl -n onibex-ask port-forward svc/ask-setup 5175:80
-kubectl -n onibex-ask port-forward svc/ask-onibex-ask-keycloak 8180:8080
+helm install ask deploy/helm/onibex-ask \
+  --namespace onibex-ask \
+  --values deploy/helm/onibex-ask/values-aks-dev.yaml \
+  --set auth.publicUrl=https://auth.example.com \
+  --set keycloak.realmImportSecret=ask-realm
 ```
 
-The backends need no forward of their own: each app's nginx proxies `/api` to them by Service
-name, inside the cluster.
+`auth.publicUrl` is the origin the **browser** uses to reach Keycloak, and it is also the issuer
+stamped into every token. An in-cluster Service name will not do: the OAuth exchange happens in
+the browser. It has to match the Keycloak hostname from step 2 exactly, and the chart refuses to
+install if it does not.
+
+The install refuses to render rather than producing something half-working. Each refusal names the
+value and says what goes wrong if it is guessed:
+
+| If this is wrong | Why the chart stops |
+|---|---|
+| `auth.publicUrl` empty, or not the gateway's Keycloak host | A login page pointing at a host that does not exist, with nothing reporting it |
+| No secret source | The backends refuse to boot without the encryption key anyway; failing here is faster to read |
+| `auth.mode` not `keycloak` or `xsuaa` | Anything else matches no branch and every request is rejected while the pods report healthy |
+| `platform.environment` not `local` or `production` | A reasonable-looking `development` crash-loops the admin API forty lines into a pydantic error |
+| `keycloak.database.host` empty while production is on | Production mode without a database is a contradiction |
+| `image.namespace` cleared | It has a default, so this only fires if you empty it deliberately |
 
 ---
 
-## The order things come up, and what that means for a stuck pod
+## Step 5. Watch it come up
+
+```bash
+kubectl -n onibex-ask get pods -w
+```
+
+Three things start in order, and knowing it saves you from chasing a pod that is only waiting:
 
 1. **OpenSearch** must be Ready before either backend finishes its own boot.
 2. **The admin API** must be Ready before the MCP server stops retrying its contract fetch. The
    MCP server stays unready and retries rather than starting with zero tools, so a long
    `0/1 Running` there is expected while the admin API is still starting.
-3. **The apps** start independently. They serve a bundle and do not wait for anything.
+3. **The apps** start independently. They serve a bundle and wait for nothing.
+
+If something is stuck, [the failures worth knowing in advance](#the-failures-worth-knowing-in-advance)
+covers the ones that have actually happened.
+
+---
+
+## Step 6. Sign in, and change the passwords
+
+Open ASK Setup at the address from step 2 and sign in with the initial password from step 3.
+Keycloak asks for a new one immediately; that is the shared value retiring.
+
+From there the platform is empty and
+[Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
+model provider, then the semantic layer in ASK Studio.
+
+> **Leave port 80 open even when everything is served over 443.** It is where Let's Encrypt
+> answers the challenge, at issue and again at every renewal. Close it and the certificate expires
+> quietly ninety days later.
+
+---
+
+## What this chart is, and what it deliberately is not
+
+One chart renders every service the compose file runs: the two Python backends, the three
+single-page apps, OpenSearch, Keycloak, and the two opt-in services.
+
+**It names no cloud.** No storage class, no load balancer, no provider annotation in the chart
+itself. That is not an omission, it is the design: those differ per target, and keeping them in a
+values file is what lets the same chart serve AKS, EKS and Kyma.
+
+**Each app needs its own hostname, and no router can change that.** The three apps are built to be
+served from the root: the API client asks for `/api`, the bundle asks for `/assets`, and the login
+returns to `<origin>/login/callback` with the path discarded. Under one shared hostname all three
+collide in all three places, and an Ingress cannot fix it from outside, because those addresses are
+compiled into the JavaScript. Serving one hostname with paths is possible, but it is image work,
+not chart work.
+
+**A realm is imported only on a first boot.** Once `keycloak.persistence` is on, the file is
+ignored on every later start and changes belong in the admin console. To re-import, scale Keycloak
+to zero, delete its PersistentVolumeClaim, and let the chart recreate it. That is also the only way
+to change the administrator password from the Secret, because Keycloak creates that user once and
+never revisits the variable.
+
+---
+
+## Running images you built yourself
+
+Skip this unless you are changing the product. The published images are the supported path.
+
+Run the `platform-images` workflow, then pass the account it published under and the tag it
+produced:
 
 ```bash
-kubectl -n onibex-ask get pods -w
-kubectl -n onibex-ask logs deploy/ask-onibex-ask-studio
+helm install ask deploy/helm/onibex-ask ... \
+  --set image.namespace=<your-account> \
+  --set image.tag=<the tag>
 ```
 
-### The failures worth knowing in advance
+The tag is where this usually fails, because neither way of publishing produces `latest`:
 
-**An app pod restarts immediately and the log names a variable.** That is the intended
-behaviour. The entrypoint refuses to start on an empty required value instead of falling back to
-`localhost`, which is what used to produce a working-looking deployment pointing nowhere.
+| How it was published | Tag on the image |
+|---|---|
+| The workflow run by hand | `sha-<short commit>` only |
+| A GitHub release | The git tag, for example `1.1.0` |
+
+Leaving `image.tag` empty falls back to the chart's `appVersion`, which exists only after a
+release. Check what is actually there first:
+
+```bash
+docker buildx imagetools inspect docker.io/<account>/ask-studio:<tag>
+```
+
+If your registry is private, create a pull secret and name it in `image.pullSecrets`.
+
+---
+
+## The failures worth knowing in advance
+
+**An app pod restarts immediately and the log names a variable.** That is the intended behaviour.
+The entrypoint refuses to start on an empty required value instead of falling back to `localhost`,
+which is what used to produce a working-looking deployment pointing nowhere.
 
 **Every request is rejected while the pods report healthy.** The issuer does not match. Compare
-`auth.publicUrl` against the issuer in a token, and remember that the browser and the pods must
-be told the same address unless `auth.jwksUrl` is set explicitly.
+`auth.publicUrl` against the issuer in a token, and remember that the browser and the pods must be
+told the same address unless `auth.jwksUrl` is set explicitly.
 
-**The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses
-to boot when the semantic-layer paths are empty or do not point at a real directory, so check
-that the volume was bound with `kubectl -n onibex-ask get pvc`. It also refuses an
-unrecognised `platform.environment`: the settings object accepts `local` or `production` and
-nothing else, so a reasonable-looking `development` crash-loops it forty lines into a pydantic
-error. The chart now stops at render time on that one.
+**The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses to
+boot when the semantic-layer paths are empty or do not point at a real directory, so check that the
+volume was bound with `kubectl -n onibex-ask get pvc`. It also refuses an unrecognised
+`platform.environment`, which the chart now stops at render time.
 
-**An app pod crash-loops on `chown(/var/cache/nginx/client_temp) failed`.** nginx starts as
-root, chowns its cache directories and drops its workers to an unprivileged user, so it needs
-CHOWN, SETUID and SETGID kept. Dropping every capability and adding back only NET_BIND_SERVICE
-looks tighter and stops all three apps.
+**An app pod crash-loops on `chown(/var/cache/nginx/client_temp) failed`.** nginx starts as root,
+chowns its cache directories and drops its workers to an unprivileged user, so it needs CHOWN,
+SETUID and SETGID kept. Dropping every capability and adding back only NET_BIND_SERVICE looks
+tighter and stops all three apps.
 
-**A rollout hangs with the new pod Pending and `Insufficient cpu`.** A rolling update reserves
-the new pod's requests before releasing the old pod's, so a node with no spare CPU cannot hold
-both. Set `updateStrategy: Recreate`, and read the note in `values.yaml` first: changing it on
-an installed release fails until the Deployments are recreated.
+**A rollout hangs with the new pod Pending and `Insufficient cpu`.** A rolling update reserves the
+new pod's requests before releasing the old pod's, so a node with no spare CPU cannot hold both.
+Set `updateStrategy: Recreate`, and read the note in `values.yaml` first: changing it on an
+installed release fails until the Deployments are recreated.
 
 **OpenSearch is Ready but searches behave oddly under load.** Many node images ship
 `vm.max_map_count` at 65530 and OpenSearch wants 262144. Single-node mode skips the check that
@@ -250,8 +275,9 @@ why the chart does not attempt it; on a cluster you do not own, use a managed Op
 instead with `opensearch.enabled=false`.
 
 **Restarting the MCP server from ASK Setup reports itself unsupported.** Correct. That button
-drives a container runtime socket, there is no such socket in a pod, and mounting one would be
-root on the node for anything that lands there.
+drives a container runtime socket, there is no such socket in a pod, and mounting one would be root
+on the node for anything that lands there. It is also unnecessary: the MCP server re-reads its SAP
+connection from the store about once a minute, so a change in ASK Setup applies on its own.
 
 ---
 
@@ -261,8 +287,8 @@ root on the node for anything that lands there.
 helm uninstall ask --namespace onibex-ask
 ```
 
-**Every volume survives, and so does the Secret.** A reinstall on top of them is a restore, not
-a fresh install:
+**Every volume survives, and so does the Secret.** A reinstall on top of them is a restore, not a
+fresh install:
 
 | Volume | Holds |
 |---|---|
@@ -272,11 +298,12 @@ a fresh install:
 | `ask-onibex-ask-gateway-data` | the Let's Encrypt certificates and the ACME account key |
 
 Three carry `helm.sh/resource-policy: keep`. The OpenSearch one is a StatefulSet
-`volumeClaimTemplates` claim, which Kubernetes never deletes on its own either. The Secret is
-yours rather than the chart's, and is left for the same reason.
+`volumeClaimTemplates` claim, which Kubernetes never deletes on its own either. The Secret is yours
+rather than the chart's, and is left for the same reason.
 
-The semantic layer is the one to think about twice: it can hold YAML authored and not yet
-pushed, and its git remote may not exist at all, in which case that volume is the only copy.
+The semantic layer is the one to think about twice: it can hold YAML authored and not yet pushed,
+and its git remote may not exist at all, in which case that volume is the only copy. Export it from
+ASK Studio first, on the Health page.
 
 To start from nothing, name them:
 
@@ -287,42 +314,42 @@ kubectl -n onibex-ask delete pvc \
   ask-onibex-ask-gateway-data \
   data-ask-onibex-ask-opensearch-0
 
-kubectl -n onibex-ask delete secret <the secret you created>
+kubectl -n onibex-ask delete secret ask-platform-secret ask-realm
 kubectl delete namespace onibex-ask
 ```
 
-The namespace matters because installing starts by creating it, and a namespace left behind
-makes that first command fail with `AlreadyExists` on an environment that is otherwise empty.
+The namespace matters because installing starts by creating it, and a namespace left behind makes
+step 1 fail with `AlreadyExists` on an environment that is otherwise empty.
 
-The four `LoadBalancer` Services take a minute or two to disappear after the uninstall. They sit
-in `Terminating` behind a `service.kubernetes.io/load-balancer-cleanup` finalizer while the
-cloud releases the load balancers and the public IP addresses. That is the billing stopping, so
-it is worth waiting for `kubectl -n onibex-ask get svc` to come back empty rather than assuming
-it happened.
+The `LoadBalancer` Services take a minute or two to disappear after the uninstall. They sit in
+`Terminating` behind a `service.kubernetes.io/load-balancer-cleanup` finalizer while the cloud
+releases the load balancers and the public IP addresses. That is the billing stopping, so it is
+worth waiting for `kubectl -n onibex-ask get svc` to come back empty rather than assuming it
+happened.
 
-**Two things that read as bugs when a volume is kept by accident.** Keycloak does not re-import
-the realm, so a password changed in the console stays changed and the initial one keeps being
-rejected. OpenSearch keeps every credential, so ASK Setup looks fully configured before anyone
-has configured it.
+**Two things that read as bugs when a volume is kept by accident.** Keycloak does not re-import the
+realm, so a password changed in the console stays changed and the initial one keeps being rejected.
+OpenSearch keeps every credential, so ASK Setup looks fully configured before anyone has configured
+it.
 
 **And one cost of deleting the gateway volume.** Certificates are requested again on the next
-start. Let's Encrypt limits duplicate certificates to five per week for the same set of names,
-so repeated teardowns can run out. Keeping that one volume and deleting the rest avoids it.
+start. Let's Encrypt limits duplicate certificates to five per week for the same set of names, so
+repeated teardowns can run out. Keeping that one volume and deleting the rest avoids it.
 
 ---
 
 ## What is not done yet
 
-- **Keycloak runs its embedded file database.** `keycloak.production: false` runs `start-dev`.
-  A volume keeps that file across restarts, which is what makes a changed password stick, but it
-  is still one instance writing one local file: no second replica, and no rolling upgrade across
+- **Keycloak runs its embedded file database.** `keycloak.production: false` runs `start-dev`. A
+  volume keeps that file across restarts, which is what makes a changed password stick, but it is
+  still one instance writing one local file: no second replica, and no rolling upgrade across
   schema versions. A deployment anyone depends on sets `keycloak.production: true` and points
   `keycloak.database` at a Postgres.
-- **The apps run as root inside their container.** Their images are stock nginx on port 80.
-  Fixing it means rebuilding them on an unprivileged base, which is image work rather than chart
-  work. Three backends are in the same position for the same reason: their Dockerfiles declare
-  no `USER`, which is why they render with `rootImageSecurityContext` instead of the
-  `runAsUser: 1000` the others get.
+- **The apps run as root inside their container.** Their images are stock nginx on port 80. Fixing
+  it means rebuilding them on an unprivileged base, which is image work rather than chart work.
+  Three backends are in the same position for the same reason: their Dockerfiles declare no `USER`,
+  which is why they render with `rootImageSecurityContext` instead of the `runAsUser: 1000` the
+  others get.
 - **Only AKS has been installed from this chart.** Nothing in it is Azure-specific beyond the
   DNS-label annotation in the AKS profile, but EKS and Kyma have not been exercised, and the
   gateway's assumption that a `LoadBalancer` Service yields a routable address is the part most
@@ -372,8 +399,8 @@ kubectl -n onibex-ask create secret generic ask-platform-secret `
 The realm file carries passwords, so deleting it after loading the Secret is part of the
 procedure, not tidying.
 
-Git Bash, WSL or a Linux shell avoids all four. If you have one, use it: the commands in this
-page are then literal.
+Git Bash, WSL or a Linux shell avoids all four. If you have one, use it: the commands in this page
+are then literal.
 
 ---
 
