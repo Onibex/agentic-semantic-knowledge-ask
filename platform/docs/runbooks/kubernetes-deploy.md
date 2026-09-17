@@ -286,7 +286,19 @@ kubectl -n onibex-ask delete pvc \
   ask-onibex-ask-keycloak \
   ask-onibex-ask-gateway-data \
   data-ask-onibex-ask-opensearch-0
+
+kubectl -n onibex-ask delete secret <the secret you created>
+kubectl delete namespace onibex-ask
 ```
+
+The namespace matters because installing starts by creating it, and a namespace left behind
+makes that first command fail with `AlreadyExists` on an environment that is otherwise empty.
+
+The four `LoadBalancer` Services take a minute or two to disappear after the uninstall. They sit
+in `Terminating` behind a `service.kubernetes.io/load-balancer-cleanup` finalizer while the
+cloud releases the load balancers and the public IP addresses. That is the billing stopping, so
+it is worth waiting for `kubectl -n onibex-ask get svc` to come back empty rather than assuming
+it happened.
 
 **Two things that read as bugs when a volume is kept by accident.** Keycloak does not re-import
 the realm, so a password changed in the console stays changed and the initial one keeps being
