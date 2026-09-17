@@ -254,26 +254,60 @@ root on the node for anything that lands there.
 helm uninstall ask --namespace onibex-ask
 ```
 
-The semantic-layer volume is kept on purpose: it can hold YAML that was authored and not yet
-pushed, and a chart should not decide to delete that. Remove it deliberately when you mean to:
+**Every volume survives, and so does the Secret.** A reinstall on top of them is a restore, not
+a fresh install:
+
+| Volume | Holds |
+|---|---|
+| `data-ask-onibex-ask-opensearch-0` | the registries, the RAG schema, and the encrypted store: LLM and database credentials, the SAP connection, the OpenAPI contracts |
+| `ask-onibex-ask-semantic-layer` | the YAML corpus and the git working tree around it |
+| `ask-onibex-ask-keycloak` | the realm, the users, and any password changed since the import |
+| `ask-onibex-ask-gateway-data` | the Let's Encrypt certificates and the ACME account key |
+
+Three carry `helm.sh/resource-policy: keep`. The OpenSearch one is a StatefulSet
+`volumeClaimTemplates` claim, which Kubernetes never deletes on its own either. The Secret is
+yours rather than the chart's, and is left for the same reason.
+
+The semantic layer is the one to think about twice: it can hold YAML authored and not yet
+pushed, and its git remote may not exist at all, in which case that volume is the only copy.
+
+To start from nothing, name them:
 
 ```bash
-kubectl -n onibex-ask delete pvc ask-onibex-ask-semantic-layer
+kubectl -n onibex-ask delete pvc \
+  ask-onibex-ask-semantic-layer \
+  ask-onibex-ask-keycloak \
+  ask-onibex-ask-gateway-data \
+  data-ask-onibex-ask-opensearch-0
 ```
 
-The Secret is yours, not the chart's, and is not removed either.
+**Two things that read as bugs when a volume is kept by accident.** Keycloak does not re-import
+the realm, so a password changed in the console stays changed and the initial one keeps being
+rejected. OpenSearch keeps every credential, so ASK Setup looks fully configured before anyone
+has configured it.
+
+**And one cost of deleting the gateway volume.** Certificates are requested again on the next
+start. Let's Encrypt limits duplicate certificates to five per week for the same set of names,
+so repeated teardowns can run out. Keeping that one volume and deleting the rest avoids it.
 
 ---
 
 ## What is not done yet
 
-- **No entry point.** Ingress, certificates and DNS are the next step and they are per target.
-- **Keycloak defaults to development mode**, which keeps its realm in a file inside the pod and
-  loses it when the pod is replaced. Set `keycloak.production=true` with a real database before
-  anyone depends on the environment.
+- **Keycloak runs its embedded file database.** `keycloak.production: false` runs `start-dev`.
+  A volume keeps that file across restarts, which is what makes a changed password stick, but it
+  is still one instance writing one local file: no second replica, and no rolling upgrade across
+  schema versions. A deployment anyone depends on sets `keycloak.production: true` and points
+  `keycloak.database` at a Postgres.
 - **The apps run as root inside their container.** Their images are stock nginx on port 80.
   Fixing it means rebuilding them on an unprivileged base, which is image work rather than chart
-  work.
+  work. Three backends are in the same position for the same reason: their Dockerfiles declare
+  no `USER`, which is why they render with `rootImageSecurityContext` instead of the
+  `runAsUser: 1000` the others get.
+- **Only AKS has been installed from this chart.** Nothing in it is Azure-specific beyond the
+  DNS-label annotation in the AKS profile, but EKS and Kyma have not been exercised, and the
+  gateway's assumption that a `LoadBalancer` Service yields a routable address is the part most
+  likely to need a different answer on each.
 
 ---
 
