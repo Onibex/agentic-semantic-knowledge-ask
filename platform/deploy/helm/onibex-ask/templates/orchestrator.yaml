@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Orchestrator, the chat backend (port 8080).
+#
+# It has no entry point of its own: the browser reaches it through the ASK Chat
+# nginx, which proxies /api by Service name. The external B2B sub-app at
+# /external/ask is the exception, and exposing it is a per-target decision that
+# belongs in a values file, not here.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  # The name is the contract: each SPA's nginx.conf resolves this hostname.
+  name: ask-orchestrator
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "orchestrator") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "orchestrator") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-orchestrator
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "orchestrator") | nindent 4 }}
+spec:
+  replicas: {{ .Values.orchestrator.replicas }}
+  strategy:
+    type: {{ .Values.updateStrategy }}
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "orchestrator") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "orchestrator") | nindent 8 }}
+      annotations:
+        # Roll the pods when settings.json changes, so a ConfigMap edit is a
+        # rollout rather than an edit nobody picks up.
+        checksum/config: {{ toJson .Values.settings | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "onibex-ask.topologySpread" (dict "ctx" . "component" "orchestrator" "replicas" .Values.orchestrator.replicas) | nindent 6 }}
+      containers:
+        - name: orchestrator
+          image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.orchestrator) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            {{- include "onibex-ask.backendEnv" . | nindent 12 }}
+            {{- with .Values.orchestrator.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config/settings.json
+              subPath: settings.json
+              readOnly: true
+            {{- if .Values.sapAiCore.existingSecret }}
+            - name: aicore
+              mountPath: /app/config/aicore_config.json
+              subPath: {{ .Values.sapAiCore.key }}
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.orchestrator.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "onibex-ask.fullname" . }}-config
+        {{- if .Values.sapAiCore.existingSecret }}
+        - name: aicore
+          secret:
+            secretName: {{ .Values.sapAiCore.existingSecret }}
+        {{- end }}
+      {{- with .Values.orchestrator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestrator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestrator.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

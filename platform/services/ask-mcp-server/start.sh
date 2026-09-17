@@ -14,10 +14,13 @@
 #
 # What used to be here: a copy of api-config.json out of a mounted config
 # volume, and a read of sap_s4hana credentials out of config/settings.json.
-# Both are gone. The SAP connection moved to the encrypted store on 2026-09-09,
-# so that settings.json read had already stopped finding anything; the
-# credentials reach the proxy through SAP_S4_SALESORDER_* in the environment,
-# which is what patch.js reads.
+# Both are gone.
+#
+# The SAP credentials are not read here either. sap-destination.js is preloaded
+# into the server process by `npm start` and keeps SAP_S4_SALESORDER_* in step
+# with the encrypted store, refreshing on a timer. That is why a connection
+# saved in ASK Setup now takes effect without restarting this container, which
+# matters because the Restart MCP button cannot work on Kubernetes.
 
 node /app/fetch-contracts.js || exit 1
 

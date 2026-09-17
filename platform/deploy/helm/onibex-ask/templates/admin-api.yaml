@@ -1,0 +1,192 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASK Admin API, the admin backend (port 8081), reached through the ASK Studio
+# and ASK Setup nginx under /api and /api/admin.
+#
+# It is the one workload that owns state on disk: the semantic layer is a git
+# working tree it checks out, authors into and pushes. That is why its replica
+# count is pinned at one and why its volume is ReadWriteOnce. It is NOT a shared
+# volume, and this is the difference that matters: the old deployment carried a
+# podAffinity to pin it next to a pod that had been deleted, and both backends
+# sat unschedulable forever as a result.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  # The name is the contract: each SPA's nginx.conf resolves this hostname.
+  name: ask-admin-api
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "admin-api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "admin-api") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+{{- if .Values.semanticLayer.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-semantic-layer
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "admin-api") | nindent 4 }}
+  annotations:
+    # Survives `helm uninstall`. The working tree can hold YAML that was
+    # authored and not yet pushed, and deleting it is not something a chart
+    # should decide on an operator's behalf.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml .Values.semanticLayer.persistence.accessModes | nindent 4 }}
+  {{- with .Values.semanticLayer.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.semanticLayer.persistence.size }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-admin-api
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "admin-api") | nindent 4 }}
+spec:
+  replicas: {{ .Values.adminApi.replicas }}
+  strategy:
+    # Recreate, because a RollingUpdate would briefly run two pods against the
+    # same ReadWriteOnce checkout. The cost is a short gap in ASK Studio during
+    # an upgrade, which is the honest trade for a single-writer git tree.
+    type: {{ if .Values.semanticLayer.persistence.enabled }}Recreate{{ else }}{{ .Values.updateStrategy }}{{ end }}
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "admin-api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "admin-api") | nindent 8 }}
+      annotations:
+        checksum/config: {{ toJson .Values.settings | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # Dockerfile.admin declares no USER, so this image runs as root and cannot
+      # take the non-root context the orchestrator takes. See
+      # rootImageSecurityContext in values.yaml for the gap and its one-line fix.
+      securityContext:
+        {{- toYaml .Values.rootImageSecurityContext | nindent 8 }}
+      containers:
+        - name: admin-api
+          image: {{ include "onibex-ask.image" (dict "ctx" . "repository" .Values.image.repositories.adminApi) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            {{- include "onibex-ask.backendEnv" . | nindent 12 }}
+            # The boot sequence refuses to start when either of these is empty
+            # or does not point at a real directory, which is the behaviour we
+            # want: a running admin API with no semantic layer would answer
+            # every authoring call with an error that names nothing.
+            - name: REPO_ROOT
+              value: /app/semantic-layer
+            - name: WORKSPACE_PATH
+              value: /app/semantic-layer
+            - name: SEMANTIC_LAYER_AUTO_INIT
+              value: {{ .Values.semanticLayer.autoInit | quote }}
+            - name: ASK_COLUMN_NAMING
+              value: {{ .Values.platform.columnNaming | quote }}
+            - name: ASK_ENV
+              value: {{ .Values.platform.askEnv | quote }}
+            # Machine-to-machine callers of /v1/ingest/*. Without it every one
+            # of those routes answers 503, which is deliberate: a producer that
+            # retries on 5xx keeps trying until the secret appears.
+            - name: ASK_INGEST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "onibex-ask.secretName" . }}
+                  key: {{ .Values.secrets.keys.ingestApiKey }}
+                  # Optional so the app's own behaviour shows through rather
+                  # than a kubelet error: the admin API answers 503 on the
+                  # ingest routes and the MCP server stops at boot naming the
+                  # variable. Both are clearer than CreateContainerConfigError.
+                  optional: true
+            # Cross-pod cache invalidation: changing the active LLM makes the
+            # admin API tell the orchestrator to rebuild its singletons now
+            # instead of waiting out a 60 second TTL. Resolved by Service name.
+            - name: ASK_ORCHESTRATOR_URL
+              value: http://ask-orchestrator:8080
+            {{- with .Values.adminApi.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config/settings.json
+              subPath: settings.json
+              readOnly: true
+            - name: semantic-layer
+              mountPath: /app/semantic-layer
+            {{- if .Values.sapAiCore.existingSecret }}
+            - name: aicore
+              mountPath: /app/config/aicore_config.json
+              subPath: {{ .Values.sapAiCore.key }}
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.adminApi.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "onibex-ask.fullname" . }}-config
+        - name: semantic-layer
+          {{- if .Values.semanticLayer.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "onibex-ask.fullname" . }}-semantic-layer
+          {{- else }}
+          # An emptyDir is lost on every pod restart, and with it any YAML
+          # authored and not yet pushed to the git remote. Chosen on purpose by
+          # semanticLayer.persistence.enabled=false.
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.sapAiCore.existingSecret }}
+        - name: aicore
+          secret:
+            secretName: {{ .Values.sapAiCore.existingSecret }}
+        {{- end }}
+      {{- with .Values.adminApi.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adminApi.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adminApi.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

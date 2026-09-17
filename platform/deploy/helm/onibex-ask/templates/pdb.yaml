@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PodDisruptionBudgets, and only where they help.
+#
+# A PDB with minAvailable 1 over a single replica does not protect anything: it
+# blocks every voluntary eviction, so a node drain hangs until someone deletes
+# the PDB by hand. That is why nothing here is rendered for a workload that has
+# one replica, the admin API and the two stateful services included.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $root := . }}
+{{- range $key := list "orchestrator" "studio" "chat" "setup" }}
+{{- $workload := index $root.Values $key }}
+{{- $component := ternary "orchestrator" (printf "ask-%s" $key) (eq $key "orchestrator") }}
+{{- if and (gt (int $workload.replicas) 1) (or (eq $key "orchestrator") $workload.enabled) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "onibex-ask.fullname" $root }}-{{ $key }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" $root "component" $component) | nindent 4 }}
+spec:
+  minAvailable: {{ $root.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" $root "component" $component) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -62,11 +62,16 @@ from ..application.container_control import (
     MCP_CONTAINER,
     restart_container_in_background,
 )
+from ..auth.api_key import verify_api_key
 from ..auth.validator import TokenClaims, validate_token
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/admin", tags=["admin/sap-connection"])
+
+# Machine-to-machine, behind the ingest API key rather than a user token, the
+# same way the MCP server already fetches its API contracts.
+internal_router = APIRouter(prefix="/v1/internal", tags=["internal"])
 
 _MASK = "••••••••"
 
@@ -284,3 +289,72 @@ async def test_sap_connection(
             extra={"trace_id": trace_id, "auth_email": user.email},
         )
         return ConnectionTestResult(ok=False, message=str(exc))
+
+
+# ── Internal: the destination the MCP server resolves against ─────────────────
+
+
+class SapDestinationResponse(BaseModel):
+    """The SAP destination as environment-variable names.
+
+    The keys ARE the variable names the MCP server sets, so the contract is
+    legible at both ends and neither side has to restate the mapping.
+    """
+
+    env: dict[str, str]
+
+
+@internal_router.get(
+    "/sap-destination",
+    response_model=SapDestinationResponse,
+    summary="The SAP destination for the MCP server (unmasked, API-key auth)",
+)
+async def get_sap_destination(
+    principal: dict[str, Any] = Depends(verify_api_key),
+) -> SapDestinationResponse:
+    """Serve the stored SAP connection to the MCP server.
+
+    WHY THIS EXISTS. The MCP server resolves its destination from
+    ``SAP_S4_SALESORDER_*`` in its environment, while ASK Setup writes the
+    connection to the encrypted store. They were two sources of truth that
+    never spoke, so saving the connection in the UI did not make a tool call
+    work: Setup showed it configured and the tool answered that the variable
+    was not set. This endpoint is the bridge, and it is the reason the four
+    variables no longer belong in any deployment file.
+
+    Unmasked on purpose, unlike the ``/v1/admin`` sibling. That one answers a
+    browser and masks the password; this one answers a service that has to
+    authenticate with it, and it is reachable only with the ingest API key.
+
+    A 404 when nothing is stored, so the caller can tell "not configured yet"
+    from "configured and empty" and say the right thing in its log.
+    """
+    trace_id = uuid.uuid4().hex
+    logger.info(
+        "GET /v1/internal/sap-destination principal=%s",
+        principal.get("principal"),
+        extra={"trace_id": trace_id},
+    )
+
+    config = resolve_sap_config()
+    host = str(config.get("host", "")).rstrip("/")
+    if not host:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "The SAP connection is not configured. Save it on the ASK Setup "
+                "SAP page."
+            ),
+        )
+
+    odata_path = str(config.get("odata_path", "")).rstrip("/")
+    env = {
+        # What patch.js reads to build the Basic Auth destination.
+        "SAP_S4_SALESORDER_BASE_URL": host,
+        "SAP_S4_SALESORDER_USERNAME": str(config.get("username", "")),
+        "SAP_S4_SALESORDER_PASSWORD": str(config.get("password", "")),
+        # Declared alongside the others in .env.example. Kept so the environment
+        # the MCP sees is the same shape however it was populated.
+        "SAP_S4_SALESORDER_URL": f"{host}{odata_path}",
+    }
+    return SapDestinationResponse(env=env)

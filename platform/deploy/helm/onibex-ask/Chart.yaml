@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The cloud-neutral Helm chart for the ASK platform.
+#
+# It renders the same nine workloads the compose file runs, and it names no
+# cloud: no Ingress, no storage class, no provider annotation, no load balancer.
+# Those belong in a per-target values file, which is what makes one chart serve
+# AKS, EKS and BTP Kyma.
+#
+# Reaching a service from outside is therefore `kubectl port-forward` until a
+# target values file adds an entry point. That is deliberate, not an omission.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v2
+name: onibex-ask
+description: Onibex ASK, a deterministic text-to-SQL agent over a curated semantic layer
+type: application
+
+# Tracks the platform version reported by scripts/versions.py. The chart is not
+# published to a repository, so the two numbers never need to diverge.
+version: 1.1.0
+appVersion: "1.1.0"
+
+# `topologySpreadConstraints` on a workload template and the `apps/v1`
+# StatefulSet shape used here are stable from 1.25.
+kubeVersion: ">=1.25.0-0"
+
+keywords:
+  - text-to-sql
+  - semantic-layer
+  - sap
+home: https://onibex.com
+sources:
+  - https://github.com/Onibex/agentic-semantic-knowledge-ask
+maintainers:
+  - name: Onibex
+    email: contact@onibex.com

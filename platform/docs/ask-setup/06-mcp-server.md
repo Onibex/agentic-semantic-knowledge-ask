@@ -15,7 +15,7 @@
 | **You'll end with** | A saved MCP endpoint the agent uses for SAP OData actions, verified reachable with a health check. |
 
 > The screenshots and values below use the platform's default in-cluster endpoint
-> (`http://ask-mcp-service:4004`). Substitute your own deployment's service name and
+> (`http://ask-mcp:4004`). Substitute your own deployment's service name and
 > port if they differ.
 
 ---
@@ -47,16 +47,26 @@ The **Connection Settings** card holds two fields:
 
 | Field | Notes |
 |---|---|
-| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://ask-mcp-service:4004`, the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
+| **MCP Server URL** | The service address the orchestrator calls. Defaults to `http://ask-mcp:4004`, the Kubernetes ClusterIP service that fronts the MCP Node.js server. A trailing slash is trimmed on save. |
 | **Port** | The MCP service port. Defaults to `4004`. |
 
 Enter your values, then click **Save**. A confirmation toast, *"MCP Server configuration
 saved"*, reports success.
 
-> **Tip: internal address, not a public URL.** The default host
-> (`ask-mcp-service`) is a cluster-internal service name resolved by Kubernetes DNS. It
-> is reached by the orchestrator inside the cluster, not from your browser, so it does not
-> need to be publicly routable.
+> **The SAP credentials are not configured here, and not in a deployment file either.**
+> The MCP server reads the connection you save on the SAP page from the encrypted store,
+> through the admin API, and re-reads it about once a minute. A change therefore takes effect
+> on its own: there is nothing to restart, and nothing to copy into an environment variable.
+>
+> If a SAP tool ever answers that `SAP_S4_SALESORDER_BASE_URL` is not set while this page and
+> the SAP page both look correct, the server is not reading the store. Check that the admin API
+> is reachable from it and that both share the same ingest API key.
+
+> **Tip: internal address, not a public URL.** The default host (`ask-mcp`) is an internal
+> name: the Kubernetes Service in a cluster, the container name under Docker Compose. It is
+> the same word in both on purpose, so this field is correct as it stands wherever the
+> platform runs. The orchestrator reaches it from inside, not your browser, so it never needs
+> to be publicly routable.
 
 ## 3. Test the connection
 

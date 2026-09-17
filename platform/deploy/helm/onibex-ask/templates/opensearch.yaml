@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OpenSearch: the vector store, the knowledge graph and the encrypted secret
+# store, all three. It is a StatefulSet because it owns data, and a single node
+# because that is what the platform has ever been tested against.
+#
+# Switch it off and point at a managed endpoint (opensearch.enabled=false plus
+# opensearch.host) to take the most delicate piece out of the cluster. That is
+# the recommended shape wherever a managed OpenSearch exists.
+#
+# ONE THING TO KNOW BEFORE THE FIRST BOOT ON A NEW CLUSTER
+#
+# OpenSearch wants vm.max_map_count at 262144 and many node images ship 65530.
+# discovery.type=single-node skips the bootstrap check that would refuse to
+# start, so the node comes up and the symptom arrives later as mmap failures
+# under load. Raising it is a node-level change: a node pool setting, a DaemonSet
+# with privileges, or a privileged init container. This chart does none of the
+# three, because each is either cloud-specific or forbidden by the baseline Pod
+# Security Standard, and silently shipping a privileged container would be worse
+# than saying so here.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if .Values.opensearch.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-opensearch
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "opensearch") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "opensearch") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.opensearch.port }}
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-opensearch
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "opensearch") | nindent 4 }}
+spec:
+  serviceName: {{ include "onibex-ask.fullname" . }}-opensearch
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "opensearch") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "onibex-ask.labels" (dict "ctx" . "component" "opensearch") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "onibex-ask.serviceAccountName" . }}
+      {{- include "onibex-ask.imagePullSecrets" . | nindent 6 }}
+      # The image runs as uid 1000, which is what podSecurityContext already
+      # sets, fsGroup included so the data directory is writable once the volume
+      # is attached.
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: opensearch
+          image: "{{ .Values.opensearch.image.repository }}:{{ .Values.opensearch.image.tag }}"
+          imagePullPolicy: {{ .Values.opensearch.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 9200
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: DISABLE_SECURITY_PLUGIN
+              value: {{ .Values.opensearch.disableSecurityPlugin | quote }}
+            - name: OPENSEARCH_JAVA_OPTS
+              value: {{ .Values.opensearch.javaOpts | quote }}
+            - name: bootstrap.memory_lock
+              value: {{ .Values.opensearch.memoryLock | quote }}
+          resources:
+            {{- toYaml .Values.opensearch.resources | nindent 12 }}
+          # Readiness asks for a real cluster status rather than a TCP accept,
+          # because the port opens well before the node can answer a query and
+          # both backends fail their own boot against a not-yet-ready cluster.
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?wait_for_status=yellow&timeout=1s
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/opensearch/data
+      {{- with .Values.opensearch.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.opensearch.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.opensearch.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.opensearch.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.opensearch.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          {{- toYaml .Values.opensearch.persistence.accessModes | nindent 10 }}
+        {{- with .Values.opensearch.persistence.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.opensearch.persistence.size }}
+  {{- end }}
+{{- end }}

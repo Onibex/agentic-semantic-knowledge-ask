@@ -187,3 +187,65 @@ def test_test_endpoint_says_so_when_nothing_is_configured(
 
     assert body["ok"] is False
     assert "not configured" in body["message"]
+
+
+# ── The internal destination endpoint ────────────────────────────────────────
+
+
+@pytest.fixture
+def destination_client(monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, _FakeRepo]:
+    """The MCP server's view: API-key auth, unmasked, no user token anywhere."""
+    repo = _FakeRepo()
+    monkeypatch.setattr(sap_connection, "resolve_sap_config", lambda: dict(repo.doc))
+
+    app = FastAPI()
+    app.dependency_overrides[sap_connection.verify_api_key] = lambda: {"principal": "ask-mcp"}
+    app.include_router(sap_connection.internal_router)
+    return TestClient(app), repo
+
+
+def test_the_destination_is_served_unmasked(
+    destination_client: tuple[TestClient, _FakeRepo],
+) -> None:
+    """The whole point: the MCP has to authenticate with the real password.
+
+    Its sibling under /v1/admin masks it, because that one answers a browser.
+    Serving the mask here would produce a 401 against SAP and a hunt for a
+    credential that is correct in the store.
+    """
+    client, repo = destination_client
+    repo.doc = {
+        "host": "https://sap.example:44300/",
+        "odata_path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV",
+        "username": "bpinst",
+        "password": "s3cret",
+    }
+
+    body = client.get("/v1/internal/sap-destination").json()["env"]
+
+    assert body["SAP_S4_SALESORDER_PASSWORD"] == "s3cret"
+    assert body["SAP_S4_SALESORDER_USERNAME"] == "bpinst"
+    # The trailing slash is dropped, so the joined URL never doubles it.
+    assert body["SAP_S4_SALESORDER_BASE_URL"] == "https://sap.example:44300"
+    assert (
+        body["SAP_S4_SALESORDER_URL"]
+        == "https://sap.example:44300/sap/opu/odata/sap/API_SALES_ORDER_SRV"
+    )
+
+
+def test_an_unconfigured_connection_is_404_not_empty(
+    destination_client: tuple[TestClient, _FakeRepo],
+) -> None:
+    """404 lets the caller tell "not set up yet" from "set up and blank".
+
+    The MCP logs the first as a pending setup step and keeps polling; an empty
+    200 would have it export four empty variables and fail later, against an
+    error that names the variable rather than the missing connection.
+    """
+    client, repo = destination_client
+    repo.doc = {}
+
+    response = client.get("/v1/internal/sap-destination")
+
+    assert response.status_code == 404
+    assert "ASK Setup" in response.json()["detail"]

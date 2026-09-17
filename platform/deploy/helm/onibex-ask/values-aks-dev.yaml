@@ -1,0 +1,241 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Azure AKS, development, on a SHARED cluster.
+#
+# Written against a measured cluster on 2026-09-14, not from a template, and the
+# measurements are the reason for every number below.
+#
+# THE SITUATION THIS FILE IS FOR
+#
+# One node, four vCPU, shared with other teams. Requests on that node were at
+# 99% while actual usage across the whole cluster was about 85 millicores, which
+# is 2%. Everything there reserves far more than it uses, and limits were
+# already 480% oversubscribed, so the constraint is the scheduler's bookkeeping
+# rather than real contention.
+#
+# The consequence is the shape of this file: requests are cut to what the
+# scheduler needs to let the pods in, and limits are left generous so the
+# workloads still get CPU when they need it. Requests are a reservation, not a
+# cap. This is a development profile and it says so; do not copy it to anything
+# that carries load.
+#
+# It fits in roughly 525 millicores of requests and about 3.2GB of memory.
+#
+# THE PUBLIC ENTRY POINT
+#
+# Four hostnames, one per app, each on its own public IP. That is not a
+# preference: Azure gives one free DNS name per public IP and the name cannot
+# have sub-names of its own, so four published apps need four addresses. The
+# apps cannot share one hostname either, for the reasons in the gateway block of
+# values.yaml.
+#
+# Cost, measured against the Azure price list for westus on 2026-09-15: a
+# Standard static public IP is 0.005 USD per hour, so four are about 14.60 USD a
+# month. The node they run on is 194 USD a month. Worth knowing before trimming
+# anything here.
+# ─────────────────────────────────────────────────────────────────────────────
+
+image:
+  # The account the images are published under, all seven public. Inherited from
+  # values.yaml; restated here because this file is meant to be readable on its
+  # own by whoever installs into this cluster.
+  namespace: onibexenjoy
+  # Pinned rather than left to appVersion, which resolves to a tag that has
+  # never been published. This is the set that was installed and measured.
+  # Read what exists before changing it:
+  #   docker buildx imagetools inspect docker.io/onibexenjoy/ask-studio:<tag>
+  tag: sha-eabc833
+
+auth:
+  mode: keycloak
+  # The public origin of Keycloak, which is also the issuer in every token it
+  # signs. It has to be the gateway hostname below, character for character.
+  publicUrl: "https://onibex-ask-auth.westus.cloudapp.azure.com"
+
+secrets:
+  # Create it out of band, so no key passes through a values file:
+  #   kubectl -n onibex-ask create secret generic ask-platform-secret \
+  #     --from-literal=encryption-key="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+  #     --from-literal=opensearch-user=admin \
+  #     --from-literal=opensearch-password="$(openssl rand -base64 24)" \
+  #     --from-literal=keycloak-admin-password="$(openssl rand -base64 24)"
+  existingSecret: ask-platform-secret
+
+platform:
+  # production, not "development". The backends validate this against a literal
+  # that accepts only `local` or `production`, so the intuitive word crash-loops
+  # the admin API. It says nothing about how carefully this environment is run,
+  # only which branch the settings object takes.
+  environment: production
+  logLevel: INFO
+  askEnv: dev
+
+# Recreate, because the node has no spare CPU. A rolling update reserves the new
+# pod's requests before releasing the old pod's, so it needs room for both at
+# once; on a node measured at 86% reserved, the new pod sits Pending and the
+# rollout looks stuck when it is really just arithmetic.
+updateStrategy: Recreate
+
+
+# ── The public entry point ──────────────────────────────────────────────────
+gateway:
+  enabled: true
+
+  # The four public hostnames. The suffix is fixed by Azure:
+  # <label>.<region>.cloudapp.azure.com, where the label is the annotation
+  # below and the region is where the cluster lives.
+  hosts:
+    chat: "onibex-ask-chat.westus.cloudapp.azure.com"
+    studio: "onibex-ask-studio.westus.cloudapp.azure.com"
+    setup: "onibex-ask-setup.westus.cloudapp.azure.com"
+    auth: "onibex-ask-auth.westus.cloudapp.azure.com"
+
+  service:
+    type: LoadBalancer
+    perHostAnnotations:
+      # THE LABEL HAS TO BE UNIQUE ACROSS THE WHOLE REGION, not just your
+      # subscription, because the zone is shared by every Azure customer. A
+      # taken label leaves the Service without an address and says so only in
+      # its events, so check there first if a hostname never resolves.
+      chat:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-chat
+      studio:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-studio
+      setup:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-setup
+      auth:
+        service.beta.kubernetes.io/azure-dns-label-name: onibex-ask-auth
+
+  tls:
+    mode: acme
+    email: ""
+
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# The cross-app links, which are what ASK Studio uses to offer the other two.
+publicUrls:
+  chat: "https://onibex-ask-chat.westus.cloudapp.azure.com"
+  studio: "https://onibex-ask-studio.westus.cloudapp.azure.com"
+  setup: "https://onibex-ask-setup.westus.cloudapp.azure.com"
+
+# ── The sizing, and why ─────────────────────────────────────────────────────
+
+opensearch:
+  enabled: true
+  # 100m of CPU request is far below what a busy OpenSearch wants, and it is
+  # the right number here: measured usage of the busiest pod on this node was
+  # 12 millicores. Memory is NOT cut the same way, because the JVM heap is a
+  # real allocation and an undersized container gets OOM-killed rather than
+  # slowed down. That happened twice on this stack already.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1536Mi
+    limits:
+      memory: 2Gi
+  persistence:
+    enabled: true
+    size: 10Gi
+    # Empty takes the cluster default, which on AKS is managed-csi. Naming it
+    # here would pin the file to one cloud for no gain.
+    storageClassName: ""
+
+keycloak:
+  enabled: true
+  # start-dev, deliberately, and only because this is a scratch environment on
+  # a cluster we do not own. Every realm and user change is lost when the pod is
+  # replaced. Moving to production mode means an Azure Database for PostgreSQL,
+  # which is a resource this account is not authorised to create.
+  production: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 768Mi
+
+orchestrator:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 150m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+adminApi:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+studio:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+chat:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+setup:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# On. It needs no credentials of its own: it reads the SAP connection from the
+# encrypted store through the admin API and re-reads it about once a minute, so
+# the only thing it wants from this file is somewhere to run. Without it the
+# platform still answers questions, and every SAP action fails.
+mcpServer:
+  enabled: true
+  # 10m rather than the chart's 50m. Measured, not guessed: the node has 3860m
+  # allocatable and 3842m already reserved, so there are 18 millicores left and
+  # 25m does not fit. The request is what the scheduler counts, not what the
+  # process needs, and with no CPU limit set this container still bursts as far
+  # as it wants. It boots, fetches its contracts once, and then waits.
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+# Off. It needs a Bot Framework app id and password this environment does not
+# have, and it is the one component nothing else depends on.
+teamsBot:
+  enabled: false
+
+semanticLayer:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: ""
+
+# Every workload is a single replica here, so both of these would render
+# nothing anyway. They are stated rather than left implicit so that raising a
+# replica count later is a deliberate act.
+podDisruptionBudget:
+  enabled: false
+topologySpread:
+  enabled: false
