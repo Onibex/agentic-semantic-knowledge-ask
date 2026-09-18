@@ -150,11 +150,19 @@ opensearch:
 
 keycloak:
   enabled: true
-  # start-dev, deliberately, and only because this is a scratch environment on
-  # a cluster we do not own. Every realm and user change is lost when the pod is
-  # replaced. Moving to production mode means an Azure Database for PostgreSQL,
-  # which is a resource this account is not authorised to create.
+  # start-dev, deliberately, and only because this is a scratch environment on a
+  # cluster we do not own. Moving to production mode means an Azure Database for
+  # PostgreSQL, which is a resource this account is not authorised to create.
   production: false
+  # On, and it is not optional here. start-dev keeps the realm in a file inside
+  # the container, so without a volume every pod replacement re-imports the
+  # realm file and silently undoes whatever was changed in the admin console,
+  # including the password each user is forced to set at first sign-in. The
+  # symptom is the initial shared password working again days later.
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: ""
   resources:
     requests:
       cpu: 50m

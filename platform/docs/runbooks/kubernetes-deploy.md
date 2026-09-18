@@ -17,6 +17,14 @@
 
 ## What you need
 
+**Every command on this page runs from `platform/`**, the directory holding `docker-compose.yml`,
+and every path is relative to it. The repository root also has a `scripts/` directory, so running
+from there does not fail with "no such file": it fails later and less clearly.
+
+```bash
+cd platform
+```
+
 **You do not build anything.** The seven images are already published on Docker Hub under
 `onibexenjoy`, all public, and the chart points at them by default. Kubernetes pulls; nothing is
 compiled here. (If you do need your own build, see [Running images you built
@@ -24,31 +32,117 @@ yourself](#running-images-you-built-yourself) at the end. Skip it otherwise.)
 
 | Tool | Version | Used for |
 |---|---|---|
-| `kubectl` | Within one minor of the cluster | Everything |
+| `kubectl` | Within one minor of the cluster, either way. Check with `kubectl version`; fix with `az aks install-cli --client-version <the cluster's minor>` | Everything |
 | `helm` | 3 or later | Installing the chart |
 | `python` | 3.10 or later | The encryption key and the realm file |
 | `openssl` | any | Generating passwords. On Windows it ships with Git for Windows |
 | `curl` | any | The checks at the end. **Not PowerShell 5.1's `curl`**, which is an alias for `Invoke-WebRequest` |
 
-Plus a cluster you can create a namespace in, and about 600 millicores and 4 GiB of memory free
-on a node.
+> **`kubectl` has three ways to be wrong and they chain.** Too old fails the skew; running
+> `az aks install-cli` with no `--client-version` installs the newest stable, which fails the skew
+> from the other side; and on Windows, Docker Desktop ships its own `kubectl` early in the system
+> PATH, so the right one can be installed and still not be the one that runs. `which kubectl`
+> settles the third.
+
+### Capacity
+
+The requests below are what the scheduler reserves. **`kubectl top` does not answer this
+question**: it reports usage, and a node can be nearly idle and still have nothing left to give.
+
+| Profile | CPU requests | Memory requests |
+|---|---|---|
+| `values.yaml`, chart defaults | 775m | 3008Mi |
+| `values-aks-dev.yaml` | 510m | 3200Mi |
+
+Per service, so you can see where it goes and what disabling something buys you:
+
+| Service | CPU | Memory |
+|---|---|---|
+| OpenSearch | 250m default, 100m in the AKS profile | 1536Mi |
+| Orchestrator | 250m default, 150m in the AKS profile | 512Mi |
+| Admin API | 100m | 512Mi |
+| Keycloak | 100m default, 50m in the AKS profile | 256Mi |
+| Studio, Chat, Setup | 25m each | 64Mi each |
+| MCP server | 50m default, 10m in the AKS profile | 128Mi |
+| Gateway | 25m | 64Mi |
+
+It has to fit **on one node**, not across the cluster, because a pod is scheduled to a single
+node. Read what is left with:
+
+```bash
+kubectl describe node <node> | sed -n '/Allocated resources/,/Events/p'
+```
+
+---
+
+## Step 0. Check the ground before you build on it
+
+Six commands. Each one answers something that otherwise surfaces several steps later as a
+different-looking failure.
+
+```bash
+which kubectl helm python openssl curl
+kubectl config current-context
+kubectl version
+kubectl get storageclass
+kubectl get ns onibex-ask
+kubectl describe node <node> | sed -n '/Allocated resources/,/Events/p'
+```
+
+**`which` on all five at once is the one people skip.** Installed and findable are different
+questions, and the gap is invisible until a command fails: a tool answering in one shell and not
+in another, or a second copy earlier in the PATH answering instead of the one you installed.
+
+The rest: `current-context` because installing into the wrong cluster is quiet and expensive;
+`version` for the skew above; `get storageclass` because there has to be a default one for the
+volumes to bind; `get ns` because an existing namespace changes what Step 1 prints; and the node
+line for the capacity table above.
 
 ---
 
 ## Step 1. Create the namespace and the Secret
 
-Three values cannot live in the chart, because each is needed before the store that holds
-everything else can be read.
+**Five values** cannot live in the chart: four because they are needed before the store that
+holds everything else can be read, and one because it is how two services authenticate to each
+other.
 
 ```bash
 kubectl create namespace onibex-ask
+```
 
+`AlreadyExists` here is benign if the namespace is empty, which
+`kubectl -n onibex-ask get all` will tell you. It is a leftover from a previous install, and the
+[uninstall section](#uninstall-and-what-survives) says how to clear it properly. Run the Secret
+as its own command so a namespace that already exists does not look like the Secret failing:
+
+```bash
 kubectl -n onibex-ask create secret generic ask-platform-secret \
   --from-literal=encryption-key="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
   --from-literal=opensearch-user=admin \
   --from-literal=opensearch-password="$(openssl rand -base64 24)" \
-  --from-literal=keycloak-admin-password="$(openssl rand -base64 24)"
+  --from-literal=keycloak-admin-password="$(openssl rand -base64 24)" \
+  --from-literal=ingest-api-key="$(openssl rand -hex 32)"
 ```
+
+**Check what you actually wrote before moving on.** Every value above comes from a command
+substitution, and a substitution that fails silently produces a Secret that looks fine and holds
+nothing:
+
+```bash
+for k in encryption-key opensearch-user opensearch-password keycloak-admin-password ingest-api-key; do
+  printf '%-24s %s bytes\n' "$k" \
+    "$(kubectl -n onibex-ask get secret ask-platform-secret -o "jsonpath={.data.$k}" | base64 -d | wc -c)"
+done
+```
+
+Expect 44, 5, 32, 32 and 64. **A zero means the substitution failed and the key is empty.**
+
+> **`ingest-api-key` is the one people skip, and it stops the install.** The name says ingest, but
+> the MCP server sends it on two calls that have nothing to do with ingestion: the API contracts
+> it downloads at boot, and the SAP connection it re-reads every minute. A server with no
+> contracts has no tools to offer, so it refuses to start rather than come up empty, and the pod
+> lands in `CrashLoopBackOff` naming `ASK_INGEST_API_KEY`. Leave it out only with
+> `mcpServer.enabled=false`.
 
 > **The encryption key is not rotatable in place.** It decrypts every credential the platform
 > stores: the LLM provider keys, the database connections, the SAP password. Changing it is not a
@@ -69,7 +163,30 @@ the annotation `service.beta.kubernetes.io/azure-dns-label-name` yields
 domain of your own is needed. The label has to be unique across the whole region.
 
 `values-aks-dev.yaml` is set up this way. Edit the four labels in its `gateway.hosts` block, then
-use those four addresses in step 3.
+use those four addresses in step 3. A label has to be free across the whole region, so check
+before you commit to one:
+
+```bash
+nslookup <label>.<region>.cloudapp.azure.com 2>&1 | grep -q "Non-existent domain" && echo free || echo TAKEN
+```
+
+Grep the message rather than testing the exit code. **`nslookup` exits 0 even for a name that does
+not exist**, so an exit-code test reports every label as taken.
+
+**A.2. Your own domain.** The production case, and the ordering matters more than the commands.
+Certificates are issued by answering a challenge at the name itself, so **the DNS record has to
+exist and resolve before the gateway first starts**. In the other order nothing errors loudly: the
+certificate is simply never issued, and the site keeps answering on plain http.
+
+1. Install with `gateway.enabled=true` and read the addresses the cloud assigned:
+   `kubectl -n onibex-ask get svc`.
+2. Create one `A` record per app, pointing at the matching `EXTERNAL-IP`.
+3. Wait until all four resolve from outside the cluster.
+4. Put the four names in `gateway.hosts`, **remove the `azure-dns-label-name` annotations** (they
+   are only for the free Azure names), and upgrade.
+
+The certificates arrive within a minute or two of the gateway restarting with names that already
+resolve.
 
 **B. No public address, reached through a tunnel.** Install with `gateway.enabled=false` and
 forward the ports to your own machine. Good for a first look and for a cluster with no load
@@ -104,15 +221,30 @@ python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
   --host studio=https://studio.example.com \
   --host chat=https://chat.example.com \
   --host setup=https://setup.example.com \
-  --out /tmp/realm.json
+  --out ./realm.json
 
 kubectl -n onibex-ask create secret generic ask-realm \
-  --from-file=ask-platform-realm.json=/tmp/realm.json
-rm /tmp/realm.json
+  --from-file=ask-platform-realm.json=./realm.json
+rm ./realm.json
 ```
+
+> The file is written to the current directory rather than `/tmp` on purpose. Under Git Bash on
+> Windows, a leading `/` triggers MSYS path translation, so `/tmp/realm.json` reaches the program
+> rewritten into a Windows path and the two commands can disagree about where the file is. A
+> relative path is never translated.
 
 Every password it writes is **temporary**, so Keycloak requires a change at first sign-in and the
 shared initial value stops working once each person has used it.
+
+**It also prints three new client secrets, and that output is the only time you see them.** The
+realm holds three confidential clients whose secrets are committed to this repository as demo
+values, and one of them, `kafka-ingest`, has a service account carrying the `ask-admin` role.
+Nothing tells a service-account token apart from a person's, so shipping that secret unchanged
+puts the whole administrative API behind a credential anyone can read on GitHub. The script
+replaces all three every time it runs.
+
+Copy them somewhere safe before you delete the realm file. Anything authenticating as one of
+those clients needs the new value: for the Kafka Connect HTTP Sink that is `oauth2.client.secret`.
 
 The Keycloak administrator is separate: its password comes from the Secret in step 1, and the
 realm file does not cover it. Give it the same treatment by hand, once, after the platform is up:
@@ -139,6 +271,20 @@ helm install ask deploy/helm/onibex-ask \
 stamped into every token. An in-cluster Service name will not do: the OAuth exchange happens in
 the browser. It has to match the Keycloak hostname from step 2 exactly, and the chart refuses to
 install if it does not.
+
+**Render it first.** The chart checks seven values before producing anything, so the same command
+with `template` in place of `install` turns seven possible failures into a two-second check that
+never touches the cluster:
+
+```bash
+helm template ask deploy/helm/onibex-ask \
+  --values deploy/helm/onibex-ask/values-aks-dev.yaml \
+  --set auth.publicUrl=https://auth.example.com \
+  --set keycloak.realmImportSecret=ask-realm \
+  --set secrets.existingSecret=ask-platform-secret > /dev/null
+```
+
+Silence means it rendered. Anything else is one of the refusals below, quoted in full.
 
 The install refuses to render rather than producing something half-working. Each refusal names the
 value and says what goes wrong if it is guessed:
@@ -167,6 +313,21 @@ Three things start in order, and knowing it saves you from chasing a pod that is
    MCP server stays unready and retries rather than starting with zero tools, so a long
    `0/1 Running` there is expected while the admin API is still starting.
 3. **The apps** start independently. They serve a bundle and wait for nothing.
+
+**`0/1 Running` and `CrashLoopBackOff` mean opposite things, and only one of them is worth
+waiting out.**
+
+| Status | What it means |
+|---|---|
+| `0/1 Running` on the MCP server | Normal. It is retrying its contract fetch with a growing wait while the admin API starts. Leave it |
+| `CrashLoopBackOff` anywhere | A defect. The container died; waiting will not fix it. Read the log of the run that failed |
+
+```bash
+kubectl -n onibex-ask logs <pod> --previous
+```
+
+`--previous` matters: without it you read the container that is about to die rather than the one
+that already did, and on a fast crash loop you often get nothing at all.
 
 If something is stuck, [the failures worth knowing in advance](#the-failures-worth-knowing-in-advance)
 covers the ones that have actually happened.
@@ -254,9 +415,19 @@ which is what used to produce a working-looking deployment pointing nowhere.
 told the same address unless `auth.jwksUrl` is set explicitly.
 
 **The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses to
-boot when the semantic-layer paths are empty or do not point at a real directory, so check that the
-volume was bound with `kubectl -n onibex-ask get pvc`. It also refuses an unrecognised
-`platform.environment`, which the chart now stops at render time.
+boot when the semantic-layer paths are empty or do not point at a real directory. It also refuses
+an unrecognised `platform.environment`, which the chart now stops at render time.
+
+**A volume sits in `Pending` and it is usually fine.** Do not read `Pending` from
+`kubectl get pvc` as a failure. The default StorageClass on AKS, and on most managed clusters, is
+`WaitForFirstConsumer`: the disk is deliberately not created until a pod that needs it is
+scheduled, so that it lands in the right zone. Read the events instead of the phase:
+
+```bash
+kubectl -n onibex-ask describe pvc <name>
+```
+
+`WaitForFirstConsumer` in the events is normal. `ProvisioningFailed` is the real problem.
 
 **An app pod crash-loops on `chown(/var/cache/nginx/client_temp) failed`.** nginx starts as root,
 chowns its cache directories and drops its workers to an unprivileged user, so it needs CHOWN,
@@ -399,8 +570,14 @@ kubectl -n onibex-ask create secret generic ask-platform-secret `
 The realm file carries passwords, so deleting it after loading the Secret is part of the
 procedure, not tidying.
 
-Git Bash, WSL or a Linux shell avoids all four. If you have one, use it: the commands in this page
-are then literal.
+**And `cmd.exe` is the one to avoid outright.** It does not expand `$(...)` at all and does not
+treat it as an error either: the Secret in Step 1 is created with the literal string
+`$(python -c ...)` as its value, the command reports success, and the failure surfaces three steps
+later as backends that cannot decrypt anything. Same failure shape as the PowerShell trap above,
+with nothing to warn you. The length check at the end of Step 1 catches both.
+
+Git Bash, WSL or a Linux shell avoids all of this. If you have one, use it: the commands in this
+page are then literal, with the single exception of the relative path noted in Step 3.
 
 ---
 
