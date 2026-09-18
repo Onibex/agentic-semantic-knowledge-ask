@@ -11,7 +11,7 @@
 |---|---|
 | **Who** | Whoever holds cluster credentials |
 | **Time** | About 30 minutes, most of it waiting for images to pull |
-| **You'll end with** | Nine services running, and the three apps open in a browser with a working sign-in |
+| **You'll end with** | Eight of the nine services Ready, the three apps open in a browser with a working sign-in, and the MCP server deliberately unready until you register a contract |
 
 ---
 
@@ -216,8 +216,12 @@ redirect_uri` after the user has already typed it.
 
 Generate one for your addresses instead, using the four you chose in step 2:
 
+**The realm enforces its own password policy on this value, at import time**, so pick one that
+satisfies `length(8) and digits(1) and upperCase(1)` before you run anything. The script checks it
+and refuses; Keycloak, if the check is ever bypassed, aborts the whole realm import instead.
+
 ```bash
-python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
+python scripts/make_realm_import.py --password 'Chosen.Initial.Password1' \
   --host studio=https://studio.example.com \
   --host chat=https://chat.example.com \
   --host setup=https://setup.example.com \
@@ -309,17 +313,31 @@ kubectl -n onibex-ask get pods -w
 Three things start in order, and knowing it saves you from chasing a pod that is only waiting:
 
 1. **OpenSearch** must be Ready before either backend finishes its own boot.
-2. **The admin API** must be Ready before the MCP server stops retrying its contract fetch. The
-   MCP server stays unready and retries rather than starting with zero tools, so a long
-   `0/1 Running` there is expected while the admin API is still starting.
-3. **The apps** start independently. They serve a bundle and wait for nothing.
+2. **The apps** start independently. They serve a bundle and wait for nothing.
+3. **The MCP server waits for something this runbook does not provide**, and the next section is
+   about that.
 
-**`0/1 Running` and `CrashLoopBackOff` mean opposite things, and only one of them is worth
-waiting out.**
+### A clean install finishes at eight of nine, not nine of nine
+
+**The MCP server stays `0/1 Running` and it never leaves on its own.** It is not waiting for the
+admin API. It fetches its API contracts from the admin API at boot, there are none stored until
+somebody saves them on the Contracts page in ASK Setup, and it will not start with zero tools
+because a server that advertises nothing is worse than one that is honestly unready. So it retries,
+with the wait doubling each time, until the contracts exist.
+
+That makes it the one pod whose readiness depends on a human, and its wait crossing minutes is the
+system working rather than failing. It goes Ready within a minute of contracts being saved, with no
+restart.
+
+**So the expected end state here is eight Ready and the MCP unready.** If the other eight are Ready,
+Step 5 is done. Come back to this pod after
+[Register an OpenAPI contract](../ask-setup/07-contracts.md), and only then treat `0/1` as a
+problem.
 
 | Status | What it means |
 |---|---|
-| `0/1 Running` on the MCP server | Normal. It is retrying its contract fetch with a growing wait while the admin API starts. Leave it |
+| `0/1 Running` on the MCP server, no contracts saved yet | The expected end state of a clean install. Leave it |
+| `0/1 Running` on the MCP server, contracts saved | Now it is worth reading: the admin API is unreachable from it, or the ingest key does not match |
 | `CrashLoopBackOff` anywhere | A defect. The container died; waiting will not fix it. Read the log of the run that failed |
 
 ```bash
@@ -342,6 +360,12 @@ Keycloak asks for a new one immediately; that is the shared value retiring.
 From there the platform is empty and
 [Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
 model provider, then the semantic layer in ASK Studio.
+
+**And this is where the ninth pod comes up.** Registering your first contract on the
+[Register an OpenAPI contract](../ask-setup/07-contracts.md) page gives the MCP server the thing it
+has been waiting for since Step 5. It picks them up within a minute and goes Ready on its own, with
+no restart. If you are not using SAP actions at all, leave it unready or install with
+`mcpServer.enabled=false`.
 
 > **Leave port 80 open even when everything is served over 443.** It is where Let's Encrypt
 > answers the challenge, at issue and again at every renewal. Close it and the certificate expires
@@ -417,6 +441,15 @@ told the same address unless `auth.jwksUrl` is set explicitly.
 **The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses to
 boot when the semantic-layer paths are empty or do not point at a real directory. It also refuses
 an unrecognised `platform.environment`, which the chart now stops at render time.
+
+**Keycloak crash-loops and the log says `invalidPasswordMinDigitsMessage`.** The realm enforces
+`length(8) and digits(1) and upperCase(1)` **while importing**, not at first sign-in, so an initial
+password that breaks it does not produce a user who must pick a better one: it aborts the import
+and takes the server down with it. The message arrives about twenty lines into a Quarkus startup
+log, with nothing naming the argument that caused it. The cause is `--password` back in
+[Step 3](#step-3-build-the-realm-for-those-addresses), and the fix is a new realm Secret built with
+a compliant password. `make_realm_import.py` checks this before writing the file, so this only
+appears on a realm assembled some other way.
 
 **A volume sits in `Pending` and it is usually fine.** Do not read `Pending` from
 `kubectl get pvc` as a failure. The default StorageClass on AKS, and on most managed clusters, is
