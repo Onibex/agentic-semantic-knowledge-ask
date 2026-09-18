@@ -336,9 +336,13 @@ problem.
 
 | Status | What it means |
 |---|---|
-| `0/1 Running` on the MCP server, no contracts saved yet | The expected end state of a clean install. Leave it |
+| `0/1 Running` on the MCP server, **0 restarts**, no contracts saved yet | The expected end state of a clean install. Leave it |
 | `0/1 Running` on the MCP server, contracts saved | Now it is worth reading: the admin API is unreachable from it, or the ingest key does not match |
+| `0/1 Running` with the **restart count climbing** | Not the wait. A waiting MCP server does not restart, because it has no liveness probe for exactly this reason. Read the log |
 | `CrashLoopBackOff` anywhere | A defect. The container died; waiting will not fix it. Read the log of the run that failed |
+
+The restart column is the one to watch. Unready and patient looks almost identical to unready and
+being killed, and the number is the only thing that separates them at a glance.
 
 ```bash
 kubectl -n onibex-ask logs <pod> --previous
