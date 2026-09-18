@@ -14,12 +14,21 @@
         --host setup=https://setup.example.com \
         --out /tmp/realm.json
 
-Two things stand between the realm committed here and one that can face a
-network, and both fail in ways that point somewhere else:
+Three things stand between the realm committed here and one that can face a
+network, and each fails in a way that points somewhere else:
 
 **The passwords.** `keycloak-realm-config.json` is a local demo and its users
 carry a password that is published on GitHub. Deploying it unchanged puts that
 password on whatever address the platform ends up answering.
+
+**The client secrets, which are the ones people miss.** Three clients are
+confidential and carry their secret in cleartext in that same committed file.
+`kafka-ingest` is the one that matters: it has `serviceAccountsEnabled`, and its
+service account holds the `ask-admin` realm role. Nothing distinguishes a
+service-account token from a person's, so that secret plus a reachable Keycloak
+is the whole administrative API, with no user and no password in between.
+Rotating the user passwords and leaving these alone closes the door people walk
+through and leaves the one machines walk through wide open.
 
 **The redirect URIs.** They list `localhost` ports, which is right for a port
 forward and wrong for anything else. A missing one does not degrade the login,
@@ -46,6 +55,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import secrets
 import sys
 from pathlib import Path
 
@@ -98,11 +108,22 @@ def main() -> int:
         client["redirectUris"] = sorted(set(client.get("redirectUris", [])) | {f"{origin}/*"})
         client["webOrigins"] = sorted(set(client.get("webOrigins", [])) | {origin})
 
+    # Confidential clients. The committed secret is a demo value, so every one
+    # of them is replaced whether or not this deployment uses that client: an
+    # unused client with a published secret is still a way in.
+    rotated: dict[str, str] = {}
+    for client in realm.get("clients", []):
+        if not client.get("secret"):
+            continue
+        client["secret"] = secrets.token_urlsafe(32)
+        rotated[client["clientId"]] = client["secret"]
+
     changed = []
     for user in realm.get("users", []):
         credentials = user.get("credentials") or []
         if not credentials:
-            # A service account has no password to set.
+            # A service account has no password. It has a client secret, which
+            # is rotated above; this branch is not the place to look for it.
             continue
         for credential in credentials:
             if credential.get("type") == "password":
@@ -120,6 +141,14 @@ def main() -> int:
     for client in realm.get("clients", []):
         if client.get("clientId") in origins.values() or client.get("clientId") in CLIENTS.values():
             print(f"  {client['clientId']}: {', '.join(client.get('redirectUris', []))}")
+
+    if rotated:
+        print("\nNew client secrets. This is the only time they are shown, and they are")
+        print("not recoverable from the realm file once you delete it. Anything that")
+        print("authenticates as one of these clients needs the new value:")
+        for client_id, value in rotated.items():
+            print(f"  {client_id}: {value}")
+        print("\n  kafka-ingest is the Kafka Connect HTTP Sink connector's oauth2.client.secret.")
     return 0
 
 

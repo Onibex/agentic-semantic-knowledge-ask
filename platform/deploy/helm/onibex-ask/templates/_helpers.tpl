@@ -239,6 +239,14 @@ to diagnose than a failed render.
 {{- fail "secrets.create is true but secrets.encryptionKey is empty. Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\". It must stay byte-identical across upgrades or every stored secret becomes unreadable." -}}
 {{- end -}}
 
+{{- /* Only reachable when the chart owns the Secret. With secrets.existingSecret
+       the chart cannot see inside it, so a missing ingest key surfaces as the
+       MCP server crash-looping instead. That is why the runbook creates all five
+       keys and prints their lengths rather than relying on this. */ -}}
+{{- if and .Values.secrets.create .Values.mcpServer.enabled (not .Values.secrets.ingestApiKey) -}}
+{{- fail "mcpServer.enabled is true but secrets.ingestApiKey is empty. The MCP server sends that key to the admin API to download its API contracts at boot, and a server with no contracts has no tools to offer, so it refuses to start: the pod lands in CrashLoopBackOff naming ASK_INGEST_API_KEY. Generate one with `openssl rand -hex 32`, or set mcpServer.enabled=false if you do not need SAP actions." -}}
+{{- end -}}
+
 {{- if and .Values.keycloak.enabled .Values.keycloak.production (not .Values.keycloak.database.host) -}}
 {{- fail "keycloak.production is true but keycloak.database.host is empty. Production mode needs a real database; `start-dev` keeps state in an embedded file that does not survive a pod restart. Either point at a managed PostgreSQL or set keycloak.production=false and accept what that means." -}}
 {{- end -}}

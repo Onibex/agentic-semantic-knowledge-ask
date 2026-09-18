@@ -131,14 +131,22 @@ secrets:
   opensearchUser: "admin"
   opensearchPassword: ""
   keycloakAdminPassword: ""
-  # Machine-to-machine callers of /v1/ingest/*: Kafka Connect, webhooks, and
-  # the MCP server fetching its API contracts at boot. Generate with
+  # How the MCP server authenticates to the admin API. Generate with
   # `openssl rand -hex 32`.
   #
-  # Leaving it out is not neutral. The admin API answers every /v1/ingest/*
-  # request with 503 "Ingest API key not configured" (chosen over 401 so a
-  # retrying producer keeps trying until the secret appears), and the MCP
-  # server refuses to boot at all, naming the variable.
+  # Named after /v1/ingest/* because that is where the mechanism started, but
+  # do not read the name as "only needed if you ingest". The MCP server sends
+  # it on two calls that have nothing to do with ingestion: the API contracts
+  # it downloads at boot, and the SAP connection it re-reads every minute.
+  #
+  # So with mcpServer.enabled, this is REQUIRED and its absence is fatal:
+  # `fetch-contracts.js` declares it mandatory, and a server with no contracts
+  # has no tools to offer, so it refuses to start rather than come up empty.
+  # The symptom is CrashLoopBackOff naming the variable.
+  #
+  # The admin API is the softer half: without it, every /v1/ingest/* request
+  # gets 503 "Ingest API key not configured", chosen over 401 so a retrying
+  # producer keeps trying until the secret appears.
   ingestApiKey: ""
 
   # Key names inside the Secret. Override only to adopt a Secret that already
@@ -522,8 +530,11 @@ gateway:
     #          visitor gets a browser warning until they accept it once. It is
     #          still a secure context, so the login works.
     mode: acme
-    # Where expiry warnings go. Let's Encrypt wants one; leave it empty and you
-    # simply do not get told before a renewal stops working.
+    # Where expiry warnings go. Optional, and the render does not stop without
+    # it, but be clear about what empty costs: automatic renewal is the only
+    # thing keeping these certificates alive, and this address is the ONLY
+    # notice you get if it ever stops working. Without it the first sign is the
+    # site going untrusted on day 90. Use a team alias, not a person.
     email: ""
 
   # Certificates live here. An emptyDir loses them on every restart, and Let's
