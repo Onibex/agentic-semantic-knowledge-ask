@@ -107,12 +107,26 @@ spec:
             # against the admin API, so a slow admin API start must not turn
             # into a restart loop here.
             failureThreshold: 30
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 60
-            periodSeconds: 30
+          # NO livenessProbe, and it is not an oversight.
+          #
+          # This container does not serve HTTP until it has contracts, because
+          # start.sh blocks on fetch-contracts.js and only then execs the
+          # server. On a fresh install there are no contracts until somebody
+          # saves them in ASK Setup, so that wait is unbounded by design: it is
+          # waiting on a person, not on a machine.
+          #
+          # A liveness probe cannot express that. The one that used to be here
+          # allowed 60s plus three 30s failures and then killed the container,
+          # so every install that had not configured contracts yet sat in a
+          # kill-and-restart cycle every two and a half minutes, resetting the
+          # fetch backoff each time. Measured on AKS: 15 restarts in 62 minutes,
+          # exit 137. The readiness probe above had a comment promising exactly
+          # what this probe then did.
+          #
+          # Readiness already does the part that matters: an unready pod is out
+          # of the Service and takes no traffic. Restarting a process that is
+          # deliberately not serving does not fix anything, it only hides that
+          # it is waiting.
 {{- end }}
 {{- if .Values.teamsBot.enabled }}
 ---

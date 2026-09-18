@@ -8,7 +8,7 @@
 
 """Build a deployable Keycloak realm from the local-demo one in this repository.
 
-    python scripts/make_realm_import.py --password 'Chosen.Initial.Password' \
+    python scripts/make_realm_import.py --password 'Chosen.Initial.Password1' \
         --host studio=https://studio.example.com \
         --host chat=https://chat.example.com \
         --host setup=https://setup.example.com \
@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import secrets
 import sys
 from pathlib import Path
@@ -64,6 +65,39 @@ SOURCE = REPO / "packages" / "ask-admin-api" / "keycloak-realm-config.json"
 
 # The app name used on the command line, and the client id it configures.
 CLIENTS = {"studio": "ask-studio", "chat": "ask-chat", "setup": "ask-setup"}
+
+# Keycloak policy name -> (what it counts, how to say it). Read from the realm
+# rather than restated here, so changing the policy in the realm changes what
+# this checks and there is no second copy to drift.
+_POLICY_RULES = {
+    "length": (lambda p: len(p), "characters"),
+    "digits": (lambda p: sum(c.isdigit() for c in p), "digits"),
+    "upperCase": (lambda p: sum(c.isupper() for c in p), "upper-case letters"),
+    "lowerCase": (lambda p: sum(c.islower() for c in p), "lower-case letters"),
+    "specialChars": (lambda p: sum(not c.isalnum() for c in p), "special characters"),
+}
+
+
+def check_password_policy(password: str, policy: str) -> list[str]:
+    """Return one line per rule the password fails, empty if it satisfies them all.
+
+    Keycloak applies the realm's own ``passwordPolicy`` to the passwords inside
+    an import file, and it applies it at IMPORT time. A password that violates
+    it does not produce a user who must pick a better one: it aborts the import
+    and the server crash-loops, which is a long way from the argument that
+    caused it. Rules this does not understand are ignored rather than guessed
+    at, because a false rejection here is worse than the check being partial.
+    """
+    violations: list[str] = []
+    for rule in re.finditer(r"(\w+)\((\d+)\)", policy or ""):
+        name, wanted = rule.group(1), int(rule.group(2))
+        known = _POLICY_RULES.get(name)
+        if known is None:
+            continue
+        count, noun = known[0](password), known[1]
+        if count < wanted:
+            violations.append(f"{name}({wanted}): needs {wanted} {noun}, has {count}")
+    return violations
 
 
 def main() -> int:
@@ -89,6 +123,21 @@ def main() -> int:
         print("The initial password is shared until each user changes it, so keep it long.")
         return 1
 
+    realm = json.loads(args.source.read_text(encoding="utf-8"))
+
+    violations = check_password_policy(args.password, realm.get("passwordPolicy") or "")
+    if violations:
+        print("The initial password does not satisfy the realm's own password policy:")
+        for violation in violations:
+            print(f"  {violation}")
+        print(f"\nThe policy is: {realm.get('passwordPolicy')}")
+        print(
+            "\nKeycloak enforces this while IMPORTING the realm, not at first sign-in, so it\n"
+            "would abort the import and crash-loop with invalidPasswordMinDigitsMessage or a\n"
+            "sibling of it, twenty lines into a Quarkus startup log."
+        )
+        return 1
+
     origins: dict[str, str] = {}
     for entry in args.host:
         app, _, origin = entry.partition("=")
@@ -96,8 +145,6 @@ def main() -> int:
             print(f"--host wants APP=ORIGIN with APP one of {', '.join(CLIENTS)}, got {entry!r}")
             return 1
         origins[CLIENTS[app]] = origin.rstrip("/")
-
-    realm = json.loads(args.source.read_text(encoding="utf-8"))
 
     for client in realm.get("clients", []):
         origin = origins.get(client.get("clientId"))
