@@ -19,9 +19,9 @@ here relicenses them. See [`../THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.m
 
 SPDX (for SBOMs): LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
 
-================================================================================
-PolyForm Strict License 1.0.0
-================================================================================
+---
+
+# PolyForm Strict License 1.0.0
 
 <https://polyformproject.org/licenses/strict/1.0.0>
 
@@ -81,9 +81,9 @@ The **licensor** is the individual or entity offering these terms, and the **sof
 
 **Use** means anything you do with the software requiring one of your licenses.
 
-================================================================================
-PolyForm Free Trial License 1.0.0
-================================================================================
+---
+
+# PolyForm Free Trial License 1.0.0
 
 <https://polyformproject.org/licenses/free-trial/1.0.0>
 

@@ -71,7 +71,11 @@ TERMS_OK = re.compile(r"<!--\s*terms-ok\b")
 # is exactly as wrong in a prompt as it is in a manual.
 NOT_OUR_PROSE = (
     # PolyForm's own words. We license under this text; we do not edit it.
+    # Both tracks carry the same body, so both are exempt. `definition/` only
+    # reaches this list because the file is named `.md`; while it was named
+    # `LICENSE` it was never scanned, and the exemption was easy to forget.
     "platform/LICENSE.md",
+    "definition/LICENSE.md",
     # Instructions about the code, where the code's own names are the point.
     "platform/CLAUDE.md",
     # The standards handed to the model at enrichment time. Rewording these

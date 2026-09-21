@@ -103,9 +103,9 @@ relicenses them. The Onibex license applies only to Onibex's own material in
 this repository, the code under the `ask-*` packages/SPAs and the ASK
 specification under `definition/`.
 
-================================================================================
-Apache License 2.0, full text (applies to the Apache-2.0-licensed components above)
-================================================================================
+---
+
+# Apache License 2.0, full text (applies to the Apache-2.0-licensed components above)
 
 
                                  Apache License

@@ -105,9 +105,11 @@ agent picks between them. Where this manual and that contract disagree, the cont
 ## License
 
 The Onibex Agentic Semantic Knowledge Platform is source-available and dual-licensed. See
-[`LICENSE.md`](LICENSE.md): **PolyForm Strict License 1.0.0** (noncommercial use, research,
-evaluation, and personal study, indefinitely) or **PolyForm Free Trial License 1.0.0**
-(evaluate for your business for up to 32 consecutive calendar days, for example via
+[`LICENSE.md`](LICENSE.md):
+**[PolyForm Strict License 1.0.0](https://polyformproject.org/licenses/strict/1.0.0)**
+(noncommercial use, research, evaluation, and personal study, indefinitely) or
+**[PolyForm Free Trial License 1.0.0](https://polyformproject.org/licenses/free-trial/1.0.0)**
+(evaluate for your business for less than 32 consecutive calendar days, for example via
 `docker compose up`), at your option. Production or any other commercial use requires a
 commercial license from [Onibex](https://onibex.com). See
 [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md).

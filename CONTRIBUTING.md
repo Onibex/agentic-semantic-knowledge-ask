@@ -131,7 +131,7 @@ Do not open a public issue for a vulnerability. See [`SECURITY.md`](SECURITY.md)
 
 By submitting a contribution you confirm that it is yours to give, and you grant
 Onibex, LLC permission to include it in this repository and distribute it under the
-terms of the applicable licence, [`definition/LICENSE`](definition/LICENSE) or
+terms of the applicable licence, [`definition/LICENSE.md`](definition/LICENSE.md) or
 [`platform/LICENSE.md`](platform/LICENSE.md).
 
 Tooling you build *around* the specification is yours. The licence covers this
