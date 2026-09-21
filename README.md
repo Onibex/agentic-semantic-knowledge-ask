@@ -31,6 +31,21 @@ SQL in your database's own dialect, runs it, and answers.
 
 ---
 
+## Authored in ASK Studio, asked in ASK Chat
+
+That answer was possible because somebody had already written down what *open sales order* and
+*stock* mean. Authoring is the other half of the product, and it happens in
+**[ASK Studio](platform/docs/ask-studio/README.md)**: the workspaces and business domains that
+scope a question, the Data Products that answer it, and the publish step that makes them
+queryable.
+
+![ASK Studio: a business domain with its Data Products, then the domain canvas showing the declared relationships between them](platform/docs/images/ask-studio-authoring.gif)
+
+> The relationships on that canvas are **declared**, not inferred. That is what lets the join
+> behind the answer above be computed by cost rather than written by the model.
+
+---
+
 ## Built around two halves
 
 | | What it is |
@@ -190,14 +205,16 @@ hidden.
 
 ## License, contributing and support
 
-**Source-available, not open source.** Both tracks are licensed under **PolyForm Strict 1.0.0
-OR PolyForm Free Trial 1.0.0**, at your option: noncommercial use, research, evaluation and
-personal study are permitted indefinitely under Strict, or you can evaluate the software for
-your business for up to **32 days** under Free Trial, for example via `docker compose up`.
-Production or any other commercial use requires a commercial license from
-[Onibex](https://onibex.com).
+**Source-available, not open source.** Both tracks are licensed under
+**[PolyForm Strict 1.0.0](https://polyformproject.org/licenses/strict/1.0.0)** OR
+**[PolyForm Free Trial 1.0.0](https://polyformproject.org/licenses/free-trial/1.0.0)**, at your
+option: noncommercial use, research, evaluation and personal study are permitted indefinitely
+under Strict, or you can evaluate the software for your business for **less than 32 consecutive
+calendar days** under Free Trial, for example via `docker compose up`. Production or any other
+commercial use requires a commercial license from [Onibex](https://onibex.com).
 
-- [`LICENSE`](LICENSE) is the authoritative map, with [`definition/LICENSE`](definition/LICENSE)
+- [`LICENSE`](LICENSE) is the authoritative map, with
+  [`definition/LICENSE.md`](definition/LICENSE.md)
   and [`platform/LICENSE.md`](platform/LICENSE.md) per track, and
   [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md) for production use.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md). The two tracks, how a specification change is handled

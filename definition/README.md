@@ -8,7 +8,7 @@
 **[How it compares](#how-ask-compares)** · **[Versioning](#versioning-and-governance)**
 
 [![Spec: ask-spec 1.0](https://img.shields.io/badge/spec-ask--spec%201.0-e8a838.svg)](#versioning-and-governance)
-[![Source-available: PolyForm Strict or Free Trial](https://img.shields.io/badge/licence-PolyForm%20Strict%20%7C%20Free%20Trial-6f42c1.svg)](LICENSE)
+[![Source-available: PolyForm Strict or Free Trial](https://img.shields.io/badge/licence-PolyForm%20Strict%20%7C%20Free%20Trial-6f42c1.svg)](LICENSE.md)
 
 > **New here?** The [repository overview](../README.md) has the big picture, and the
 > [Onibex Agentic Semantic Knowledge Platform manual](../platform/docs/README.md) shows this
@@ -180,8 +180,10 @@ coverage come as PRs. [`CONTRIBUTING.md`](../CONTRIBUTING.md) has the rest, incl
 specification change is handled differently from a platform one. Tooling you build *around* the
 contract is yours: the licence covers this repository's material, not what you write against it.
 
-**Licence.** Source-available and dual-licensed under **PolyForm Strict 1.0.0 OR PolyForm Free
-Trial 1.0.0**, at your option. See [`LICENSE`](LICENSE) and
+**Licence.** Source-available and dual-licensed under
+**[PolyForm Strict 1.0.0](https://polyformproject.org/licenses/strict/1.0.0)** OR
+**[PolyForm Free Trial 1.0.0](https://polyformproject.org/licenses/free-trial/1.0.0)**, at your
+option. See [`LICENSE.md`](LICENSE.md) and
 [`../COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md). To cite ASK, the repository ships a
 [`CITATION.cff`](../CITATION.cff) that GitHub renders into APA and BibTeX.
 
