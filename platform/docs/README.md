@@ -77,7 +77,10 @@ required; the rest are optional or read-only.
 - [Local development](runbooks/local-development.md). Running the services natively instead of in Docker
 - [Orchestrator troubleshooting](runbooks/orchestrator-troubleshooting.md). On-call diagnosis for the chat backend
 - [Secret scanning and credential rotation](runbooks/secret-scanning.md). Keeping credentials out of the repository, and what to do when one gets in
-- [Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md). One chart for Azure AKS, AWS EKS and SAP BTP Kyma
+- [Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md). One chart for every cluster; start here and it sends you to your cloud
+- [Deploy ASK on AWS EKS](runbooks/kubernetes-deploy-aws-eks.md). The whole procedure for Amazon EKS, top to bottom
+- [Deploy ASK on Azure AKS](runbooks/kubernetes-deploy-azure-aks.md). The whole procedure for Azure AKS, top to bottom
+- [Kubernetes reference](runbooks/kubernetes-reference.md). The chart, the failures worth knowing in advance, and the uninstall
 
 ### [Reference](reference/README.md)
 - [Glossary](reference/glossary.md)

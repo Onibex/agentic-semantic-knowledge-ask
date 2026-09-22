@@ -1,14 +1,38 @@
 Onibex ASK {{ .Chart.AppVersion }} is installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
 
-Nothing is exposed outside the cluster. This chart renders no Ingress, no load
-balancer and no cloud annotation, on purpose: that belongs in a per-target
-values file. Reach the apps with port-forward until one exists.
+{{- if .Values.gateway.enabled }}
+
+The gateway is on, so one Service per published hostname is asking the cloud for
+a public address. Read them back; an address can take a minute to answer after
+it appears, while the load balancer's health check passes for the first time.
+
+  kubectl -n {{ .Release.Namespace }} get svc -l app.kubernetes.io/component=gateway \
+    -o custom-columns='SERVICE:.metadata.name,IP:.status.loadBalancer.ingress[0].ip,HOSTNAME:.status.loadBalancer.ingress[0].hostname'
+
+Published:
+{{- range $app, $host := .Values.gateway.hosts }}
+{{- if $host }}
+  {{ printf "%-7s" $app }} https://{{ $host }}
+{{- end }}
+{{- end }}
+{{- if eq .Values.gateway.tls.mode "internal" }}
+
+Certificates are signed by Caddy itself, so every browser warns once per
+hostname. That is expected. Let's Encrypt needs a name it can issue for, which
+a cloud load balancer hostname is not.
+{{- end }}
+{{- else }}
+
+Nothing is exposed outside the cluster: gateway.enabled is false, so this render
+carries no load balancer and no public hostname. Reach the apps with port-forward
+until it is on.
 
   kubectl -n {{ .Release.Namespace }} port-forward svc/ask-studio 5173:80
   kubectl -n {{ .Release.Namespace }} port-forward svc/ask-chat 5174:80
   kubectl -n {{ .Release.Namespace }} port-forward svc/ask-setup 5175:80
 {{- if .Values.keycloak.enabled }}
   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "onibex-ask.fullname" . }}-keycloak 8180:8080
+{{- end }}
 {{- end }}
 
 Watch it come up:
@@ -31,6 +55,28 @@ WARNING: Keycloak is running start-dev, which is explicitly not a production
 mode and keeps its state in an embedded file inside the pod. Every user, client
 and realm change is lost when the pod is replaced. Set keycloak.production=true
 with a real database before anyone depends on this.
+{{- end }}
+{{- if and .Values.keycloak.enabled (not .Values.keycloak.realmImportSecret) (not .Values.keycloak.realmImportConfigMap) }}
+
+WARNING: Keycloak is starting with NO realm to import, and this is the last
+moment it is cheap to fix. A realm is read on a first boot only, so this pod is
+about to write an empty datastore to its volume and adding
+keycloak.realmImportSecret afterwards will change nothing: the file is mounted
+and ignored, with no error anywhere. Every sign-in then fails with "Realm does
+not exist" while this pod reports perfectly healthy.
+
+Build the realm now, before this pod finishes starting:
+
+  python scripts/make_realm_import.py --password '<one with 8+ chars, a digit and a capital>' \
+    --host studio=https://<studio host> --host chat=https://<chat host> \
+    --host setup=https://<setup host> --out ./realm.json
+  kubectl -n {{ .Release.Namespace }} create secret generic ask-realm \
+    --from-file=ask-platform-realm.json=./realm.json && rm ./realm.json
+
+If it already wrote one, the volume has to go:
+
+  kubectl -n {{ .Release.Namespace }} scale deploy {{ include "onibex-ask.fullname" . }}-keycloak --replicas=0
+  kubectl -n {{ .Release.Namespace }} delete pvc {{ include "onibex-ask.fullname" . }}-keycloak
 {{- end }}
 {{- if .Values.secrets.create }}
 

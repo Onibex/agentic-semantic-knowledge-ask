@@ -9,8 +9,15 @@ service logs.
   chat backend.
 - [Secret scanning and credential rotation](secret-scanning.md). Keeping credentials out of the
   repository, and what to do the day one gets in anyway.
-- [Deploy on Kubernetes with Helm](kubernetes-deploy.md). One chart for Azure AKS, AWS EKS and
-  SAP BTP Kyma, the values it needs, and what to look at when a pod does not start.
+- [Deploy on Kubernetes with Helm](kubernetes-deploy.md). One chart for every cluster. Start here
+  and it sends you to the page for your cloud, because only the first two steps differ.
+  - [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md). The whole procedure for Amazon EKS,
+    top to bottom, including the two things a stock cluster is missing.
+  - [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md). The whole procedure for Azure AKS,
+    top to bottom, with the free public hostnames and their certificates.
+  - [Kubernetes reference](kubernetes-reference.md). What the chart is and is not, the capacity
+    tables, the failures worth knowing in advance, and the uninstall. Read it when something
+    stops, not to install.
 
 To install the platform rather than develop on it, see
 [Install and run the platform](../01-installation.md).
