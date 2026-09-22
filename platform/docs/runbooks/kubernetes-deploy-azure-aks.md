@@ -193,19 +193,54 @@ not exist**, so an exit-code test reports every label as taken.
 
 ### If you have a domain of your own
 
-The production case, and the ordering matters more than the commands. A certificate is issued by
-answering a challenge **at the name**, so the DNS record has to exist and resolve before the
-gateway first starts. In the other order nothing errors loudly: the certificate is simply never
-issued, and the site keeps answering on plain http.
+The production case. The free Azure names above already give you trusted certificates, so a domain
+here buys readability and permanence rather than removing a warning.
+
+<!-- shared:domain start -->
+A domain is what removes the browser warning. It also gives people names they can read, and names
+that survive the address behind them being replaced. Six things are needed and none of them are
+ASK:
+
+1. **A domain you control**, with access to edit its DNS records.
+2. **Four names**, one per app plus one for the login: for example `ask`, `chat`, `setup` and
+   `auth` under your domain. They cannot share one. The three apps are built to be served from the
+   root and collide on `/api`, `/assets` and the login callback.
+3. **Port 80 reachable from the internet.** It is where the certificate authority checks the domain
+   is yours, at issue and again at every renewal. Closing it breaks nothing today; it makes the
+   certificate expire quietly ninety days later.
+4. **No `CAA` record that excludes Let's Encrypt.** Corporate domains often carry them, and they
+   block issuance without explaining why. `dig CAA yourdomain.com` shows them; the authority has to
+   be allowed by name.
+5. **An address for expiry warnings**, in `gateway.tls.email`. Renewal is the only thing keeping
+   these certificates alive and that address is the only notice anyone gets if it stops. Use a team
+   alias, not a person.
+6. **The records resolving BEFORE the gateway starts with those names.** A certificate is issued by
+   answering a challenge at the name itself, so in the other order nothing errors loudly: the
+   certificate is simply never issued and the site keeps answering on plain http.
+
+Then it is five values: the four `gateway.hosts`, `auth.publicUrl`, the three `publicUrls`,
+`gateway.tls.mode: acme` and `gateway.tls.email`. Nothing else, and nothing from the cloud: no
+managed certificate service, no second ingress controller, no cert-manager.
+
+**A certificate you already own cannot be used.** `gateway.tls.mode` accepts `acme` or `internal`
+and nothing else, so an organisation with its own authority, or a wildcard it has already paid for,
+has no way in today. It is listed under
+[What is not done yet](kubernetes-reference.md#what-is-not-done-yet).
+<!-- shared:domain end -->
+
+**On AKS the records are `A` records, one per app, each pointing at its own address.** Unlike a
+load balancer hostname on AWS, a `LoadBalancer` Service here yields a static IP, so there is a real
+address to put in the record. There are four of them: the chart renders one Service per published
+hostname, and they share the cluster's single Azure load balancer but not their IPs.
+
+So the order is:
 
 1. Install with `gateway.enabled=true` and read the addresses Azure assigned:
    `kubectl -n onibex-ask get svc`.
-2. Create one `A` record per app, pointing at the matching `EXTERNAL-IP`. On AKS this really is an
-   `A` record to an IP, because a `LoadBalancer` Service here yields a static IP address rather
-   than a name.
+2. Create four `A` records, each pointing at **its own app's** `EXTERNAL-IP`.
 3. Wait until all four resolve from outside the cluster.
-4. Put the four names in `gateway.hosts`, **remove the `azure-dns-label-name` annotations** (they
-   are only for the free Azure names), and upgrade.
+4. Put the four names in `gateway.hosts`, `auth.publicUrl` and `publicUrls`, **remove the
+   `azure-dns-label-name` annotations** (they are only for the free Azure names), and upgrade.
 
 The certificates arrive within a minute or two of the gateway restarting with names that already
 resolve.

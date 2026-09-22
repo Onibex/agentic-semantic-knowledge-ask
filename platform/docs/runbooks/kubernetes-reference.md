@@ -34,12 +34,13 @@ collide in all three places, and an Ingress cannot fix it from outside, because 
 compiled into the JavaScript. Serving one hostname with paths is possible, but it is image work,
 not chart work.
 
-**Four hostnames do not have to mean four load balancers.** The gateway is a single Caddy that
-tells them apart by the `Host` header, so four DNS names pointing at one address work. What forces
-four addresses is having no domain of your own: a cloud-assigned name belongs to one load balancer,
-so four names means four of them. The chart renders one Service per published hostname today, which
-is the shape that fits the no-domain case; collapsing them onto one is a chart change, not a values
-change.
+**Four hostnames mean four load balancers today, and a domain does not change that.** The gateway
+is a single Caddy that tells the hostnames apart by the `Host` header, so in principle four DNS
+names could point at one address. They do not, because **the chart renders one Service per
+published hostname**, and each Service is what makes a cloud allocate an address. That shape came
+from the no-domain case, where a cloud-assigned name belongs to one load balancer and there is no
+choice. Collapsing them onto one is a chart change rather than a values change, and until it
+happens, owning the domain removes the browser warning without removing the bill.
 
 **A realm is imported only on a first boot.** Once `keycloak.persistence` is on, the file is
 ignored on every later start and changes belong in the admin console. To re-import, scale Keycloak
@@ -299,9 +300,17 @@ avoids it. With a self-signed gateway certificate the volume costs nothing to lo
   have predicted. Kyma is expected to turn up more, since it also drags in an IAS tenant and the
   approuter. Its runbook will be written from an install that worked, the same way the other two
   were, rather than guessed in advance.
-- **Four load balancers where one would do.** Covered under
-  [What this chart is](#what-this-chart-is-and-what-it-deliberately-is-not). It only costs money in
-  the no-domain case, which is the case both current runbooks describe.
+- **A certificate you already own cannot be used.** `gateway.tls.mode` takes `acme` or `internal`,
+  so the gateway either asks Let's Encrypt for a certificate or signs one itself. There is no third
+  option, and the two it has both fail the same customer: an organisation with its own certificate
+  authority, or a wildcard it has already bought, or a policy against letting an internal service
+  talk to a public authority at all. That is an ordinary enterprise requirement rather than an edge
+  case. Supporting it means reading a certificate and key from a Secret and pointing Caddy's `tls`
+  directive at them, which is a small change the chart simply does not have yet.
+- **Four load balancers where one would do**, and a domain does not fix it. Covered under
+  [What this chart is](#what-this-chart-is-and-what-it-deliberately-is-not). On AWS that is about
+  73 USD a month against roughly 18 for one, and the gateway already tells the hostnames apart by
+  the `Host` header, so what is missing is only the chart rendering one Service instead of four.
 
 ---
 

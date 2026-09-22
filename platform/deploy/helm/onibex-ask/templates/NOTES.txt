@@ -56,6 +56,14 @@ mode and keeps its state in an embedded file inside the pod. Every user, client
 and realm change is lost when the pod is replaced. Set keycloak.production=true
 with a real database before anyone depends on this.
 {{- end }}
+{{- if and .Values.gateway.enabled (eq .Values.gateway.tls.mode "acme") (not .Values.gateway.tls.email) }}
+
+WARNING: certificates will be requested from a public authority and NOBODY will
+be told when that stops working. gateway.tls.email is empty, and that address is
+the only notice sent if renewal fails. Renewal runs every sixty days; the first
+sign of a problem without it is the site going untrusted on day ninety, to every
+visitor at once. Set gateway.tls.email to a team alias rather than a person.
+{{- end }}
 {{- if and .Values.keycloak.enabled (not .Values.keycloak.realmImportSecret) (not .Values.keycloak.realmImportConfigMap) }}
 
 WARNING: Keycloak is starting with NO realm to import, and this is the last

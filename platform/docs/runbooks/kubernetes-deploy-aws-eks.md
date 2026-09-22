@@ -63,10 +63,12 @@ Worth knowing before you start, because two of these are decisions and not facts
 | Four load balancers | About 18 USD a month each, **about 73 USD in total** |
 | EBS volumes | 33Gi of gp3, under 3 USD a month |
 
-The four load balancers are the part to think about. They are four because a cloud-assigned name
-belongs to one load balancer and the three apps cannot share a hostname. **With a domain of your
-own that becomes one load balancer and four DNS records**, because the gateway already routes by
-`Host` header. See [Step 3](#step-3-decide-the-addresses-people-will-use).
+The four load balancers are the part to think about, and **a domain of your own does not reduce
+them.** They are four because the chart renders one Service per published hostname, and that is
+true whoever owns the names. One would be enough in principle, since the gateway already tells the
+hostnames apart by the `Host` header, but that is a chart change and is listed under
+[What is not done yet](kubernetes-reference.md#what-is-not-done-yet). A domain buys trusted
+certificates and readable names; see [Step 3](#step-3-decide-the-addresses-people-will-use).
 
 ---
 
@@ -251,24 +253,61 @@ Read this whole step before running anything in it.
 
 ### If you have a domain of your own, use it
 
-This is the better answer and it is also the cheaper one. Four names on your own domain are four
-DNS records pointing at **one** load balancer, because the gateway routes by `Host` header. You get
-a certificate with no browser warning, names people can read, and names that survive the load
-balancer being replaced.
+<!-- shared:domain start -->
+A domain is what removes the browser warning. It also gives people names they can read, and names
+that survive the address behind them being replaced. Six things are needed and none of them are
+ASK:
 
-**They must be `CNAME` records, not `A` records.** A load balancer has no fixed address to put in
-an `A` record; its addresses change without notice, and `kubectl get svc` prints a hostname in the
-`EXTERNAL-IP` column precisely because there is no IP to print.
+1. **A domain you control**, with access to edit its DNS records.
+2. **Four names**, one per app plus one for the login: for example `ask`, `chat`, `setup` and
+   `auth` under your domain. They cannot share one. The three apps are built to be served from the
+   root and collide on `/api`, `/assets` and the login callback.
+3. **Port 80 reachable from the internet.** It is where the certificate authority checks the domain
+   is yours, at issue and again at every renewal. Closing it breaks nothing today; it makes the
+   certificate expire quietly ninety days later.
+4. **No `CAA` record that excludes Let's Encrypt.** Corporate domains often carry them, and they
+   block issuance without explaining why. `dig CAA yourdomain.com` shows them; the authority has to
+   be allowed by name.
+5. **An address for expiry warnings**, in `gateway.tls.email`. Renewal is the only thing keeping
+   these certificates alive and that address is the only notice anyone gets if it stops. Use a team
+   alias, not a person.
+6. **The records resolving BEFORE the gateway starts with those names.** A certificate is issued by
+   answering a challenge at the name itself, so in the other order nothing errors loudly: the
+   certificate is simply never issued and the site keeps answering on plain http.
 
-Order matters more than the commands. A certificate is issued by answering a challenge **at the
-name**, so the DNS record has to resolve before the gateway first starts. In the other order
-nothing errors loudly: the certificate is simply never issued.
+Then it is five values: the four `gateway.hosts`, `auth.publicUrl`, the three `publicUrls`,
+`gateway.tls.mode: acme` and `gateway.tls.email`. Nothing else, and nothing from the cloud: no
+managed certificate service, no second ingress controller, no cert-manager.
 
-1. Run the first pass below, and read the load balancer hostname it produces.
-2. Create one `CNAME` per app pointing at that hostname.
+**A certificate you already own cannot be used.** `gateway.tls.mode` accepts `acme` or `internal`
+and nothing else, so an organisation with its own authority, or a wildcard it has already paid for,
+has no way in today. It is listed under
+[What is not done yet](kubernetes-reference.md#what-is-not-done-yet).
+<!-- shared:domain end -->
+
+**On EKS the records are `CNAME`s, and there are four, one per app.** A load balancer has no fixed
+address to put in an `A` record; its addresses change without notice, which is why
+`kubectl get svc` prints a hostname in the `EXTERNAL-IP` column instead of an IP.
+
+**Each name points at its own load balancer.** The chart renders one Service per published
+hostname, so four hostnames are four load balancers whether or not you own the domain. Pair them by
+app with the same command the first pass uses.
+
+So the order is:
+
+1. Run the first pass below, and read the four load balancer hostnames it produces.
+2. Create four `CNAME` records, each pointing at **its own app's** hostname.
 3. Wait until all four resolve from outside the cluster.
-4. Put your four names in `gateway.hosts`, set `gateway.tls.mode: acme` and
-   `gateway.tls.email`, and continue from Step 4 with those names.
+4. Put your four names in `gateway.hosts`, `auth.publicUrl` and `publicUrls`, set
+   `gateway.tls.mode: acme` and `gateway.tls.email`, and continue from Step 4 with those names.
+
+The certificates arrive within a minute or two of the gateway restarting with names that already
+resolve.
+
+> **A domain does not reduce the load balancer bill.** It stays at four, about 73 USD a month.
+> Collapsing them onto one is possible in principle, because the gateway already tells the
+> hostnames apart by the `Host` header, but it is a chart change rather than a values change and is
+> listed under [What is not done yet](kubernetes-reference.md#what-is-not-done-yet).
 
 ### If you do not have a domain, this is what you get
 

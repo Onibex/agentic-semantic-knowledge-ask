@@ -90,11 +90,21 @@
 # we own, with the four names as CNAMEs; until there is one, `tls: internal`
 # is the honest setting and every visitor accepts the warning once.
 #
-# COST, and it is worse than Azure. Four Services of type LoadBalancer are four
-# Classic Load Balancers at roughly 18 USD a month each, about 73 USD in total,
-# against 14.60 USD for the four Azure public IPs. With a real domain this
-# collapses to one balancer and four CNAMEs, because Caddy already routes by
-# Host header. The node itself is about 100 USD a month.
+# COST, and it is worse than Azure for a structural reason. Four Services of
+# type LoadBalancer are four Classic Load Balancers at 0.025 USD an hour each,
+# about 73 USD a month, against 14.60 for the four Azure public IPs. The
+# difference is what each cloud charges for: AKS puts every Service on ONE
+# shared load balancer and bills per public IP, while AWS creates a separate
+# load balancer per Service and bills per load balancer.
+#
+# A DOMAIN DOES NOT FIX THIS, and an earlier version of this comment said it
+# did. The chart renders one Service per published hostname whoever owns the
+# names, so a domain buys trusted certificates and readable names and leaves
+# the bill at four. Collapsing them onto one is a chart change; the gateway
+# already tells the hostnames apart by the Host header.
+#
+# The node is about 110 USD a month, the NAT gateway 33, and the EKS control
+# plane about 73. Roughly 293 in total, of which ASK adds about 76.
 # ─────────────────────────────────────────────────────────────────────────────
 
 image:
