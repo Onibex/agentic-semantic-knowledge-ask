@@ -121,7 +121,7 @@ auth:
   # be left empty even on the first pass: the chart refuses to render without
   # it, deliberately, because a Keycloak with no issuer comes up looking
   # healthy and hands out tokens nothing will accept.
-  publicUrl: "https://aa431847954a642a88edf6e8df33d578-1069948234.us-east-2.elb.amazonaws.com"
+  publicUrl: "https://acc256f07ce3f49c288eef919a1b0130-613602124.us-east-2.elb.amazonaws.com"
 
 secrets:
   # Created out of band so no credential passes through this file. FIVE keys,
@@ -168,10 +168,10 @@ gateway:
   # accidentally depend on one), together with `keycloak.enabled=false`. Then
   # read the real names, put them here, and run `helm upgrade`.
   hosts:
-    chat: "ac6dfc0e86c7b4c5faf562c1080db8a5-475372831.us-east-2.elb.amazonaws.com"
-    studio: "aa91e37a16cab445f8d8cc9fbec97168-1702991526.us-east-2.elb.amazonaws.com"
-    setup: "a90b166d483674e908b778f1dccc6106-735606971.us-east-2.elb.amazonaws.com"
-    auth: "aa431847954a642a88edf6e8df33d578-1069948234.us-east-2.elb.amazonaws.com"
+    chat: "a2cdff41293c840218ee9b74bf46c5c4-287809478.us-east-2.elb.amazonaws.com"
+    studio: "a0b06ac23868a4d588b3431d189a135b-1047774046.us-east-2.elb.amazonaws.com"
+    setup: "a3769f04f581049c78d5c6c1dbaf547a-1743330974.us-east-2.elb.amazonaws.com"
+    auth: "acc256f07ce3f49c288eef919a1b0130-613602124.us-east-2.elb.amazonaws.com"
 
   service:
     type: LoadBalancer
@@ -203,9 +203,9 @@ gateway:
 # as above, with the scheme, and https even though the certificate is Caddy's
 # own: an http link here would downgrade the origin and break the login.
 publicUrls:
-  chat: "https://ac6dfc0e86c7b4c5faf562c1080db8a5-475372831.us-east-2.elb.amazonaws.com"
-  studio: "https://aa91e37a16cab445f8d8cc9fbec97168-1702991526.us-east-2.elb.amazonaws.com"
-  setup: "https://a90b166d483674e908b778f1dccc6106-735606971.us-east-2.elb.amazonaws.com"
+  chat: "https://a2cdff41293c840218ee9b74bf46c5c4-287809478.us-east-2.elb.amazonaws.com"
+  studio: "https://a0b06ac23868a4d588b3431d189a135b-1047774046.us-east-2.elb.amazonaws.com"
+  setup: "https://a3769f04f581049c78d5c6c1dbaf547a-1743330974.us-east-2.elb.amazonaws.com"
 
 # ── The sizing ──────────────────────────────────────────────────────────────
 # Real requests, because this node has room. Memory limits stay close to the
