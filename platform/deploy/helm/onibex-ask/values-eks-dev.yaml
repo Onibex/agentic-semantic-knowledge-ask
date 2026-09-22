@@ -63,10 +63,21 @@
 #    public hostname before anything is running, through the DNS label
 #    annotation, so one install is enough there. AWS generates the name from
 #    the load balancer it creates, so the hostname CANNOT be known until the
-#    Services exist. Install once with the placeholders below, read the four
-#    names, put them in, and upgrade. The Services are keyed by app name and
-#    not by hostname, so the second pass rewrites the Caddyfile and restarts
-#    pods; it does NOT create new load balancers.
+#    Services exist.
+#
+#    The first pass runs with `--set keycloak.enabled=false` and placeholder
+#    hostnames. Leaving Keycloak out is not tidiness: a realm is imported on a
+#    FIRST boot only, and the realm cannot be built until these addresses
+#    exist, so a Keycloak that boots now boots without one and no later value
+#    can fix it short of deleting its volume. The gateway starts regardless,
+#    because it resolves its upstreams when a request arrives rather than at
+#    startup.
+#
+#    Then read the four names, put them in, and `helm upgrade` with Keycloak
+#    on. The Services are keyed by app name and not by hostname, so the second
+#    pass rewrites the Caddyfile and restarts pods; it does NOT create new load
+#    balancers. The whole sequence is in the runbook, and was run start to
+#    finish against this cluster on 2026-09-22.
 #
 # WHY THERE IS NO LET'S ENCRYPT HERE
 #
@@ -100,7 +111,7 @@ auth:
   # be left empty even on the first pass: the chart refuses to render without
   # it, deliberately, because a Keycloak with no issuer comes up looking
   # healthy and hands out tokens nothing will accept.
-  publicUrl: "https://af957e8e80fcb4a709b6a08efce6d123-1404430132.us-east-2.elb.amazonaws.com"
+  publicUrl: "https://aa431847954a642a88edf6e8df33d578-1069948234.us-east-2.elb.amazonaws.com"
 
 secrets:
   # Created out of band so no credential passes through this file. FIVE keys,
@@ -141,15 +152,16 @@ gateway:
   # and the upgrade repeated. That is the cost of having no DNS label; a domain
   # we own removes it.
   #
-  # For a first pass on a fresh cluster, replace all four with placeholders
-  # such as `chat.pass-one.invalid` (`.invalid` is reserved by RFC 2606 and can
-  # never resolve, so nothing can accidentally depend on it), install, read the
-  # real names, put them here and run `helm upgrade`.
+  # For a first pass on a fresh cluster, leave these as they are and override
+  # them on the command line with placeholders such as `chat.pass-one.invalid`
+  # (`.invalid` is reserved by RFC 2606 and can never resolve, so nothing can
+  # accidentally depend on one), together with `keycloak.enabled=false`. Then
+  # read the real names, put them here, and run `helm upgrade`.
   hosts:
-    chat: "a9cc68f9c7a4a4ab9a334fc42f175955-74962142.us-east-2.elb.amazonaws.com"
-    studio: "a85e3e91533c6405f84dc850764fd55e-1635691835.us-east-2.elb.amazonaws.com"
-    setup: "a4a8e2381c4a846398e90a7e1d576504-2104987268.us-east-2.elb.amazonaws.com"
-    auth: "af957e8e80fcb4a709b6a08efce6d123-1404430132.us-east-2.elb.amazonaws.com"
+    chat: "ac6dfc0e86c7b4c5faf562c1080db8a5-475372831.us-east-2.elb.amazonaws.com"
+    studio: "aa91e37a16cab445f8d8cc9fbec97168-1702991526.us-east-2.elb.amazonaws.com"
+    setup: "a90b166d483674e908b778f1dccc6106-735606971.us-east-2.elb.amazonaws.com"
+    auth: "aa431847954a642a88edf6e8df33d578-1069948234.us-east-2.elb.amazonaws.com"
 
   service:
     type: LoadBalancer
@@ -181,9 +193,9 @@ gateway:
 # as above, with the scheme, and https even though the certificate is Caddy's
 # own: an http link here would downgrade the origin and break the login.
 publicUrls:
-  chat: "https://a9cc68f9c7a4a4ab9a334fc42f175955-74962142.us-east-2.elb.amazonaws.com"
-  studio: "https://a85e3e91533c6405f84dc850764fd55e-1635691835.us-east-2.elb.amazonaws.com"
-  setup: "https://a4a8e2381c4a846398e90a7e1d576504-2104987268.us-east-2.elb.amazonaws.com"
+  chat: "https://ac6dfc0e86c7b4c5faf562c1080db8a5-475372831.us-east-2.elb.amazonaws.com"
+  studio: "https://aa91e37a16cab445f8d8cc9fbec97168-1702991526.us-east-2.elb.amazonaws.com"
+  setup: "https://a90b166d483674e908b778f1dccc6106-735606971.us-east-2.elb.amazonaws.com"
 
 # ── The sizing ──────────────────────────────────────────────────────────────
 # Real requests, because this node has room. Memory limits stay close to the
