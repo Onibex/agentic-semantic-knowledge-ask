@@ -305,7 +305,9 @@ still do, and two more take their place:**
   assumed: with the leaf alone, a client holding only the root fails with `unable to verify the
   first certificate` while a client that already cached the intermediate says `OK`. The person who
   tested it is usually the second kind, which is why this ships and then fails on everyone else's
-  machine.
+  machine. Done right it needs nothing from the visitor: verified with a real Let's Encrypt
+  certificate on a real public name, the gateway sent the whole chain and a client validated it
+  against its own trust store with no certificate authority supplied by hand.
 - **Renewal becomes a human's job.** `acme` renews every sixty days on its own; this mode renews
   never, and when the certificate expires the site goes untrusted for everyone at once with no
   warning sent to anybody. Replacing it needs a `kubectl rollout restart` of the gateway as well as
