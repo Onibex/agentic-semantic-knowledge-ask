@@ -577,6 +577,30 @@ curl -sk -o /dev/null -w '%{http_code}\n' \
 sign-in will stop after the password has been typed. Rebuild the realm with the right `--host`
 values rather than debugging the browser.
 
+**And then the one that matters most, because the three above can all pass while the platform is
+unusable.** Everything so far tests the sign-in redirect chain, which is the browser talking to
+Keycloak. It says nothing about whether the **backends** accept the token that comes out of it, and
+that is a different path with its own way of failing: the apps load, the login completes, and then
+every screen reports `Token validation failed: no configured issuer accepted the token`.
+
+Take a token and make a real call. The realm's `kafka-ingest` client has a service account, so this
+needs no person and no browser. Its secret is one of the three the realm step printed:
+
+```bash
+TOKEN=$(curl -sk -d client_id=kafka-ingest -d client_secret=<the one from the realm step> \
+  -d grant_type=client_credentials \
+  "https://<auth host>/realms/ask-platform/protocol/openid-connect/token" \
+  | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+kubectl -n onibex-ask port-forward deploy/ask-onibex-ask-admin-api 18081:8081 &
+curl -s -w '\n%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://127.0.0.1:18081/v1/admin/config
+```
+
+`200` with a JSON body is the platform working. `401` here, with a token that Keycloak just issued,
+is the failure described under
+[the failures worth knowing in advance](kubernetes-reference.md#the-failures-worth-knowing-in-advance),
+and the log line that names the cause is one command away.
+
 ---
 
 <!-- shared:signin start -->

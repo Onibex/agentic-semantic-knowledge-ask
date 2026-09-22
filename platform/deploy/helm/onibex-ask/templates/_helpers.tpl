@@ -101,10 +101,30 @@ imagePullSecrets:
 KEYCLOAK_JWKS_URL, which is the variable the validators actually read. An
 earlier manifest published KEYCLOAK_ISSUER instead; nothing reads it, and being
 optional it went unnoticed while every request was rejected.
+
+WHEN KEYCLOAK IS IN THE RELEASE, THE PODS FETCH THE KEYS OVER THE CLUSTER
+NETWORK, not over the public hostname. This is not an optimisation. Deriving it
+from auth.publicUrl sends the backends out through the gateway, and with
+gateway.tls.mode=internal that certificate is signed by Caddy's own authority,
+which no pod trusts. The fetch fails with CERTIFICATE_VERIFY_FAILED, the
+validator ends up with no keys, and EVERY request is answered 401 with "no
+configured issuer accepted the token" while all nine pods report healthy and the
+browser login itself works perfectly. It cost a smoke test to find, because the
+sign-in redirect chain is fine and only the first API call fails.
+
+Nothing is lost by taking the short path: the validator checks the signature and
+the expiry and does NOT check the issuer, so the keys are the same keys whichever
+address they arrive from, and the token still carries the public issuer the
+browser saw.
+
+auth.jwksUrl still overrides, and an identity provider outside the release still
+derives from auth.publicUrl, because there is no in-cluster Service to use.
 */}}
 {{- define "onibex-ask.jwksUrl" -}}
 {{- if .Values.auth.jwksUrl -}}
 {{- .Values.auth.jwksUrl -}}
+{{- else if .Values.keycloak.enabled -}}
+{{- printf "http://%s-keycloak:8080/realms/%s/protocol/openid-connect/certs" (include "onibex-ask.fullname" .) .Values.auth.realm -}}
 {{- else -}}
 {{- printf "%s/realms/%s/protocol/openid-connect/certs" (trimSuffix "/" .Values.auth.publicUrl) .Values.auth.realm -}}
 {{- end -}}

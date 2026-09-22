@@ -137,10 +137,33 @@ kubectl -n onibex-ask delete pvc ask-onibex-ask-keycloak
 helm upgrade ask deploy/helm/onibex-ask --namespace onibex-ask --values <your values file>
 ```
 
-**Every request is rejected while the pods report healthy.** The issuer does not match. Compare
-`auth.publicUrl` against the issuer in a token, and remember that the browser and the pods must be
-told the same address unless `auth.jwksUrl` is set explicitly. The issuer is readable without
-signing in:
+**The login works, and then every API call returns 401 saying "no configured issuer accepted the
+token".** Two different causes, and the log tells them apart in one line.
+
+The first is the one that cost a smoke test. **The backends could not fetch the signing keys**, so
+the validator has nothing to check the signature with and rejects everything. It looks like an
+issuer problem and is a network one:
+
+```bash
+kubectl -n onibex-ask logs deploy/<release>-admin-api | grep -i "JWKS fetch failed"
+```
+
+`CERTIFICATE_VERIFY_FAILED ... unable to get local issuer certificate` means the pods were sent to
+fetch the keys over the public hostname, and with `gateway.tls.mode: internal` that certificate is
+signed by Caddy's own authority, which no pod trusts. The chart now derives `KEYCLOAK_JWKS_URL`
+from the in-cluster Service whenever Keycloak is in the release, so this is fixed rather than
+configured around; on an older release, set it by hand:
+
+```bash
+--set auth.jwksUrl=http://<release>-keycloak:8080/realms/ask-platform/protocol/openid-connect/certs
+```
+
+Nothing is weakened by the short path: the validator checks signature and expiry and does **not**
+check the issuer, so the token still carries the public issuer the browser saw.
+
+The second cause is a genuine issuer mismatch, and then the log carries no JWKS error at all.
+Compare `auth.publicUrl` against the issuer Keycloak advertises, which is readable without signing
+in:
 
 ```bash
 curl -sk https://<your auth host>/realms/ask-platform/.well-known/openid-configuration
