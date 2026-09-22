@@ -347,6 +347,35 @@ avoids it. With a self-signed gateway certificate the volume costs nothing to lo
 
 ---
 
+## On Linux, including from a jump box
+
+Nothing in the runbooks needs a desktop. `kubectl`, `helm`, `aws` or `az`, `python3`, `openssl` and
+`curl` are the whole toolchain, and a small EC2 or VM with a kubeconfig runs them exactly as
+written. That is often the better place to run them from: the cluster is usually reachable and the
+credentials do not travel.
+
+Two things to know, and they are both about the machine rather than about ASK.
+
+**The command is `python3`.** Amazon Linux 2023 and Ubuntu ship Python as `python3` and provide no
+plain `python`, so every `python ...` line in the runbooks needs the 3 or an alias package
+(`python-is-python3` on Debian and Ubuntu). Nothing in the runbooks imports anything outside the
+standard library, so there is nothing to `pip install`; the one command that used to need
+`cryptography` was replaced with an `openssl` equivalent for exactly this reason.
+
+**These pages were validated under Git Bash on Windows, which is close to a Linux shell and not
+identical to one.** Everywhere the two differ, Linux is the simpler of the two:
+
+| | Git Bash | Linux |
+|---|---|---|
+| A path like `/tmp/realm.json` passed to a native program | Rewritten by MSYS into a Windows path, so two commands can disagree about where a file is. This is why the realm step uses a relative path | Passed through untouched |
+| `kubectl exec ... -- ls /etc/caddy` | The path is rewritten before it reaches the container, and the listing fails inside a directory that does exist | Works |
+| Process substitution, `<(...)`, with some native tools | Unreliable | Works |
+
+So a runbook that passes on Git Bash passes on Linux. The reverse is not guaranteed, which is why
+the validation runs happen on the awkward one.
+
+---
+
 ## On Windows and PowerShell
 
 Every `kubectl` and `helm` line in the runbooks runs unchanged. What differs is the shell around

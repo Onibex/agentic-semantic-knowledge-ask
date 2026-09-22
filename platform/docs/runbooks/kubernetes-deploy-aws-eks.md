@@ -39,7 +39,7 @@ compiled here. (If you do need your own build, see
 | `aws` | 2 | Getting a kubeconfig, and tagging subnets |
 | `kubectl` | Within one minor of the cluster, either way. Check with `kubectl version` | Everything |
 | `helm` | 3 or later | Installing the chart |
-| `python` | 3.10 or later | The encryption key and the realm file |
+| `python` | 3.10 or later | The realm file. **On most Linux boxes the command is `python3`**, and plain `python` does not exist: Amazon Linux 2023 and Ubuntu both ship it that way. Substitute it everywhere below, or install the alias package. Nothing here needs a library outside the standard one |
 | `openssl` | any | Generating passwords. On Windows it ships with Git for Windows |
 | `curl` | any | The checks at the end. **Not PowerShell 5.1's `curl`**, which is an alias for `Invoke-WebRequest` |
 
@@ -207,12 +207,20 @@ look like the Secret failing:
 
 ```bash
 kubectl -n onibex-ask create secret generic ask-platform-secret \
-  --from-literal=encryption-key="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+  --from-literal=encryption-key="$(openssl rand -base64 32 | tr '+/' '-_')" \
   --from-literal=opensearch-user=admin \
   --from-literal=opensearch-password="$(openssl rand -base64 24)" \
   --from-literal=keycloak-admin-password="$(openssl rand -base64 24)" \
   --from-literal=ingest-api-key="$(openssl rand -hex 32)"
 ```
+
+> **The encryption key is generated with `openssl` rather than Python on purpose.** A Fernet key is
+> nothing more than url-safe base64 of 32 random bytes, which is what that line produces: 44
+> characters, and `Fernet()` accepts it. The obvious alternative,
+> `python -c 'from cryptography.fernet import Fernet; ...'`, needs `cryptography`, which is **not**
+> in Python's standard library and is not on a fresh cloud box, so it fails with
+> `ModuleNotFoundError` at the one step whose output you cannot inspect afterwards. Use it if you
+> prefer and already have the package; the two produce the same thing.
 
 **Check what you actually wrote before moving on.** Every value above comes from a command
 substitution, and a substitution that fails silently produces a Secret that looks fine and holds

@@ -121,8 +121,15 @@ secrets:
   # Secrets in the namespace.
   create: false
 
-  # A 44-character urlsafe-base64 Fernet key.
-  #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  # A 44-character urlsafe-base64 Fernet key, which is url-safe base64 of 32
+  # random bytes and nothing more:
+  #   openssl rand -base64 32 | tr '+/' '-_'
+  #
+  # `python -c "from cryptography.fernet import Fernet; ..."` produces the same
+  # thing and is the obvious way to write it, but `cryptography` is not in the
+  # standard library and is absent from a fresh cloud box, so it fails with
+  # ModuleNotFoundError at the one step whose output nobody can inspect
+  # afterwards. openssl is everywhere, including Git for Windows.
   #
   # IT MUST BE BYTE-IDENTICAL ACROSS UPGRADES. Changing it is not a rotation,
   # it is a data-loss event: every stored secret stops decrypting and has to be
