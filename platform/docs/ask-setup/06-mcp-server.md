@@ -79,6 +79,21 @@ strip appears below it:
 | Success | A green strip, *"MCP server responded"* (with the HTTP status when returned). And a toast *"MCP server is reachable"*. |
 | Failure | A red strip with the error message, and a toast *"MCP unreachable: …"*. |
 
+> **On a new installation this test fails first, and that is the system working.** The MCP server
+> does not open its port until it has API contracts to serve, because a server advertising no tools
+> is worse than one that is honestly unavailable. Before you register any, there is nothing
+> listening, so the test reports exactly that:
+>
+> ```
+> MCP unreachable: ... Failed to establish a new connection: [Errno 111] Connection refused
+> ```
+>
+> **Nothing is broken and nothing needs restarting.** Go to
+> [Register an OpenAPI contract](07-contracts.md) first, then come back here. The server picks the
+> contracts up within about a minute, opens its port, and this test turns green on its own. On
+> Kubernetes the same moment is visible as the ninth pod finally reaching Ready, with zero
+> restarts, which is how you tell a server that is waiting from one that is failing.
+
 > **Warning: a failing test only affects actions.** If the MCP server is unreachable, the
 > agent's **action-execution** capability (SAP OData writes) will fail. Read-only questions
 > that generate and run SQL are unaffected. Save the correct endpoint and confirm the test is
