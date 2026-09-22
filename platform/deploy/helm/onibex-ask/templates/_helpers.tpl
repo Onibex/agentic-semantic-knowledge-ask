@@ -257,8 +257,16 @@ to diagnose than a failed render.
 {{- if not $anyHost -}}
 {{- fail "gateway.enabled is true but every gateway.hosts entry is empty, so the gateway would publish nothing. Each app needs its own hostname: they are built to be served from the root and collide on /api, /assets and the login callback when they share one." -}}
 {{- end -}}
-{{- if not (has .Values.gateway.tls.mode (list "acme" "internal")) -}}
-{{- fail (printf "gateway.tls.mode is %q. It accepts exactly \"acme\" or \"internal\". This one fails more quietly than the others: an unrecognised value matches no branch, so the Caddyfile is rendered without `tls internal` AND without the ACME contact address. Caddy then falls back to its own default, which is to request a public certificate for every hostname, with no address to warn anyone when renewal stops working. The site can look right for ninety days and then go untrusted with nobody notified." .Values.gateway.tls.mode) -}}
+{{- if not (has .Values.gateway.tls.mode (list "acme" "internal" "existing")) -}}
+{{- fail (printf "gateway.tls.mode is %q. It accepts exactly \"acme\", \"internal\" or \"existing\". This one fails more quietly than the others: an unrecognised value matches no branch, so the Caddyfile is rendered with no tls directive at all. Caddy then falls back to its own default, which is to request a public certificate for every hostname, with no address to warn anyone when renewal stops working. The site can look right for ninety days and then go untrusted with nobody notified." .Values.gateway.tls.mode) -}}
+{{- end -}}
+{{- if eq .Values.gateway.tls.mode "existing" -}}
+{{- if not .Values.gateway.tls.existingSecret -}}
+{{- fail "gateway.tls.mode is \"existing\" but gateway.tls.existingSecret is empty, so there is no certificate to serve. Create one out of band and name it here:\n  kubectl -n <ns> create secret tls ask-gateway-tls --cert=fullchain.pem --key=privkey.pem\n--cert must be the FULL CHAIN, leaf plus intermediates. A leaf on its own works in the browser of whoever tested it, because that browser had the intermediate cached, and warns on every other machine." -}}
+{{- end -}}
+{{- if or (not .Values.gateway.tls.certKey) (not .Values.gateway.tls.keyKey) -}}
+{{- fail "gateway.tls.mode is \"existing\" but gateway.tls.certKey or gateway.tls.keyKey is empty. They name the two entries inside the Secret and default to the kubernetes.io/tls names, tls.crt and tls.key. Emptying one renders a Caddyfile pointing at a directory instead of a file, and Caddy refuses to start." -}}
+{{- end -}}
 {{- end -}}
 {{- /* An empty gateway.tls.email is deliberately NOT fatal: values.yaml
        documents it as optional and says so in as many words, and a render that

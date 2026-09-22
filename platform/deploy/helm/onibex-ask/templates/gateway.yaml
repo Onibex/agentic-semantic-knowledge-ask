@@ -52,6 +52,14 @@ data:
       # the login works.
       tls internal
       {{- end }}
+      {{- if eq $root.Values.gateway.tls.mode "existing" }}
+      # A certificate somebody else issued, mounted from a Secret. The same
+      # pair serves every hostname, so it has to cover all of them; Caddy
+      # refuses to start rather than serve a name the certificate does not
+      # carry. Nothing here is renewed: replacing the Secret needs a rollout
+      # restart, because these files are read when the config loads.
+      tls /etc/caddy/tls/{{ $root.Values.gateway.tls.certKey }} /etc/caddy/tls/{{ $root.Values.gateway.tls.keyKey }}
+      {{- end }}
       # X-Forwarded-Proto travels with this, which is what stops Keycloak
       # answering an https request with an http redirect. Keycloak is told to
       # trust it through KC_PROXY_HEADERS.
@@ -135,6 +143,11 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
+            {{- if eq .Values.gateway.tls.mode "existing" }}
+            - name: tls
+              mountPath: /etc/caddy/tls
+              readOnly: true
+            {{- end }}
           resources:
             {{- toYaml .Values.gateway.resources | nindent 12 }}
           readinessProbe:
@@ -158,6 +171,15 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- if eq .Values.gateway.tls.mode "existing" }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.gateway.tls.existingSecret }}
+            # 0400, because the private key is in here. The container runs as a
+            # single user and nothing else in the pod has any business reading
+            # it.
+            defaultMode: 0400
+        {{- end }}
 {{- range $app, $host := .Values.gateway.hosts }}
 {{- if $host }}
 ---

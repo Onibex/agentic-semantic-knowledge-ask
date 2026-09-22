@@ -222,10 +222,33 @@ Then it is five values: the four `gateway.hosts`, `auth.publicUrl`, the three `p
 `gateway.tls.mode: acme` and `gateway.tls.email`. Nothing else, and nothing from the cloud: no
 managed certificate service, no second ingress controller, no cert-manager.
 
-**A certificate you already own cannot be used.** `gateway.tls.mode` accepts `acme` or `internal`
-and nothing else, so an organisation with its own authority, or a wildcard it has already paid for,
-has no way in today. It is listed under
-[What is not done yet](kubernetes-reference.md#what-is-not-done-yet).
+**If you already have a certificate, use it instead of asking for one.** Set
+`gateway.tls.mode: existing` and put it in a Secret, which covers an organisation with its own
+authority, a wildcard already paid for, or a policy against letting an internal service reach a
+public authority at all:
+
+```bash
+kubectl -n onibex-ask create secret tls ask-gateway-tls \
+  --cert=fullchain.pem --key=privkey.pem
+```
+
+Then `gateway.tls.existingSecret: ask-gateway-tls` and none of points 3, 4 or 5 above apply: port
+80 is not used, `CAA` records are irrelevant, and there is no authority to email. **Points 1 and 2
+still do, and two more take their place:**
+
+- **`--cert` must be the FULL CHAIN**, leaf plus intermediates, not the leaf alone. Measured, not
+  assumed: with the leaf alone, a client holding only the root fails with `unable to verify the
+  first certificate` while a client that already cached the intermediate says `OK`. The person who
+  tested it is usually the second kind, which is why this ships and then fails on everyone else's
+  machine.
+- **Renewal becomes a human's job.** `acme` renews every sixty days on its own; this mode renews
+  never, and when the certificate expires the site goes untrusted for everyone at once with no
+  warning sent to anybody. Replacing it needs a `kubectl rollout restart` of the gateway as well as
+  a new Secret: Caddy reads the files when it loads its config.
+
+And on point 2, the question to settle before promising anything: **an internal corporate authority
+is trusted on the machines where IT installed it and nowhere else.** Staff see no warning, anyone
+from outside sees one.
 <!-- shared:domain end -->
 
 **On AKS the records are `A` records, one per app, each pointing at its own address.** Unlike a

@@ -158,6 +158,23 @@ curl -sk -o /dev/null -w '%{http_code}\n' \
 
 `302` means the address is accepted. `400` means it is not.
 
+**The site is trusted on your machine and warns on everyone else's.** The certificate was loaded
+without its intermediates. `gateway.tls.mode: existing` serves exactly the bytes in the Secret, so
+a `--cert` holding only the leaf leaves every visitor to build the chain themselves, and only those
+who happen to have cached the intermediate already can. Measured on a test chain: a client holding
+only the root gets `unable to verify the first certificate` while a client that has the
+intermediate gets `OK`, from the same server and the same certificate. Count what the server sends,
+which should be more than one for anything but a self-signed certificate:
+
+```bash
+echo | openssl s_client -connect <host>:443 -servername <host> -showcerts 2>/dev/null \
+  | grep -c 'BEGIN CERTIFICATE'
+```
+
+The fix is a new Secret built from the full chain file the authority issued, plus
+`kubectl -n onibex-ask rollout restart deploy/<release>-gateway`. The restart is not optional:
+Caddy reads those files when it loads its config, so replacing the Secret alone changes nothing.
+
 **The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses to
 boot when the semantic-layer paths are empty or do not point at a real directory. It also refuses
 an unrecognised `platform.environment`, which the chart now stops at render time.
@@ -300,13 +317,6 @@ avoids it. With a self-signed gateway certificate the volume costs nothing to lo
   have predicted. Kyma is expected to turn up more, since it also drags in an IAS tenant and the
   approuter. Its runbook will be written from an install that worked, the same way the other two
   were, rather than guessed in advance.
-- **A certificate you already own cannot be used.** `gateway.tls.mode` takes `acme` or `internal`,
-  so the gateway either asks Let's Encrypt for a certificate or signs one itself. There is no third
-  option, and the two it has both fail the same customer: an organisation with its own certificate
-  authority, or a wildcard it has already bought, or a policy against letting an internal service
-  talk to a public authority at all. That is an ordinary enterprise requirement rather than an edge
-  case. Supporting it means reading a certificate and key from a Secret and pointing Caddy's `tls`
-  directive at them, which is a small change the chart simply does not have yet.
 - **Four load balancers where one would do**, and a domain does not fix it. Covered under
   [What this chart is](#what-this-chart-is-and-what-it-deliberately-is-not). On AWS that is about
   73 USD a month against roughly 18 for one, and the gateway already tells the hostnames apart by

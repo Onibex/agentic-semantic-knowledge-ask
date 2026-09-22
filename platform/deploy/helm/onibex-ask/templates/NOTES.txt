@@ -21,6 +21,23 @@ Certificates are signed by Caddy itself, so every browser warns once per
 hostname. That is expected. Let's Encrypt needs a name it can issue for, which
 a cloud load balancer hostname is not.
 {{- end }}
+{{- if eq .Values.gateway.tls.mode "existing" }}
+
+Serving the certificate in Secret {{ .Values.gateway.tls.existingSecret }}. Nothing is requested and
+NOTHING IS RENEWED: when it expires the site goes untrusted for everyone at
+once, and no warning is sent to anybody, because there is no authority in the
+loop to send one. Put its expiry date in a calendar now:
+
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Values.gateway.tls.existingSecret }} \
+    -o jsonpath='{.data.{{ .Values.gateway.tls.certKey }}}' | base64 -d | openssl x509 -noout -dates -subject
+
+Replacing it is two steps, and the second is not optional. Caddy reads the
+files when it loads its config, so a new Secret alone changes nothing:
+
+  kubectl -n {{ .Release.Namespace }} create secret tls {{ .Values.gateway.tls.existingSecret }} \
+    --cert=fullchain.pem --key=privkey.pem --dry-run=client -o yaml | kubectl apply -f -
+  kubectl -n {{ .Release.Namespace }} rollout restart deploy/{{ include "onibex-ask.fullname" . }}-gateway
+{{- end }}
 {{- else }}
 
 Nothing is exposed outside the cluster: gateway.enabled is false, so this render
