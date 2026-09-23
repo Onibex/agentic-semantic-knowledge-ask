@@ -509,6 +509,12 @@ gateway:
   # is what keeps this a values file instead of three rebuilt images.
   #
   # Leave one empty and that app is simply not published.
+  #
+  # THESE NAMES ARE READ EVEN WHEN `gateway.enabled` IS FALSE. They are the
+  # hostnames the deployment publishes, not a setting of the Caddy that happens
+  # to serve them: on Kyma the same four names are what the APIRules expose.
+  # Keeping one list is deliberate, because two lists is how a name gets added
+  # to one publishing path and forgotten on the other.
   hosts:
     studio: ""
     chat: ""
@@ -604,6 +610,36 @@ gateway:
       memory: 64Mi
     limits:
       memory: 256Mi
+
+# ── SAP BTP Kyma, and nowhere else ──────────────────────────────────────────
+# Turning this on renders one `APIRule` per published hostname, which is how
+# Kyma exposes a Service: its operator translates each one into Istio routing
+# on the cluster's shared gateway.
+#
+# It is off by default and must stay off everywhere else. `APIRule` is a CRD
+# that only Kyma installs, so on EKS or AKS the install fails with `no matches
+# for kind "APIRule"`.
+#
+# THIS IS AN ALTERNATIVE TO `gateway`, NOT AN ADDITION. Both publish the same
+# four hostnames by different routes, so enabling both would expose each app
+# twice, through two certificates, with only one of the two answering the name
+# in DNS. The render refuses that combination rather than let you find out
+# later.
+kyma:
+  enabled: false
+
+  # The shared Istio gateway the APIRules attach to, as `namespace/name`. Every
+  # Kyma cluster ships this one, holding a wildcard certificate for the cluster
+  # domain, which is what makes the four hostnames trusted with nothing bought
+  # and nothing renewed. Read the domain off the cluster with:
+  #
+  #   kubectl get gateway -n kyma-system kyma-gateway \
+  #     -o jsonpath='{.spec.servers[*].hosts}'
+  #
+  # The wildcard covers ONE label, so hostnames go directly under the domain:
+  # `ask-studio.<domain>` works and `ask.studio.<domain>` is not covered and
+  # will be served with a certificate for the wrong name.
+  gateway: kyma-system/kyma-gateway
 
 # ── XSUAA, BTP only ─────────────────────────────────────────────────────────
 # Every reference is optional, so the pods start when this Secret is absent,

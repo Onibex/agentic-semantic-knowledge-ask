@@ -1,0 +1,211 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAP BTP Kyma, development.
+#
+# Written against a measured cluster on 2026-09-23: three worker nodes,
+# Kubernetes 1.35.7, Garden Linux, and the modules istio, api-gateway and
+# btp-operator all Ready.
+#
+# HOW THIS DIFFERS FROM THE OTHER TWO TARGETS, AND WHY
+#
+# The platform is identical. What changes is who puts it on the internet.
+#
+# On AKS and EKS the chart publishes with a Caddy of its own plus one
+# LoadBalancer Service per hostname, because nothing on those clusters hands
+# out public names or terminates TLS for you. Kyma does both already: a shared
+# Istio gateway holds a wildcard certificate for the cluster domain and routes
+# by Host. So here `gateway.enabled` is false and `kyma.enabled` is true, and
+# the chart renders four APIRules instead.
+#
+# Three consequences worth stating, because each one was a real cost elsewhere:
+#
+#   * ZERO load balancers. On EKS the four were about 73 USD a month.
+#   * The certificate is real and trusted, with nothing bought, nothing issued
+#     and nothing to renew. On EKS this was the blocker that could not be
+#     solved at all: Let's Encrypt does not issue for ELB names, so that
+#     deployment ended on a self-signed certificate.
+#   * One Helm pass, not two. EKS needed two because the hostnames did not
+#     exist until AWS created the load balancers. Here the names are known
+#     before anything is installed, because they are just labels under a
+#     wildcard that already exists.
+#
+# THE SIZING IS NOT THE AKS SIZING
+#
+# The AKS profile cuts every request to the bone because that cluster is shared
+# and its single node was at 99% of reserved CPU. This cluster is not that.
+# Measured the same day: three nodes at 37%, 67% and 57% of requested CPU, with
+# roughly 1.9 cores allocatable each. There is room, so the requests below are
+# the honest ones rather than the ones that just fit.
+#
+# It is still a development profile: one replica of everything, no disruption
+# budget, and Keycloak with `production: false`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+image:
+  namespace: onibexenjoy
+  tag: sha-eabc833
+
+auth:
+  mode: keycloak
+  # Keycloak first, deliberately. Swapping the identity provider for SAP XSUAA
+  # is the NEXT piece of work and it is kept separate on purpose: with both
+  # changes in one install, a failed login tells you nothing about whether the
+  # deployment or the identity provider is at fault.
+  publicUrl: "https://ask-auth.ff90b8d.kyma.ondemand.com"
+
+secrets:
+  existingSecret: ask-platform-secret
+
+platform:
+  environment: production
+  logLevel: INFO
+  askEnv: dev
+
+# There is spare CPU on every node, so the new pod can be scheduled before the
+# old one goes away. On the shared AKS node this had to be Recreate.
+updateStrategy: RollingUpdate
+
+# ── The public entry point ──────────────────────────────────────────────────
+
+# Off. Istio publishes here; see the header. Leaving this on as well is refused
+# by the render, because it would expose every app twice through two different
+# certificates.
+gateway:
+  enabled: false
+
+  # The four published names. They stay in this block even though Caddy is off:
+  # the list is the hostnames the deployment publishes, whoever does the
+  # publishing, and the APIRules read exactly these.
+  #
+  # All four sit DIRECTLY under the cluster domain. The wildcard on the gateway
+  # covers exactly one label, so `ask-studio.ff90b8d.kyma.ondemand.com` is
+  # covered and `ask.studio.ff90b8d.kyma.ondemand.com` is not: that one would
+  # be served a certificate for a name it does not carry, and every browser
+  # would refuse it.
+  #
+  # The domain is not guessable and it is not the same on another cluster. Read
+  # it off this one:
+  #
+  #   kubectl get gateway -n kyma-system kyma-gateway \
+  #     -o jsonpath='{.spec.servers[*].hosts}'
+  hosts:
+    studio: "ask-studio.ff90b8d.kyma.ondemand.com"
+    chat: "ask-chat.ff90b8d.kyma.ondemand.com"
+    setup: "ask-setup.ff90b8d.kyma.ondemand.com"
+    auth: "ask-auth.ff90b8d.kyma.ondemand.com"
+
+kyma:
+  enabled: true
+  gateway: kyma-system/kyma-gateway
+
+# The cross-app links ASK Studio uses to offer the other two.
+publicUrls:
+  studio: "https://ask-studio.ff90b8d.kyma.ondemand.com"
+  chat: "https://ask-chat.ff90b8d.kyma.ondemand.com"
+  setup: "https://ask-setup.ff90b8d.kyma.ondemand.com"
+
+# ── The sizing ──────────────────────────────────────────────────────────────
+
+opensearch:
+  enabled: true
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 3Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+    # Empty means the cluster's default StorageClass, and this cluster HAS one
+    # (`default`, on EBS). That is worth stating because a fresh EKS does not:
+    # there the same empty value left every volume Pending for ever.
+    storageClassName: ""
+
+keycloak:
+  realmImportSecret: ask-realm
+  production: false
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClassName: ""
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+    limits:
+      memory: 1Gi
+
+orchestrator:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      memory: 1536Mi
+
+adminApi:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+studio:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+chat:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+setup:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+mcpServer:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+teamsBot:
+  enabled: false
+
+semanticLayer:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: ""
+
+podDisruptionBudget:
+  enabled: false
+
+# One replica of everything, so there is nothing to spread. Turning this on
+# would add a constraint that can only ever be satisfied trivially.
+topologySpread:
+  enabled: false

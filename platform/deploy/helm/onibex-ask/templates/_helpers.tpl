@@ -199,6 +199,36 @@ Secret does not exist, which is every target that is not Kyma.
 {{- end }}
 {{- end -}}
 
+{{/*
+The four things that get a public hostname, and the in-cluster Service behind
+each one.
+
+There are four and not nine because the backends are never published: each SPA
+image carries an nginx that proxies /api to ask-admin-api over the cluster
+network, so the browser only ever talks to the three apps and to the identity
+provider.
+
+THIS LIST IS SHARED ON PURPOSE. Caddy reads it to build its Caddyfile and the
+APIRule template reads it to expose the same four Services through Istio. When
+it lived inside gateway.yaml, adding a target on one publishing path silently
+left the other one behind. Parsed with fromYaml at the call site, because Helm
+templates return strings.
+*/}}
+{{- define "onibex-ask.publishedBackends" -}}
+studio:
+  service: ask-studio
+  port: 80
+chat:
+  service: ask-chat
+  port: 80
+setup:
+  service: ask-setup
+  port: 80
+auth:
+  service: {{ include "onibex-ask.fullname" . }}-keycloak
+  port: 8080
+{{- end -}}
+
 {{/* The browser-facing configuration the three SPAs read at container start. */}}
 {{- define "onibex-ask.spaEnv" -}}
 - name: ASK_AUTH_MODE
@@ -249,6 +279,14 @@ to diagnose than a failed render.
 
 {{- if not .Values.image.namespace -}}
 {{- fail "image.namespace is empty. Set it to the registry account the seven ASK images were published under, for example \"onibex\". The chart renders <registry>/<namespace>/<repository>:<tag> and there is no default, because pulling from the wrong account fails late and confusingly." -}}
+{{- end -}}
+
+{{- if and .Values.kyma.enabled .Values.gateway.enabled -}}
+{{- fail "kyma.enabled and gateway.enabled are both true. They are two ways to publish the SAME four hostnames: Kyma routes them through Istio on the shared gateway, the gateway block runs a Caddy of its own behind one load balancer per name. Running both exposes every app twice through two different certificates while only one of them answers the name in DNS, and the one that answers depends on which Service the cloud wired up. On Kyma set gateway.enabled=false; everywhere else set kyma.enabled=false." -}}
+{{- end -}}
+
+{{- if and .Values.kyma.enabled (not (compact (values .Values.gateway.hosts))) -}}
+{{- fail "kyma.enabled is true but every entry in gateway.hosts is empty, so the render produces no APIRule and the install publishes nothing at all while reporting success. gateway.hosts is the list of published hostnames whoever does the publishing; put the four names under the cluster's wildcard domain there." -}}
 {{- end -}}
 
 {{- if and (not .Values.secrets.existingSecret) (not .Values.secrets.create) -}}

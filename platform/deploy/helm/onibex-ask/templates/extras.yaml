@@ -43,8 +43,23 @@ metadata:
     {{- include "onibex-ask.labels" (dict "ctx" . "component" "mcp-server") | nindent 4 }}
 spec:
   replicas: {{ .Values.mcpServer.replicas }}
+  {{- /*
+    Recreate, ALWAYS, and not the release-wide updateStrategy. This one pod is
+    designed never to report Ready until somebody registers an API contract,
+    and a rolling update is defined as waiting for the new pod to be Ready
+    before it retires the old one. Those two cannot both hold.
+
+    Measured on Kyma 2026-09-23: with RollingUpdate a `rollout restart` leaves
+    BOTH ReplicaSets scaled to 1 for ever, so the MCP runs twice, and the
+    Deployment ends on `exceeded its progress deadline` as if the upgrade had
+    failed. Nothing is actually wrong, which is what makes it expensive.
+
+    It never showed on AKS because that profile is Recreate for unrelated
+    reasons, nor on EKS because a first install has no old pod to retire. It
+    would show there on the first upgrade.
+  */}}
   strategy:
-    type: {{ .Values.updateStrategy }}
+    type: Recreate
   selector:
     matchLabels:
       {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "mcp-server") | nindent 6 }}
