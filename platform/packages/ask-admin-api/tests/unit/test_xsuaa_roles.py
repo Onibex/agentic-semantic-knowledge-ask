@@ -7,20 +7,21 @@
 
 """What an XSUAA token has to look like for ASK to read any role out of it.
 
-These tests exist because the failure they pin is invisible from the outside.
-The scope names are decided in `platform/deploy/kyma/xs-security.json`, which is
-handed to SAP BTP when the service instance is created, and nothing checks the
-two against each other: get them wrong and XSUAA still issues a perfectly valid,
-correctly signed token. The user signs in, every redirect works, and then every
-request is refused with 403 because the validator extracted zero roles.
+The failure these pin is invisible from the outside. XSUAA issues a perfectly
+valid, correctly signed token whatever the descriptor says, so a mismatch
+between `platform/deploy/kyma/xs-security.json` and the validator shows up only
+as a working sign-in followed by 403 on every request.
 
-That is not hypothetical. The descriptor archived from the Cloud Foundry era
-declares `oneconnect-agenticai` with a scope named `admin`, which produces
-exactly that. Reusing it would have cost a debugging session pointed at the
-identity provider, which is the one place where nothing is wrong.
+Every shape used below was MEASURED against a real XSUAA instance on
+2026-09-23, not taken from documentation. That is the point of this file: the
+first version was written from documentation and was wrong twice over.
 
-The tests read the committed descriptor rather than restating its values, so a
-rename there fails here instead of on a cluster.
+  * XSUAA rejects a dot in an xsappname, so the validator's old literal prefix
+    `ask.` could never match any legal configuration.
+  * `scope` arrives as a JSON ARRAY, and the old code called `.split()` on it.
+
+The binding for application `ask-platform` reported
+`xsappname = ask-platform!t20611`, so that is the prefix used here.
 """
 
 from __future__ import annotations
@@ -36,29 +37,45 @@ from ask_admin_api.auth.validator import _extract_roles_xsuaa
 _PLATFORM = Path(__file__).resolve().parents[4]
 _DESCRIPTOR = _PLATFORM / "deploy" / "kyma" / "xs-security.json"
 
-# The two roles the platform actually checks. ask-admin guards every ASK Studio
-# route and the admin API; ask-user is the default that reaches ASK Chat.
+# The tenant suffix XSUAA appended on the real subaccount. Any value would do
+# for the logic; this one is kept because it is the one that was observed.
+_TENANT_SUFFIX = "!t20611"
+
+# The two roles the platform checks. ask-admin guards every ASK Studio route
+# and the admin API; ask-user is the default that reaches ASK Chat.
 _ROLES = ("ask-admin", "ask-user")
+
+# XSUAA's own characters for an xsappname, from the error it returns when one
+# is outside them. A dot is not among them.
+_XSAPPNAME_ALLOWED = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-/")
 
 
 def _descriptor() -> dict:
     return json.loads(_DESCRIPTOR.read_text(encoding="utf-8"))
 
 
-def _token_scope(xsappname: str, scope_name: str, tenant: str = "t847") -> str:
-    """Render one scope the way XSUAA puts it in a token.
-
-    `$XSAPPNAME` is not substituted literally: on a dedicated tenant XSUAA
-    appends `!t<id>` to the application name, so the descriptor's
-    `$XSAPPNAME.ask-admin` arrives as `ask.platform!t847.ask-admin`. Getting
-    this shape wrong is what makes a naive reading of the descriptor look fine.
-    """
-    return f"{xsappname}!{tenant}.{scope_name}"
+def _xsappname_in_token() -> str:
+    """The prefix XSUAA really uses: the descriptor's name plus the tenant."""
+    return _descriptor()["xsappname"] + _TENANT_SUFFIX
 
 
-def test_descriptor_is_valid_json_and_declares_both_roles() -> None:
-    d = _descriptor()
-    declared = {s["name"].removeprefix("$XSAPPNAME.") for s in d["scopes"]}
+def _scope(role: str, xsappname: str | None = None) -> str:
+    return f"{xsappname or _xsappname_in_token()}.{role}"
+
+
+@pytest.fixture
+def bound(monkeypatch: pytest.MonkeyPatch) -> str:
+    """The environment a pod gets from the service binding."""
+    xsappname = _xsappname_in_token()
+    monkeypatch.setenv("XSUAA_XSAPPNAME", xsappname)
+    return xsappname
+
+
+# ── The descriptor ───────────────────────────────────────────────────────────
+
+
+def test_descriptor_declares_exactly_the_two_roles_the_code_checks() -> None:
+    declared = {s["name"].removeprefix("$XSAPPNAME.") for s in _descriptor()["scopes"]}
     assert declared == set(_ROLES), (
         f"xs-security.json declares {sorted(declared)}. The platform checks "
         f"{sorted(_ROLES)} and nothing else; a scope by any other name is a "
@@ -66,55 +83,88 @@ def test_descriptor_is_valid_json_and_declares_both_roles() -> None:
     )
 
 
-def test_application_name_survives_the_prefix_filter() -> None:
-    """The validator keeps only scopes starting with `ask.`, so the app name must."""
+def test_xsappname_uses_only_characters_xsuaa_accepts() -> None:
+    """XSUAA refused `ask.platform` five minutes into provisioning. Fail here instead."""
     xsappname = _descriptor()["xsappname"]
-    assert xsappname.startswith("ask."), (
-        f"xsappname is {xsappname!r}. The validator drops every scope that does "
-        "not start with 'ask.', so this name makes ASK read zero roles from a "
-        "valid token: sign-in succeeds and every request 403s."
+    illegal = set(xsappname) - _XSAPPNAME_ALLOWED
+    assert not illegal, (
+        f"xsappname {xsappname!r} contains {sorted(illegal)}, which XSUAA rejects: "
+        "it allows only a-z, A-Z, 0-9, '_', '-' and '/'."
     )
 
 
+# ── Reading roles out of a real-shaped token ─────────────────────────────────
+
+
 @pytest.mark.parametrize("role", _ROLES)
-def test_a_real_token_scope_resolves_to_the_role_the_code_checks(role: str) -> None:
-    """End to end over the naming: descriptor -> XSUAA token -> role string."""
-    xsappname = _descriptor()["xsappname"]
-    scope = _token_scope(xsappname, role)
-
-    assert _extract_roles_xsuaa({"scope": scope}) == [role]
+def test_a_real_token_scope_resolves_to_the_role_the_code_checks(bound: str, role: str) -> None:
+    """Descriptor -> XSUAA token -> role string, with `scope` as the array it really is."""
+    assert _extract_roles_xsuaa({"scope": [_scope(role)]}) == [role]
 
 
-def test_both_roles_arrive_together_for_an_administrator() -> None:
+def test_an_administrator_gets_both_roles(bound: str) -> None:
     """The ASKAdministrator template grants both scopes, so both must come back."""
-    xsappname = _descriptor()["xsappname"]
-    payload = {"scope": " ".join(_token_scope(xsappname, r) for r in _ROLES)}
+    payload = {"scope": [_scope(r) for r in _ROLES]}
 
     assert sorted(_extract_roles_xsuaa(payload)) == sorted(_ROLES)
 
 
-def test_the_archived_cloud_foundry_descriptor_would_have_granted_nothing() -> None:
-    """The regression this file exists for, kept executable rather than retold.
+def test_scope_as_an_array_does_not_raise(bound: str) -> None:
+    """The regression: the old code called `.split()` on a list and raised."""
+    payload = {"scope": ["uaa.resource", "openid", _scope("ask-user")]}
 
-    `oneconnect-agenticai` with a scope named `admin`: a valid, signed token
-    carrying real authorization, out of which ASK reads no roles at all.
+    assert _extract_roles_xsuaa(payload) == ["ask-user"]
+
+
+def test_scope_as_a_space_separated_string_still_works(bound: str) -> None:
+    """Other OIDC providers do send a string, so both shapes are accepted."""
+    payload = {"scope": f"openid {_scope('ask-admin')}"}
+
+    assert _extract_roles_xsuaa(payload) == ["ask-admin"]
+
+
+def test_the_measured_client_credentials_token_grants_nothing(bound: str) -> None:
+    """What the binding's own client really received: `uaa.resource` and no app scope."""
+    assert _extract_roles_xsuaa({"scope": ["uaa.resource"]}) == []
+
+
+# ── What must NOT be read as an ASK role ─────────────────────────────────────
+
+
+def test_the_same_scope_name_from_another_application_is_ignored(bound: str) -> None:
+    """A subaccount holds other applications, and scope names are not unique across them.
+
+    This is the property the old prefix never had: it looked at the part after
+    the last dot, so `some-other-app!t9.ask-admin` would have been read as ours.
     """
-    payload = {"scope": _token_scope("oneconnect-agenticai", "admin")}
+    payload = {"scope": [_scope("ask-admin", xsappname="some-other-app!t9"), _scope("ask-user")]}
+
+    assert _extract_roles_xsuaa(payload) == ["ask-user"]
+
+
+def test_the_archived_cloud_foundry_descriptor_would_have_granted_nothing(bound: str) -> None:
+    """`oneconnect-agenticai` with a scope named `admin`, kept executable."""
+    payload = {"scope": [_scope("admin", xsappname="oneconnect-agenticai!t847")]}
 
     assert _extract_roles_xsuaa(payload) == []
 
 
-def test_a_scope_from_some_other_btp_application_is_ignored() -> None:
-    """Tokens carry scopes from other subscriptions; none of them is an ASK role."""
-    payload = {
-        "scope": " ".join(
-            [
-                "openid",
-                "uaa.resource",
-                _token_scope("some.other.app", "ask-admin"),
-                _token_scope(_descriptor()["xsappname"], "ask-user"),
-            ]
-        )
-    }
+def test_the_old_literal_prefix_is_not_a_back_door(bound: str) -> None:
+    """A scope shaped for the old `ask.` rule must not grant anything any more."""
+    payload = {"scope": ["ask.anything!t1.ask-admin"]}
 
-    assert _extract_roles_xsuaa(payload) == ["ask-user"]
+    assert _extract_roles_xsuaa(payload) == []
+
+
+# ── Without the binding ──────────────────────────────────────────────────────
+
+
+def test_no_xsappname_means_no_roles_rather_than_a_guess(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without the binding's name there is no safe way to tell ASK's scopes apart.
+
+    Guessing would reintroduce exactly the cross-application leak above, so it
+    grants nothing and says why in the log.
+    """
+    monkeypatch.delenv("XSUAA_XSAPPNAME", raising=False)
+
+    assert _extract_roles_xsuaa({"scope": [_scope("ask-admin")]}) == []
