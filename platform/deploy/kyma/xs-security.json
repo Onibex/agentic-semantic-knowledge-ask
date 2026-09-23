@@ -1,0 +1,61 @@
+{
+  "_comment_1": "SAP BTP XSUAA security descriptor for ASK. Replaces the one archived from the Cloud Foundry era, which named a different application, declared scopes ASK cannot read, and pointed its redirect URIs at an approuter that no longer exists.",
+
+  "_comment_2": "THE APPLICATION NAME STARTS WITH `ask.` AND THAT IS NOT COSMETIC. The token validator keeps only scopes beginning with `ask.` and then takes what follows the last dot (ask-admin-api/auth/validator.py, _extract_roles_xsuaa). XSUAA renders $XSAPPNAME in a token as <xsappname>!t<tenant>, so `ask.platform` yields `ask.platform!t123.ask-admin`, which passes the filter and resolves to the role `ask-admin`. An xsappname without that prefix yields scopes the validator skips: the user signs in perfectly and then gets 403 everywhere, because ASK reads zero roles. That is exactly what the archived descriptor would have produced.",
+
+  "_comment_3": "The scope names ARE the role names, spelled exactly as the code checks them. ask-admin is required by every ASK Studio route and by the admin API; ask-user is the default that reaches ASK Chat and sees an access-denied screen in Studio. These two are the whole list (ask-setup/src/pages/IdentityProviderPage.tsx, KNOWN_ROLES).",
+
+  "_comment_4": "REPLACE <CLUSTER_DOMAIN> BEFORE CREATING THE INSTANCE, in all three redirect URIs, for example ff90b8d.kyma.ondemand.com. Each SPA completes its sign-in at <origin>/login/callback (see each app's src/auth/config.ts). A URI that is not listed here stops the sign-in with `redirect_uri` rejected AFTER the password has been typed, which is the same failure mode the Keycloak realm has and the reason the runbook probes it with curl before involving a person.",
+
+  "xsappname": "ask.platform",
+  "tenant-mode": "dedicated",
+  "description": "Onibex ASK: authorization for ASK Studio, ASK Chat and ASK Setup",
+
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.ask-admin",
+      "description": "Author and publish the semantic layer, and administer the platform"
+    },
+    {
+      "name": "$XSAPPNAME.ask-user",
+      "description": "Ask questions in ASK Chat"
+    }
+  ],
+
+  "role-templates": [
+    {
+      "name": "ASKAdministrator",
+      "description": "Full access: ASK Studio, ASK Setup and the admin API",
+      "scope-references": ["$XSAPPNAME.ask-admin", "$XSAPPNAME.ask-user"]
+    },
+    {
+      "name": "ASKUser",
+      "description": "Ask questions in ASK Chat. No access to ASK Studio",
+      "scope-references": ["$XSAPPNAME.ask-user"]
+    }
+  ],
+
+  "role-collections": [
+    {
+      "name": "ASK Administrator",
+      "description": "Assign in the BTP cockpit to whoever curates the semantic layer",
+      "role-template-references": ["$XSAPPNAME.ASKAdministrator"]
+    },
+    {
+      "name": "ASK User",
+      "description": "Assign in the BTP cockpit to everyone who only asks questions",
+      "role-template-references": ["$XSAPPNAME.ASKUser"]
+    }
+  ],
+
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://ask-studio.<CLUSTER_DOMAIN>/login/callback",
+      "https://ask-chat.<CLUSTER_DOMAIN>/login/callback",
+      "https://ask-setup.<CLUSTER_DOMAIN>/login/callback"
+    ],
+    "token-validity": 3600,
+    "refresh-token-validity": 86400,
+    "autoapprove": true
+  }
+}
