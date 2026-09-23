@@ -208,7 +208,7 @@ export const translations = {
     idp_disabled: 'disabled',
     idp_no_provider_bound: 'no identity provider bound',
     idp_section_oidc: 'OIDC configuration',
-    idp_baked_at_build: 'Baked at build time',
+    idp_baked_at_build: 'Set at container start',
     idp_section_session: 'Your session',
     idp_decoded_from_token: 'decoded from your token',
     idp_signed_in: 'signed in',
@@ -229,7 +229,7 @@ export const translations = {
     idp_field_token_endpoint: 'Token endpoint',
     idp_field_end_session: 'End-session endpoint',
     idp_dev_warning: 'Authentication is bypassed on this deployment (ASK_AUTH_MODE is none). Set it to keycloak or ias and restart to enable a real identity provider.',
-    idp_callout: 'The SPA reads the provider from ASK_AUTH_MODE at container start, and the backend validates tokens using AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. To switch providers, change the env vars and restart the containers. No rebuild, and nothing to edit here by design.',
+    idp_callout: 'The SPA reads the provider from ASK_AUTH_MODE at container start, and the backend validates tokens using AUTH_MODE plus KEYCLOAK_JWKS_URL, or IAS_URL and IAS_CLIENT_ID for SAP Cloud Identity Services. To switch providers, change the env vars and restart the containers. No rebuild, and nothing to edit here by design.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'SAP S/4HANA Connection',
@@ -493,7 +493,7 @@ export const translations = {
     idp_disabled: 'deshabilitado',
     idp_no_provider_bound: 'sin proveedor de identidad',
     idp_section_oidc: 'Configuración OIDC',
-    idp_baked_at_build: 'Definido en el build',
+    idp_baked_at_build: 'Definido al arrancar el contenedor',
     idp_section_session: 'Tu sesión',
     idp_decoded_from_token: 'decodificado de tu token',
     idp_signed_in: 'sesión iniciada',
@@ -514,7 +514,7 @@ export const translations = {
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de cierre de sesión',
     idp_dev_warning: 'La autenticación está deshabilitada en este despliegue (ASK_AUTH_MODE es none). Defínelo como keycloak o ias y reinicia para habilitar un proveedor de identidad real.',
-    idp_callout: 'La SPA lee el proveedor desde ASK_AUTH_MODE al arrancar el contenedor, y el backend valida los tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para cambiar de proveedor, cambia las variables de entorno y reinicia los contenedores. No hace falta reconstruir, y no hay nada que editar aquí por diseño.',
+    idp_callout: 'La SPA lee el proveedor desde ASK_AUTH_MODE al arrancar el contenedor, y el backend valida los tokens usando AUTH_MODE más KEYCLOAK_JWKS_URL, o IAS_URL e IAS_CLIENT_ID para SAP Cloud Identity Services. Para cambiar de proveedor, cambia las variables de entorno y reinicia los contenedores. No hace falta reconstruir, y no hay nada que editar aquí por diseño.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'Conexión SAP S/4HANA',
@@ -778,7 +778,7 @@ export const translations = {
     idp_disabled: 'desabilitado',
     idp_no_provider_bound: 'sem provedor de identidade',
     idp_section_oidc: 'Configuração OIDC',
-    idp_baked_at_build: 'Definido no build',
+    idp_baked_at_build: 'Definido ao iniciar o contêiner',
     idp_section_session: 'Sua sessão',
     idp_decoded_from_token: 'decodificado do seu token',
     idp_signed_in: 'conectado',
@@ -799,7 +799,7 @@ export const translations = {
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de fim de sessão',
     idp_dev_warning: 'A autenticação está desabilitada neste deployment (ASK_AUTH_MODE é none). Defina como keycloak ou ias e reinicie para habilitar um provedor de identidade real.',
-    idp_callout: 'A SPA lê o provedor de ASK_AUTH_MODE ao iniciar o contêiner, e o backend valida os tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para trocar de provedor, altere as variáveis de ambiente e reinicie os contêineres. Não é preciso reconstruir, e não há nada para editar aqui por design.',
+    idp_callout: 'A SPA lê o provedor de ASK_AUTH_MODE ao iniciar o contêiner, e o backend valida os tokens usando AUTH_MODE mais KEYCLOAK_JWKS_URL, ou IAS_URL e IAS_CLIENT_ID para o SAP Cloud Identity Services. Para trocar de provedor, altere as variáveis de ambiente e reinicie os contêineres. Não é preciso reconstruir, e não há nada para editar aqui por design.',
 
     // ── SapConnectionPage ──────────────────────────────────
     sap_title: 'Conexão SAP S/4HANA',
