@@ -49,7 +49,11 @@
 
 image:
   namespace: onibexenjoy
-  tag: sha-eabc833
+  # Built from 8ffb36d, the merge of PR #75. That commit is what carries the
+  # nginx fix: before it, every API call the three apps make through the mesh
+  # came back 503. Do not move this back to sha-eabc833 to "rule out the
+  # images" when something breaks; that tag is the one with the bug.
+  tag: sha-8ffb36d
 
 auth:
   mode: keycloak
