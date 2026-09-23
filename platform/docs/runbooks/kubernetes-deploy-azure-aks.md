@@ -13,8 +13,9 @@
 | **Time** | About 30 minutes, most of it waiting for images to pull |
 | **You'll end with** | Eight of the nine services Ready, the three apps open in a browser on public HTTPS addresses with certificates from Let's Encrypt and a working sign-in, and the MCP server deliberately unready until you register a contract |
 
-**On another cloud?** [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) has its own page,
-because the first two steps are genuinely different. Everything that is the same on every cloud is in the
+**On another cloud?** [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) and
+[Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md) have their own pages, because getting the
+cluster ready is genuinely different on each. Everything that is the same on every cloud is in the
 [Kubernetes reference](kubernetes-reference.md).
 
 ---
@@ -554,4 +555,4 @@ few teardowns in one afternoon can lock the environment out until the window rol
 
 ---
 
-[← Back to the manual](../README.md) · [Kubernetes reference](kubernetes-reference.md) · [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md)
+[← Back to the manual](../README.md) · [Kubernetes reference](kubernetes-reference.md) · [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) · [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md)
