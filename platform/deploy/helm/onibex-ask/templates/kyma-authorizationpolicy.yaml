@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Give the platform's own pods their way back to Keycloak. Kyma only.
+#
+# PUBLISHING A SERVICE WITH AN APIRULE CLOSES IT FROM THE INSIDE, and nothing
+# says so. The APIRule operator writes an AuthorizationPolicy of its own that
+# allows exactly one source, the Istio ingress gateway's service account, and
+# exactly one Host, the public hostname. Every other caller is refused by the
+# sidecar before the application sees the request.
+#
+# That is correct for an app a browser reaches. It is fatal for Keycloak,
+# because Keycloak is BOTH: a browser signs in through the public hostname, and
+# the two backends fetch its signing keys over the cluster network, by Service
+# name. Without this file that second call gets 403 from Istio, which the
+# validator reports as `JWKS fetch failed`, and then EVERY authenticated
+# request is rejected with a token Keycloak itself has just issued. The pods
+# stay Ready throughout, because nothing they check is broken.
+#
+# This is the Kyma-shaped version of a mistake already made on EKS, where the
+# same 401 came from the backends going out through the gateway to fetch the
+# keys and not trusting its certificate. Different cause, identical symptom.
+#
+# Istio combines ALLOW policies with OR: this one grants the internal path
+# without touching, or needing to know about, the one the operator manages.
+# Deliberately narrow, a single source identity and no wildcard: it restores
+# the one call that has to work, not general access to Keycloak.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if and .Values.kyma.enabled .Values.keycloak.enabled .Values.gateway.hosts.auth }}
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ include "onibex-ask.fullname" . }}-keycloak-internal
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" . "component" "keycloak") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "onibex-ask.selectorLabels" (dict "ctx" . "component" "keycloak") | nindent 6 }}
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              # Every pod in this release runs as the one ServiceAccount the
+              # chart creates, so this covers the two backends and nothing
+              # else. Under mTLS STRICT, which is the Kyma default, a caller
+              # cannot claim an identity it does not hold.
+              - "cluster.local/ns/{{ .Release.Namespace }}/sa/{{ include "onibex-ask.serviceAccountName" . }}"
+      to:
+        - operation:
+            methods: ["GET"]
+            # The OpenID discovery document and the signing keys. Both are
+            # public information by design, which is why read access to them
+            # from inside the cluster costs nothing. Sign-in, tokens and the
+            # admin API are NOT here: those keep arriving through the gateway
+            # like everyone else's.
+            #
+            # `{*}` is Istio's path template for exactly one segment, and it is
+            # not interchangeable with `*`. Istio's plain wildcard only works
+            # at one end of the value, so `/realms/*/protocol/...` matches
+            # nothing at all: the policy renders, applies, reports no error,
+            # and the call it was written to allow still gets 403.
+            paths:
+              - "/realms/{*}/protocol/openid-connect/certs"
+              - "/realms/{*}/.well-known/openid-configuration"
+{{- end }}

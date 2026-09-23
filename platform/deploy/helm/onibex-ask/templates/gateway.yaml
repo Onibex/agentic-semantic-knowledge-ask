@@ -20,12 +20,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if .Values.gateway.enabled }}
 {{- $root := . }}
-{{- $backends := dict
-    "studio" (dict "service" "ask-studio" "port" 80)
-    "chat"   (dict "service" "ask-chat" "port" 80)
-    "setup"  (dict "service" "ask-setup" "port" 80)
-    "auth"   (dict "service" (printf "%s-keycloak" (include "onibex-ask.fullname" .)) "port" 8080)
-}}
+{{- $backends := include "onibex-ask.publishedBackends" . | fromYaml }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

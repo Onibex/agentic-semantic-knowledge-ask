@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The public entry point on SAP BTP Kyma, and nowhere else.
+#
+# `APIRule` is not a Kubernetes kind. Kyma installs it as a CRD and its
+# operator turns each one into an Istio VirtualService attached to the shared
+# `kyma-system/kyma-gateway`. On EKS or AKS the API server does not know the
+# kind at all and the install fails outright, which is why this file is behind
+# `kyma.enabled` and why that value defaults to false.
+#
+# WHY THIS REPLACES CADDY RATHER THAN SITTING BEHIND IT. On the other two
+# clouds the chart publishes with its own Caddy plus one LoadBalancer Service
+# per hostname, because nothing else there terminates TLS or hands out public
+# names. Kyma already does both: the shared gateway holds a wildcard
+# certificate for the cluster domain and routes by Host. Running Caddy behind
+# it would be a second hop that needs a second certificate to do a job that is
+# already done. So on Kyma `gateway.enabled` is false and this renders instead,
+# which is also why a Kyma install allocates ZERO load balancers.
+#
+# `noAuth: true` does not mean the endpoint is open. It means the gateway
+# forwards the request with its `Authorization` header untouched, because the
+# token is checked further in: by the backend in process for the API, and by
+# PKCE in the browser for the SPA. Asking the gateway to validate as well would
+# mean maintaining the issuer in two places.
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if .Values.kyma.enabled }}
+{{- $root := . }}
+{{- $backends := include "onibex-ask.publishedBackends" . | fromYaml }}
+{{- range $app, $host := .Values.gateway.hosts }}
+{{- if $host }}
+{{- $backend := index $backends $app }}
+---
+apiVersion: gateway.kyma-project.io/v2
+kind: APIRule
+metadata:
+  name: {{ include "onibex-ask.fullname" $root }}-{{ $app }}
+  labels:
+    {{- include "onibex-ask.labels" (dict "ctx" $root "component" "apirule") | nindent 4 }}
+spec:
+  hosts:
+    - {{ $host | quote }}
+  service:
+    name: {{ $backend.service }}
+    port: {{ $backend.port }}
+  gateway: {{ $root.Values.kyma.gateway | quote }}
+  {{- if eq $app "auth" }}
+  {{- /*
+    WITHOUT THIS BLOCK THE SIGN-IN COMPLETES AND THE APP STILL CANNOT START.
+
+    The CRD says it plainly: "If corsPolicy is not defined, the CORS headers are
+    removed from the response." Not passed through, REMOVED. So Keycloak answers
+    the browser's preflight correctly, with the right Access-Control-Allow-Origin
+    for the app that asked, and Istio strips it on the way out.
+
+    It only bites this one host, because Keycloak is the only cross-origin call
+    the browser makes: each SPA is served from its own origin and proxies its API
+    calls through its own nginx. The symptom is specific and misleading. The
+    password change works, the redirect back to /login/callback works, and then
+    the app fails to swap the code for a token with "Authentication error ·
+    Failed to fetch", which reads like the identity provider being down.
+
+    Measured on 2026-09-23 rather than reasoned about: through the gateway the
+    preflight returns 200 with no CORS headers at all; port-forwarded straight to
+    the same Keycloak pod, the same request returns Access-Control-Allow-Origin
+    naming the exact SPA. Same server, same request, different path out.
+
+    The origins are the three SPA hostnames and nothing else. A wildcard is not
+    an option even if it were acceptable: allowCredentials and "*" cannot both be
+    set, and the token exchange needs credentials.
+  */}}
+  corsPolicy:
+    allowOrigins:
+      {{- range $spa := list "studio" "chat" "setup" }}
+      {{- $spaHost := index $root.Values.gateway.hosts $spa }}
+      {{- if $spaHost }}
+      - exact: {{ printf "https://%s" $spaHost | quote }}
+      {{- end }}
+      {{- end }}
+    allowMethods: ["GET", "POST", "OPTIONS"]
+    # The list Keycloak itself advertises on its own preflight response. Keeping
+    # it identical means the gateway never narrows what the server allows.
+    allowHeaders:
+      - Authorization
+      - Content-Type
+      - Origin
+      - Accept
+      - X-Requested-With
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      - DPoP
+    allowCredentials: true
+    maxAge: 3600
+  {{- end }}
+  rules:
+    # One catch-all rule per host. Splitting it per path would buy nothing
+    # here: every one of these four targets serves its own origin from the
+    # root, and the methods below are the full set a browser sends.
+    - path: /*
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
+      noAuth: true
+{{- end }}
+{{- end }}
+{{- end }}

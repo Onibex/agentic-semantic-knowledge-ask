@@ -38,6 +38,30 @@ files when it loads its config, so a new Secret alone changes nothing:
     --cert=fullchain.pem --key=privkey.pem --dry-run=client -o yaml | kubectl apply -f -
   kubectl -n {{ .Release.Namespace }} rollout restart deploy/{{ include "onibex-ask.fullname" . }}-gateway
 {{- end }}
+{{- else if .Values.kyma.enabled }}
+
+Published through Istio on Kyma. No load balancer was created: these names ride
+the cluster's shared gateway, on the wildcard certificate it already holds.
+
+{{- range $app, $host := .Values.gateway.hosts }}
+{{- if $host }}
+  {{ printf "%-7s" $app }} https://{{ $host }}
+{{- end }}
+{{- end }}
+
+They do not answer the moment Helm returns. Each APIRule has to be accepted by
+the operator first:
+
+  kubectl -n {{ .Release.Namespace }} get apirules
+
+Every one has to read Ready. `Error` with "does not have an injected istio
+sidecar" means this namespace is not in the mesh, which is a label on the
+namespace and not something the chart can set:
+
+  kubectl label namespace {{ .Release.Namespace }} istio-injection=enabled
+  kubectl -n {{ .Release.Namespace }} rollout restart deployment
+  kubectl -n {{ .Release.Namespace }} rollout restart statefulset
+
 {{- else }}
 
 Nothing is exposed outside the cluster: gateway.enabled is false, so this render
