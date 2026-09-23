@@ -540,7 +540,8 @@ export function DatabasePage() {
       )}
 
       {/* Hidden file input for JSON key upload */}
-      <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={onFileChosen} />
+      {/* Extensions only. See the same input on ContractsPage for why. */}
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={onFileChosen} />
 
       {/* Drawer */}
       {drawerOpen && (
