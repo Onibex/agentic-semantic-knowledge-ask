@@ -371,7 +371,17 @@ export function ContractsPage() {
           <p className="text-sm text-slate-500 mb-3">
             {t('cont_upload_desc')}
           </p>
-          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFile} />
+          {/*
+            Extensions only, deliberately. A MIME type in `accept` sends the
+            browser to the OS to ask which extensions it maps to, and that
+            lookup is what froze the file picker on the YAML upload in ASK
+            Studio. `application/json` IS registered on Windows, so this one has
+            not been seen to fail, but it buys nothing either: `.json` already
+            matches exactly the same files. Removing it retires the whole
+            category rather than waiting to meet it on a machine where the
+            association is missing.
+          */}
+          <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFile} />
           <button
             onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2 px-4 py-2 rounded-md border-2 border-dashed border-slate-300 text-sm text-slate-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"

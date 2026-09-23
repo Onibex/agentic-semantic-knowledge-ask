@@ -158,11 +158,30 @@ export function UploadYamlPanel({ onUploaded, onBusyChange }: Props) {
           Multiple <code>.yaml</code> / <code>.yml</code> at once. The backend places each in the
           right <code>bronze/silver/gold/&lt;module&gt;</code> folder.
         </p>
+        {/*
+          `accept` IS EXTENSIONS ONLY, and the two that are gone were never
+          doing any work. It also listed `application/x-yaml` and `text/yaml`,
+          which match exactly the same files as `.yaml` and `.yml` already do.
+
+          They are removed because they are enough to hang the file picker. A
+          MIME type in `accept` makes the browser ask the OS which extensions
+          it maps to, and neither of those is registered on Windows, so the
+          lookup reaches the shell; on one machine it froze the whole window
+          before a file could be chosen.
+
+          What was measured, on 2026-09-23, was four comparisons, and they
+          matter because they say this needs BOTH halves. In the affected
+          browser, the upload on /admin/docs, which lists extensions only,
+          opened fine while this one hung. In Edge on that same machine, this
+          same field opened fine. So the browser supplies the other half and
+          the trigger is here. Take the trigger away: the filter is identical
+          and nothing is left to go wrong.
+        */}
         <input
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".yaml,.yml,application/x-yaml,text/yaml"
+          accept=".yaml,.yml"
           className="hidden"
           onChange={(e) => {
             if (e.target.files) addFiles(e.target.files)
