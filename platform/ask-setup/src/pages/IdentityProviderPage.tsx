@@ -19,7 +19,7 @@ import { authConfig } from '@/auth/config'
 import { useAuthStore } from '@/store/authStore'
 import { useTranslation } from '@/hooks/useTranslation'
 
-type Mode = 'keycloak' | 'xsuaa' | 'none'
+type Mode = 'keycloak' | 'xsuaa' | 'ias' | 'none'
 
 const PROVIDER_META: Record<Mode, { label: string; color: string; bg: string }> = {
   keycloak: {
@@ -27,8 +27,16 @@ const PROVIDER_META: Record<Mode, { label: string; color: string; bg: string }> 
     color: '#2f6df6',
     bg: '#e8effc',
   },
+  // These two used to share one card, labelled "Cloud Identity (IAS / XSUAA)".
+  // They are not interchangeable: measured on 2026-09-23, IAS lets the apps sign
+  // in as public clients and XSUAA refuses them for want of a client secret.
+  ias: {
+    label: 'SAP Cloud Identity Services (IAS)',
+    color: '#0a6ed1',
+    bg: '#e6f4fc',
+  },
   xsuaa: {
-    label: 'SAP BTP — Cloud Identity (IAS / XSUAA)',
+    label: 'XSUAA (SAP BTP)',
     color: '#0a6ed1',
     bg: '#e6f4fc',
   },
@@ -40,7 +48,7 @@ const PROVIDER_META: Record<Mode, { label: string; color: string; bg: string }> 
 }
 
 function IdpMark({ mode, size = 22 }: { mode: Mode; size?: number }) {
-  if (mode === 'xsuaa') {
+  if (mode === 'xsuaa' || mode === 'ias') {
     return (
       <svg width={size * 1.4} height={size * 0.65} viewBox="0 0 48 20" aria-hidden>
         <text
@@ -123,6 +131,7 @@ export function IdentityProviderPage() {
   const providerDesc: Record<Mode, string> = {
     keycloak: t('idp_keycloak_desc'),
     xsuaa: t('idp_xsuaa_desc'),
+    ias: t('idp_ias_desc'),
     none: t('idp_none_desc'),
   }
 
@@ -180,6 +189,7 @@ export function IdentityProviderPage() {
             <div className="text-xs text-slate-500 font-mono truncate">
               {mode === 'keycloak' && `realm: ${realm ?? '?'} · client: ${authConfig.clientId}`}
               {mode === 'xsuaa' && `client: ${authConfig.clientId || '—'}`}
+              {mode === 'ias' && `tenant: ${authConfig.issuerUrl} · client: ${authConfig.clientId || '—'}`}
               {mode === 'none' && t('idp_no_provider_bound')}
             </div>
           </div>
@@ -290,7 +300,13 @@ export function IdentityProviderPage() {
         <span className="text-xs text-slate-400 font-semibold">{t('idp_supported_count')}</span>
       </div>
       <div className="space-y-2.5">
-        {(['keycloak', 'xsuaa'] as const).map((m) => {
+        {/*
+          The providers a user can actually sign in with. XSUAA is deliberately
+          absent: listing it here, badged "available", would claim it signs the
+          apps in, and it cannot. It stays a Mode so the panel above still
+          describes a deployment that happens to run it.
+        */}
+        {(['keycloak', 'ias'] as const).map((m) => {
           const pm = PROVIDER_META[m]
           const active = mode === m
           return (

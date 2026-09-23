@@ -219,7 +219,8 @@ export const translations = {
     idp_supported_count: '2 supported',
     idp_badge_available: 'Available',
     idp_keycloak_desc: 'Self-hosted OIDC realm — the default for local & on-prem deployments.',
-    idp_xsuaa_desc: 'Managed identity for SAP BTP deployments. Selected via AUTH_MODE=xsuaa + XSUAA_* credentials.',
+    idp_xsuaa_desc: 'SAP BTP authorization service. The apps cannot sign in against it directly: it requires a client secret, and a browser cannot hold one. Use SAP Cloud Identity Services instead.',
+    idp_ias_desc: "The customer's own SAP identity, for SAP BTP deployments. The apps sign in against the IAS tenant directly, and the roles are the IAS groups ask-admin and ask-user.",
     idp_none_desc: 'Local development only — requests are not authenticated. Never use in production.',
     idp_field_issuer: 'Issuer',
     idp_field_client_id: 'Client ID',
@@ -227,7 +228,7 @@ export const translations = {
     idp_field_auth_endpoint: 'Authorization endpoint',
     idp_field_token_endpoint: 'Token endpoint',
     idp_field_end_session: 'End-session endpoint',
-    idp_dev_warning: 'Authentication is bypassed on this deployment (ASK_AUTH_MODE is none). Set it to keycloak or xsuaa and restart to enable a real identity provider.',
+    idp_dev_warning: 'Authentication is bypassed on this deployment (ASK_AUTH_MODE is none). Set it to keycloak or ias and restart to enable a real identity provider.',
     idp_callout: 'The SPA reads the provider from ASK_AUTH_MODE at container start, and the backend validates tokens using AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. To switch providers, change the env vars and restart the containers. No rebuild, and nothing to edit here by design.',
 
     // ── SapConnectionPage ──────────────────────────────────
@@ -503,7 +504,8 @@ export const translations = {
     idp_supported_count: '2 disponibles',
     idp_badge_available: 'Disponible',
     idp_keycloak_desc: 'Realm OIDC autohospedado — el predeterminado para despliegues locales y on-prem.',
-    idp_xsuaa_desc: 'Identidad gestionada para despliegues SAP BTP. Se selecciona mediante AUTH_MODE=xsuaa + credenciales XSUAA_*.',
+    idp_xsuaa_desc: 'Servicio de autorización de SAP BTP. Las apps no pueden iniciar sesión contra él directamente: exige un secreto de cliente y un navegador no puede guardarlo. Usa SAP Cloud Identity Services en su lugar.',
+    idp_ias_desc: 'La identidad SAP propia del cliente, para despliegues en SAP BTP. Las apps inician sesión directamente contra el tenant de IAS, y los roles son los grupos de IAS ask-admin y ask-user.',
     idp_none_desc: 'Solo para desarrollo local — las solicitudes no se autentican. Nunca usar en producción.',
     idp_field_issuer: 'Emisor',
     idp_field_client_id: 'Client ID',
@@ -511,7 +513,7 @@ export const translations = {
     idp_field_auth_endpoint: 'Endpoint de autorización',
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de cierre de sesión',
-    idp_dev_warning: 'La autenticación está deshabilitada en este despliegue (ASK_AUTH_MODE es none). Defínelo como keycloak o xsuaa y reinicia para habilitar un proveedor de identidad real.',
+    idp_dev_warning: 'La autenticación está deshabilitada en este despliegue (ASK_AUTH_MODE es none). Defínelo como keycloak o ias y reinicia para habilitar un proveedor de identidad real.',
     idp_callout: 'La SPA lee el proveedor desde ASK_AUTH_MODE al arrancar el contenedor, y el backend valida los tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para cambiar de proveedor, cambia las variables de entorno y reinicia los contenedores. No hace falta reconstruir, y no hay nada que editar aquí por diseño.',
 
     // ── SapConnectionPage ──────────────────────────────────
@@ -787,7 +789,8 @@ export const translations = {
     idp_supported_count: '2 disponíveis',
     idp_badge_available: 'Disponível',
     idp_keycloak_desc: 'Realm OIDC auto-hospedado — o padrão para implantações locais e on-prem.',
-    idp_xsuaa_desc: 'Identidade gerenciada para implantações SAP BTP. Selecionado via AUTH_MODE=xsuaa + credenciais XSUAA_*.',
+    idp_xsuaa_desc: 'Serviço de autorização do SAP BTP. Os apps não conseguem fazer login diretamente nele: ele exige um segredo de cliente, e um navegador não pode guardá-lo. Use o SAP Cloud Identity Services.',
+    idp_ias_desc: 'A identidade SAP do próprio cliente, para implantações no SAP BTP. Os apps fazem login diretamente no tenant do IAS, e os papéis são os grupos do IAS ask-admin e ask-user.',
     idp_none_desc: 'Apenas para desenvolvimento local — as requisições não são autenticadas. Nunca usar em produção.',
     idp_field_issuer: 'Emissor',
     idp_field_client_id: 'Client ID',
@@ -795,7 +798,7 @@ export const translations = {
     idp_field_auth_endpoint: 'Endpoint de autorização',
     idp_field_token_endpoint: 'Endpoint de token',
     idp_field_end_session: 'Endpoint de fim de sessão',
-    idp_dev_warning: 'A autenticação está desabilitada neste deployment (ASK_AUTH_MODE é none). Defina como keycloak ou xsuaa e reinicie para habilitar um provedor de identidade real.',
+    idp_dev_warning: 'A autenticação está desabilitada neste deployment (ASK_AUTH_MODE é none). Defina como keycloak ou ias e reinicie para habilitar um provedor de identidade real.',
     idp_callout: 'A SPA lê o provedor de ASK_AUTH_MODE ao iniciar o contêiner, e o backend valida os tokens usando AUTH_MODE + KEYCLOAK_JWKS_URL / XSUAA_*. Para trocar de provedor, altere as variáveis de ambiente e reinicie os contêineres. Não é preciso reconstruir, e não há nada para editar aqui por design.',
 
     // ── SapConnectionPage ──────────────────────────────────
