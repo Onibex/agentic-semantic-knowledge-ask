@@ -121,8 +121,15 @@ secrets:
   # Secrets in the namespace.
   create: false
 
-  # A 44-character urlsafe-base64 Fernet key.
-  #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  # A 44-character urlsafe-base64 Fernet key, which is url-safe base64 of 32
+  # random bytes and nothing more:
+  #   openssl rand -base64 32 | tr '+/' '-_'
+  #
+  # `python -c "from cryptography.fernet import Fernet; ..."` produces the same
+  # thing and is the obvious way to write it, but `cryptography` is not in the
+  # standard library and is absent from a fresh cloud box, so it fails with
+  # ModuleNotFoundError at the one step whose output nobody can inspect
+  # afterwards. openssl is everywhere, including Git for Windows.
   #
   # IT MUST BE BYTE-IDENTICAL ACROSS UPGRADES. Changing it is not a rotation,
   # it is a data-loss event: every stored secret stops decrypting and has to be
@@ -529,6 +536,12 @@ gateway:
     # internal Caddy signs them itself. No public access needed, and every
     #          visitor gets a browser warning until they accept it once. It is
     #          still a secure context, so the login works.
+    # existing serve a certificate somebody else issued, from a Secret. For an
+    #          organisation with its own authority, a wildcard it has already
+    #          bought, or a policy against letting an internal service reach a
+    #          public certificate authority at all. Nothing is requested and
+    #          nothing is renewed: see `existingSecret` below for what that
+    #          costs.
     mode: acme
     # Where expiry warnings go. Optional, and the render does not stop without
     # it, but be clear about what empty costs: automatic renewal is the only
@@ -536,6 +549,46 @@ gateway:
     # notice you get if it ever stops working. Without it the first sign is the
     # site going untrusted on day 90. Use a team alias, not a person.
     email: ""
+
+    # mode `existing` only. A Secret holding the certificate and its key, which
+    # you create out of band. The standard kubernetes.io/tls shape works as-is:
+    #
+    #   kubectl -n onibex-ask create secret tls ask-gateway-tls \
+    #     --cert=fullchain.pem --key=privkey.pem
+    #
+    # FOUR THINGS HAVE TO BE TRUE OR THE BROWSER STILL WARNS, and each fails in
+    # a different place, so they are worth checking before blaming the chart:
+    #
+    #   1. The certificate covers EVERY name in gateway.hosts. A wildcard does
+    #      only if they all sit at the same level under it.
+    #   2. It was issued by an authority the VISITOR's browser trusts. An
+    #      internal corporate authority is trusted on machines where IT
+    #      installed it and nowhere else, so staff see no warning and anyone
+    #      from outside sees one. That is a question to settle before promising
+    #      anything, not after.
+    #   3. `--cert` is the FULL CHAIN, leaf plus intermediates, not the leaf
+    #      alone. A missing intermediate works in the browser of whoever tested
+    #      it, because it had the intermediate cached, and fails on other
+    #      machines and on mobile. It is the most common of these four and the
+    #      most confusing.
+    #   4. The key is unencrypted, or Caddy cannot read it.
+    #
+    # AND RENEWAL BECOMES A HUMAN'S JOB. acme renews every 60 days on its own;
+    # this mode renews never. When the certificate expires the site goes
+    # untrusted for everyone at once, with no warning sent to anybody. Replacing
+    # it is two steps, and the second is not optional: Caddy reads the files
+    # when it loads its config, so updating the Secret alone changes nothing
+    # until the pod restarts.
+    #
+    #   kubectl -n onibex-ask create secret tls ask-gateway-tls \
+    #     --cert=fullchain.pem --key=privkey.pem --dry-run=client -o yaml \
+    #     | kubectl apply -f -
+    #   kubectl -n onibex-ask rollout restart deploy/<release>-gateway
+    existingSecret: ""
+    # The keys inside that Secret. These defaults are the kubernetes.io/tls
+    # names, so `kubectl create secret tls` needs no override.
+    certKey: tls.crt
+    keyKey: tls.key
 
   # Certificates live here. An emptyDir loses them on every restart, and Let's
   # Encrypt allows only five identical certificates per week, so a few restarts

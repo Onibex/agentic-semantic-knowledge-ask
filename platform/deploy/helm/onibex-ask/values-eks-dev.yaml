@@ -1,0 +1,341 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Amazon EKS, development, on a DEDICATED cluster.
+#
+# Written against a measured cluster on 2026-09-22 (ASKDemo1, us-east-2,
+# EKS 1.35.8), not from a template. Read the AKS file next to this one for
+# contrast: almost every difference below is forced by AWS, not chosen.
+#
+# THE SITUATION THIS FILE IS FOR
+#
+# One t3a.xlarge node, four vCPU, and nothing else on it but the GuardDuty
+# agent. 3920 millicores allocatable with 700 already reserved, so there are
+# about 3200 free for a stack the AKS profile squeezed into 525. That is why
+# the requests here are ordinary numbers instead of the shaved ones in
+# values-aks-dev.yaml: there is no scheduler pressure to work around.
+#
+# THREE THINGS THE CLUSTER NEEDED BEFORE THIS FILE WOULD INSTALL
+#
+# None of these are chart concerns, and all three are silent failures, so they
+# are written down here rather than left to be rediscovered.
+#
+# 1. A DEFAULT StorageClass. A stock EKS cluster ships `gp2` and does not mark
+#    it default. Every storageClassName below is left empty on purpose, which
+#    means "use the cluster default", so with no default the four PVCs sit
+#    Pending forever and nothing ever starts. Fixed once, cluster-wide:
+#
+#      kubectl apply -f - <<'EOF'
+#      apiVersion: storage.k8s.io/v1
+#      kind: StorageClass
+#      metadata:
+#        name: gp3
+#        annotations:
+#          storageclass.kubernetes.io/is-default-class: "true"
+#      provisioner: ebs.csi.aws.com
+#      parameters: { type: gp3, encrypted: "true" }
+#      volumeBindingMode: WaitForFirstConsumer
+#      allowVolumeExpansion: true
+#      EOF
+#
+#    gp3 rather than gp2 because gp2 on this cluster still names the in-tree
+#    provisioner and cannot expand; gp3 is cheaper per GB and goes through the
+#    EBS CSI driver, which is already installed as an addon.
+#
+# 2. SUBNET TAGS. The cluster's three registered subnets are all private. The
+#    VPC does have three public ones, but AWS finds them only by tag, so
+#    without this a Service of type LoadBalancer never gets an address:
+#
+#      aws ec2 create-tags --resources <the three public subnet ids> \
+#        --tags Key=kubernetes.io/role/elb,Value=1 \
+#               Key=kubernetes.io/cluster/ASKDemo1,Value=shared
+#
+#    Measured after tagging: a load balancer is allocated in about 5 seconds
+#    and answers from the internet about 50 seconds later, once its health
+#    check passes.
+#
+# 3. TWO PASSES, and this is the one with no workaround. Azure hands out the
+#    public hostname before anything is running, through the DNS label
+#    annotation, so one install is enough there. AWS generates the name from
+#    the load balancer it creates, so the hostname CANNOT be known until the
+#    Services exist.
+#
+#    The first pass runs with `--set keycloak.enabled=false` and placeholder
+#    hostnames. Leaving Keycloak out is not tidiness: a realm is imported on a
+#    FIRST boot only, and the realm cannot be built until these addresses
+#    exist, so a Keycloak that boots now boots without one and no later value
+#    can fix it short of deleting its volume. The gateway starts regardless,
+#    because it resolves its upstreams when a request arrives rather than at
+#    startup.
+#
+#    Then read the four names, put them in, and `helm upgrade` with Keycloak
+#    on. The Services are keyed by app name and not by hostname, so the second
+#    pass rewrites the Caddyfile and restarts pods; it does NOT create new load
+#    balancers. The whole sequence is in the runbook, and was run start to
+#    finish against this cluster on 2026-09-22.
+#
+# WHY THERE IS NO LET'S ENCRYPT HERE
+#
+# Not an oversight and not a shortcut. On Azure the free `cloudapp.azure.com`
+# name is a real public name and Let's Encrypt issues for it: 4745 such
+# certificates exist in the Certificate Transparency logs for the westus zone
+# alone. For `us-east-2.elb.amazonaws.com` the same search returns ZERO, from
+# every certificate authority, across the entire log. AWS load balancer names
+# are not certifiable. A demo without browser warnings therefore needs a domain
+# we own, with the four names as CNAMEs; until there is one, `tls: internal`
+# is the honest setting and every visitor accepts the warning once.
+#
+# COST, and it is worse than Azure for a structural reason. Four Services of
+# type LoadBalancer are four Classic Load Balancers at 0.025 USD an hour each,
+# about 73 USD a month, against 14.60 for the four Azure public IPs. The
+# difference is what each cloud charges for: AKS puts every Service on ONE
+# shared load balancer and bills per public IP, while AWS creates a separate
+# load balancer per Service and bills per load balancer.
+#
+# A DOMAIN DOES NOT FIX THIS, and an earlier version of this comment said it
+# did. The chart renders one Service per published hostname whoever owns the
+# names, so a domain buys trusted certificates and readable names and leaves
+# the bill at four. Collapsing them onto one is a chart change; the gateway
+# already tells the hostnames apart by the Host header.
+#
+# The node is about 110 USD a month, the NAT gateway 33, and the EKS control
+# plane about 73. Roughly 293 in total, of which ASK adds about 76.
+# ─────────────────────────────────────────────────────────────────────────────
+
+image:
+  # The seven public images on the corporate account. Same set the AKS install
+  # was measured against; pinned rather than left to appVersion, which resolves
+  # to a tag that has never been published.
+  namespace: onibexenjoy
+  tag: sha-eabc833
+
+auth:
+  mode: keycloak
+  # SECOND PASS. This is the issuer inside every token Keycloak signs, so it
+  # has to equal the `auth` hostname below character for character. It cannot
+  # be left empty even on the first pass: the chart refuses to render without
+  # it, deliberately, because a Keycloak with no issuer comes up looking
+  # healthy and hands out tokens nothing will accept.
+  publicUrl: "https://acc256f07ce3f49c288eef919a1b0130-613602124.us-east-2.elb.amazonaws.com"
+
+secrets:
+  # Created out of band so no credential passes through this file. FIVE keys,
+  # not four: ingest-api-key is what the MCP server uses to fetch its API
+  # contracts at boot, and without it that pod crash-loops naming the variable.
+  #   kubectl -n onibex-ask create secret generic ask-platform-secret \
+  #     --from-literal=encryption-key="$(openssl rand -base64 32 | tr '+/' '-_')" \
+  #     --from-literal=opensearch-user=admin \
+  #     --from-literal=opensearch-password="$(openssl rand -base64 24)" \
+  #     --from-literal=keycloak-admin-password="$(openssl rand -base64 24)" \
+  #     --from-literal=ingest-api-key="$(openssl rand -hex 32)"
+  existingSecret: ask-platform-secret
+
+platform:
+  # production, not "development". The backends validate this against a literal
+  # that accepts only `local` or `production`, so the intuitive word crash-loops
+  # the admin API. It says nothing about how carefully this environment is run.
+  environment: production
+  logLevel: INFO
+  askEnv: dev
+
+# RollingUpdate, unlike the AKS profile. That file used Recreate only because
+# the shared node had no room to hold the old pod and the new one at once.
+# Here there is room, so the default stands.
+updateStrategy: RollingUpdate
+
+# ── The public entry point ──────────────────────────────────────────────────
+gateway:
+  enabled: true
+
+  # The four load balancer names AWS generated on the first pass. They are read
+  # back with:
+  #   kubectl -n onibex-ask get svc -l app.kubernetes.io/component=gateway
+  #
+  # THESE ARE NOT PORTABLE. They belong to the four Classic Load Balancers of
+  # this one install. Delete the release without keeping the Services and AWS
+  # hands out four different names, so these four lines have to be read again
+  # and the upgrade repeated. That is the cost of having no DNS label; a domain
+  # we own removes it.
+  #
+  # For a first pass on a fresh cluster, leave these as they are and override
+  # them on the command line with placeholders such as `chat.pass-one.invalid`
+  # (`.invalid` is reserved by RFC 2606 and can never resolve, so nothing can
+  # accidentally depend on one), together with `keycloak.enabled=false`. Then
+  # read the real names, put them here, and run `helm upgrade`.
+  hosts:
+    chat: "a2cdff41293c840218ee9b74bf46c5c4-287809478.us-east-2.elb.amazonaws.com"
+    studio: "a0b06ac23868a4d588b3431d189a135b-1047774046.us-east-2.elb.amazonaws.com"
+    setup: "a3769f04f581049c78d5c6c1dbaf547a-1743330974.us-east-2.elb.amazonaws.com"
+    auth: "acc256f07ce3f49c288eef919a1b0130-613602124.us-east-2.elb.amazonaws.com"
+
+  service:
+    type: LoadBalancer
+    # Nothing here. AWS needs no per-Service annotation to hand out a public
+    # address once the subnets carry the tags described at the top of this
+    # file. That is the whole of the Azure DNS-label block, replaced by three
+    # tags set once on the VPC.
+    annotations: {}
+
+  tls:
+    # internal, and see the section above for why acme is not an option on a
+    # load balancer hostname. Caddy signs these itself. The origin still counts
+    # as secure, so the Keycloak login works.
+    mode: internal
+    email: ""
+
+  persistence:
+    enabled: true
+    size: 1Gi
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# The cross-app links ASK Studio uses to offer the other two. Same four names
+# as above, with the scheme, and https even though the certificate is Caddy's
+# own: an http link here would downgrade the origin and break the login.
+publicUrls:
+  chat: "https://a2cdff41293c840218ee9b74bf46c5c4-287809478.us-east-2.elb.amazonaws.com"
+  studio: "https://a0b06ac23868a4d588b3431d189a135b-1047774046.us-east-2.elb.amazonaws.com"
+  setup: "https://a3769f04f581049c78d5c6c1dbaf547a-1743330974.us-east-2.elb.amazonaws.com"
+
+# ── The sizing ──────────────────────────────────────────────────────────────
+# Real requests, because this node has room. Memory limits stay close to the
+# requests for the JVM workloads: an undersized OpenSearch container is
+# OOM-killed rather than slowed down.
+
+opensearch:
+  enabled: true
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 3Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+    # Empty takes the cluster default, which is the gp3 class created above.
+    storageClassName: ""
+
+keycloak:
+  # The realm built for the four addresses above, by
+  # `scripts/make_realm_import.py`, and held in a Secret because it carries
+  # user passwords and three client secrets. This is a NAME, not a credential,
+  # which is why it can live in this file.
+  #
+  # THE ORDER MATTERS AND IT BIT THIS INSTALL. A realm is imported on FIRST
+  # boot only. Install without this value and Keycloak writes an empty
+  # datastore to its volume; adding the value afterwards changes nothing, the
+  # file is simply ignored, and the symptom is every login returning
+  # `Realm does not exist` while the pod reports perfectly healthy. Recovering
+  # means deleting the Keycloak PVC so the next pod starts on an empty volume.
+  realmImportSecret: ask-realm
+
+  # start-dev. Production mode means an RDS instance for Postgres, which is a
+  # resource this account has not been asked to create. This is a scratch
+  # environment and says so.
+  production: false
+  # On, and not optional. start-dev keeps the realm in a file inside the
+  # container, so without a volume every pod replacement re-imports the realm
+  # and silently undoes whatever the admin console changed, including the
+  # password each user is forced to set at first sign-in. The symptom is the
+  # initial shared password working again days later.
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClassName: ""
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+    limits:
+      memory: 1Gi
+
+orchestrator:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      memory: 1536Mi
+
+adminApi:
+  # One, and the chart refuses to render more. Two pods against the same git
+  # checkout of the semantic layer overwrite each other.
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+studio:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+chat:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+setup:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# On. It needs no credentials of its own beyond the ingest key: it reads the
+# SAP connection from the encrypted store through the admin API and re-reads it
+# about once a minute. Without it the platform still answers questions and
+# every SAP action fails.
+#
+# EXPECT 8 OF 9 READY ON A CLEAN INSTALL. This pod stays 0/1 on purpose until
+# somebody saves API contracts in Setup. A waiting MCP shows ZERO restarts; if
+# the restart counter climbs, it is something else.
+mcpServer:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+# Off. It needs a Bot Framework app id and password this environment does not
+# have, and it is the one component nothing else depends on.
+teamsBot:
+  enabled: false
+
+semanticLayer:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: ""
+
+# Every workload is a single replica here, so both of these would render
+# nothing anyway. They are stated rather than left implicit so that raising a
+# replica count later is a deliberate act.
+podDisruptionBudget:
+  enabled: false
+topologySpread:
+  enabled: false

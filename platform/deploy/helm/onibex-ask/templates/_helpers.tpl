@@ -101,10 +101,30 @@ imagePullSecrets:
 KEYCLOAK_JWKS_URL, which is the variable the validators actually read. An
 earlier manifest published KEYCLOAK_ISSUER instead; nothing reads it, and being
 optional it went unnoticed while every request was rejected.
+
+WHEN KEYCLOAK IS IN THE RELEASE, THE PODS FETCH THE KEYS OVER THE CLUSTER
+NETWORK, not over the public hostname. This is not an optimisation. Deriving it
+from auth.publicUrl sends the backends out through the gateway, and with
+gateway.tls.mode=internal that certificate is signed by Caddy's own authority,
+which no pod trusts. The fetch fails with CERTIFICATE_VERIFY_FAILED, the
+validator ends up with no keys, and EVERY request is answered 401 with "no
+configured issuer accepted the token" while all nine pods report healthy and the
+browser login itself works perfectly. It cost a smoke test to find, because the
+sign-in redirect chain is fine and only the first API call fails.
+
+Nothing is lost by taking the short path: the validator checks the signature and
+the expiry and does NOT check the issuer, so the keys are the same keys whichever
+address they arrive from, and the token still carries the public issuer the
+browser saw.
+
+auth.jwksUrl still overrides, and an identity provider outside the release still
+derives from auth.publicUrl, because there is no in-cluster Service to use.
 */}}
 {{- define "onibex-ask.jwksUrl" -}}
 {{- if .Values.auth.jwksUrl -}}
 {{- .Values.auth.jwksUrl -}}
+{{- else if .Values.keycloak.enabled -}}
+{{- printf "http://%s-keycloak:8080/realms/%s/protocol/openid-connect/certs" (include "onibex-ask.fullname" .) .Values.auth.realm -}}
 {{- else -}}
 {{- printf "%s/realms/%s/protocol/openid-connect/certs" (trimSuffix "/" .Values.auth.publicUrl) .Values.auth.realm -}}
 {{- end -}}
@@ -257,6 +277,21 @@ to diagnose than a failed render.
 {{- if not $anyHost -}}
 {{- fail "gateway.enabled is true but every gateway.hosts entry is empty, so the gateway would publish nothing. Each app needs its own hostname: they are built to be served from the root and collide on /api, /assets and the login callback when they share one." -}}
 {{- end -}}
+{{- if not (has .Values.gateway.tls.mode (list "acme" "internal" "existing")) -}}
+{{- fail (printf "gateway.tls.mode is %q. It accepts exactly \"acme\", \"internal\" or \"existing\". This one fails more quietly than the others: an unrecognised value matches no branch, so the Caddyfile is rendered with no tls directive at all. Caddy then falls back to its own default, which is to request a public certificate for every hostname, with no address to warn anyone when renewal stops working. The site can look right for ninety days and then go untrusted with nobody notified." .Values.gateway.tls.mode) -}}
+{{- end -}}
+{{- if eq .Values.gateway.tls.mode "existing" -}}
+{{- if not .Values.gateway.tls.existingSecret -}}
+{{- fail "gateway.tls.mode is \"existing\" but gateway.tls.existingSecret is empty, so there is no certificate to serve. Create one out of band and name it here:\n  kubectl -n <ns> create secret tls ask-gateway-tls --cert=fullchain.pem --key=privkey.pem\n--cert must be the FULL CHAIN, leaf plus intermediates. A leaf on its own works in the browser of whoever tested it, because that browser had the intermediate cached, and warns on every other machine." -}}
+{{- end -}}
+{{- if or (not .Values.gateway.tls.certKey) (not .Values.gateway.tls.keyKey) -}}
+{{- fail "gateway.tls.mode is \"existing\" but gateway.tls.certKey or gateway.tls.keyKey is empty. They name the two entries inside the Secret and default to the kubernetes.io/tls names, tls.crt and tls.key. Emptying one renders a Caddyfile pointing at a directory instead of a file, and Caddy refuses to start." -}}
+{{- end -}}
+{{- end -}}
+{{- /* An empty gateway.tls.email is deliberately NOT fatal: values.yaml
+       documents it as optional and says so in as many words, and a render that
+       stops would contradict its own contract. It is a real cost all the same,
+       so NOTES.txt warns about it where warnings belong. */ -}}
 {{- if and .Values.gateway.hosts.auth .Values.keycloak.enabled -}}
 {{- $expected := printf "https://%s" .Values.gateway.hosts.auth -}}
 {{- if ne (trimSuffix "/" .Values.auth.publicUrl) $expected -}}

@@ -57,6 +57,13 @@ jobs:
       # decidable names are in it.
       - name: The product is called what it is called
         run: python scripts/docs_terms.py --check
+      # The Kubernetes runbooks are one page per cloud so each can be followed
+      # without leaving it, which means the cloud-neutral steps are written out
+      # on every page. Duplication nothing checks is how a runbook ends up
+      # creating four keys of a Secret the chart needs five of, which is what
+      # happened before this guard existed.
+      - name: Repeated runbook steps still agree
+        run: python scripts/docs_shared_blocks.py --check
 
   python-hygiene:
     name: Python lint + boundary tests

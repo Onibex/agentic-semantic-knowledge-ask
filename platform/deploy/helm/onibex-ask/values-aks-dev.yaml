@@ -61,7 +61,7 @@ auth:
 secrets:
   # Create it out of band, so no key passes through a values file:
   #   kubectl -n onibex-ask create secret generic ask-platform-secret \
-  #     --from-literal=encryption-key="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+  #     --from-literal=encryption-key="$(openssl rand -base64 32 | tr '+/' '-_')" \
   #     --from-literal=opensearch-user=admin \
   #     --from-literal=opensearch-password="$(openssl rand -base64 24)" \
   #     --from-literal=keycloak-admin-password="$(openssl rand -base64 24)"
