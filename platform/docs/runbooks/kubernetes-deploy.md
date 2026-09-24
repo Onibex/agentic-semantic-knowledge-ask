@@ -20,7 +20,7 @@
 |---|---|---|
 | **Amazon EKS** | [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) | Installed and verified end to end |
 | **Azure AKS** | [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) | Installed and verified end to end |
-| **SAP BTP Kyma** | [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md) | Installed and verified end to end, signing in with the chart's Keycloak |
+| **SAP BTP Kyma** | [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md) | Installed and verified end to end with the chart's Keycloak, and with the customer's IAS through [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md) |
 
 **Everything that does not depend on the cloud is in one place:** the
 [Kubernetes reference](kubernetes-reference.md) holds what the chart is and is not, the capacity

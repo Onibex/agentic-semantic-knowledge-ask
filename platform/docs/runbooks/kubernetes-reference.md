@@ -335,13 +335,12 @@ avoids it. With a self-signed gateway certificate the volume costs nothing to lo
   Three backends are in the same position for the same reason: their Dockerfiles declare no `USER`,
   which is why they render with `rootImageSecurityContext` instead of the `runAsUser: 1000` the
   others get.
-- **Signing in with the customer's own SAP identity on Kyma is not documented yet.** The platform
-  installs and runs on Kyma, and its runbook was written from that install, but it signs people in
-  with the Keycloak the chart deploys. SAP Cloud Identity Services gets its section once a real
-  sign-in against a tenant has been verified. XSUAA is not a way there: measured against a real
-  instance, it refuses a browser's token exchange for want of a client secret. Kyma was expected to
-  turn up more than the other two clouds, and it did: five defects, none visible in a render, all
-  now fixed in the chart or the images.
+- **ASK Chat accepts anyone the identity provider signs in.** It requires a signed-in user and no
+  role. With Keycloak that was harmless, because the realm held only the accounts created for it;
+  with IAS, through [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md), it means everyone in the customer's
+  directory. Either the IAS application is restricted to the right people, or ASK Chat is made to
+  require `ask-user`. Kyma, for the record, was expected to turn up more than the other two clouds,
+  and it did: five defects, none visible in a render, all now fixed in the chart or the images.
 - **Four load balancers where one would do, on AKS and EKS**, and a domain does not fix it. Kyma
   allocates none, because it publishes through its own gateway. Covered under
   [What this chart is](#what-this-chart-is-and-what-it-deliberately-is-not). On AWS that is about

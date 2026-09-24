@@ -529,12 +529,13 @@ has been waiting for. It picks them up within a minute and goes Ready on its own
 If you are not using SAP actions at all, leave it unready or install with `mcpServer.enabled=false`.
 <!-- shared:signin end -->
 
-> **This page signs people in with the Keycloak the chart deploys.** Signing in with the customer's
-> own SAP identity, through SAP Cloud Identity Services, is a separate step, and it is not covered
-> here because it has not yet been verified against a real tenant. **Do not switch `auth.mode` to
-> `xsuaa` to get there.** The apps cannot sign in against XSUAA directly: measured against a real
-> instance, it refuses the token exchange for want of a client secret, and a browser can never hold
-> one.
+> **This page signs people in with the Keycloak the chart deploys.** To sign them in with the
+> customer's own SAP identity instead, follow
+> [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md) once this page is done. It switches
+> the installed platform with one more values file, and going back is dropping it. **Do not switch
+> `auth.mode` to `xsuaa` to get there.** The apps cannot sign in against XSUAA directly: measured
+> against a real instance, it refuses the token exchange for want of a client secret, and a browser
+> can never hold one. The chart refuses the value for that reason.
 
 ---
 
