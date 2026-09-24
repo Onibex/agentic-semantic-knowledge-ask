@@ -29,14 +29,15 @@ const MODEL_SUGGESTIONS: Record<string, string[]> = {
   azure: ['text-embedding-3-large'],
   databricks: ['databricks-bge-large-en'],
   huggingface: ['sentence-transformers/all-MiniLM-L6-v2'],
-  sap_aicore: ['text-embedding-3-large'],
+  sap: ['text-embedding-3-large', 'text-embedding-3-small'],
 }
 
 const FIELD_LABELS: Record<string, string> = {
   api_key: 'API Key',
   api_base: 'API Base',
   api_version: 'API Version',
-  deployment_id: 'Deployment ID',
+  AICORE_SERVICE_KEY: 'Service key (JSON)',
+  AICORE_RESOURCE_GROUP: 'Resource group',
   AWS_ACCESS_KEY_ID: 'AWS Access Key ID',
   AWS_SECRET_ACCESS_KEY: 'AWS Secret Access Key',
   AWS_SESSION_TOKEN: 'AWS Session Token',
@@ -50,6 +51,8 @@ const FIELD_LABELS: Record<string, string> = {
 function labelFor(name: string): string {
   return FIELD_LABELS[name] ?? name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
+// Fields whose value is a multi-line document (a pasted JSON key), not a token.
+const MULTILINE_FIELDS = new Set(['AICORE_SERVICE_KEY'])
 
 interface Props {
   open: boolean
@@ -242,6 +245,14 @@ export function EmbedderDrawer({ open, onSaved, onClose }: Props) {
                     <p className="mt-1 text-xs text-slate-400">
                       Just the model id — the provider is already selected.
                     </p>
+                    {current?.index_embedding_dim ? (
+                      <p className="mt-1.5 text-xs text-cyan-700">
+                        The search index stores {current.index_embedding_dim}-dimension vectors. Pick a
+                        model that produces {current.index_embedding_dim}, or one that can shorten its
+                        output to it: text-embedding-3 on SAP AI Core or OpenAI, Titan Text Embeddings V2
+                        on Bedrock.
+                      </p>
+                    ) : null}
                   </div>
 
                   {spec.fields.map((f) => (
@@ -254,14 +265,28 @@ export function EmbedderDrawer({ open, onSaved, onClose }: Props) {
                           </span>
                         )}
                       </label>
-                      <input
-                        type={f.sensitive ? 'password' : 'text'}
-                        autoComplete={f.sensitive ? 'new-password' : 'off'}
-                        value={values[f.name] ?? ''}
-                        onChange={(e) => setValues((prev) => ({ ...prev, [f.name]: e.target.value }))}
-                        placeholder={f.sensitive ? '•••••••• (leave blank to keep)' : ''}
-                        className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
+                      {MULTILINE_FIELDS.has(f.name) ? (
+                        // A pasted JSON key does not fit a one-line password box. It is
+                        // visible while typed, as SAP BTP shows it, and blank after saving.
+                        <textarea
+                          rows={6}
+                          spellCheck={false}
+                          autoComplete="off"
+                          value={values[f.name] ?? ''}
+                          onChange={(e) => setValues((prev) => ({ ...prev, [f.name]: e.target.value }))}
+                          placeholder={f.sensitive ? '(leave blank to keep the stored key)' : ''}
+                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+                        />
+                      ) : (
+                        <input
+                          type={f.sensitive ? 'password' : 'text'}
+                          autoComplete={f.sensitive ? 'new-password' : 'off'}
+                          value={values[f.name] ?? ''}
+                          onChange={(e) => setValues((prev) => ({ ...prev, [f.name]: e.target.value }))}
+                          placeholder={f.sensitive ? '•••••••• (leave blank to keep)' : ''}
+                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

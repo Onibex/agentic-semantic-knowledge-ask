@@ -63,8 +63,10 @@ something broken. Each refusal names the value.
 | `secrets.existingSecret` | `""` | Recommended. Create it out of band so no key passes through a values file |
 | `secrets.create` | `false` | Throwaway environments only; the key lands in the release manifest |
 | `secrets.keys.*` | see `values.yaml` | Key names inside the Secret |
-| `sapAiCore.existingSecret` | `""` | Mounts the SAP AI Core service key at `config/aicore_config.json` |
 | `xsuaa.existingSecret` | `""` | BTP only. Every reference is optional, so its absence is normal elsewhere |
+
+Model provider credentials, SAP AI Core's service key included, are not chart
+values: they are entered in ASK Setup and kept in the encrypted store.
 
 ### OpenSearch
 

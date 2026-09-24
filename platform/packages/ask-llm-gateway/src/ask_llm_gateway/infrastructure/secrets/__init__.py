@@ -12,12 +12,14 @@ Public surface:
   * ``registry.provider_fields`` — per-provider field metadata (sensitive vs plain).
   * ``repository.SecretsRepository`` — OpenSearch CRUD on ``ask-system-settings-v1``.
   * ``provider.SecretsProvider`` — runtime cache + ``export_to_env`` for the factory.
+  * ``field_validation.validate_provider_fields`` — shape checks before a write.
 
 See ``docs/HANDOFF_encrypted_secrets_opensearch.md`` for the design.
 """
 
 from .crypto import ENCRYPTION_KEY_ENV, decrypt, encrypt
 from .db_config import is_db_configured, resolve_db_config
+from .field_validation import validate_provider_fields
 from .provider import SecretsProvider, export_fields_to_env, get_secrets_provider
 from .registry import SAP_PROVIDER, db_provider_fields, known_db_types, provider_fields, sap_fields
 from .repository import (
@@ -58,4 +60,5 @@ __all__ = [
     "new_llm_connection_id",
     "provider_fields",
     "resolve_db_config",
+    "validate_provider_fields",
 ]

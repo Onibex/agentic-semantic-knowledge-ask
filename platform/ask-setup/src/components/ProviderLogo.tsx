@@ -80,7 +80,7 @@ export function ProviderLogo({ id, size = 18 }: { id: string; size?: number }) {
           <path d="M8 14c1.5 1.8 6.5 1.8 8 0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
         </svg>
       )
-    case 'sap_aicore':
+    case 'sap':
       return (
         <svg {...common}>
           <text

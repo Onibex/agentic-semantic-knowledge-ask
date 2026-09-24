@@ -85,6 +85,8 @@ def secrets_client(monkeypatch) -> TestClient:
         "LLM_API_VERSION",
         "EMBEDDER_API_KEY",
         "EMBEDDER_API_BASE",
+        "AICORE_SERVICE_KEY",
+        "AICORE_RESOURCE_GROUP",
     ):
         monkeypatch.delenv(env_name, raising=False)
 
@@ -126,7 +128,88 @@ def test_get_llm_returns_empty_view_when_nothing_stored(secrets_client: TestClie
         "fields": [],
         "updated_at": "",
         "updated_by": "",
+        "index_embedding_dim": None,
     }
+
+
+# ── The embedder and the search index's vector size ─────────────────────────
+
+# The shape SAP BTP issues for a service key. Every value is fake.
+_SAP_KEY = (
+    '{"clientid": "sb-fake!b1|aicore!b1", "clientsecret": "fake-secret-value", '
+    '"url": "https://example.authentication.us10.hana.ondemand.com", '
+    '"serviceurls": {"AI_API_URL": "https://api.ai.prod.us-east-1.aws.ml.hana.ondemand.com"}}'
+)
+
+
+class _FixedSizeEmbedder:
+    def __init__(self, size: int) -> None:
+        self.size = size
+
+    def embed_query(self, text: str) -> list[float]:
+        return [0.0] * self.size
+
+
+def _store_embedder(client: TestClient) -> None:
+    client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "sap",
+            "model": "text-embedding-3-large",
+            "fields": {"AICORE_SERVICE_KEY": _SAP_KEY},
+        },
+    ).raise_for_status()
+
+
+def test_the_embedder_view_carries_the_index_size(secrets_client: TestClient, monkeypatch):
+    monkeypatch.delenv("OPENSEARCH_EMBEDDING_DIM", raising=False)
+    assert secrets_client.get("/v1/admin/secrets/embedder").json()["index_embedding_dim"] == 1024
+
+    monkeypatch.setenv("OPENSEARCH_EMBEDDING_DIM", "3072")
+    assert secrets_client.get("/v1/admin/secrets/embedder").json()["index_embedding_dim"] == 3072
+
+
+def test_a_broken_sap_key_is_refused_where_it_was_typed(secrets_client: TestClient):
+    resp = secrets_client.put(
+        "/v1/admin/secrets/embedder",
+        json={
+            "provider": "sap",
+            "model": "text-embedding-3-large",
+            "fields": {"AICORE_SERVICE_KEY": _SAP_KEY[:-1]},
+        },
+    )
+    assert resp.status_code == 422
+    assert "not valid JSON" in resp.json()["detail"]
+    assert "fake-secret-value" not in resp.text
+
+
+def test_the_embedder_test_fails_on_a_size_the_index_does_not_store(
+    secrets_client: TestClient, monkeypatch
+):
+    """A 3072 vector against a 1024 index is not a working embedder: every publish would fail."""
+    from ask_llm_gateway.application import factory
+
+    monkeypatch.delenv("OPENSEARCH_EMBEDDING_DIM", raising=False)
+    _store_embedder(secrets_client)
+    monkeypatch.setattr(factory, "build_embedder", lambda _cfg: _FixedSizeEmbedder(3072))
+
+    body = secrets_client.post("/v1/admin/secrets/test", json={"target": "embedder"}).json()
+
+    assert body["success"] is False
+    assert "3072" in body["error"] and "1024" in body["error"]
+
+
+def test_the_embedder_test_passes_at_the_index_size(secrets_client: TestClient, monkeypatch):
+    from ask_llm_gateway.application import factory
+
+    monkeypatch.delenv("OPENSEARCH_EMBEDDING_DIM", raising=False)
+    _store_embedder(secrets_client)
+    monkeypatch.setattr(factory, "build_embedder", lambda _cfg: _FixedSizeEmbedder(1024))
+
+    body = secrets_client.post("/v1/admin/secrets/test", json={"target": "embedder"}).json()
+
+    assert body["success"] is True
+    assert "1024" in body["detail"]
 
 
 # ── PUT splits plain vs encrypted ───────────────────────────────────────────
@@ -285,7 +368,11 @@ def test_put_embedder_changing_provider_drops_the_old_credentials(secrets_client
 
     secrets_client.put(
         "/v1/admin/secrets/embedder",
-        json={"provider": "openai", "model": "text-embedding-3-small", "fields": {"api_key": "sk-new"}},
+        json={
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "fields": {"api_key": "sk-new"},
+        },
     ).raise_for_status()
 
     body = secrets_client.get("/v1/admin/secrets/embedder").json()

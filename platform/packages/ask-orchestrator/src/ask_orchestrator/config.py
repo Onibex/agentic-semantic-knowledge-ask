@@ -132,9 +132,9 @@ def get_settings() -> Settings:
 # ─────────────────────────────────────────────────────────────────────────────
 # Distinct from `Settings` above:
 #   - `Settings` reads ENVIRONMENT + XSUAA_* from env vars (12-factor).
-#   - `SettingsCache` caches the JSON file mounted at `config/settings.json`
-#     (DB creds, AI Core deployments, pricing, etc.) which the admin UI edits
-#     at runtime.
+#   - `SettingsCache` caches the JSON file mounted at `config/settings.json`,
+#     read-only deploy-time tuning (a ConfigMap in Kubernetes). Credentials and
+#     the active LLM live in the encrypted secrets store, not here.
 #
 # Before this cache, every `/v1/query` hit `settings.json` 4 times via
 # `json.loads(Path(...).read_text())`. With N concurrent threads that's 4·N

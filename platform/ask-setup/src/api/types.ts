@@ -92,8 +92,6 @@ export interface AppConfig {
   hana?: HanaConfig
   postgresql?: PostgresConfig
   ias?: IasConfig
-  deployments?: { llm?: string; embeddings?: string }
-  sap_ai_core?: { config_path?: string }
   [key: string]: unknown
 }
 
@@ -287,6 +285,8 @@ export interface SecretsGetResponse {
   fields: SecretsFieldView[]
   updated_at: string
   updated_by: string
+  /** Embedder only: the vector size the search index stores, which the embedder must produce. */
+  index_embedding_dim?: number | null
 }
 
 export interface SecretsPutRequest {
@@ -307,22 +307,6 @@ export interface SecretsTestResponse {
   latency_ms: number
   detail: string
   error?: string
-}
-
-// ── SAP AI Core service-key upload (legacy plane, kept for D2) ─────────────────
-
-export interface AicoreConfigStatus {
-  exists: boolean
-  valid?: boolean
-  auth_url?: string
-  ai_api_url?: string
-  client_id_preview?: string
-}
-
-export interface AicoreUploadResponse {
-  success: boolean
-  message: string
-  status: AicoreConfigStatus
 }
 
 // ── Semantic Dictionary ───────────────────────────────────────────────────────

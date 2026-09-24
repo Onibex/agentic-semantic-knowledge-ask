@@ -7,8 +7,9 @@
 
 """``/v1/admin/secrets/...`` — encrypted secrets management (LLM + Embedder).
 
-This is the **canonical** path for provider credentials. Replaces the legacy
-``/v1/admin/llm/config`` (which wrote plain text to ``settings.json``).
+This is the path for provider credentials. Every write is shape-checked first
+(``validate_provider_fields``), so a credential that cannot work is refused
+with a 422 where it was typed instead of failing later in chat.
 
 Storage backend: ``ask-system-settings-v1`` index in OpenSearch, with
 Fernet-encrypted sensitive fields.
@@ -34,6 +35,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from opensearchpy.exceptions import OpenSearchException
 
+from ask_llm_gateway.embedding_space import index_embedding_dim
 from ask_llm_gateway.infrastructure.secrets import (
     LLM_ACTIVE_POINTER_ID,
     SecretsRepository,
@@ -43,6 +45,7 @@ from ask_llm_gateway.infrastructure.secrets import (
     new_connection_id,
     new_llm_connection_id,
     provider_fields,
+    validate_provider_fields,
 )
 from ask_llm_gateway.infrastructure.secrets.registry import known_providers
 
@@ -105,7 +108,7 @@ def _notify_orchestrator_reload(trace_id: str) -> None:
 
 # Display labels mirror setup_effective._PROVIDER_LABELS — keep this single map.
 _PROVIDER_LABELS: dict[str, str] = {
-    "sap_aicore": "SAP AI Core",
+    "sap": "SAP AI Core",
     "openai": "OpenAI",
     "anthropic": "Anthropic",
     "gemini": "Google Gemini",
@@ -117,6 +120,15 @@ _PROVIDER_LABELS: dict[str, str] = {
 }
 
 logger = logging.getLogger(__name__)
+
+
+def _check_fields(provider: str, fields: dict[str, str]) -> None:
+    """Refuse a credential that cannot work before it is stored (422)."""
+    try:
+        validate_provider_fields(provider, fields)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+
 
 router = APIRouter(prefix="/v1/admin/secrets", tags=["admin/secrets"])
 
@@ -170,9 +182,15 @@ def _build_masked_view(target: SecretsTarget, raw: dict[str, Any] | None) -> Sec
     either the stored plain value or ``"***"`` (when encrypted) or empty
     (when unset). Unknown providers (no registry entry) fall back to listing
     whatever keys are stored in ``plain`` + ``encrypted``.
+
+    The embedder view also carries the search index's vector size, which the
+    embedder has to produce, so the SPA can show it next to the model.
     """
+    index_dim = index_embedding_dim() if target == "embedder" else None
     if raw is None:
-        return SecretsGetResponse(target=target, provider="", model="", fields=[])
+        return SecretsGetResponse(
+            target=target, provider="", model="", fields=[], index_embedding_dim=index_dim
+        )
 
     provider = str(raw.get("provider") or "")
     plain = dict(raw.get("plain") or {})
@@ -232,6 +250,7 @@ def _build_masked_view(target: SecretsTarget, raw: dict[str, Any] | None) -> Sec
         fields=rows,
         updated_at=str(raw.get("updated_at") or ""),
         updated_by=str(raw.get("updated_by") or ""),
+        index_embedding_dim=index_dim,
     )
 
 
@@ -291,6 +310,7 @@ def _do_upsert(
         body.provider,
         user,
     )
+    _check_fields(body.provider, body.fields)
 
     try:
         stored = _repo().upsert(
@@ -374,9 +394,8 @@ async def test_secrets(
         secrets_provider.export_to_env(body.target)
         from ask_llm_gateway.application.factory import build_embedder, build_llm
 
-        # build_* read from settings.json for the non-secret bits (stack_mode,
-        # sap_ai_core.config_path); pass an empty dict — env vars seeded above
-        # override anything that would have come from a file section anyway.
+        # An empty dict on purpose: the stored config, seeded above, is the only
+        # source the test should see.
         if body.target == "llm":
             llm = build_llm({})
             llm.invoke("Reply with the single word ok")
@@ -384,7 +403,29 @@ async def test_secrets(
         else:
             embedder = build_embedder({})
             vec = embedder.embed_query("ok")
-            detail = f"Embedder returned {len(vec)}-dim vector"
+            expected = index_embedding_dim()
+            if len(vec) != expected:
+                # A wrong size is not an embedder that works: every publish
+                # would fail against the index mapping, far from this screen.
+                latency_ms = int((time.monotonic() - started) * 1000)
+                logger.warning(
+                    "[%s] embedder dimension %d != index %d", trace_id, len(vec), expected
+                )
+                return SecretsTestResponse(
+                    success=False,
+                    target=body.target,
+                    provider=provider,
+                    model=model,
+                    latency_ms=latency_ms,
+                    detail="The embedder does not produce the size the search index stores",
+                    error=(
+                        f"The embedder returned {len(vec)}-dimension vectors and the search "
+                        f"index stores {expected}. Choose a model that produces {expected}, "
+                        "or one that can shorten its output to it (text-embedding-3 on SAP AI "
+                        "Core or OpenAI, Titan Text Embeddings V2 on Bedrock)."
+                    ),
+                )
+            detail = f"Embedder returned a {len(vec)}-dimension vector, the size the index stores"
 
         latency_ms = int((time.monotonic() - started) * 1000)
         logger.info("[%s] secrets test ok %dms", trace_id, latency_ms)
@@ -1038,6 +1079,7 @@ async def create_llm_connection(
     claims: TokenClaims = Depends(validate_token),
 ) -> LlmConnectionView:
     user = getattr(claims, "email", None) or "anonymous"
+    _check_fields(body.provider, body.fields)
     cid = new_llm_connection_id()
     try:
         stored = _repo().upsert(
@@ -1102,6 +1144,7 @@ async def update_llm_connection(
     user = getattr(claims, "email", None) or "anonymous"
     if _safe_get_raw(cid) is None:
         raise HTTPException(status_code=404, detail=f"Connection {cid!r} not found.")
+    _check_fields(body.provider, body.fields)
     try:
         stored = _repo().upsert(
             cid,

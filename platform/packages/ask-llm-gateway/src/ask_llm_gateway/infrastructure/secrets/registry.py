@@ -64,10 +64,16 @@ _PROVIDER_FIELDS: dict[str, list[tuple[str, bool]]] = {
         # Local sentence-transformers — api_key only needed for gated models.
         ("api_key", True),
     ],
-    # Managed path. AICORE_* creds live in .env (bootstrap of gen_ai_hub SDK),
-    # the doc just stores the deployment_id.
-    "sap_aicore": [
-        ("deployment_id", False),
+    # SAP AI Core, through LiteLLM's `sap` provider and the generative AI hub's
+    # orchestration service. The service key is the whole JSON that SAP BTP
+    # issues for the instance; LiteLLM reads it from AICORE_SERVICE_KEY, derives
+    # the token and API URLs itself, and finds the orchestration deployment on
+    # its own, so there is no deployment id to configure. The model is chosen by
+    # name per request. The resource group is optional; LiteLLM defaults to
+    # `default`, the one SAP creates with the instance.
+    "sap": [
+        ("AICORE_SERVICE_KEY", True),
+        ("AICORE_RESOURCE_GROUP", False),
     ],
 }
 

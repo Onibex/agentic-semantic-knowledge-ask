@@ -47,7 +47,6 @@ from .routers import (
     ingest_config,
     internal,
     lifecycle,
-    llm_config,
     mcp,
     organization,
     sap_connection,
@@ -273,7 +272,6 @@ app.include_router(sap_connection.internal_router)  # M2M: the MCP server's dest
 app.include_router(workspaces.router)  # GET open (chat scoping); writes gated in-router
 
 app.include_router(admin_config.router, dependencies=_ADMIN_ONLY)
-app.include_router(llm_config.router, dependencies=_ADMIN_ONLY)
 app.include_router(contracts.router, dependencies=_ADMIN_ONLY)
 app.include_router(docs.router, dependencies=_ADMIN_ONLY)
 app.include_router(mcp.router, dependencies=_ADMIN_ONLY)

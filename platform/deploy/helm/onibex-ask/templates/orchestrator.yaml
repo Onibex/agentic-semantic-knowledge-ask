@@ -75,12 +75,6 @@ spec:
               mountPath: /app/config/settings.json
               subPath: settings.json
               readOnly: true
-            {{- if .Values.sapAiCore.existingSecret }}
-            - name: aicore
-              mountPath: /app/config/aicore_config.json
-              subPath: {{ .Values.sapAiCore.key }}
-              readOnly: true
-            {{- end }}
           resources:
             {{- toYaml .Values.orchestrator.resources | nindent 12 }}
           readinessProbe:
@@ -100,11 +94,6 @@ spec:
         - name: config
           configMap:
             name: {{ include "onibex-ask.fullname" . }}-config
-        {{- if .Values.sapAiCore.existingSecret }}
-        - name: aicore
-          secret:
-            secretName: {{ .Values.sapAiCore.existingSecret }}
-        {{- end }}
       {{- with .Values.orchestrator.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

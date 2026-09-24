@@ -44,10 +44,6 @@ function isMcpConfigured(c: AppConfig): boolean {
   return !!(s4?.mcp_url)
 }
 
-function isLlmConfigured(c: AppConfig): boolean {
-  return !!(c.model_name || (c.deployments as Record<string, unknown> | undefined)?.llm)
-}
-
 // ── types ──────────────────────────────────────────────────
 
 interface CardDef {
@@ -66,7 +62,7 @@ interface CardDef {
 const CARDS_CONFIG = [
   { to: '/setup',          icon: Settings,    check: () => false,       labelKey: 'card_setup_label',     descKey: 'card_setup_desc',     okKey: 'card_setup_ok',     missingKey: 'card_setup_missing' },
   { to: '/database',       icon: Database,    check: () => false,       labelKey: 'card_database_label',  descKey: 'card_database_desc',  okKey: 'card_database_ok',  missingKey: 'card_database_missing' },
-  { to: '/llm-providers',  icon: BrainCircuit, check: isLlmConfigured,  labelKey: 'card_llm_label',       descKey: 'card_llm_desc',       okKey: 'card_llm_ok',       missingKey: 'card_llm_missing' },
+  { to: '/llm-providers',  icon: BrainCircuit, check: () => false,       labelKey: 'card_llm_label',       descKey: 'card_llm_desc',       okKey: 'card_llm_ok',       missingKey: 'card_llm_missing' },
   { to: '/identity',       icon: ShieldCheck, check: () => false,       labelKey: 'card_identity_label',  descKey: 'card_identity_desc',  okKey: 'card_identity_ok',  missingKey: 'card_identity_missing' },
   { to: '/sap-connection', icon: Plug,        check: isSapConfigured,   labelKey: 'card_sap_label',       descKey: 'card_sap_desc',       okKey: 'card_sap_ok',       missingKey: 'card_sap_missing' },
   { to: '/mcp-server',     icon: Server,      check: isMcpConfigured,   labelKey: 'card_mcp_label',       descKey: 'card_mcp_desc',       okKey: 'card_mcp_ok',       missingKey: 'card_mcp_missing' },

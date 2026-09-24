@@ -141,7 +141,56 @@ def test_provider_fields_come_from_shared_providers_endpoint(client: TestClient)
     resp = client.get("/v1/admin/secrets/providers")
     assert resp.status_code == 200
     ids = {p["id"] for p in resp.json()["providers"]}
-    assert {"openai", "anthropic", "bedrock", "sap_aicore"} <= ids
+    assert {"openai", "anthropic", "bedrock", "sap"} <= ids
+    assert "sap_aicore" not in ids
+
+
+# ── SAP AI Core: the whole service key, encrypted, checked before it is stored ──
+
+# The shape SAP BTP issues for a service key. Every value is fake.
+_SAP_KEY = (
+    '{"clientid": "sb-fake!b1|aicore!b1", "clientsecret": "fake-secret-value", '
+    '"url": "https://example.authentication.us10.hana.ondemand.com", '
+    '"serviceurls": {"AI_API_URL": "https://api.ai.prod.us-east-1.aws.ml.hana.ondemand.com"}}'
+)
+_SAP = {
+    "name": "SAP AI Core · gpt-4o",
+    "provider": "sap",
+    "model": "gpt-4o",
+    "fields": {"AICORE_SERVICE_KEY": _SAP_KEY, "AICORE_RESOURCE_GROUP": ""},
+}
+
+
+def test_a_sap_connection_stores_the_key_encrypted(client: TestClient):
+    created = client.post("/v1/admin/secrets/llm/connections", json=_SAP)
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["configured"] is True
+    by_name = {f["name"]: f for f in body["fields"]}
+    assert by_name["AICORE_SERVICE_KEY"]["source"] == "encrypted"
+    assert "fake-secret-value" not in created.text
+
+
+def test_a_partial_sap_key_is_refused_and_named(client: TestClient):
+    partial = dict(
+        _SAP,
+        fields={"AICORE_SERVICE_KEY": '{"clientid": "x", "clientsecret": "fake-secret-value"}'},
+    )
+    resp = client.post("/v1/admin/secrets/llm/connections", json=partial)
+    assert resp.status_code == 422
+    assert "serviceurls.AI_API_URL" in resp.json()["detail"]
+    assert "fake-secret-value" not in resp.text
+
+
+def test_editing_a_sap_connection_with_a_blank_key_keeps_it(client: TestClient):
+    cid = client.post("/v1/admin/secrets/llm/connections", json=_SAP).json()["id"]
+    edited = dict(
+        _SAP, model="gpt-4.1", fields={"AICORE_SERVICE_KEY": "", "AICORE_RESOURCE_GROUP": ""}
+    )
+    resp = client.put(f"/v1/admin/secrets/llm/connections/{cid}", json=edited)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["model"] == "gpt-4.1"
+    assert resp.json()["configured"] is True
 
 
 # ── set active projects into the canonical llm doc ────────────────────────────

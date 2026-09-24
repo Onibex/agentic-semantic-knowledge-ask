@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ask-llm-gateway"
 version = "1.1.0"
-description = "ASK Platform — Backbone: SAP AI Core adapter (LLM + embeddings + token tracking)"
+description = "ASK Platform: LLM and embedder factory over LiteLLM, encrypted secrets store, token tracking"
 requires-python = ">=3.11"
 license = {text = "PolyForm Strict 1.0.0 / Free Trial 1.0.0 — see LICENSE.md"}
 classifiers = ["License :: Other/Proprietary License"]
@@ -15,17 +15,16 @@ dependencies = [
     # ">=0.3" let `uv pip install` re-resolve to 1.x in some images (admin-api)
     # but not others → non-reproducible builds.
     "langchain-core>=0.3,<0.4",
-    "generative-ai-hub-sdk>=1.0",   # gen_ai_hub — SAP AI Core SDK (managed path)
     "cryptography>=42",             # Fernet symmetric encryption for encrypted secrets
     "opensearch-py>=2.4",           # SecretsRepository backend (ask-system-settings-v1)
-    # LiteLLM is the backend for EVERY provider that is not sap_aicore (Bedrock,
-    # Azure, OpenAI, Anthropic, Vertex/Gemini, Mistral, Cohere, … — adding one is
-    # config, not code). The factory selects it by `provider`, NOT by a flag, so
-    # it's a BASE dependency (always installed), not an opt-in extra. The old
-    # `[direct]` extra (and the "direct" stack-mode it was named after) is gone.
+    # LiteLLM is the backend for EVERY API provider (Bedrock, Azure, OpenAI,
+    # Anthropic, Vertex/Gemini, SAP AI Core, Mistral, Cohere, …; adding one is
+    # config, not code), so it's a BASE dependency, not an opt-in extra.
     # langchain-litellm exposes it as a LangChain BaseChatModel (ChatLiteLLM) so
-    # chains + with_structured_output keep working unchanged.
-    "litellm>=1.50",
+    # chains + with_structured_output keep working unchanged. The floor is the
+    # version measured with the `sap` provider that SAP AI Core goes through;
+    # older releases do not have it.
+    "litellm>=1.97",
     "langchain-litellm>=0.2",
 ]
 

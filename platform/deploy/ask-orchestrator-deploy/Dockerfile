@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV UV_LINK_MODE=copy
 
 # Install third-party deps shared across the typed packages (langchain,
-# langgraph, opensearch-py, hdbcli, gen_ai_hub, etc.).
+# langgraph, opensearch-py, hdbcli, litellm, etc.).
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system -r requirements.txt
@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY packages/ask-llm-gateway/pyproject.toml         packages/ask-llm-gateway/
 COPY packages/ask-llm-gateway/src                    packages/ask-llm-gateway/src
 # litellm + langchain-litellm are BASE deps of ask-llm-gateway (the LiteLLM
-# backend serves every non-sap_aicore provider) — installed by the bare package.
+# backend serves every API provider, SAP AI Core included), installed by the bare package.
 # The local offline embedder (langchain-huggingface + sentence-transformers) is
 # HEAVY (pulls torch + CUDA, several GB) and most deployments never use it, so it
 # is NOT installed by default. To test the `huggingface` embedder, rebuild with:

@@ -40,13 +40,13 @@
 #                  Para `npm run dev` nativo, los mismos nombres en .env.local.
 #
 # Shared state:
-#   - ./config                 → /app/config (settings.json, aicore_config.json)
+#   - ./config                 → /app/config (settings.json)
 #                                Ya NO lo monta mcp-server: los contratos de API
 #                                viven en OpenSearch desde 2026-09-09.
 #   - ./logs                   → /app/logs   (token_usage.jsonl)
 #   - $SEMANTIC_LAYER_HOST_PATH → /app/semantic-layer (external semantic-layer repo
 #                                with its OWN .git — see "Semantic layer" below)
-#   - .env                     → AICORE_* credentials + REPO_ROOT/WORKSPACE_PATH
+#   - .env                     → REPO_ROOT/WORKSPACE_PATH and the deploy flags
 #
 # Semantic layer: the YAMLs live in a SEPARATE git repo from the code, with its
 # own .git, so YAML commits never mix with code commits. Set

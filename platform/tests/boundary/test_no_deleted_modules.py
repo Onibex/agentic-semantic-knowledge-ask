@@ -18,6 +18,13 @@ Current entries
   ``ask_knowledge_graph.application.rag_text_renderer`` during the
   Knowledge refactor. The new home parses ASK Spec YAMLs directly (no
   more bespoke ``data_product/db_table_name`` schema).
+- The SAP AI Core route through SAP's own SDK: ``chat_llm_factory``,
+  ``embedder_factory``, ``chat_llm``, ``embedder`` and ``aicore_env`` in
+  ``ask_llm_gateway``, the ``llm_config`` router in ``ask_admin_api``, and
+  ``gen_ai_hub`` itself. SAP AI Core is a LiteLLM provider now (``sap``),
+  built by ``ask_llm_gateway.application.factory`` like every other one, and
+  the SDK is no longer a dependency: importing it again is a decision, not a
+  drift.
 """
 
 from __future__ import annotations
@@ -28,7 +35,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
-_FORBIDDEN_IMPORTS = ("utils.yaml_data_product",)
+_FORBIDDEN_IMPORTS = (
+    "utils.yaml_data_product",
+    "ask_llm_gateway.application.chat_llm_factory",
+    "ask_llm_gateway.application.embedder_factory",
+    "ask_llm_gateway.infrastructure.chat_llm",
+    "ask_llm_gateway.infrastructure.embedder",
+    "ask_llm_gateway.infrastructure.aicore_env",
+    "ask_admin_api.routers.llm_config",
+    "gen_ai_hub",
+)
 
 _SCAN_DIRS = (
     "deploy",
@@ -82,9 +98,15 @@ def test_deleted_module_files_are_actually_gone():
     deleted_paths = (
         "utils/yaml_data_product.py",
         "packages/ask-intent-resolution/src/ask_intent_resolution/flash/infrastructure/opensearch_vectorstore.py",
+        "packages/ask-llm-gateway/src/ask_llm_gateway/application/chat_llm_factory.py",
+        "packages/ask-llm-gateway/src/ask_llm_gateway/application/embedder_factory.py",
+        "packages/ask-llm-gateway/src/ask_llm_gateway/infrastructure/chat_llm.py",
+        "packages/ask-llm-gateway/src/ask_llm_gateway/infrastructure/embedder.py",
+        "packages/ask-llm-gateway/src/ask_llm_gateway/infrastructure/aicore_env.py",
+        "packages/ask-admin-api/src/ask_admin_api/routers/llm_config.py",
     )
     survivors = [p for p in deleted_paths if (REPO_ROOT / p).exists()]
     assert survivors == [], (
-        "These files were supposed to be deleted by the Knowledge refactor "
-        "but still exist:\n" + "\n".join(f"  {p}" for p in survivors)
+        "These files were deleted on purpose (see the module docstring) "
+        "but exist again:\n" + "\n".join(f"  {p}" for p in survivors)
     )

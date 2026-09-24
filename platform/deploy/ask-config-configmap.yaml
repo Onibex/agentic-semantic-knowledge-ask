@@ -16,20 +16,15 @@
 # removed every writer, so the file is now deploy-time tuning that an operator
 # edits and a rollout picks up.
 #
-# It carries EXACTLY the two sections that still have live readers, and its
+# It carries EXACTLY the one section that still has a live reader, and its
 # content must stay in step with platform/config/settings.example.json.
 #
 # Deliberately absent: an `opensearch` section. Every OpenSearch client resolves
 # OPENSEARCH_* from the environment in all nine construction sites, pinned by
 # platform/tests/integration/test_opensearch_connection_sources.py. A section
-# here would be read by nothing and would mislead the next operator.
-#
-# Note on sap_ai_core.config_path: it points at config/aicore_config.json, the
-# SAP AI Core service key. That file is a credential, so it is NOT in this
-# ConfigMap and no image carries it. Selecting the SAP AI Core embedder without
-# it raises "AI Core service-key JSON not found via sap_ai_core.config_path"
-# (embedder_factory.py:41), which is loud and correct. Mounting it belongs with
-# the rest of the secret wiring in the Helm chart, phase 4.
+# here would be read by nothing and would mislead the next operator. Nor is
+# there anything for SAP AI Core: its service key is a credential and lives in
+# the encrypted store, entered in ASK Setup like every other provider's.
 #
 # Both backends mount this with subPath: settings.json, so only that one file is
 # overlaid. A whole-directory mount would shadow /app/config in the orchestrator
@@ -52,8 +47,5 @@ data:
         "expand_max_total": 5,
         "use_two_pass_flow": true,
         "max_expansion_rounds": 1
-      },
-      "sap_ai_core": {
-        "config_path": "config/aicore_config.json"
       }
     }

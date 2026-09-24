@@ -5,8 +5,5 @@
     "expand_max_total": 5,
     "use_two_pass_flow": true,
     "max_expansion_rounds": 1
-  },
-  "sap_ai_core": {
-    "config_path": "config/aicore_config.json"
   }
 }

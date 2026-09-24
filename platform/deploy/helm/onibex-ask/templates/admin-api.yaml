@@ -138,12 +138,6 @@ spec:
               readOnly: true
             - name: semantic-layer
               mountPath: /app/semantic-layer
-            {{- if .Values.sapAiCore.existingSecret }}
-            - name: aicore
-              mountPath: /app/config/aicore_config.json
-              subPath: {{ .Values.sapAiCore.key }}
-              readOnly: true
-            {{- end }}
           resources:
             {{- toYaml .Values.adminApi.resources | nindent 12 }}
           readinessProbe:
@@ -173,11 +167,6 @@ spec:
           # semanticLayer.persistence.enabled=false.
           emptyDir: {}
           {{- end }}
-        {{- if .Values.sapAiCore.existingSecret }}
-        - name: aicore
-          secret:
-            secretName: {{ .Values.sapAiCore.existingSecret }}
-        {{- end }}
       {{- with .Values.adminApi.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

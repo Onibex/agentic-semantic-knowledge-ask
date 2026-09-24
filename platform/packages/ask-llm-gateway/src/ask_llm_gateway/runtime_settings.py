@@ -32,6 +32,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .embedding_space import DEFAULT_EMBEDDING_DIM
+
 # ── Section models ──────────────────────────────────────────────────────────
 
 
@@ -65,11 +67,11 @@ class OpenSearchSettings(BaseModel):
     password: str = ""
     use_ssl: bool = False
     verify_certs: bool = False
-    embedding_dim: int = 1024
+    embedding_dim: int = DEFAULT_EMBEDDING_DIM
 
 
 class LLMSettings(BaseModel):
-    """New shape (LiteLLM integration). Coexists with legacy ``deployments.llm``."""
+    """The ``llm`` section: a LiteLLM provider and model."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -90,12 +92,6 @@ class EmbedderSettings(BaseModel):
     api_base: str = ""
     api_version: str = ""
     params: dict[str, Any] = Field(default_factory=dict)
-
-
-class SapAiCoreSettings(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    config_path: str = "config/aicore_config.json"
 
 
 class SapS4HanaSettings(BaseModel):
@@ -137,10 +133,8 @@ class RuntimeSettings(BaseModel):
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    # Top-level discriminators
+    # Top-level discriminator
     db_type: Literal["hana", "postgresql"] = "postgresql"
-    stack_mode: Literal["managed", "direct"] = "direct"
-    model_name: str = ""
 
     # Connection sections
     hana: HanaSettings = Field(default_factory=HanaSettings)
@@ -150,10 +144,6 @@ class RuntimeSettings(BaseModel):
     # LLM + embeddings
     llm: LLMSettings = Field(default_factory=LLMSettings)
     embedder: EmbedderSettings = Field(default_factory=EmbedderSettings)
-    sap_ai_core: SapAiCoreSettings = Field(default_factory=SapAiCoreSettings)
-    deployments: dict[str, str] = Field(
-        default_factory=dict
-    )  # legacy: {"llm": id, "embeddings": id}
 
     # Auth
     auth: AuthSettings = Field(default_factory=AuthSettings)

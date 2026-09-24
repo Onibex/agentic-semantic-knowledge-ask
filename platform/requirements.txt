@@ -1,10 +1,4 @@
 # =========================
-# SAP AI Core / Generative AI Hub
-# =========================
-ai-core-sdk>=2.5.7
-generative-ai-hub-sdk
-
-# =========================
 # Core dependencies
 # =========================
 pydantic>=2.0.0,<3.0.0
@@ -37,13 +31,14 @@ langchain-aws>=0.2.0
 langchain-anthropic>=0.3.0
 
 # =========================
-# LiteLLM — the LLM/embedding backend for EVERY provider that is not sap_aicore
-# (Bedrock / OpenAI / Anthropic / Azure / Vertex / Databricks / …). The
+# LiteLLM: the LLM/embedding backend for EVERY API provider (Bedrock / OpenAI /
+# Anthropic / Azure / Vertex / Databricks / SAP AI Core / …). The
 # ask-llm-gateway factory selects it by `provider`, so it's a hard runtime dep
 # (a BASE dependency of ask-llm-gateway, not an optional extra). Pinned here too
-# so local dev / any requirements.txt-based backend env has it.
+# so local dev / any requirements.txt-based backend env has it. The floor is the
+# version measured with the `sap` provider that SAP AI Core goes through.
 # =========================
-litellm>=1.50
+litellm>=1.97
 langchain-litellm>=0.2
 
 # =========================

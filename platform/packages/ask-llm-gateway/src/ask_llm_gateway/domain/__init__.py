@@ -5,11 +5,10 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-from .models import LLMConfig, TokenUsageRecord
+from .models import TokenUsageRecord
 from .ports import ChatLLMPort, EmbedderPort, TokenTrackerPort
 
 __all__ = [
-    "LLMConfig",
     "TokenUsageRecord",
     "ChatLLMPort",
     "EmbedderPort",

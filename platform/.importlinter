@@ -142,8 +142,8 @@ forbidden_modules =
     ask_docs_service.infrastructure
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Iter 8.5 — ask-llm-gateway becomes the single home for SAP AI Core access
-# (LLM + embeddings + token tracking). Domain isolation matches the other
+# ask-llm-gateway is the single home for LLM and embedder access (LiteLLM,
+# every provider) and token tracking. Domain isolation matches the other
 # packages.
 # ─────────────────────────────────────────────────────────────────────────────
 [importlinter:contract:llm-gateway-domain-isolated]

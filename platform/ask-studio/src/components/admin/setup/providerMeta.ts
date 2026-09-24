@@ -21,7 +21,7 @@ export const PROVIDER_COLOR: Record<string, string> = {
   azure: '#0078d4',
   databricks: '#ee4b2e',
   huggingface: '#e6a817',
-  sap_aicore: '#0aa8e0',
+  sap: '#0aa8e0',
   opensearch: '#0ea5e9',
 }
 

@@ -25,10 +25,11 @@
 #   .env                      SECRETS — never leave your machine. The host has its
 #                             own .env (cp .env.remote.example .env). The templates
 #                             .env.remote.example / .env.example ARE included.
-#   config/aicore_config.json SAP AI Core creds — a secret; provision on the host
-#                             (or use Bedrock IAM / the ASK Setup UI). settings.json
-#                             still ships; api-config.json no longer exists, the
-#                             API contracts live in OpenSearch since 2026-09-09.
+#   config/aicore_config.json an old SAP AI Core service key. Nothing reads it
+#                             any more (the key is entered in ASK Setup), but old
+#                             checkouts still carry one, so it stays excluded.
+#                             settings.json still ships; api-config.json no longer
+#                             exists, the API contracts live in OpenSearch.
 #   config/chats|profiles|artifacts   RUNTIME state, not deploy input: chat
 #                             transcripts, user profiles and generated artifacts
 #                             from whoever ran the stack locally. `./config` is a
@@ -104,7 +105,7 @@ EXCLUDES=(
   --exclude=logs
   --exclude=scratch
   --exclude=./.env                        # exact local secrets file — templates are kept
-  --exclude=./config/aicore_config.json   # SAP AI Core creds — provision on the host
+  --exclude=./config/aicore_config.json   # old SAP AI Core key in old checkouts: a secret
   --exclude=./config/chats                # runtime chat transcripts — see header
   --exclude=./config/profiles             # runtime user profiles
   --exclude=./config/artifacts            # runtime generated artifacts
@@ -131,8 +132,8 @@ if grep -qxE '\./\.env' <<<"$LISTING"; then
   echo "FATAL: .env leaked into the archive — aborting." >&2
   rm -f "$OUT"; exit 1
 fi
-# Same treatment for the two other classes that must never travel: the AI Core
-# credentials, and the runtime state under config/. An exclude typo is silent —
+# Same treatment for the two other classes that must never travel: an old AI Core
+# service key, and the runtime state under config/. An exclude typo is silent —
 # the archive just quietly carries one developer's chat history to a shared host —
 # so the check is here rather than left to whoever remembers to list the tarball.
 if LEAK="$(grep -nE '^\./config/(aicore_config\.json|chats/|profiles/|artifacts/)' <<<"$LISTING" | head -3)"; [[ -n "$LEAK" ]]; then

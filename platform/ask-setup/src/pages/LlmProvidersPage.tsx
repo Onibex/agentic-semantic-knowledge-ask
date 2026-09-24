@@ -24,6 +24,7 @@ import {
   Star,
   Boxes,
   Share2,
+  Ruler,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { llmConnApi, embedderApi } from '@/api/client'
@@ -40,7 +41,7 @@ const PROVIDER_META: Record<string, { color: string }> = {
   azure: { color: '#0078d4' },
   databricks: { color: '#ee4b2e' },
   huggingface: { color: '#e6a817' },
-  sap_aicore: { color: '#0aa8e0' },
+  sap: { color: '#0aa8e0' },
 }
 function meta(provider: string) {
   return PROVIDER_META[provider] ?? { color: '#64748b' }
@@ -55,14 +56,15 @@ const MODEL_SUGGESTIONS: Record<string, string[]> = {
   azure: ['gpt-4o'],
   databricks: ['databricks-dbrx-instruct'],
   huggingface: ['sentence-transformers/all-MiniLM-L6-v2'],
-  sap_aicore: ['gpt-4o', 'text-embedding-3-large'],
+  sap: ['gpt-4o', 'text-embedding-3-large', 'text-embedding-3-small'],
 }
 
 const FIELD_LABELS: Record<string, string> = {
   api_key: 'API Key',
   api_base: 'API Base',
   api_version: 'API Version',
-  deployment_id: 'Deployment ID',
+  AICORE_SERVICE_KEY: 'Service key (JSON)',
+  AICORE_RESOURCE_GROUP: 'Resource group',
   AWS_ACCESS_KEY_ID: 'AWS Access Key ID',
   AWS_SECRET_ACCESS_KEY: 'AWS Secret Access Key',
   AWS_SESSION_TOKEN: 'AWS Session Token',
@@ -74,12 +76,16 @@ const FIELD_LABELS: Record<string, string> = {
   VERTEXAI_LOCATION: 'Location',
 }
 const FIELD_HINTS: Record<string, string> = {
-  deployment_id: 'From your SAP AI Core service key — uploaded once in Setup › AI Core.',
+  AICORE_SERVICE_KEY:
+    'The whole JSON that SAP BTP shows for the SAP AI Core instance’s service key, pasted as is. The model is chosen by name above; there is no deployment ID to enter.',
+  AICORE_RESOURCE_GROUP: 'Optional. Blank uses default, the group SAP creates with the instance.',
   api_base: 'Optional. Leave blank for the provider default.',
   api_version: 'Optional.',
   AWS_SESSION_TOKEN: 'Optional — only for temporary credentials.',
   AWS_REGION: 'e.g. us-east-1',
 }
+// Fields whose value is a multi-line document (a pasted JSON key), not a token.
+const MULTILINE_FIELDS = new Set(['AICORE_SERVICE_KEY'])
 function labelFor(name: string): string {
   return (
     FIELD_LABELS[name] ??
@@ -89,6 +95,11 @@ function labelFor(name: string): string {
 
 function summarize(provider: string, model: string): string {
   return model ? `${provider} · ${model}` : provider
+}
+
+/** Fill every `{n}` of a translated sentence with the index's vector size. */
+function withDim(text: string, n: number): string {
+  return text.split('{n}').join(String(n))
 }
 
 function alpha(hex: string): string {
@@ -549,6 +560,12 @@ export function LlmProvidersPage() {
                 {t('llm_no_embedder')}
               </div>
             )}
+            {embedder?.index_embedding_dim ? (
+              <p className="text-xs text-slate-500 mt-3 flex items-start gap-1.5 pl-1.5">
+                <Ruler size={13} className="text-cyan-600 mt-0.5 shrink-0" />
+                <span>{withDim(t('llm_emb_index_dim'), embedder.index_embedding_dim)}</span>
+              </p>
+            ) : null}
             <p className="text-xs text-slate-400 mt-3 flex items-start gap-1.5 pl-1.5">
               <Share2 size={13} className="text-cyan-500 mt-0.5 shrink-0" />
               <span>{t('llm_embedder_note')}</span>
@@ -571,6 +588,7 @@ export function LlmProvidersPage() {
               ? { provider: embedder.provider, model: embedder.model }
               : null
           }
+          indexDim={embedder?.index_embedding_dim ?? null}
           onPickProvider={pickProvider}
           onName={(v) =>
             setForm((f) => (f ? { ...f, name: v } : { name: v, provider: '', model: '', values: {} }))
@@ -603,6 +621,7 @@ function ProviderDrawer({
   saving,
   canSave,
   existingEmbedder,
+  indexDim,
   onPickProvider,
   onName,
   onModel,
@@ -617,6 +636,7 @@ function ProviderDrawer({
   saving: boolean
   canSave: boolean
   existingEmbedder: { provider: string; model: string } | null
+  indexDim: number | null
   onPickProvider: (id: string) => void
   onName: (v: string) => void
   onModel: (v: string) => void
@@ -766,6 +786,12 @@ function ProviderDrawer({
                   <p className="mt-1 text-xs text-slate-400">
                     {t('llm_field_model_hint')}
                   </p>
+                  {isEmb && indexDim ? (
+                    <p className="mt-1.5 text-xs text-cyan-700 flex items-start gap-1.5">
+                      <Ruler size={13} className="mt-0.5 shrink-0" />
+                      <span>{withDim(t('llm_emb_index_dim_hint'), indexDim)}</span>
+                    </p>
+                  ) : null}
                 </FieldWrapper>
 
                 {spec.fields.map((fld) => (
@@ -827,19 +853,37 @@ function DynamicField({
   const inputCls =
     'w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
   const hint = FIELD_HINTS[fld.name]
+  const placeholder = fld.sensitive
+    ? editing
+      ? t('common_sensitive_keep')
+      : t('common_sensitive_enter')
+    : ''
 
   return (
     <FieldWrapper label={labelFor(fld.name)}>
-      <input
-        type={fld.sensitive ? 'password' : 'text'}
-        value={value}
-        autoComplete={fld.sensitive ? 'new-password' : 'off'}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={
-          fld.sensitive ? (editing ? t('common_sensitive_keep') : t('common_sensitive_enter')) : ''
-        }
-        className={cn(inputCls, fld.name === 'deployment_id' && 'font-mono')}
-      />
+      {MULTILINE_FIELDS.has(fld.name) ? (
+        // A pasted JSON key does not fit a one-line password box. It is visible
+        // while it is typed, as SAP BTP itself shows it, and never after saving:
+        // the backend returns sensitive fields blank.
+        <textarea
+          value={value}
+          rows={6}
+          spellCheck={false}
+          autoComplete="off"
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={cn(inputCls, 'font-mono text-xs resize-y')}
+        />
+      ) : (
+        <input
+          type={fld.sensitive ? 'password' : 'text'}
+          value={value}
+          autoComplete={fld.sensitive ? 'new-password' : 'off'}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={inputCls}
+        />
+      )}
       {fld.sensitive && (
         <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-slate-400">
           {t('common_encrypted')}

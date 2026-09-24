@@ -5,10 +5,10 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""LiteLLM chat adapter — the single direct (non-SAP) LLM backend.
+"""LiteLLM chat adapter: the chat backend for every API provider.
 
 One ``ChatLiteLLM`` instance covers Bedrock, Azure, OpenAI, Anthropic,
-Vertex/Gemini, Mistral, Cohere and 100+ providers. ``ChatLiteLLM`` is a real
+Vertex/Gemini, SAP AI Core, Mistral, Cohere and 100+ providers. ``ChatLiteLLM`` is a real
 LangChain ``BaseChatModel``, so ``prompt | llm | parser`` chains and
 ``with_structured_output`` keep working exactly as with the old per-provider
 adapters — consumers see no difference.
@@ -24,8 +24,10 @@ LiteLLM keys on a ``"<provider>/<model>"`` string:
     anthropic/claude-sonnet-4-...
     gemini/gemini-2.0-flash
     openai/gpt-4o            (plain "gpt-4o" also works for OpenAI)
+    sap/gpt-4o               (SAP AI Core orchestration: the model by name,
+                              no deployment id)
 
-Required packages: litellm>=1.50, langchain-litellm>=0.2  (the `direct` extra).
+Required packages: litellm>=1.50, langchain-litellm>=0.2.
 """
 
 from __future__ import annotations

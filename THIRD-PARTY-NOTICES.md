@@ -37,7 +37,6 @@ that date; re-audit before a release with `python scripts/dependency_licenses.py
 | NetworkX | BSD-3-Clause |
 | PyYAML | MIT |
 | python-jose | MIT |
-| SAP AI Core SDK (`ai-core-sdk`), `ai-api-client-sdk`, `generative-ai-hub-sdk` | SAP-published, **Other/Proprietary License** ⚠, not OSI-approved; see each package's own terms |
 | `sap-xssec` | Apache-2.0 |
 | **`psycopg2-binary`** (PostgreSQL driver) | **GNU LGPL, with psycopg's linking exception** ⚠, the exception permits use from proprietary applications; see the package's `LICENSE` for the exact exception text |
 | **`hdbcli`** (SAP HANA client) | **SAP Developer License Agreement** ⚠, not an OSI-approved open-source license; governs redistribution of the HANA client separately from this repository's license |
