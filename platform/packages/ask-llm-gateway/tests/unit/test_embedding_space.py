@@ -28,7 +28,7 @@ def captured_embedding(monkeypatch):
     def _fake_embedding(**kwargs):
         captured.clear()
         captured.update(kwargs)
-        size = kwargs.get("dimensions") or 8
+        size = kwargs.get("dimensions") or (kwargs.get("parameters") or {}).get("dimensions") or 8
         return {"data": [{"embedding": [0.0] * size} for _ in kwargs["input"]]}
 
     monkeypatch.setattr(litellm, "embedding", _fake_embedding)
@@ -58,11 +58,35 @@ def test_the_embedder_asks_the_model_for_the_index_size(monkeypatch, captured_em
     from ask_llm_gateway.infrastructure.litellm_embedder import LiteLLMEmbedder
 
     monkeypatch.setenv(EMBEDDING_DIM_ENV, "1024")
+    embedder = LiteLLMEmbedder(provider="openai", model="text-embedding-3-large")
+
+    assert len(embedder.embed_query("ok")) == 1024
+    assert captured_embedding["dimensions"] == 1024
+
+
+def test_sap_is_asked_inside_parameters_because_litellm_drops_dimensions(
+    monkeypatch, captured_embedding
+):
+    """Measured against SAP AI Core: `dimensions` arrived as nothing and gave 3072."""
+    from ask_llm_gateway.infrastructure.litellm_embedder import LiteLLMEmbedder
+
+    monkeypatch.setenv(EMBEDDING_DIM_ENV, "1024")
     embedder = LiteLLMEmbedder(provider="sap", model="text-embedding-3-large")
 
     assert len(embedder.embed_query("ok")) == 1024
     assert captured_embedding["model"] == "sap/text-embedding-3-large"
-    assert captured_embedding["dimensions"] == 1024
+    assert captured_embedding["parameters"] == {"dimensions": 1024}
+    assert "dimensions" not in captured_embedding
+
+
+def test_sap_models_without_the_parameter_are_not_asked(monkeypatch, captured_embedding):
+    from ask_llm_gateway.infrastructure.litellm_embedder import LiteLLMEmbedder
+
+    monkeypatch.setenv(EMBEDDING_DIM_ENV, "1024")
+    LiteLLMEmbedder(provider="sap", model="some-other-embedding-model").embed_query("ok")
+
+    assert "parameters" not in captured_embedding
+    assert "dimensions" not in captured_embedding
 
 
 def test_azure_is_not_asked_because_litellm_forwards_it_unchecked(monkeypatch, captured_embedding):
