@@ -14,6 +14,8 @@ Auth modes
 ──────────
   AUTH_MODE=xsuaa    — validate against SAP XSUAA JWKS
   AUTH_MODE=keycloak (default) — validate against Keycloak / OIDC JWKS
+  AUTH_MODE=ias      — validate against SAP Cloud Identity Services JWKS,
+                       AND require `aud` to name IAS_CLIENT_ID
   Dev bypass is NOT a mode — it's a separate dual-flag (ENVIRONMENT=local +
   DEV_BYPASS_AUTH=true), evaluated before AUTH_MODE is read.
 
@@ -25,8 +27,10 @@ is a low-traffic admin service.
 
 Role extraction
 ───────────────
-  xsuaa:    `scope` claim — keeps scopes prefixed with `ask.`
-             e.g. `ask.ask-admin-api!t1234.admin` → role `admin`
+  xsuaa:    `scope` claim, a JSON array. Keeps scopes prefixed with the
+            binding's xsappname (XSUAA_XSAPPNAME), e.g.
+            `ask-platform!t20611.ask-admin` → role `ask-admin`
+  ias:      `groups` claim, the user's IAS groups
   keycloak: `realm_access.roles[]`, with `realm_roles[]` as the fallback for
             tokens where the default mapper is off. Client roles
             (`resource_access.<client>.roles`) are deliberately NOT read:
@@ -139,7 +143,10 @@ class TokenClaims(BaseModel):
     sub: str
     email: str
     roles: list[str]
-    issuer: Literal["xsuaa", "keycloak"]
+    # "ias" was missing when the mode was added: every IAS request would have
+    # passed signature and audience and then failed HERE, as a pydantic
+    # ValidationError, which is a 500 on every call.
+    issuer: Literal["xsuaa", "keycloak", "ias"]
 
 
 # ── Token validation helpers ─────────────────────────────────────────────────
@@ -216,23 +223,50 @@ def _decode_with_jwks(
 def _extract_roles_xsuaa(payload: dict[str, Any]) -> list[str]:
     """Extract roles from an XSUAA token.
 
-    XSUAA encodes roles as space-separated scopes in the `scope` claim.
-    We keep only scopes that start with `ask.` and strip the prefix up to
-    and including the last dot (e.g. `ask.ask-admin-api!t1234.admin` → `admin`).
-    We also keep bare `ask.<role>` forms (e.g. `ask.admin` → `admin`).
+    XSUAA names every scope of an application `<xsappname>.<scope>`, and the
+    xsappname it puts in a token carries a tenant suffix, so the scope that
+    grants ASK's admin role arrives as `ask-platform!t20611.ask-admin`. The
+    prefix is therefore not a constant: it is whatever `XSUAA_XSAPPNAME` says,
+    which the service binding fills in. Matching on it is also what keeps a
+    scope of the same name, granted by some other application in the same
+    subaccount, from being read as an ASK role.
+
+    Both details below were measured against a real XSUAA instance on
+    2026-09-23, and each one on its own made this function return nothing
+    usable. Until then the XSUAA path had never run anywhere.
+
+    **The prefix used to be the literal `ask.`, which no XSUAA can ever
+    produce.** XSUAA rejects a dot in an xsappname outright, so no legal
+    configuration could put one before the first dot of a scope. Every token,
+    however valid and however well configured, yielded zero roles: the user
+    signed in, and every request came back 403.
+
+    **`scope` is a JSON array, not a space-separated string.** It was read with
+    `.split()`, which does not exist on a list, so a correctly prefixed scope
+    would have raised `AttributeError` out of the request instead of granting
+    anything. A string is still accepted, because other OIDC providers do send
+    one and this function is cheap insurance against the next one.
     """
-    raw_scope: str = payload.get("scope", "")
-    roles: list[str] = []
-    for scope in raw_scope.split():
-        if not scope.startswith("ask."):
-            continue
-        # Strip the `ask.` prefix; if the remainder contains dots (e.g.
-        # `ask-admin-api!t1234.admin`), take the part after the last dot.
-        remainder = scope[len("ask.") :]
-        role = remainder.rsplit(".", 1)[-1] if "." in remainder else remainder
-        if role:
-            roles.append(role)
-    return roles
+    raw = payload.get("scope", [])
+    if isinstance(raw, str):
+        scopes = raw.split()
+    elif isinstance(raw, (list, tuple)):
+        scopes = [str(s) for s in raw]
+    else:
+        logger.warning("xsuaa token has a `scope` claim of type %s; no roles read", type(raw).__name__)
+        return []
+
+    xsappname = os.environ.get("XSUAA_XSAPPNAME", "")
+    if not xsappname:
+        logger.error(
+            "XSUAA_XSAPPNAME is not set, so ASK cannot tell its own scopes from another "
+            "application's and grants no role at all. It is the `xsappname` key of the XSUAA "
+            "service binding; the Helm chart passes it from xsuaa.existingSecret."
+        )
+        return []
+
+    prefix = f"{xsappname}."
+    return [s[len(prefix) :] for s in scopes if s.startswith(prefix) and len(s) > len(prefix)]
 
 
 def _extract_roles_keycloak(payload: dict[str, Any]) -> list[str]:
@@ -308,6 +342,71 @@ def _validate_keycloak(token: str) -> TokenClaims | None:
     )
 
 
+def _extract_roles_ias(payload: dict[str, Any]) -> list[str]:
+    """Extract roles from a SAP Cloud Identity Services (IAS) token.
+
+    ASK's roles are IAS groups, named exactly `ask-admin` and `ask-user`, and IAS
+    carries them in a `groups` claim. That claim is present ONLY when the IAS
+    application is configured to emit the groups attribute: measured on a real
+    tenant on 2026-09-23, a token from an application that does not emit it has
+    no `groups` claim at all, not an empty one. A user who signs in and is then
+    refused everywhere is therefore almost always missing that attribute on the
+    application, not missing the group.
+
+    An array is the shape IAS uses. A lone string is accepted too, because a
+    single-valued attribute mapping can produce one.
+    """
+    groups = payload.get("groups")
+    if isinstance(groups, str):
+        return [groups]
+    if isinstance(groups, (list, tuple)):
+        return [str(g) for g in groups]
+    return []
+
+
+def _validate_ias(token: str) -> TokenClaims | None:
+    """Validate a token from SAP Cloud Identity Services (IAS).
+
+    THE AUDIENCE IS CHECKED HERE, UNLIKE THE KEYCLOAK PATH, AND THAT IS THE POINT.
+    The Keycloak path is signature-only because the realm belongs to this
+    deployment alone. An IAS tenant does not: it is the customer's corporate
+    directory, with every one of their applications registered in it, and a
+    user's groups are the same in all of them. Signature-only would accept a
+    token minted for any other application in the tenant, carrying `ask-admin`
+    because the user happens to be in that group. Requiring `aud` to name ASK's
+    own client is what makes the token mean "issued to ASK".
+
+    IAS serves its keys at `/oauth2/certs`, read off a real tenant's discovery
+    document; IAS_JWKS_URL overrides it if a deployment ever needs to.
+    """
+    ias_url = os.environ.get("IAS_URL", "").rstrip("/")
+    jwks_url = os.environ.get("IAS_JWKS_URL") or (f"{ias_url}/oauth2/certs" if ias_url else "")
+    if not jwks_url:
+        logger.error("AUTH_MODE=ias but neither IAS_URL nor IAS_JWKS_URL is set; rejecting every token")
+        return None
+
+    client_id = os.environ.get("IAS_CLIENT_ID", "")
+    if not client_id:
+        # Fail closed. Without it the audience cannot be checked, and accepting
+        # the token anyway is exactly the cross-application hole described above.
+        logger.error("AUTH_MODE=ias but IAS_CLIENT_ID is not set, so no audience can be verified; rejecting every token")
+        return None
+
+    try:
+        payload = _decode_with_jwks(token, jwks_url, audience=client_id)
+    except HTTPException as exc:
+        logger.warning("ias token rejected: %s", exc.detail)
+        return None
+
+    sub = payload.get("sub") or ""
+    return TokenClaims(
+        sub=sub,
+        email=payload.get("email") or payload.get("preferred_username") or sub,
+        roles=_extract_roles_ias(payload),
+        issuer="ias",
+    )
+
+
 # ── Public FastAPI dependencies ───────────────────────────────────────────────
 
 
@@ -333,7 +432,8 @@ async def validate_token(
 
     token = authorization[len("Bearer ") :]
 
-    # AUTH_MODE=keycloak (Keycloak/OIDC, default) | xsuaa (SAP XSUAA). Dev bypass is a
+    # AUTH_MODE=keycloak (Keycloak/OIDC, default) | xsuaa (SAP XSUAA) | ias (SAP Cloud
+    # Identity Services). Dev bypass is a
     # separate dual-flag handled above (bypass_active), not an AUTH_MODE value.
     auth_mode = os.environ.get("AUTH_MODE", "keycloak").lower()
     claims: TokenClaims | None = None
@@ -342,6 +442,8 @@ async def validate_token(
         claims = _validate_xsuaa(token)
     elif auth_mode == "keycloak":
         claims = _validate_keycloak(token)
+    elif auth_mode == "ias":
+        claims = _validate_ias(token)
 
     if claims is None:
         raise HTTPException(

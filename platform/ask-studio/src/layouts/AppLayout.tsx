@@ -69,16 +69,23 @@ function SideNavItem({ item }: { item: NavItem }) {
 
 // ── IDP chip ──────────────────────────────────────────────────────────────────
 
+// Every mode gets its own branch, and 'Dev' is only ever 'none'. The fallthrough
+// used to be the last branch, so an IAS session, fully authenticated, would have
+// been labelled 'Dev' in the muted colour of the no-login bypass: the one place
+// the sign-in guide sends people to confirm what a session is before they
+// diagnose anything else.
 function IdpChip() {
   const label =
     authConfig.mode === 'keycloak'
       ? 'SSO'
-      : authConfig.mode === 'xsuaa'
-        ? 'XSUAA'
-        : 'Dev'
+      : authConfig.mode === 'ias'
+        ? 'IAS'
+        : authConfig.mode === 'xsuaa'
+          ? 'XSUAA'
+          : 'Dev'
 
   const colorClass =
-    authConfig.mode === 'keycloak'
+    authConfig.mode === 'keycloak' || authConfig.mode === 'ias'
       ? 'bg-brand/10 text-brand'
       : authConfig.mode === 'xsuaa'
         ? 'bg-warning/15 text-warning'

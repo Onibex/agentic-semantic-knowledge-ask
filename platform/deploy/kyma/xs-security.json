@@ -1,13 +1,13 @@
 {
   "_comment_1": "SAP BTP XSUAA security descriptor for ASK. Replaces the one archived from the Cloud Foundry era, which named a different application, declared scopes ASK cannot read, and pointed its redirect URIs at an approuter that no longer exists.",
 
-  "_comment_2": "THE APPLICATION NAME STARTS WITH `ask.` AND THAT IS NOT COSMETIC. The token validator keeps only scopes beginning with `ask.` and then takes what follows the last dot (ask-admin-api/auth/validator.py, _extract_roles_xsuaa). XSUAA renders $XSAPPNAME in a token as <xsappname>!t<tenant>, so `ask.platform` yields `ask.platform!t123.ask-admin`, which passes the filter and resolves to the role `ask-admin`. An xsappname without that prefix yields scopes the validator skips: the user signs in perfectly and then gets 403 everywhere, because ASK reads zero roles. That is exactly what the archived descriptor would have produced.",
+  "_comment_2": "NO DOT IN THE APPLICATION NAME. XSUAA refuses one outright: `May only include characters 'a'-'z', 'A'-'Z', '0'-'9', '_', '-', and '/'`, measured against a real subaccount on 2026-09-23. That matters because the validator used to keep only scopes beginning with `ask.`, and since XSUAA renders $XSAPPNAME in a token as <xsappname>!t<tenant>, no legal configuration could ever have satisfied it. The XSUAA path had therefore never worked; the filter now matches on the xsappname the binding reports instead.",
 
   "_comment_3": "The scope names ARE the role names, spelled exactly as the code checks them. ask-admin is required by every ASK Studio route and by the admin API; ask-user is the default that reaches ASK Chat and sees an access-denied screen in Studio. These two are the whole list (ask-setup/src/pages/IdentityProviderPage.tsx, KNOWN_ROLES).",
 
   "_comment_4": "REPLACE <CLUSTER_DOMAIN> BEFORE CREATING THE INSTANCE, in all three redirect URIs, for example ff90b8d.kyma.ondemand.com. Each SPA completes its sign-in at <origin>/login/callback (see each app's src/auth/config.ts). A URI that is not listed here stops the sign-in with `redirect_uri` rejected AFTER the password has been typed, which is the same failure mode the Keycloak realm has and the reason the runbook probes it with curl before involving a person.",
 
-  "xsappname": "ask.platform",
+  "xsappname": "ask-platform",
   "tenant-mode": "dedicated",
   "description": "Onibex ASK: authorization for ASK Studio, ASK Chat and ASK Setup",
 

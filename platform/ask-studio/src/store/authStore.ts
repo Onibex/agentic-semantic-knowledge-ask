@@ -67,6 +67,9 @@ function extractUser(token: string): AuthUser | null {
     const realmAccess = payload['realm_access'] as { roles?: string[] } | undefined
     if (realmAccess?.roles) {
       roles = realmAccess.roles
+    } else if (Array.isArray(payload['groups'])) {
+      // SAP Cloud Identity Services: the user's IAS groups, as an array.
+      roles = payload['groups'] as string[]
     } else if (Array.isArray(payload['roles'])) {
       roles = payload['roles'] as string[]
     } else if (typeof payload['scope'] === 'string') {

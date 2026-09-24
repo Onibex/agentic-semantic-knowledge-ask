@@ -25,6 +25,8 @@ window.__ENV__ = {
   KEYCLOAK_CLIENT_ID: '${ASK_KEYCLOAK_CLIENT_ID}',
   XSUAA_URL: '${ASK_XSUAA_URL}',
   XSUAA_CLIENT_ID: '${ASK_XSUAA_CLIENT_ID}',
+  IAS_URL: '${ASK_IAS_URL}',
+  IAS_CLIENT_ID: '${ASK_IAS_CLIENT_ID}',
   // Cross-app links. Optional: when empty, ASK Studio hides the link rather
   // than rendering one that goes nowhere.
   SETUP_SPA_URL: '${ASK_SETUP_SPA_URL}',

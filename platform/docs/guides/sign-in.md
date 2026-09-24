@@ -41,7 +41,7 @@ modes, and you do not choose between them at sign-in time, an administrator set 
 | Mode | Button | What happens |
 |---|---|---|
 | **Keycloak (SSO)** | **Sign in** | Redirects to your identity provider and back. The usual on-premise or self-hosted production mode. |
-| **SAP BTP (XSUAA)** | **Sign in** | Redirects to SAP BTP identity (IAS / XSUAA) and back. Used on SAP BTP deployments. |
+| **SAP Cloud Identity Services (IAS)** | **Sign in** | Redirects to the customer's IAS tenant, which usually hands on to the corporate directory, and back. Used on SAP BTP deployments. |
 | **Dev bypass** | **Continue without authentication** | Enters directly, with no login at all. Local development only. |
 
 > **Never run production with the dev bypass enabled.** *Continue without authentication*
@@ -61,7 +61,8 @@ Two platform roles govern everything:
 | **`ask-admin`** | ASK Studio and ASK Setup: authoring and configuration | Assigned deliberately, to the people who author and configure the platform. |
 
 After signing in, the sidebar footer shows an **auth chip** naming the active mode, `SSO`
-for Keycloak, `XSUAA` for SAP BTP, `Dev` for the bypass, alongside your email and your role.
+for Keycloak, `IAS` for SAP Cloud Identity Services, `Dev` for the bypass, alongside your email
+and your role.
 That chip is the fastest way to confirm what a session actually is before diagnosing anything
 else.
 

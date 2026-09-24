@@ -16,12 +16,15 @@
  * mechanism everywhere.
  */
 export interface RuntimeEnv {
-  AUTH_MODE: 'keycloak' | 'xsuaa' | 'none'
+  AUTH_MODE: 'keycloak' | 'xsuaa' | 'ias' | 'none'
   KEYCLOAK_URL: string
   KEYCLOAK_REALM: string
   KEYCLOAK_CLIENT_ID: string
   XSUAA_URL: string
   XSUAA_CLIENT_ID: string
+  /** SAP Cloud Identity Services tenant origin, e.g. https://<tenant>.accounts.ondemand.com */
+  IAS_URL: string
+  IAS_CLIENT_ID: string
   /** Cross-app links. Empty means "not deployed"; the link is hidden. */
   SETUP_SPA_URL: string
   CHAT_URL: string

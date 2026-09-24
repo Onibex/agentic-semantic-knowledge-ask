@@ -24,7 +24,7 @@
 import type { RuntimeEnv } from '../runtime-env'
 
 export interface AuthConfig {
-  mode: 'keycloak' | 'xsuaa' | 'none'
+  mode: 'keycloak' | 'xsuaa' | 'ias' | 'none'
   issuerUrl: string
   authorizationEndpoint: string
   tokenEndpoint: string
@@ -85,6 +85,35 @@ function buildXsuaaConfig(env: RuntimeEnv): AuthConfig {
   }
 }
 
+/**
+ * SAP Cloud Identity Services (IAS), the customer's own SAP identity.
+ *
+ * Every endpoint here was read off a real tenant's discovery document on
+ * 2026-09-23 rather than assumed: IAS serves OAuth under `/oauth2/`, not
+ * Keycloak's `/protocol/openid-connect/`, so the Keycloak builder cannot be
+ * reused by pointing it at another host.
+ *
+ * `groups` is requested because that is where IAS puts the user's groups, and
+ * ASK's roles are IAS groups named `ask-admin` and `ask-user`. IAS emits the
+ * claim only if the IAS application is configured to send it, which is why a
+ * user who signs in fine and lands on the access-denied screen is almost
+ * always missing that attribute rather than missing the group.
+ */
+function buildIasConfig(env: RuntimeEnv): AuthConfig {
+  const issuerUrl = env.IAS_URL.replace(/\/$/, '')
+
+  return {
+    mode: 'ias',
+    issuerUrl,
+    authorizationEndpoint: `${issuerUrl}/oauth2/authorize`,
+    tokenEndpoint: `${issuerUrl}/oauth2/token`,
+    endSessionEndpoint: `${issuerUrl}/oauth2/logout`,
+    clientId: env.IAS_CLIENT_ID,
+    redirectUri: `${window.location.origin}/login/callback`,
+    scopes: ['openid', 'email', 'profile', 'groups'],
+  }
+}
+
 function buildNoneConfig(): AuthConfig {
   return {
     mode: 'none',
@@ -107,6 +136,10 @@ function resolveAuthConfig(): AuthConfig {
 
   if (env.AUTH_MODE === 'xsuaa') {
     return buildXsuaaConfig(env)
+  }
+
+  if (env.AUTH_MODE === 'ias') {
+    return buildIasConfig(env)
   }
 
   // 'none' only, and only because somebody set it. An unknown value never

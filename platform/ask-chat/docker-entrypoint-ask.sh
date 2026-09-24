@@ -49,12 +49,21 @@ case "$ASK_AUTH_MODE" in
     require ASK_XSUAA_CLIENT_ID
     IDP_ORIGIN=$(echo "$ASK_XSUAA_URL" | sed -E 's#^([a-zA-Z]+://[^/]+).*#\1#')
     ;;
+  ias)
+    # SAP Cloud Identity Services. The SPA is a public client doing PKCE,
+    # which IAS accepts and XSUAA does not: measured 2026-09-23, IAS answers
+    # a secretless token exchange with invalid_grant (the code), XSUAA with
+    # invalid_client (the client).
+    require ASK_IAS_URL
+    require ASK_IAS_CLIENT_ID
+    IDP_ORIGIN=$(echo "$ASK_IAS_URL" | sed -E 's#^([a-zA-Z]+://[^/]+).*#\1#')
+    ;;
   none)
     echo "[ask-config] WARNING: ASK_AUTH_MODE=none. There is no login on this deployment."
     IDP_ORIGIN=""
     ;;
   *)
-    fail "ASK_AUTH_MODE is '$ASK_AUTH_MODE'; expected keycloak, xsuaa or none."
+    fail "ASK_AUTH_MODE is '$ASK_AUTH_MODE'; expected keycloak, xsuaa, ias or none."
     ;;
 esac
 
@@ -63,6 +72,8 @@ export ASK_KEYCLOAK_REALM="${ASK_KEYCLOAK_REALM:-}"
 export ASK_KEYCLOAK_CLIENT_ID="${ASK_KEYCLOAK_CLIENT_ID:-}"
 export ASK_XSUAA_URL="${ASK_XSUAA_URL:-}"
 export ASK_XSUAA_CLIENT_ID="${ASK_XSUAA_CLIENT_ID:-}"
+export ASK_IAS_URL="${ASK_IAS_URL:-}"
+export ASK_IAS_CLIENT_ID="${ASK_IAS_CLIENT_ID:-}"
 
 # ── Render /config.js ───────────────────────────────────────────────────────
 [ -f "$TEMPLATE" ] || fail "$TEMPLATE is missing from the image."

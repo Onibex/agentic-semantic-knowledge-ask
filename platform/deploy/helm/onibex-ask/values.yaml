@@ -63,10 +63,17 @@ fullnameOverride: ""
 
 # ── Identity ────────────────────────────────────────────────────────────────
 auth:
-  # keycloak | xsuaa. These are the only two values the token validators
+  # keycloak | ias | xsuaa. These are the only values the token validators
   # understand; anything else matches no branch, leaves claims unset and 401s
   # every request while the pods report healthy. There is no "both": accepting
   # two issuers at once is a code change, not a values one.
+  #
+  #   keycloak  the Keycloak this chart deploys. The default everywhere.
+  #   ias       SAP Cloud Identity Services, the customer's own SAP identity,
+  #             for SAP BTP. See auth.ias below.
+  #   xsuaa     refused by the render: the apps cannot sign in against XSUAA
+  #             directly, because it demands a client secret a browser cannot
+  #             hold. Measured 2026-09-23; see the guard in _helpers.tpl.
   mode: keycloak
 
   # REQUIRED when mode is keycloak. The public origin of the identity provider
@@ -89,9 +96,34 @@ auth:
   # ASK Chat can run without a login while the other two stay on Keycloak.
   # That exists for one reason: PKCE needs crypto.subtle, which the browser
   # only exposes in a secure context, so a plain-HTTP host cannot complete the
-  # login. Accepted values are keycloak, xsuaa and none. Empty follows
+  # login. Accepted values are keycloak, ias and none. Empty follows
   # auth.mode.
   chatMode: ""
+
+  # REQUIRED when mode is ias, and both halves are.
+  #
+  # The three apps sign in against the tenant directly, as public clients with
+  # PKCE, and IAS accepts that: measured on a real tenant, a secretless token
+  # exchange is refused for the CODE, never for the client. That is exactly
+  # where XSUAA fails.
+  ias:
+    # The customer's tenant origin, no trailing slash. Read it off their IAS
+    # admin console, or check it answers:
+    #   curl https://<tenant>.accounts.ondemand.com/.well-known/openid-configuration
+    url: ""
+
+    # The IAS application's client id. One application for all three apps.
+    #
+    # NOT OPTIONAL, AND NOT COSMETIC: it is the audience the backends check.
+    # An IAS tenant is the customer's whole directory, every one of their
+    # applications is in it, and a user's groups are the same in all of them.
+    # Without this check a token issued to any other application in the tenant
+    # would be accepted here, with whatever ask-admin group the user holds.
+    #
+    # The IAS application must also EMIT the groups attribute. Without it the
+    # token carries no `groups` claim at all, so the user signs in and lands on
+    # the access-denied screen with the right group assigned.
+    clientId: ""
 
 # Browser-facing URLs of the three SPAs, used for the cross-app links. Empty
 # HIDES a link rather than breaking it, which is the right behaviour when that
