@@ -10,11 +10,13 @@ service logs.
 - [Secret scanning and credential rotation](secret-scanning.md). Keeping credentials out of the
   repository, and what to do the day one gets in anyway.
 - [Deploy on Kubernetes with Helm](kubernetes-deploy.md). One chart for every cluster. Start here
-  and it sends you to the page for your cloud, because only the first two steps differ.
+  and it sends you to the page for your cloud, because getting the cluster ready differs on each.
   - [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md). The whole procedure for Amazon EKS,
     top to bottom, including the two things a stock cluster is missing.
   - [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md). The whole procedure for Azure AKS,
     top to bottom, with the free public hostnames and their certificates.
+  - [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md). The whole procedure for SAP BTP
+    Kyma, top to bottom, publishing through the cluster's own gateway with no load balancer.
   - [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md). Switch an installed platform
     from the chart's Keycloak to the customer's own SAP identity, on any cloud, with a checklist
     of every IAS setting and a script that checks the ones it can from outside.

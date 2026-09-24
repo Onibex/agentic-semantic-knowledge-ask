@@ -25,16 +25,18 @@
 # over the internet, so the same overlay works on AKS and EKS. That is why it
 # is a file of its own rather than three lines inside values-kyma-dev.yaml.
 #
-# THE TWO VALUES BELOW ARE THE ONIBEX DEV TENANT's, verified on 2026-09-23. For
-# another tenant, copy this file and replace both. They are not secrets: the
-# client id is a public client's, and every browser that opens an app reads it
-# from /config.js. If either is left empty, the chart refuses to render and
-# names it, so this cannot end up half configured.
+# THE TWO VALUES BELOW ARE THE ONIBEX DEV TENANT's. The client id is the
+# application recreated on 2026-09-24 by following the page alone, which is
+# how that page was tested. For another tenant or another application, replace
+# both. They are not secrets: the client id is a public client's, and every
+# browser that opens an app reads it from /config.js. If either is left empty,
+# the chart refuses to render and names it, so this cannot end up half
+# configured.
 #
 # Before relying on them, check the IAS application from outside:
 #
 #   python scripts/check_ias.py --tenant <url> --client-id <clientId> \
-#     --domain <cluster domain>
+#     --studio <studio host> --chat <chat host> --setup <setup host>
 #
 # The IAS side, every setting the application needs and why, is on the page
 # "Sign in with SAP Cloud Identity Services" (docs/runbooks/sign-in-with-ias.md).
@@ -56,4 +58,4 @@ auth:
     # the customer's applications, and a user's groups are the same in all of
     # them, so a token issued to any other application would otherwise be
     # accepted here too.
-    clientId: "59e9cdd1-88bc-4263-8903-ebc0c1ca1b10"
+    clientId: "acbc332e-e10b-4375-979b-226fe24504a4"

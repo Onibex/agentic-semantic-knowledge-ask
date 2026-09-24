@@ -13,7 +13,7 @@ steps and nothing else:
 |---|---|
 | Amazon EKS | [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) |
 | Azure AKS | [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) |
-| SAP BTP Kyma | Not written yet. See [What is not done yet](#what-is-not-done-yet) |
+| SAP BTP Kyma | [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md) |
 
 ---
 
@@ -335,12 +335,14 @@ avoids it. With a self-signed gateway certificate the volume costs nothing to lo
   Three backends are in the same position for the same reason: their Dockerfiles declare no `USER`,
   which is why they render with `rootImageSecurityContext` instead of the `runAsUser: 1000` the
   others get.
-- **SAP BTP Kyma has not been installed from this chart, and has no runbook.** AKS and EKS both
-  have, and both turned up cluster-level prerequisites that no amount of reading the chart would
-  have predicted. Kyma is expected to turn up more, since it also drags in an IAS tenant and the
-  approuter. Its runbook will be written from an install that worked, the same way the other two
-  were, rather than guessed in advance.
-- **Four load balancers where one would do**, and a domain does not fix it. Covered under
+- **ASK Chat accepts anyone the identity provider signs in.** It requires a signed-in user and no
+  role. With Keycloak that was harmless, because the realm held only the accounts created for it;
+  with IAS, through [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md), it means everyone in the customer's
+  directory. Either the IAS application is restricted to the right people, or ASK Chat is made to
+  require `ask-user`. Kyma, for the record, was expected to turn up more than the other two clouds,
+  and it did: five defects, none visible in a render, all now fixed in the chart or the images.
+- **Four load balancers where one would do, on AKS and EKS**, and a domain does not fix it. Kyma
+  allocates none, because it publishes through its own gateway. Covered under
   [What this chart is](#what-this-chart-is-and-what-it-deliberately-is-not). On AWS that is about
   73 USD a month against roughly 18 for one, and the gateway already tells the hostnames apart by
   the `Host` header, so what is missing is only the chart rendering one Service instead of four.

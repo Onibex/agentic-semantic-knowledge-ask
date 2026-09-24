@@ -49,16 +49,18 @@
 
 image:
   namespace: onibexenjoy
-  # Built from 295e0a7. Two fixes ride in these images and neither can be
-  # applied from a values file, because both live in the image: the nginx
-  # `Host` header (PR #75), without which every API call the apps make through
-  # a service mesh comes back 503, and the `accept` lists (PR #77), whose
-  # MIME types could freeze the file picker on Windows.
+  # Built from 3166f05, the merge of PR #79. Three things ride in these images
+  # and none can be applied from a values file, because all three live in the
+  # image: the nginx `Host` header (PR #75), without which every API call the
+  # apps make through a service mesh comes back 503; the `accept` lists
+  # (PR #77), whose MIME types could freeze the file picker on Windows; and
+  # the `ias` sign-in mode (PR #79), which values-ias-dev.yaml switches on.
   #
   # Do not roll this tag back to "rule out the images" when something breaks.
-  # Both earlier tags carry the 503, so the rollback reproduces the failure it
-  # was meant to eliminate, and looks like confirmation.
-  tag: sha-295e0a7
+  # Every earlier tag carries the 503, and none of them knows the ias mode, so
+  # the rollback reproduces the failure it was meant to eliminate, and looks
+  # like confirmation.
+  tag: sha-3166f05
 
 auth:
   mode: keycloak

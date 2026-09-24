@@ -63,7 +63,8 @@ spec:
   replicas: 1
   strategy:
     # Recreate, not RollingUpdate. In development mode the state is an embedded
-    # file database inside the pod, so two instances would diverge; in
+    # file database, on the Keycloak volume when persistence is on, and two
+    # instances would diverge or fight over the same file; in
     # production mode a rolling upgrade across schema versions is a Keycloak
     # upgrade procedure, not a deployment strategy.
     type: Recreate

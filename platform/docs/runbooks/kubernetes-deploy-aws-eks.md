@@ -13,8 +13,9 @@
 | **Time** | About 40 minutes, most of it waiting for images to pull and load balancers to answer |
 | **You'll end with** | Eight of the nine services Ready, the three apps open in a browser on public HTTPS addresses with a working sign-in, and the MCP server deliberately unready until you register a contract |
 
-**On another cloud?** [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) has its own page,
-because the first two steps are genuinely different. Everything that is the same on every cloud is in the
+**On another cloud?** [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) and
+[Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md) have their own pages, because getting the
+cluster ready is genuinely different on each. Everything that is the same on every cloud is in the
 [Kubernetes reference](kubernetes-reference.md).
 
 ---
@@ -189,7 +190,7 @@ Service that has an address but no answer yet is normal for that first minute.
 ---
 
 <!-- shared:secret start -->
-## Create the namespace and the Secret
+## Step 2. Create the namespace and the Secret
 
 **Five values** cannot live in the chart: four because they are needed before the store that
 holds everything else can be read, and one because it is how two services authenticate to each
@@ -396,7 +397,7 @@ configuration and restarts pods. **No load balancer is created again and no name
 ---
 
 <!-- shared:realm start -->
-## Build the realm for those addresses
+## Step 4. Build the realm for those addresses
 
 The realm committed in this repository is a local demo. Its users carry a password published on
 GitHub, and its redirect URIs list `localhost` ports. Deploying it unchanged puts that password on
@@ -439,14 +440,6 @@ replaces all three every time it runs.
 Copy them somewhere safe before you delete the realm file. Anything authenticating as one of
 those clients needs the new value: for the Kafka Connect HTTP Sink that is `oauth2.client.secret`.
 
-The Keycloak administrator is separate: its password comes from the Secret, and the realm file
-does not cover it. Give it the same treatment by hand, once, after the platform is up:
-
-```bash
-curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
-  "$AUTH/admin/realms/master/users/$ADMIN_ID"
-```
 <!-- shared:realm end -->
 
 ---
@@ -499,7 +492,7 @@ value and says what goes wrong if it is guessed:
 ---
 
 <!-- shared:watch start -->
-## Watch it come up
+## Step 6. Watch it come up
 
 ```bash
 kubectl -n onibex-ask get pods -w
@@ -604,6 +597,7 @@ TOKEN=$(curl -sk -d client_id=kafka-ingest -d client_secret=<the one from the re
 
 kubectl -n onibex-ask port-forward deploy/ask-onibex-ask-admin-api 18081:8081 &
 curl -s -w '\n%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://127.0.0.1:18081/v1/admin/config
+kill %1
 ```
 
 `200` with a JSON body is the platform working. `401` here, with a token that Keycloak just issued,
@@ -614,16 +608,38 @@ and the log line that names the cause is one command away.
 ---
 
 <!-- shared:signin start -->
-## Sign in, and change the passwords
+## Step 8. Sign in, and change the passwords
 
-Open ASK Setup at its address and sign in with the initial password from the realm step. Keycloak
-asks for a new one immediately; that is the shared value retiring.
+Open ASK Setup at its address and sign in as **`demo`**, with the initial password from the realm
+step. `demo` is the administrator. The realm's other person, `user`, has only `ask-user`, and ASK
+Setup refuses it. Keycloak asks for a new password immediately; that is the shared value retiring.
+
+Then the Keycloak administrator, whose password comes from the Secret rather than the realm. Make
+it change that password the first time someone signs in to the Keycloak console:
+
+```bash
+AUTH=https://<auth host>
+PW=$(kubectl -n onibex-ask get secret ask-platform-secret -o jsonpath='{.data.keycloak-admin-password}' | base64 -d)
+TOKEN=$(curl -s -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
+  -d grant_type=password "$AUTH/realms/master/protocol/openid-connect/token" \
+  | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ADMIN_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
+  | python -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
+  "$AUTH/admin/realms/master/users/$ADMIN_ID"
+```
+
+`204` means done. **Run it last:** from then on the same token request answers
+`Account is not fully set up` until someone changes the password at
+`https://<auth host>/admin/master/console/`. Nothing in the platform signs in as this
+administrator, so nothing else stops working.
 
 From there the platform is empty and
 [Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
 model provider, then the semantic layer in ASK Studio.
 
-**And this is where the ninth pod comes up.** Registering your first contract on the
+**And this is where the MCP server comes up.** Registering your first contract on the
 [Register an OpenAPI contract](../ask-setup/07-contracts.md) page gives the MCP server the thing it
 has been waiting for. It picks them up within a minute and goes Ready on its own, with no restart.
 If you are not using SAP actions at all, leave it unready or install with `mcpServer.enabled=false`.
@@ -649,4 +665,4 @@ same way.
 
 ---
 
-[← Back to the manual](../README.md) · [Kubernetes reference](kubernetes-reference.md) · [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md)
+[← Back to the manual](../README.md) · [Kubernetes reference](kubernetes-reference.md) · [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) · [Deploy ASK on SAP BTP Kyma](kubernetes-deploy-kyma.md)

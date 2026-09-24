@@ -51,7 +51,13 @@ Nothing here needs a library outside the standard one, nor any secret.
     python scripts/check_ias.py \\
       --tenant https://<tenant>.accounts.ondemand.com \\
       --client-id <the application's client id> \\
-      --domain <cluster domain>
+      --studio <studio host> --chat <chat host> --setup <setup host>
+
+The three hosts are the apps' own, as in the addresses people open. They are
+asked for one by one because nothing else is the same on every cloud: on Kyma
+they share a domain, on AKS they have a prefix of their own, and on EKS each
+one is a load balancer name with no domain in common at all. An earlier
+version took a single --domain and only ever worked on Kyma.
 
 Exit status is 0 only when every check passes.
 """
@@ -63,8 +69,6 @@ import http.client
 import json
 import sys
 import urllib.parse
-
-APPS = ("ask-studio", "ask-chat", "ask-setup")
 
 # The PKCE pair from RFC 7636's own example. Any valid pair would do: the code
 # sent with it is fake, so nothing is ever issued.
@@ -126,7 +130,7 @@ def _authorize(host: str, client_id: str, redirect: str) -> int:
     return status
 
 
-def check_redirects(host: str, client_id: str, domain: str) -> int:
+def check_redirects(host: str, client_id: str, apps: list[str]) -> int:
     """Returns how many of the three sign-in addresses were accepted.
 
     That count also says whether the client id is real: IAS only accepts an
@@ -145,8 +149,8 @@ def check_redirects(host: str, client_id: str, domain: str) -> int:
         return 0
     _report(True, f"an invented sign-in address is refused (HTTP {fake_status}), so the next checks mean something")
     accepted = 0
-    for app in APPS:
-        address = f"https://{app}.{domain}/login/callback"
+    for app in apps:
+        address = f"https://{app}/login/callback"
         status = _authorize(host, client_id, address)
         accepted += status == 200
         _report(status == 200, f"{address} is accepted",
@@ -166,7 +170,7 @@ def _logout(host: str, client_id: str, address: str) -> tuple[int, str | None]:
     return resp.status, resp.getheader("Location")
 
 
-def check_logout(host: str, client_id: str, domain: str) -> None:
+def check_logout(host: str, client_id: str, apps: list[str]) -> None:
     """The addresses the apps return to after signing out.
 
     IAS checks these against a list of their own, Post Logout Redirect, and
@@ -181,8 +185,8 @@ def check_logout(host: str, client_id: str, domain: str) -> None:
                 "Nothing below about sign-out addresses can be trusted until this passes.")
         return
     _report(True, f"an invented sign-out address is refused (HTTP {fake_status}), so the next checks mean something")
-    for app in APPS:
-        address = f"https://{app}.{domain}/login"
+    for app in apps:
+        address = f"https://{app}/login"
         status, location = _logout(host, client_id, address)
         _report(status == 302 and location == address, f"{address} is accepted for signing out",
                 f"HTTP {status}. Add it under the application's OpenID Connect Configuration, URIs, Post Logout\n"
@@ -191,12 +195,12 @@ def check_logout(host: str, client_id: str, domain: str) -> None:
                 "again: IAS takes a moment to apply a change everywhere.")
 
 
-def check_public_client(host: str, client_id: str, domain: str) -> str:
+def check_public_client(host: str, client_id: str, studio: str) -> str:
     """Returns the OAuth error the tenant answered with."""
     body = urllib.parse.urlencode({
         "grant_type": "authorization_code", "client_id": client_id,
         "code": "check-ias-fake-code", "code_verifier": _VERIFIER,
-        "redirect_uri": f"https://{APPS[0]}.{domain}/login/callback",
+        "redirect_uri": f"https://{studio}/login/callback",
     })
     status, text = _request(host, "POST", "/oauth2/token", body)
     try:
@@ -217,11 +221,21 @@ def check_public_client(host: str, client_id: str, domain: str) -> str:
     return error
 
 
+def _app_host(value: str, flag: str) -> str:
+    """The host alone, taken from the host or from the whole address, since people copy either."""
+    app = value.strip().removeprefix("https://").rstrip("/")
+    if not app or "/" in app or ":" in app:
+        raise SystemExit(f"{flag} wants the app's host, for example ask-studio.example.com, got {value!r}")
+    return app
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tenant", required=True, help="The IAS tenant origin, e.g. https://<tenant>.accounts.ondemand.com")
     ap.add_argument("--client-id", required=True, help="The IAS application's client id, from Client Authentication")
-    ap.add_argument("--domain", required=True, help="The cluster domain the apps are published under, no leading dot")
+    ap.add_argument("--studio", required=True, help="ASK Studio's host, as in its address")
+    ap.add_argument("--chat", required=True, help="ASK Chat's host, as in its address")
+    ap.add_argument("--setup", required=True, help="ASK Setup's host, as in its address")
     args = ap.parse_args()
 
     tenant = args.tenant.rstrip("/")
@@ -230,11 +244,11 @@ def main() -> int:
         print(f"--tenant must be an https origin, got {args.tenant!r}", file=sys.stderr)
         return 2
 
-    domain = args.domain.lstrip(".")
+    apps = [_app_host(args.studio, "--studio"), _app_host(args.chat, "--chat"), _app_host(args.setup, "--setup")]
     if check_discovery(host, tenant):
-        accepted = check_redirects(host, args.client_id, domain)
-        check_logout(host, args.client_id, domain)
-        error = check_public_client(host, args.client_id, domain)
+        accepted = check_redirects(host, args.client_id, apps)
+        check_logout(host, args.client_id, apps)
+        error = check_public_client(host, args.client_id, apps[0])
         if accepted == 0 and error == "invalid_client":
             # Every per-check hint above assumes the client id is right. When
             # nothing about the client worked, that assumption is the likely

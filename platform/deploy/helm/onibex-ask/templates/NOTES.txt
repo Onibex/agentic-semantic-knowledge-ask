@@ -93,9 +93,15 @@ remote is lost when the admin API pod restarts.
 {{- if and .Values.keycloak.enabled (not .Values.keycloak.production) }}
 
 WARNING: Keycloak is running start-dev, which is explicitly not a production
-mode and keeps its state in an embedded file inside the pod. Every user, client
-and realm change is lost when the pod is replaced. Set keycloak.production=true
-with a real database before anyone depends on this.
+mode: one instance only, with its state in an embedded file database.
+{{- if .Values.keycloak.persistence.enabled }}
+That file is on the Keycloak volume, so users, clients and realm changes
+survive the pod being replaced, and are lost only with the volume.
+{{- else }}
+keycloak.persistence.enabled is false, so that file is inside the pod, and
+every user, client and realm change is lost when the pod is replaced.
+{{- end }}
+Set keycloak.production=true with a real database before anyone depends on this.
 {{- end }}
 {{- if and .Values.gateway.enabled (eq .Values.gateway.tls.mode "acme") (not .Values.gateway.tls.email) }}
 
