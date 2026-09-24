@@ -10,14 +10,14 @@
 
 ## Architecture summary
 
-The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SAP HANA Cloud + SAP AI Core:
+The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch, SAP HANA Cloud and an LLM provider:
 
 ```
                         ┌────────────────────────────────────────┐
                         │ External backends                      │
                         │  - OpenSearch        (local, 9200)     │
                         │  - SAP HANA Cloud    (cloud)           │
-                        │  - SAP AI Core       (cloud, via SDK)  │
+                        │  - LLM provider  (cloud, via LiteLLM)  │
                         │  - Keycloak (optional, local, 8180)    │
                         └───────────┬────────────────────────────┘
                                     │
@@ -64,7 +64,7 @@ The platform runs as 2 Python services + 3 React SPAs, backed by OpenSearch + SA
   ```
   Expected: `{"cluster_name":"...","status":"green"|"yellow",...}`
 - **SAP HANA Cloud** reachable (or PostgreSQL if `db_type` is `postgresql` in `config/settings.json`).
-- **SAP AI Core** credentials at the path declared by `sap_ai_core.config_path` in `config/settings.json` (typically `config/aicore_config.json`).
+- **An LLM provider**, entered in ASK Setup under **LLM Providers** once the stack is up. Its credentials are stored encrypted in OpenSearch, not in a file. For SAP AI Core, see [Connect SAP AI Core](connect-sap-ai-core.md).
 
 ### Paths in this runbook
 
@@ -659,11 +659,12 @@ python -c "from ask_llm_gateway.application.factory import build_embedder; e = b
 # Expected: ok: HuggingFaceEmbedder 768   (first run downloads the model from the Hub)
 ```
 
-> ⚠️ **Embedding dimension must match the index.** Switching embedder models changes the vector
-> dimension (e.g. `all-mpnet-base-v2` = 768, SAP AI Core text-embedding-3-large = 3072). The
-> OpenSearch indices are created for a fixed dimension, so changing the embedder requires
-> **re-indexing** the entity/field/docs registries, existing vectors are not comparable across
-> dimensions.
+> **Embedding dimension must match the index.** The indices are created with
+> `OPENSEARCH_EMBEDDING_DIM`, 1024 unless set, and the embedder asks for that size from models that
+> can shorten their output (`text-embedding-3`, Titan Text Embeddings V2). A local model cannot:
+> `all-mpnet-base-v2` produces 768. To use one, set `OPENSEARCH_EMBEDDING_DIM` to its size, drop the
+> registry indices and publish again. Vectors of different sizes are not comparable, and the embedder
+> test in ASK Setup says when the sizes differ.
 
 ---
 

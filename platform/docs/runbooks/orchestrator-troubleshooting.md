@@ -98,7 +98,8 @@ Manual procedure, run after deploying the orchestrator + ASK Chat:
   3. Common roots:
      - `OpenSearchAskRepository` connection refused → check `opensearch.host` in `config/settings.json`.
      - HANA / Postgres connection refused → check `hana` / `postgresql` block.
-     - SAP AI Core deployment ID changed → check `deployments.llm` / `deployments.embeddings`.
+     - The LLM or embedder provider refuses the call → ASK Setup, **LLM Providers**, press **Test**
+       on the active connection and on the embedder; the error names the cause.
 
 ### 4. Pod fails liveness probe immediately
 

@@ -20,6 +20,9 @@ service logs.
   - [Sign in with SAP Cloud Identity Services](sign-in-with-ias.md). Switch an installed platform
     from the chart's Keycloak to the customer's own SAP identity, on any cloud, with a checklist
     of every IAS setting and a script that checks the ones it can from outside.
+  - [Connect SAP AI Core](connect-sap-ai-core.md). Use SAP's generative AI hub for the agent's
+    answers and its embeddings: the subaccount, the extended plan and its orchestration deployment
+    in SAP BTP, then the service key in ASK Setup.
   - [Kubernetes reference](kubernetes-reference.md). What the chart is and is not, the capacity
     tables, the failures worth knowing in advance, and the uninstall. Read it when something
     stops, not to install.
