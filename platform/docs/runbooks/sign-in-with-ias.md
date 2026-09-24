@@ -55,16 +55,22 @@ table exists.
    `Unknown`, organization ID `global`, protocol **OpenID Connect**, and **Parent application: None**.
    An application with a parent inherits settings it cannot change.
 2. **Trust → OpenID Connect Configuration → Configure.** Give the configuration a name without
-   spaces, for example `onibex-ask-platform`. On its **URIs** tab, add six **Redirect** URIs and leave
-   *Front-Channel Logout* and *Back-Channel Logout* empty:
+   spaces, for example `onibex-ask-platform`. Its **URIs** tab has several lists, and two of them
+   are filled. Under **Redirect**, the three addresses the apps sign in through:
    ```
    https://ask-studio.<cluster domain>/login/callback
    https://ask-chat.<cluster domain>/login/callback
    https://ask-setup.<cluster domain>/login/callback
+   ```
+   Under **Post Logout Redirect**, further down the same tab, below *Back-Channel Logout*, the three
+   the apps return to after signing out:
+   ```
    https://ask-studio.<cluster domain>/login
    https://ask-chat.<cluster domain>/login
    https://ask-setup.<cluster domain>/login
    ```
+   Leave *Front-Channel Logout* and *Back-Channel Logout* empty. **IAS checks each list only for its
+   own purpose**: an address under Redirect is refused when signing out, however exactly it matches.
 3. On its **Authentication** tab, **Grant Types → Edit**, and set them as the table says.
 4. On the same tab, **Authentication Policy → Edit**, and raise **Maximum Sessions per User** to `10`.
 5. Back on the application, **Application APIs → Client Authentication**. Turn **Enable Public Client
@@ -75,8 +81,8 @@ table exists.
 | # | Where | Set it to | If it is missed |
 |---|---|---|---|
 | 1 | Create application | Parent application **None** | The application inherits configuration it cannot change |
-| 2 | OpenID Connect Configuration → URIs | The **three `/login/callback`** addresses | IAS shows its own error page the moment the app sends you to sign in, before asking for anything |
-| 2 | OpenID Connect Configuration → URIs | The **three `/login`** addresses | Signing out does not come back to the app |
+| 2 | URIs → **Redirect** | The **three `/login/callback`** addresses | IAS shows its own error page the moment the app sends you to sign in, before asking for anything |
+| 2 | URIs → **Post Logout Redirect** | The **three `/login`** addresses, **not under Redirect**, where they do nothing | Signing out stops on IAS's error page, *"post_logout_redirect_uri is unknown"*, and never gets back to the app |
 | 3 | Grant Types | **Authorization Code** on, and **Enforce PKCE (S256)** on | The apps always send PKCE, so this is not about them: it refuses a sign-in that somebody starts **without** PKCE using the public client id. On a client with no secret, a code from such a flow could be exchanged by whoever intercepted it |
 | 3 | Grant Types | **Refresh** on | People are sent back to sign in every hour |
 | 3 | Grant Types | **Password**, **Client Credentials** and **JWT Bearer** **off**. They come on by default | *Password* exchanges a user name and password for a token directly, **skipping the sign-in page and multi-factor authentication**, and on a public client anyone who reads the client id can try it |
@@ -112,16 +118,21 @@ It must end with `All checks passed.` It needs no credential and changes nothing
 - The tenant answers, with the endpoints and PKCE support the apps are built for.
 - **The three sign-in addresses are accepted, and an invented one is refused.** The refusal is what
   makes the acceptances mean something.
+- **The three sign-out addresses are accepted, and an invented one is refused**, the same way. An
+  accepted one is answered with a redirect back to it; anything else gets IAS's error page.
 - **The application is a public client.** A secretless exchange is refused for the code, not the
   client. Run it once before step 1.5 and once after, and you will see the answer change.
 
 If every address fails and it also reports `invalid_client`, it prints **READ THIS FIRST**: the client
 id itself is wrong, and the other hints do not apply until it is right.
 
+> **Saved something a moment ago? Run it again before believing a failure.** IAS takes a moment to
+> apply a change everywhere. Measured once: right after the three sign-out addresses were saved, the
+> first run accepted one of them, and the next run, a moment later, all three.
+
 **What no check from outside can see**, and where to look instead: the two attributes and the group
 memberships show on ASK Setup's **Identity Provider** page after a sign-in, in Step 5. The grant types
-and the session limit have to be read in the console. And the `/login` addresses show when somebody
-signs out: IAS answers a logout for a registered address and an invented one identically.
+and the session limit have to be read in the console.
 
 ---
 
@@ -193,17 +204,25 @@ person without asking, and every result below belongs to someone else.
 6. **Open ASK Studio and ASK Setup.** Both open. In ASK Setup, the **Identity Provider** page must
    show **SAP Cloud Identity Services (IAS)** as the active provider, with your tenant, your client id
    and your roles: `ask-admin`, `ask-user`, and any other group the person is in.
+7. **Sign out, in a new private window with only ASK Chat open.** Sign in, press **Sign out**, the
+   button next to your email at the bottom of the sidebar, then **Sign in** again in the same tab.
+   Expected: Chat's own sign-in screen after signing out, and IAS **asking for the credentials
+   again**, which proves the IAS session ended too and not only the app's. An IAS page saying the
+   *post_logout_redirect_uri is unknown* means the `/login` addresses are not under Post Logout
+   Redirect. This step was missing from the first version of this page, and signing out had been
+   failing unseen since the application was created.
 
 ---
 
 ## When something is wrong
 
-From the first install against a real tenant, on 2026-09-23. Some of these were seen happen; the
-others follow from how that tenant was measured to behave.
+From the first install against a real tenant, on 2026-09-23 and 24. Some of these were seen happen;
+the others follow from how that tenant was measured to behave.
 
 | What you see | Why | What to do |
 |---|---|---|
 | IAS shows *"OpenID provider cannot process the request because the configuration is incorrect"* as soon as you press Sign in | A `/login/callback` address is missing, or the client id is wrong | Step 1.2, then `check_ias.py` |
+| IAS shows *"OpenID provider cannot process the logout request because the post_logout_redirect_uri is unknown"* when you sign out | The `/login` addresses are not under **Post Logout Redirect**, often because they went under Redirect | Step 1.2, then `check_ias.py` |
 | *Authentication error* on returning to the app, or `invalid_client` | Public client flows are off | Step 1.5 |
 | **Access restricted** for someone who is in `ask-admin` | The `groups` attribute is missing or not *All Groups*, or the token predates the change | Step 1.6, then a new private window |
 | An identifier like `P000123` where the email should be | The `email` attribute is missing | Step 1.6 |
