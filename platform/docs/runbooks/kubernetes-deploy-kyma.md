@@ -11,7 +11,7 @@
 |---|---|
 | **Who** | Whoever can sign in to the SAP BTP subaccount the Kyma environment belongs to, with a role on the cluster |
 | **Time** | About 30 minutes, most of it waiting for images to pull |
-| **You'll end with** | Eight of the nine services Ready, the three apps open in a browser on public HTTPS addresses under the cluster's own certificate, a working sign-in, no load balancer at all, and the MCP server deliberately unready until you register a contract |
+| **You'll end with** | Seven of the eight services Ready, the three apps open in a browser on public HTTPS addresses under the cluster's own certificate, a working sign-in, no load balancer at all, and the MCP server deliberately unready until you register a contract |
 
 **On another cloud?** [Deploy ASK on AWS EKS](kubernetes-deploy-aws-eks.md) and
 [Deploy ASK on Azure AKS](kubernetes-deploy-azure-aks.md) have their own pages, because getting the
@@ -130,19 +130,21 @@ values file is deliberately empty, which means "use the cluster default", so a c
 leaves every volume `Pending` forever with nothing naming the cause. Kyma has one; a stock EKS does
 not, which is why that page has an extra step here.
 
-**The gateway line prints a wildcard, `*.<cluster domain>`, and every address in Step 3 hangs from
-it.** Write the domain down. It differs on every cluster and cannot be guessed.
+**The gateway line prints the wildcard twice**, `["*.<cluster domain>"] ["*.<cluster domain>"]`,
+once for each of the gateway's two servers. **Every address in Step 3 hangs from it.** Write the
+domain down. It differs on every cluster and cannot be guessed.
 
 **`get peerauthentication` shows whether the mesh demands mutual TLS.** On the cluster this page was
 verified on it read `STRICT` in `istio-system`, which applies to the whole cluster, and that is what
 makes Step 3a necessary rather than advisable.
 
-**`get ns` because an existing namespace changes what the next step prints.**
+**`get ns` must answer `NotFound` on a first install**, and that error is the good answer. If the
+namespace does exist, the next step says what to do.
 
 ---
 
 <!-- shared:secret start -->
-## Create the namespace and the Secret
+## Step 2. Create the namespace and the Secret
 
 **Five values** cannot live in the chart: four because they are needed before the store that
 holds everything else can be read, and one because it is how two services authenticate to each
@@ -256,7 +258,7 @@ yours.
 ---
 
 <!-- shared:realm start -->
-## Build the realm for those addresses
+## Step 4. Build the realm for those addresses
 
 The realm committed in this repository is a local demo. Its users carry a password published on
 GitHub, and its redirect URIs list `localhost` ports. Deploying it unchanged puts that password on
@@ -299,19 +301,28 @@ replaces all three every time it runs.
 Copy them somewhere safe before you delete the realm file. Anything authenticating as one of
 those clients needs the new value: for the Kafka Connect HTTP Sink that is `oauth2.client.secret`.
 
-The Keycloak administrator is separate: its password comes from the Secret, and the realm file
-does not cover it. Give it the same treatment by hand, once, after the platform is up:
-
-```bash
-curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
-  "$AUTH/admin/realms/master/users/$ADMIN_ID"
-```
 <!-- shared:realm end -->
 
 ---
 
 ## Step 5. Install, in one pass
+
+**Render it first.** The chart checks its values before producing anything, so this turns every
+refusal into a two-second check that never touches the cluster:
+
+```bash
+helm template ask deploy/helm/onibex-ask \
+  --values deploy/helm/onibex-ask/values-kyma-dev.yaml > /dev/null
+```
+
+Silence means it rendered. Two of the refusals exist only for Kyma:
+
+| If this is wrong | Why the chart stops |
+|---|---|
+| `kyma.enabled` and `gateway.enabled` both true | They publish the same four names by two routes, through two certificates, and only one of them answers the name in DNS |
+| `kyma.enabled` with every address empty | The install would report success and publish nothing at all |
+
+Then install:
 
 ```bash
 helm install ask deploy/helm/onibex-ask \
@@ -328,28 +339,12 @@ before anything is installed, and Keycloak's first boot happens once, with the r
 **first** boot only: had Keycloak ever started without it, it would have written an empty datastore
 to its volume, and every sign-in would return `Realm does not exist` while the pod reports healthy.
 
-**Render it first.** The chart checks its values before producing anything, so the same command
-with `template` in place of `install` turns every refusal into a two-second check that never
-touches the cluster:
-
-```bash
-helm template ask deploy/helm/onibex-ask \
-  --values deploy/helm/onibex-ask/values-kyma-dev.yaml > /dev/null
-```
-
-Silence means it rendered. Two of the refusals exist only for Kyma:
-
-| If this is wrong | Why the chart stops |
-|---|---|
-| `kyma.enabled` and `gateway.enabled` both true | They publish the same four names by two routes, through two certificates, and only one of them answers the name in DNS |
-| `kyma.enabled` with every address empty | The install would report success and publish nothing at all |
-
 **No load balancer is created.** The install ends with four `APIRule`s, which Kyma turns into routes
 on its shared gateway, and the closing notes print the four addresses.
 
 ---
 
-## Watch it come up
+## Step 6. Watch it come up
 
 ```bash
 kubectl -n onibex-ask get pods -w
@@ -373,7 +368,7 @@ Three things start in order, and knowing it saves you from chasing a pod that is
 3. **The MCP server waits for something this runbook does not provide**, and the next part is about
    that.
 
-### A clean install finishes at eight of nine, and the ninth reads `1/2`
+### A clean install finishes at seven of eight, and the eighth reads `1/2`
 
 **The MCP server stays `1/2 Running` and it never leaves on its own.** Its sidecar is ready; the
 server itself is not. It fetches its API contracts from the admin API at boot, there are none stored
@@ -381,7 +376,8 @@ until somebody saves them on the Contracts page in ASK Setup, and it will not st
 because a server that advertises nothing is worse than one that is honestly unready. So it retries,
 with the wait doubling each time, until the contracts exist.
 
-**So the expected end state here is eight pods at `2/2` and the MCP server at `1/2`.** Come back to
+**So the expected end state here is seven pods at `2/2` and the MCP server at `1/2`: eight pods,
+not the nine of AKS and EKS**, whose ninth is the gateway Kyma does not need. Come back to
 it after [Register an OpenAPI contract](../ask-setup/07-contracts.md); it goes to `2/2` within a
 minute of contracts being saved, with no restart.
 
@@ -489,6 +485,7 @@ TOKEN=$(curl -s -d client_id=kafka-ingest -d client_secret=<the one from the rea
 
 kubectl -n onibex-ask port-forward deploy/ask-onibex-ask-admin-api 18081:8081 &
 curl -s -w '\n%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://127.0.0.1:18081/v1/admin/config
+kill %1
 ```
 
 `200` with a JSON body is the platform working. `401` here, with a token Keycloak just issued, has
@@ -514,16 +511,38 @@ One of them must end in `-keycloak-internal`.
 ---
 
 <!-- shared:signin start -->
-## Sign in, and change the passwords
+## Step 8. Sign in, and change the passwords
 
-Open ASK Setup at its address and sign in with the initial password from the realm step. Keycloak
-asks for a new one immediately; that is the shared value retiring.
+Open ASK Setup at its address and sign in as **`demo`**, with the initial password from the realm
+step. `demo` is the administrator. The realm's other person, `user`, has only `ask-user`, and ASK
+Setup refuses it. Keycloak asks for a new password immediately; that is the shared value retiring.
+
+Then the Keycloak administrator, whose password comes from the Secret rather than the realm. Make
+it change that password the first time someone signs in to the Keycloak console:
+
+```bash
+AUTH=https://<auth host>
+PW=$(kubectl -n onibex-ask get secret ask-platform-secret -o jsonpath='{.data.keycloak-admin-password}' | base64 -d)
+TOKEN=$(curl -s -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
+  -d grant_type=password "$AUTH/realms/master/protocol/openid-connect/token" \
+  | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ADMIN_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
+  | python -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
+  "$AUTH/admin/realms/master/users/$ADMIN_ID"
+```
+
+`204` means done. **Run it last:** from then on the same token request answers
+`Account is not fully set up` until someone changes the password at
+`https://<auth host>/admin/master/console/`. Nothing in the platform signs in as this
+administrator, so nothing else stops working.
 
 From there the platform is empty and
 [Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
 model provider, then the semantic layer in ASK Studio.
 
-**And this is where the ninth pod comes up.** Registering your first contract on the
+**And this is where the MCP server comes up.** Registering your first contract on the
 [Register an OpenAPI contract](../ask-setup/07-contracts.md) page gives the MCP server the thing it
 has been waiting for. It picks them up within a minute and goes Ready on its own, with no restart.
 If you are not using SAP actions at all, leave it unready or install with `mcpServer.enabled=false`.
@@ -541,9 +560,26 @@ If you are not using SAP actions at all, leave it unready or install with `mcpSe
 
 ## When you are done with it
 
-[Uninstall, and what survives](kubernetes-reference.md#uninstall-and-what-survives) covers it.
-There is no load balancer to wait for here, so nothing keeps billing once the release is gone except
-the three volumes, which the chart keeps on purpose.
+To remove everything and start again from Step 2:
+
+```bash
+helm uninstall ask --namespace onibex-ask
+kubectl -n onibex-ask delete pvc \
+  ask-onibex-ask-semantic-layer \
+  ask-onibex-ask-keycloak \
+  data-ask-onibex-ask-opensearch-0
+kubectl -n onibex-ask delete secret ask-platform-secret ask-realm
+kubectl delete namespace onibex-ask
+```
+
+**Three volumes, not the four the Kubernetes reference names.** Kyma has no gateway volume, and
+naming it fails with `NotFound`. The semantic layer volume can hold YAML that exists nowhere else, so
+export it from ASK Studio first if it matters.
+
+To uninstall and keep the data, run only the first line. A reinstall on top of the volumes is a
+restore, and [Uninstall, and what survives](kubernetes-reference.md#uninstall-and-what-survives)
+says what each one holds. There is no load balancer here, so once the release is gone only the
+volumes keep billing.
 
 **Nothing cluster-wide was changed.** The only thing outside the release is the namespace label from
 Step 3a, and it goes when the namespace does.

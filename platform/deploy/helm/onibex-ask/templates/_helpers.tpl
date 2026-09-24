@@ -352,7 +352,7 @@ to diagnose than a failed render.
 {{- end -}}
 
 {{- if and .Values.keycloak.enabled .Values.keycloak.production (not .Values.keycloak.database.host) -}}
-{{- fail "keycloak.production is true but keycloak.database.host is empty. Production mode needs a real database; `start-dev` keeps state in an embedded file that does not survive a pod restart. Either point at a managed PostgreSQL or set keycloak.production=false and accept what that means." -}}
+{{- fail "keycloak.production is true but keycloak.database.host is empty. Production mode needs a real database; `start-dev` keeps its state in an embedded file database that runs as one instance only, and survives a pod restart only on the Keycloak volume. Either point at a managed PostgreSQL or set keycloak.production=false and accept what that means." -}}
 {{- end -}}
 
 {{- if .Values.gateway.enabled -}}
