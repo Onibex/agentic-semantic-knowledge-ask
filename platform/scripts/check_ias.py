@@ -14,23 +14,33 @@ so: the password gets typed and then the sign-in stops, or it completes and the
 user can do nothing. This checks, from outside and without any credential, the
 settings that CAN be checked that way, and says plainly which ones cannot.
 
-Every check here was chosen because it DISCRIMINATES, which was measured
-against a real tenant on 2026-09-23 rather than assumed. A check that returns
-the same answer for a right and a wrong configuration proves nothing, and two
-obvious candidates turned out to be exactly that:
+Every check here was chosen because it DISCRIMINATES: a right and a wrong
+configuration get different answers, measured against a real tenant rather
+than assumed. A check that returns the same answer for both proves nothing.
 
-  * The logout address. IAS answers a logout for a registered address and for
-    an invented one identically, 200 with no redirect, so it is not checked.
-  * XSUAA's authorize endpoint, for the record, defers the redirect check until
-    after the password, so the same probe there accepted a fake address. IAS
-    checks it up front, which is why the redirect check below means something.
+A same answer for both is a finding to explain, though, not proof that nothing
+can be seen, and this script once took it for the second. Its first version
+left the sign-out addresses out as uncheckable, because a registered one and
+an invented one were answered identically. They were because neither was
+registered where IAS looks: the addresses sat under Redirect, and IAS checks
+sign-out addresses against a list of their own, Post Logout Redirect. Once
+they were there, each was answered with a redirect back to it (measured on
+2026-09-24), and the sign-out in the browser, never tested until then, had
+been failing the whole time.
+
+For the record, XSUAA's authorize endpoint defers the redirect check until
+after the password, so the same probe there accepted a fake address. IAS
+checks it up front, which is why the redirect check below means something.
 
 What it checks:
 
   1. The tenant answers, and speaks the OIDC shape the apps are built for.
   2. The three sign-in addresses are accepted, AND an invented one is refused.
      The refusal is the control: without it an "accepted" proves nothing.
-  3. The application is a public client. A token exchange with no secret and a
+  3. The three sign-out addresses are accepted, with the same kind of
+     control. Accepted is a 302 back to the address; refused is IAS's error
+     page, served with a 200.
+  4. The application is a public client. A token exchange with no secret and a
      fake code is refused for the CODE (invalid_grant) when public client flows
      are on, and for the CLIENT (invalid_client) when they are off. That second
      answer is exactly how XSUAA fails, and it is the one setting without which
@@ -145,6 +155,42 @@ def check_redirects(host: str, client_id: str, domain: str) -> int:
     return accepted
 
 
+def _logout(host: str, client_id: str, address: str) -> tuple[int, str | None]:
+    # No session cookie travels with this, so there is nothing to sign out of:
+    # it only asks IAS whether it would send someone back to this address.
+    query = urllib.parse.urlencode({"client_id": client_id, "post_logout_redirect_uri": address})
+    conn = http.client.HTTPSConnection(host, timeout=30)
+    conn.request("GET", "/oauth2/logout?" + query)
+    resp = conn.getresponse()
+    resp.read()
+    return resp.status, resp.getheader("Location")
+
+
+def check_logout(host: str, client_id: str, domain: str) -> None:
+    """The addresses the apps return to after signing out.
+
+    IAS checks these against a list of their own, Post Logout Redirect, and
+    not against Redirect: an address registered only under Redirect is
+    refused here exactly like an invented one.
+    """
+    fake = "https://check-ias-invented-address.invalid/login"
+    fake_status, fake_location = _logout(host, client_id, fake)
+    if fake_status == 302:
+        _report(False, "an invented sign-out address is refused",
+                f"It was redirected to {fake_location!r}, so the application lists a wildcard that matches anything.\n"
+                "Nothing below about sign-out addresses can be trusted until this passes.")
+        return
+    _report(True, f"an invented sign-out address is refused (HTTP {fake_status}), so the next checks mean something")
+    for app in APPS:
+        address = f"https://{app}.{domain}/login"
+        status, location = _logout(host, client_id, address)
+        _report(status == 302 and location == address, f"{address} is accepted for signing out",
+                f"HTTP {status}. Add it under the application's OpenID Connect Configuration, URIs, Post Logout\n"
+                "Redirect, further down the tab than Redirect: under Redirect it does nothing for signing out.\n"
+                "Without it, signing out stops on IAS's error page. If you saved it a moment ago, run this\n"
+                "again: IAS takes a moment to apply a change everywhere.")
+
+
 def check_public_client(host: str, client_id: str, domain: str) -> str:
     """Returns the OAuth error the tenant answered with."""
     body = urllib.parse.urlencode({
@@ -184,9 +230,11 @@ def main() -> int:
         print(f"--tenant must be an https origin, got {args.tenant!r}", file=sys.stderr)
         return 2
 
+    domain = args.domain.lstrip(".")
     if check_discovery(host, tenant):
-        accepted = check_redirects(host, args.client_id, args.domain.lstrip("."))
-        error = check_public_client(host, args.client_id, args.domain.lstrip("."))
+        accepted = check_redirects(host, args.client_id, domain)
+        check_logout(host, args.client_id, domain)
+        error = check_public_client(host, args.client_id, domain)
         if accepted == 0 and error == "invalid_client":
             # Every per-check hint above assumes the client id is right. When
             # nothing about the client worked, that assumption is the likely
@@ -202,7 +250,6 @@ def main() -> int:
     print("Not checkable from outside, and each needs a look in the IAS console or a real sign-in:")
     print("  - the application emits the `groups` and `email` attributes")
     print("  - the groups ask-admin and ask-user exist, and hold the right people")
-    print("  - the three /login addresses, used when signing out (IAS answers the same for any address)")
     print("  - the grant types, and Maximum Sessions per User")
     print("The page 'Sign in with SAP Cloud Identity Services' says where to look for each.")
 
