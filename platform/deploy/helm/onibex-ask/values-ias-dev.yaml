@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Strict-1.0.0 OR LicenseRef-PolyForm-Free-Trial-1.0.0
+# Copyright (c) 2026 Onibex, LLC. All rights reserved.
+#
+# Part of Onibex ASK — Agentic Semantic Knowledge.
+# Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
+# Commercial licenses: contact@onibex.com — see LICENSE.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sign in with SAP Cloud Identity Services (IAS) instead of the Keycloak the
+# chart deploys. Development, against the Onibex tenant.
+#
+# THIS IS AN OVERLAY, NOT A PROFILE. It sets three values and nothing else, and
+# goes AFTER a cloud profile, because Helm applies values files left to right
+# and the last one wins:
+#
+#   helm upgrade --install ask deploy/helm/onibex-ask -n onibex-ask \
+#     -f deploy/helm/onibex-ask/values-kyma-dev.yaml \
+#     -f deploy/helm/onibex-ask/values-ias-dev.yaml
+#
+# Drop the second -f and the release is back on Keycloak, which keeps running
+# with its realm the whole time. That is what makes the switch cheap to undo.
+#
+# NOT KYMA-SPECIFIC. The identity provider has nothing to do with the cloud:
+# the apps talk OIDC straight to the tenant and the backends fetch its keys
+# over the internet, so the same overlay works on AKS and EKS. That is why it
+# is a file of its own rather than three lines inside values-kyma-dev.yaml.
+#
+# THE TWO VALUES BELOW ARE THE ONIBEX DEV TENANT's, verified on 2026-09-23. For
+# another tenant, copy this file and replace both. They are not secrets: the
+# client id is a public client's, and every browser that opens an app reads it
+# from /config.js. If either is left empty, the chart refuses to render and
+# names it, so this cannot end up half configured.
+#
+# Before relying on them, check the IAS application from outside:
+#
+#   python scripts/check_ias.py --tenant <url> --client-id <clientId> \
+#     --domain <cluster domain>
+#
+# The IAS side, every setting the application needs and why, is on the page
+# "Sign in with SAP Cloud Identity Services" (docs/runbooks/sign-in-with-ias.md).
+# ─────────────────────────────────────────────────────────────────────────────
+
+auth:
+  mode: ias
+
+  ias:
+    # The tenant origin, no trailing slash. It is also the issuer IAS stamps
+    # into every token.
+    url: "https://abcmuyzge.accounts.ondemand.com"
+
+    # From the IAS application's Client Authentication page. NOT the
+    # Application ID shown at the top of the application, which looks similar
+    # and is a different value.
+    #
+    # It is the audience the backends require: an IAS tenant holds every one of
+    # the customer's applications, and a user's groups are the same in all of
+    # them, so a token issued to any other application would otherwise be
+    # accepted here too.
+    clientId: "59e9cdd1-88bc-4263-8903-ebc0c1ca1b10"

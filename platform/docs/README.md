@@ -80,6 +80,7 @@ required; the rest are optional or read-only.
 - [Deploy on Kubernetes with Helm](runbooks/kubernetes-deploy.md). One chart for every cluster; start here and it sends you to your cloud
 - [Deploy ASK on AWS EKS](runbooks/kubernetes-deploy-aws-eks.md). The whole procedure for Amazon EKS, top to bottom
 - [Deploy ASK on Azure AKS](runbooks/kubernetes-deploy-azure-aks.md). The whole procedure for Azure AKS, top to bottom
+- [Sign in with SAP Cloud Identity Services](runbooks/sign-in-with-ias.md). Switch sign-in from the chart's Keycloak to the customer's own SAP identity, on any cloud
 - [Kubernetes reference](runbooks/kubernetes-reference.md). The chart, the failures worth knowing in advance, and the uninstall
 
 ### [Reference](reference/README.md)
