@@ -28,6 +28,12 @@ Why the shape is what it is (verified against the pinned stacks, 2026-08-12):
 * The model-level ``AutoTrackingCallback`` (TokenTracker) keeps firing —
   ``with_structured_output`` wraps the same model instance, so contextvar-based
   accounting is unaffected by this helper.
+* A provider can refuse the schema itself. ``ChatLiteLLM`` sends it with
+  ``strict: true``, and SAP AI Core's orchestration then applies OpenAI's strict
+  rules: every property must be listed in ``required``, so a schema with
+  defaults fails with HTTP 400 before the model runs (measured 2026-09-24 with
+  ``sap/gpt-4o``). The same schema passes as a tool, so a failed invoke is
+  retried once by function calling, and both failures are logged.
 """
 
 from __future__ import annotations
@@ -56,6 +62,13 @@ def _tokens_of(message: Any) -> int:
     return 0
 
 
+def _brief(exc: BaseException, limit: int = 500) -> str:
+    """The exception for a log line. Provider errors can echo the whole prompt
+    back (SAP's carry it as ``intermediate_results``); the reason comes first."""
+    text = f"{type(exc).__name__}: {exc}"
+    return text if len(text) <= limit else text[:limit] + "..."
+
+
 def invoke_structured(llm: Any, *, schema: type, system: str, user: str) -> StructuredResult:
     """Invoke ``llm`` forcing its output into ``schema`` (a Pydantic model class).
 
@@ -64,15 +77,24 @@ def invoke_structured(llm: Any, *, schema: type, system: str, user: str) -> Stru
     """
     from langchain_core.messages import HumanMessage, SystemMessage
 
+    messages = [SystemMessage(content=system), HumanMessage(content=user)]
     try:
         runnable = llm.with_structured_output(schema, include_raw=True)
     except Exception as exc:  # noqa: BLE001 — capability gap at bind time
+        logger.warning("structured bind failed: %s", _brief(exc))
         return StructuredResult(parsed=None, tokens=0, error=f"structured bind failed: {exc}")
 
     try:
-        out = runnable.invoke([SystemMessage(content=system), HumanMessage(content=user)])
+        out = runnable.invoke(messages)
     except Exception as exc:  # noqa: BLE001 — provider/transport error at invoke time
-        return StructuredResult(parsed=None, tokens=0, error=f"structured invoke failed: {exc}")
+        logger.warning("structured invoke failed, retrying by function calling: %s", _brief(exc))
+        try:
+            out = llm.with_structured_output(
+                schema, include_raw=True, method="function_calling"
+            ).invoke(messages)
+        except Exception as retry_exc:  # noqa: BLE001 (the fallback failed as well)
+            logger.warning("structured invoke by function calling failed: %s", _brief(retry_exc))
+            return StructuredResult(parsed=None, tokens=0, error=f"structured invoke failed: {exc}")
 
     # include_raw=True contract: {"raw": AIMessage, "parsed": schema|None,
     # "parsing_error": Exception|None} — identical across both model classes.
