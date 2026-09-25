@@ -14,6 +14,9 @@ import textwrap
 from pathlib import Path
 from types import SimpleNamespace
 
+from git import Repo
+
+from ask_admin_api.application.git_service import GitService
 from ask_admin_api.application.workspace_service import WorkspaceService
 from ask_admin_api.application.yaml_file_service import YAMLFileService
 
@@ -52,6 +55,60 @@ def test_delete_yaml_removes_file(tmp_path):
     assert not p.exists()
     # idempotent — second call is a no-op
     assert svc.delete_yaml("silver_s4h_sd_demo") is None
+
+
+# ── the sidecars leave with the YAML ─────────────────────────────────────────
+
+
+def test_delete_takes_the_sidecars_out_of_git_with_the_yaml(tmp_path):
+    """Measured on Kyma on 2026-09-24: a deleted Data Product left its enrichments
+    sidecar behind. Imports now commit it, so it would stay on main for good, and
+    a later Data Product with the same id would read it back."""
+    Repo.init(tmp_path)
+    svc = _svc(tmp_path)
+    git = GitService(repo_root=str(tmp_path))
+    svc.import_yaml(_SILVER, git_service=git, author_email="t@x.com")
+    (tmp_path / ".sap_baseline" / "silver_s4h_sd_demo.conflicts.json").write_text("[]")
+    git.commit(
+        [".sap_baseline/silver_s4h_sd_demo.conflicts.json"],
+        "merge(silver_s4h_sd_demo): conflicts found",
+        "t",
+        "t@x.com",
+    )
+
+    svc.delete_yaml("silver_s4h_sd_demo", git_service=git, author_email="t@x.com")
+
+    assert git.repo.head.commit.message == "viz: delete silver_s4h_sd_demo"
+    assert sorted(
+        git.repo.git.diff_tree("--no-commit-id", "--name-status", "-r", "HEAD").splitlines()
+    ) == [
+        "D\t.sap_baseline/silver_s4h_sd_demo.conflicts.json",
+        "D\t.sap_baseline/silver_s4h_sd_demo.enrichments.json",
+        "D\tworkspace/ask/s4h/silver/sd/demo.yaml",
+    ]
+    assert git.repo.git.status("--porcelain") == ""
+
+
+def test_delete_commits_the_yaml_removal_when_its_sidecar_was_never_committed(tmp_path):
+    """The case left on Kyma: a YAML imported before sidecars were committed has
+    an untracked one, and most Data Products have no conflicts sidecar. git rm
+    refuses a whole list over one path it never tracked, and the YAML in that
+    list would stay committed."""
+    Repo.init(tmp_path)
+    svc = _svc(tmp_path)
+    git = GitService(repo_root=str(tmp_path))
+    svc.import_yaml(_SILVER)
+    git.commit(
+        ["workspace/ask/s4h/silver/sd/demo.yaml"],
+        "viz: import silver_s4h_sd_demo from manual upload",
+        "t",
+        "t@x.com",
+    )
+
+    svc.delete_yaml("silver_s4h_sd_demo", git_service=git, author_email="t@x.com")
+
+    assert git.repo.git.ls_tree("-r", "--name-only", "HEAD") == ""
+    assert git.repo.git.status("--porcelain") == ""
 
 
 # ── business-domain membership cleanup ────────────────────────────────────────

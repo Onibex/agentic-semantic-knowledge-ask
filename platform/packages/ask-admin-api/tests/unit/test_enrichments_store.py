@@ -207,3 +207,46 @@ def test_update_yaml_keeps_yaml_clean_for_new_entries(tmp_path: Path):
     )
     assert payload["entity_enrichments"] == ["description"]
     assert "vbeln_vbak" in payload["field_enrichments"]
+
+
+# ── The import commit carries the sidecar it seeds ──────────────────────────
+
+
+def test_import_commits_the_seeded_sidecar_with_the_yaml(tmp_path: Path):
+    """Measured on 2026-09-24 on Kyma: 17 imported YAMLs left their enrichments
+    sidecar untracked, so every publish skipped it. The import commit carries
+    both, like update_yaml's, and names where the YAML came from."""
+    from git import Repo
+
+    from ask_admin_api.application.git_service import GitService
+    from ask_admin_api.application.yaml_file_service import YAMLFileService
+
+    Repo.init(tmp_path)
+    svc = YAMLFileService(workspace_path=str(tmp_path), repo_root=str(tmp_path))
+    git = GitService(repo_root=str(tmp_path))
+    silver = textwrap.dedent(
+        """\
+        id: silver_s4h_sd_demo
+        layer: silver
+        source_system: s4h
+        module: sd
+        name: demo
+        classification: T
+        description: A demo silver
+        composed_of: [bronze_s4h_t_t]
+        fields:
+          - name: doc
+            source: T.DOC
+            field_role: identifier
+            type: C10
+            description: doc id
+        """
+    )
+
+    svc.import_yaml(silver, git_service=git, author_email="t@x.com", origin="DDL + AI")
+
+    assert git.repo.git.status("--porcelain") == ""
+    paths = git.repo.git.show("--name-only", "--format=", "HEAD").split()
+    assert git.repo.head.commit.message == "viz: import silver_s4h_sd_demo from DDL + AI"
+    assert ".sap_baseline/silver_s4h_sd_demo.enrichments.json" in paths
+    assert "s4h/silver/sd/demo.yaml" in paths

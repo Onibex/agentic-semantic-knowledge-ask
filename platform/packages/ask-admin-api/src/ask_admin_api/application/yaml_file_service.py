@@ -501,6 +501,7 @@ class YAMLFileService:
         git_service=None,
         author_name: str | None = None,
         author_email: str | None = None,
+        origin: str = "manual upload",
     ) -> VizYAMLNode:
         """Pass I — import a hand-authored or offline YAML into the workspace.
 
@@ -512,7 +513,9 @@ class YAMLFileService:
              ``source_system`` / ``layer`` / ``module`` / ``name``.
           3. Write the file (with parent directories) using the standard
              serializer.
-          4. Optional git commit when ``git_service`` is supplied.
+          4. Optional git commit of the YAML and its enrichments sidecar when
+             ``git_service`` is supplied, naming ``origin`` (where the YAML
+             came from) in the message.
 
         Refuses to overwrite an existing file unless ``force=True`` — that's
         the safety belt against silent destruction of in-progress
@@ -612,9 +615,20 @@ class YAMLFileService:
 
         if git_service is not None and author_email:
             action = "overwrite" if force else "import"
+            commit_paths = [rel_path]
+            # The sidecar just seeded goes in the same commit, as update_yaml does:
+            # left out, it stays untracked, and every publish skips it.
+            try:
+                commit_paths.append(
+                    self._enrichments_store._path(entity_id)  # noqa: SLF001 (same module)
+                    .relative_to(self.repo_root)
+                    .as_posix()
+                )
+            except ValueError:
+                pass  # sidecar outside the repo root: nothing to commit
             git_service.commit(
-                [rel_path],
-                f"viz: {action} {entity_id} from manual upload",
+                commit_paths,
+                f"viz: {action} {entity_id} from {origin}",
                 author_name or author_email.split("@")[0],
                 author_email,
             )
@@ -660,7 +674,7 @@ class YAMLFileService:
         author_name: str | None = None,
         author_email: str | None = None,
     ) -> str | None:
-        """Remove a workspace YAML file (+ optional git audit commit).
+        """Remove a workspace YAML file and its sidecars (+ optional git audit commit).
 
         Part of the full DataProduct delete: without this the file lingers in the
         workspace and the entity keeps showing in the catalog. Returns the
@@ -676,12 +690,24 @@ class YAMLFileService:
             abs_path.unlink()
         except FileNotFoundError:
             return None
+        # Its sidecars go with it: left behind, they stay committed on main, and
+        # a later Data Product with the same id would read them back.
+        commit_paths = [rel_path]
+        for sidecar in (
+            self._enrichments_store._path(entity_id),  # noqa: SLF001 (same module)
+            self._conflict_store._path(entity_id),  # noqa: SLF001 (same module)
+        ):
+            sidecar.unlink(missing_ok=True)
+            try:
+                commit_paths.append(sidecar.relative_to(self.repo_root).as_posix())
+            except ValueError:
+                pass  # sidecar outside the repo root: nothing to commit
         self._invalidate_cache()
         logger.info("Deleted workspace YAML %s (%s)", entity_id, rel_path)
         if git_service is not None and author_email:
             try:
                 git_service.commit(
-                    [rel_path],
+                    commit_paths,
                     f"viz: delete {entity_id}",
                     author_name or author_email.split("@")[0],
                     author_email,

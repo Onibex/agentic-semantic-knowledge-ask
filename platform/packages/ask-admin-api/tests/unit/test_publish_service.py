@@ -9,7 +9,7 @@
 
 Uses a real tmp git repo but FAKE indexer / lifecycle / yaml-service so the
 risky parts (OpenSearch-first ordering, file-by-file branch promotion, prod
-gate, working-tree restore) are exercised without OpenSearch.
+gate, the working tree left on main) are exercised without OpenSearch.
 """
 
 from __future__ import annotations
@@ -121,11 +121,10 @@ def _write(repo: Path, rel: str, content: str) -> None:
 
 @pytest.fixture
 def repo(tmp_path: Path):
-    """Repo where main is AHEAD of the release branches.
+    """Repo with the release branches created (empty) and main at v2.
 
-    Mirrors the real flow: dev/prod were cut at boot (v1), then the admin edited
-    the DP on main (v2). A publish must therefore produce a real divergent commit
-    on the env branch — proving the file-by-file checkout actually moved content.
+    dev/prod were created at boot, then the admin edited the DP on main (v2). A
+    publish must move exactly the v2 content onto the env branch.
     """
     from git import Actor, Repo
 
@@ -137,7 +136,7 @@ def repo(tmp_path: Path):
     r.index.commit("init v1", author=a, committer=a)
     r.git.branch("-M", "main")  # normalise branch name across git defaults
 
-    # Cut the release branches at v1 (like init_release_branches at boot)...
+    # Create the release branches (like init_release_branches at boot)...
     GitService(repo_root=str(tmp_path)).init_release_branches()
 
     # ...then advance main to v2 (the admin's edit).
@@ -164,6 +163,13 @@ def _make_service(repo: Path, indexer, lifecycle):
     )
 
 
+def _published(repo: Path, *envs: str) -> None:
+    """Publish silver_sales to each env in order, as the admin would."""
+    for env in envs:
+        lifecycle = _FakeLifecycle(dev_published_for=["silver_sales"] if env == "prod" else ())
+        _make_service(repo, _FakeIndexer(), lifecycle).publish("silver_sales", env, by="a@x.com")
+
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
@@ -184,7 +190,7 @@ def test_publish_dev_indexes_then_commits_on_dev(repo):
     assert outcome.committed_sha
     git = GitService(repo_root=str(repo))
     assert "v: 2" in git.get_file_at_commit("silver/sd/sales_order.yaml", "dev")
-    assert git.current_branch() == "main"  # working tree restored
+    assert git.repo.active_branch.name == "main"  # the working tree never left main
 
     # lifecycle: dev recorded, prod not.
     assert lifecycle.published_dev == [("silver_sales", "a@x.com")]
@@ -217,7 +223,7 @@ def test_publish_prod_after_dev_promotes_from_dev(repo):
     # prod promoted the dev (v2) content, never main's current state.
     assert "v: 2" in git.get_file_at_commit("silver/sd/sales_order.yaml", "prod")
     assert lifecycle.published_prod == [("silver_sales", "b@x.com")]
-    assert git.current_branch() == "main"
+    assert git.repo.active_branch.name == "main"
 
 
 def test_unknown_env_rejected(repo):
@@ -247,7 +253,7 @@ def test_prod_does_not_fall_back_to_main_when_missing_on_dev(tmp_path):
     r.index.add(["silver/a.yaml"])
     r.index.commit("init", author=a, committer=a)
     r.git.branch("-M", "main")
-    GitService(repo_root=str(tmp_path)).init_release_branches()  # dev/prod have silver_a
+    GitService(repo_root=str(tmp_path)).init_release_branches()  # dev/prod created, empty
 
     # silver_b is added to main AFTER branching → it exists on main but NOT on dev.
     _write(tmp_path, "silver/b.yaml", "id: silver_b\nlayer: silver\nv: 1\n")
@@ -274,9 +280,8 @@ def test_publish_dev_from_fresh_master_repo_normalizes_and_succeeds(tmp_path, ca
     """Regression (from-zero docker-compose): a freshly ``git init``'d
     semantic-layer repo is on ``master`` with no dev/prod branches and no
     ``main``. The FIRST publish must normalise master→main, bootstrap dev/prod,
-    read the source from main, commit on dev, and restore the working tree to
-    ``main`` — never fail with "invalid object name 'main'" (the source read) or
-    "failed to restore branch master" (the working-tree restore)."""
+    read the source from main and commit on dev, never failing with "invalid
+    object name 'main'" (the source read)."""
     import logging
 
     from git import Actor, Repo
@@ -299,32 +304,81 @@ def test_publish_dev_from_fresh_master_repo_normalizes_and_succeeds(tmp_path, ca
     with caplog.at_level(logging.ERROR):
         outcome = svc.publish("silver_sales", "dev", by="a@x.com")
 
-    # The source read off main worked (no "invalid object name" raised) → the
-    # content reached OpenSearch. (committed_sha is None here by design: the
-    # early init_release_branches cuts dev as a full copy of main, so promoting
-    # identical content is a git no-op — the Iter-2 limitation. Queryability
-    # still lands via the OpenSearch index below.)
+    # The source read off main worked (no "invalid object name" raised), the
+    # content reached OpenSearch, and dev, born empty, recorded the publish.
     assert outcome.env == "dev"
+    assert outcome.committed_sha
     assert indexer.calls and indexer.calls[0]["env"] == "dev"
     assert "v: 1" in indexer.calls[0]["primary_content"]
     git = GitService(repo_root=str(tmp_path))
     assert git.file_sha_on_branch("dev", "silver/sd/sales_order.yaml") is not None
     assert "v: 1" in git.get_file_at_commit("silver/sd/sales_order.yaml", "dev")
 
-    # master was normalised to main, dev/prod bootstrapped, working tree restored.
+    # master was normalised to main, dev/prod bootstrapped, HEAD stayed on main.
     heads_after = {h.name for h in r.heads}
     assert {"main", "dev", "prod"} <= heads_after
     assert "master" not in heads_after
-    assert git.current_branch() == "main"
+    assert git.repo.active_branch.name == "main"
 
-    # The working-tree restore never failed (no force-fallback error logged).
-    assert not [rec for rec in caplog.records if "failed to restore" in rec.getMessage()]
+    # Nothing failed along the way (a failed env-branch commit logs an error).
+    assert not [rec for rec in caplog.records if rec.levelno >= logging.ERROR]
+
+
+def test_first_publish_of_an_upload_is_recorded_on_a_from_zero_repo(tmp_path):
+    """The 2026-09-24 Kyma finding, end to end: the volume is empty at boot,
+    Data Products are uploaded, then published to dev and prod with no edit in
+    between. Each publish must leave its commit, and each History env tab must
+    show exactly one."""
+    from git import Actor, Repo
+
+    r = Repo.init(tmp_path)
+    GitService(repo_root=str(tmp_path)).init_release_branches()  # the boot, on nothing
+    a = Actor("t", "t@x.com")
+    _write(tmp_path, "silver/sd/sales_order.yaml", "id: silver_sales\nlayer: silver\nv: 1\n")
+    _write(tmp_path, "bronze/vbak.yaml", "id: bronze_vbak\nlayer: bronze\nv: 1\n")
+    r.index.add(["silver/sd/sales_order.yaml", "bronze/vbak.yaml"])
+    r.index.commit("viz: import silver_sales from manual upload", author=a, committer=a)
+
+    dev = _make_service(tmp_path, _FakeIndexer(), _FakeLifecycle()).publish(
+        "silver_sales", "dev", by="a@x.com"
+    )
+    prod = _make_service(
+        tmp_path, _FakeIndexer(), _FakeLifecycle(dev_published_for=["silver_sales"])
+    ).publish("silver_sales", "prod", by="b@x.com")
+
+    assert dev.committed_sha and prod.committed_sha
+    git = GitService(repo_root=str(tmp_path))
+    fp = "silver/sd/sales_order.yaml"
+    assert [c.message for c in git.get_log(fp, branch="dev", message_prefix="publish-dev(")] == [
+        "publish-dev(silver_sales): by a@x.com"
+    ]
+    assert [c.message for c in git.get_log(fp, branch="prod", message_prefix="publish-prod(")] == [
+        "publish-prod(silver_sales): promoted from dev by b@x.com"
+    ]
+
+
+def test_publish_leaves_the_working_tree_alone(repo):
+    """An uncommitted edit on main survives a publish untouched: the env branch
+    is written without a checkout, so there is nothing to stash or restore."""
+    draft = "id: silver_sales\nlayer: silver\nv: 3-draft\n"
+    _write(repo, "silver/sd/sales_order.yaml", draft)
+
+    _make_service(repo, _FakeIndexer(), _FakeLifecycle()).publish(
+        "silver_sales", "dev", by="a@x.com"
+    )
+
+    assert (repo / "silver/sd/sales_order.yaml").read_text(encoding="utf-8") == draft
+    git = GitService(repo_root=str(repo))
+    assert git.repo.active_branch.name == "main"
+    # dev received main's committed v2, never the draft in the working tree.
+    assert "v: 2" in git.get_file_at_commit("silver/sd/sales_order.yaml", "dev")
 
 
 # ── Unpublish (inverse of publish) ────────────────────────────────────────────
 
 
 def test_unpublish_dev_unindexes_then_removes_on_dev(repo):
+    _published(repo, "dev")
     indexer = _FakeIndexer()
     lifecycle = _FakeLifecycle(dev_published_for=["silver_sales"])  # dev only, no prod
     svc = _make_service(repo, indexer, lifecycle)
@@ -333,11 +387,11 @@ def test_unpublish_dev_unindexes_then_removes_on_dev(repo):
 
     # OpenSearch-first: unindex saw env=dev + the primary id (NO cascade arg).
     assert indexer.unindex_calls == [{"env": "dev", "primary_id": "silver_sales"}]
-    # git: the silver YAML is gone from the dev branch; working tree restored.
+    # git: the silver YAML is gone from the dev branch; HEAD stayed on main.
     assert outcome.committed_sha
     git = GitService(repo_root=str(repo))
     assert git.file_sha_on_branch("dev", "silver/sd/sales_order.yaml") is None
-    assert git.current_branch() == "main"
+    assert git.repo.active_branch.name == "main"
     # main (working) still has the file — unpublish never touches the source.
     assert git.file_sha_on_branch("main", "silver/sd/sales_order.yaml") is not None
     assert lifecycle.unpublished_dev == [("silver_sales", "a@x.com")]
@@ -346,6 +400,7 @@ def test_unpublish_dev_unindexes_then_removes_on_dev(repo):
 def test_unpublish_does_not_cascade_to_bronze(repo):
     """Key invariant: unpublish removes ONLY the primary entity. A shared
     composed_of bronze must remain on the env branch (another silver may use it)."""
+    _published(repo, "dev")
     indexer = _FakeIndexer()
     svc = _make_service(repo, indexer, _FakeLifecycle(dev_published_for=["silver_sales"]))
 
@@ -377,6 +432,7 @@ def test_unpublish_when_not_published_raises(repo):
 
 def test_unpublish_prod_keeps_dev(repo):
     """Unpublishing prod removes the prod-branch copy but leaves dev intact."""
+    _published(repo, "dev", "prod")
     indexer = _FakeIndexer()
     lifecycle = _FakeLifecycle(prod_uptodate_for=["silver_sales"])  # dev + prod
     svc = _make_service(repo, indexer, lifecycle)

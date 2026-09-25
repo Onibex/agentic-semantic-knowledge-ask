@@ -547,6 +547,7 @@ async def import_ddl(
                 git_service=git_svc,
                 author_name=user.email.split("@")[0],
                 author_email=user.email,
+                origin="DDL + AI",
             )
             seen_ids.add(node.id)
             fire_on_create(node.id)

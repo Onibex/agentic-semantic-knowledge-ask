@@ -12,15 +12,16 @@ Publishing a Data Product to an environment is a two-step atomic sequence:
   1. OpenSearch FIRST — index the YAML (+ cascade bronzes + RAG) into the
      env-suffixed indices (``ask-*-dev`` / ``ask-*-prod``). If this fails, we
      stop: no git mutation lands, lifecycle is untouched (Q14).
-  2. git file-by-file checkout — overwrite ONLY this DP's files onto the env
-     branch from the source branch (``dev`` ← ``main``, ``prod`` ← ``dev``) and
-     commit. This is an overwrite, never a merge, so unrelated working changes
-     never leak and conflicts are structurally impossible (audit §3.2/§3.3).
+  2. git: write ONLY this DP's files onto the env branch, as they are on the
+     source branch (``dev`` ← ``main``, ``prod`` ← ``dev``), and commit. This is
+     an overwrite, never a merge, so unrelated working changes never leak and
+     conflicts are structurally impossible (audit §3.2/§3.3).
   3. lifecycle — record dev_published / prod_published.
 
-The git branch dance (checkout env → checkout files → commit → checkout back)
-mutates the shared working tree, so it is serialized under a process lock.
-Concurrency across processes is out of scope for v1 (audit Q15, last-write-wins).
+The env-branch commit is written without a checkout (``GitService.publish_paths``),
+so the shared working tree and HEAD stay on main throughout. Ref updates are
+serialized under a process lock. Concurrency across processes is out of scope
+for v1 (audit Q15, last-write-wins).
 
 Iter 2 scope: this is the env-write CAPABILITY. The legacy un-suffixed publish
 (``/index/{id}``) and the orchestrator read path are untouched; the read-side
@@ -209,8 +210,8 @@ class DefaultEnvIndexer:
         return {**totals, "warnings": warnings}
 
 
-# Serializes the working-tree branch dance across all PublishService instances
-# in the process (each router request builds its own instance).
+# Serializes env-branch writes across all PublishService instances in the
+# process (each router request builds its own instance).
 _GIT_LOCK = threading.Lock()
 
 
@@ -371,8 +372,8 @@ class PublishService:
         totals = self._indexer.unindex(norm, primary_id=entity_id)
 
         # 2. git: remove the primary YAML + its enrichments sidecar from the env
-        # branch (NOT the composed_of bronzes — shared). Sidecar path computed
-        # unconditionally; remove_files tolerates a path not tracked on the branch.
+        # branch (NOT the composed_of bronzes, which are shared). Sidecar path
+        # computed unconditionally; _demote_on_git skips a path not on the branch.
         paths = [
             p for p in (primary_path, f"{self._baseline_path}/{entity_id}.enrichments.json") if p
         ]
@@ -402,65 +403,30 @@ class PublishService:
 
     # ── Internals ───────────────────────────────────────────────────────────────
 
-    def _restore_working_branch(self, original: str, entity_id: str) -> None:
-        """Best-effort return to the pre-publish branch after the env-branch dance.
-
-        Tries ``original`` first, then the canonical working branch (``main``)
-        in case ``original`` no longer resolves (e.g. it was a pre-normalize
-        ``master`` that ``init_release_branches`` renamed away). A force checkout
-        is the last resort: if a mid-dance failure left the env branch dirty a
-        plain checkout can refuse, and env branches are backend-only so
-        discarding their uncommitted state is safe. Never raises — the caller
-        runs this in a ``finally``.
-        """
-        for branch in (original, WORKING_BRANCH):
-            try:
-                self._git.checkout_branch(branch)
-                return
-            except Exception:  # noqa: BLE001
-                continue
-        try:
-            if self._git.repo is not None:
-                self._git.repo.git.checkout(WORKING_BRANCH, "--force")
-                return
-        except Exception:  # noqa: BLE001
-            logger.exception(
-                "publish/unpublish %s: failed to restore working branch (tried %s, %s)",
-                entity_id,
-                original,
-                WORKING_BRANCH,
-            )
-
     def _demote_on_git(self, env: str, paths: list[str], entity_id: str, by: str) -> str | None:
         """Remove ``paths`` from the env branch + commit. Inverse of
-        ``_promote_on_git`` (git rm instead of checkout-from-source)."""
+        ``_promote_on_git``."""
         if self._git.repo is None:
             logger.warning("unpublish %s from %s: git unavailable — index-only", entity_id, env)
             return None
         target = branch_for(env)
         msg = f"unpublish-{env}({entity_id}): removed by {by}"
         with _GIT_LOCK:
-            # Normalise master→main + ensure dev/prod exist BEFORE capturing the
-            # branch to restore (see _promote_on_git for the from-zero rationale).
             self._git.init_release_branches()
-            original = self._git.current_branch() or WORKING_BRANCH
-            stashed = self._git.stash_push(f"unpublish-autostash {entity_id}")
-            try:
-                self._git.checkout_branch(target)
-                removed = self._git.remove_files(paths)
-                if not removed:
-                    logger.info(
-                        "unpublish %s from %s: no tracked paths on '%s' to remove",
-                        entity_id,
-                        env,
-                        target,
-                    )
-                    return None
-                return self._git.commit_on_current_branch(msg, by.split("@")[0] or "publisher", by)
-            finally:
-                self._restore_working_branch(original, entity_id)
-                if stashed:
-                    self._git.stash_pop()
+            # Only paths on the env branch (e.g. a sidecar that never landed
+            # there is neither removed nor counted).
+            on_branch = [p for p in paths if self._git.file_sha_on_branch(target, p) is not None]
+            if not on_branch:
+                logger.info(
+                    "unpublish %s from %s: no tracked paths on '%s' to remove",
+                    entity_id,
+                    env,
+                    target,
+                )
+                return None
+            return self._git.unpublish_paths(
+                target, on_branch, msg, by.split("@")[0] or "publisher", by
+            )
 
     def _promote_on_git(
         self, env: str, source: str, paths: list[str], entity_id: str, by: str
@@ -475,45 +441,26 @@ class PublishService:
             else f"publish-prod({entity_id}): promoted from dev by {by}"
         )
         with _GIT_LOCK:
-            # Normalise master→main + ensure dev/prod exist BEFORE capturing the
-            # branch to restore. On a from-zero repo `current_branch()` is still
-            # `master` until this runs; capturing it first and then renaming it
-            # away would leave the finally trying to restore a branch that no
-            # longer resolves ("failed to restore branch master").
+            # Normalise master→main + ensure dev/prod exist (born empty).
             self._git.init_release_branches()
-            original = self._git.current_branch() or WORKING_BRANCH
-            # Isolate any uncommitted tracked changes (e.g. .sap_baseline/*.json
-            # sidecars rewritten by ingest) so `git checkout <env>` does not
-            # abort with "local changes would be overwritten". Restored after.
-            stashed = self._git.stash_push(f"publish-autostash {entity_id}")
-            try:
-                self._git.checkout_branch(target)
-                # Only cherry-pick paths that actually exist on the source branch.
-                # A cascade file never committed to `source` (e.g. an untracked
-                # bronze) must NOT abort the whole publish with a git pathspec
-                # error — skip it (the indexer already drops empty cascade
-                # content) and warn so the gap is visible.
-                present = [p for p in paths if self._git.file_sha_on_branch(source, p) is not None]
-                missing = [p for p in paths if p not in set(present)]
-                if missing:
-                    logger.warning(
-                        "publish %s to %s: %d path(s) not on '%s' (untracked?) — skipped: %s",
-                        entity_id,
-                        env,
-                        len(missing),
-                        source,
-                        missing,
-                    )
-                self._git.checkout_files_from(source, present)
-                return self._git.commit_on_current_branch(msg, by.split("@")[0] or "publisher", by)
-            finally:
-                # Return the working tree to the branch we started on so the
-                # admin's editing context (main) is restored.
-                self._restore_working_branch(original, entity_id)
-                # Restore the admin's uncommitted changes on the working branch
-                # (popped here, back on the working branch, so it applies cleanly).
-                if stashed:
-                    self._git.stash_pop()
+            # Only paths that actually exist on the source branch. A cascade file
+            # never committed to `source` (e.g. an untracked bronze) is skipped
+            # (the indexer already drops empty cascade content), with a warning
+            # so the gap is visible.
+            present = [p for p in paths if self._git.file_sha_on_branch(source, p) is not None]
+            missing = [p for p in paths if p not in set(present)]
+            if missing:
+                logger.warning(
+                    "publish %s to %s: %d path(s) not on '%s' (untracked?) — skipped: %s",
+                    entity_id,
+                    env,
+                    len(missing),
+                    source,
+                    missing,
+                )
+            return self._git.publish_paths(
+                target, source, present, msg, by.split("@")[0] or "publisher", by
+            )
 
     def _collect_paths(self, node: Any, source_branch: str) -> list[str]:
         """The files this publish moves: the entity YAML + its sidecar + (for a
