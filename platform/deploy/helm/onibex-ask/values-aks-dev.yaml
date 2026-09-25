@@ -47,10 +47,12 @@ image:
   # own by whoever installs into this cluster.
   namespace: onibexenjoy
   # Pinned rather than left to appVersion, which resolves to a tag that has
-  # never been published. This is the set that was installed and measured.
-  # Read what exists before changing it:
+  # never been published. Built from 32622aa, the merge of PR #83, the same
+  # set as the Kyma profile: it carries the sap model provider for SAP AI Core,
+  # the ias sign-in mode and a History page that records every publish, none
+  # of which sha-eabc833 had. Read what exists before changing it:
   #   docker buildx imagetools inspect docker.io/onibexenjoy/ask-studio:<tag>
-  tag: sha-eabc833
+  tag: sha-32622aa
 
 auth:
   mode: keycloak
