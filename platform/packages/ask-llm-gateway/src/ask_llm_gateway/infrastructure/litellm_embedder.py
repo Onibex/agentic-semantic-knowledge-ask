@@ -23,7 +23,7 @@ reports the mismatch. Azure and SAP AI Core are asked differently, see
 Credentials are exported to the environment via :mod:`provider_env`, mirroring
 the chat adapter.
 
-Required packages: litellm>=1.50.
+Required packages: litellm, at the version pinned in pyproject.toml.
 """
 
 from __future__ import annotations
