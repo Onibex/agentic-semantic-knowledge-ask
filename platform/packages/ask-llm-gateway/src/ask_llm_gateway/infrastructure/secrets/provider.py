@@ -95,10 +95,10 @@ class SecretsProvider:
         """Seed ``os.environ`` with every field of the resolved doc.
 
         Returns the list of env var names that were written, so callers can
-        log or undo. Fields named ``api_key`` / ``api_base`` / ``api_version`` /
-        ``deployment_id`` map to the LLM_/EMBEDDER_-prefixed env vars the
-        ``factory.py`` resolution already understands; the rest (AWS_*,
-        VERTEXAI_*, GOOGLE_APPLICATION_CREDENTIALS) are written verbatim.
+        log or undo. Fields named ``api_key`` / ``api_base`` / ``api_version``
+        map to the LLM_/EMBEDDER_-prefixed env vars the ``factory.py``
+        resolution already understands; the rest (AWS_*, VERTEXAI_*,
+        GOOGLE_APPLICATION_CREDENTIALS, AICORE_*) are written verbatim.
         """
         resolved = self.get(target)
         if resolved is None:
@@ -135,12 +135,11 @@ def set_secrets_provider_for_tests(provider: SecretsProvider | None) -> None:
 
 # Convenience-field names that the existing factory.py resolves via the
 # LLM_/EMBEDDER_ env var prefix. Anything not in this map gets written
-# verbatim (AWS_*, VERTEXAI_*, GOOGLE_APPLICATION_CREDENTIALS).
+# verbatim (AWS_*, VERTEXAI_*, GOOGLE_APPLICATION_CREDENTIALS, AICORE_*).
 _PREFIXED_FIELDS: dict[str, str] = {
     "api_key": "API_KEY",
     "api_base": "API_BASE",
     "api_version": "API_VERSION",
-    "deployment_id": "DEPLOYMENT_ID",
 }
 
 

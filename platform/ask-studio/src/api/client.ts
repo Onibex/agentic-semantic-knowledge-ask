@@ -37,14 +37,6 @@ import type {
   ContractsConfig,
   ContractsSaveResponse,
   DocIngestResult,
-  AicoreConfigStatus,
-  AicoreConfigUploadResponse,
-  DeploymentInfo,
-  DeploymentListResponse,
-  EffectiveLLMConfig,
-  ProviderConfigRequest,
-  TestProviderRequest,
-  TestProviderResponse,
   SetupEffectiveResponse,
   OpenSearchTestResponse,
   DatabaseTestRequest,
@@ -529,24 +521,6 @@ export async function getContracts(): Promise<ContractsConfig> {
 export async function saveContracts(config: ContractsConfig): Promise<ContractsSaveResponse> {
   const { data } = await http.post<ContractsSaveResponse>('/admin/contracts', { config });
   return data;
-}
-
-// AI Core (now under /admin/llm/aicore/*)
-export async function getAicoreStatus(): Promise<AicoreConfigStatus> {
-  const { data } = await http.get<AicoreConfigStatus>('/admin/llm/aicore/config');
-  return data;
-}
-
-export async function uploadAicoreConfig(file: File): Promise<AicoreConfigUploadResponse> {
-  const form = new FormData();
-  form.append('file', file);
-  const { data } = await http.post<AicoreConfigUploadResponse>('/admin/llm/aicore/config', form);
-  return data;
-}
-
-export async function listAicoreDeployments(): Promise<DeploymentInfo[]> {
-  const { data } = await http.get<DeploymentListResponse>('/admin/llm/aicore/deployments');
-  return data.deployments;
 }
 
 

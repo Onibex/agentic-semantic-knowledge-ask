@@ -21,6 +21,7 @@ docker-compose.yml
 .idea
 .vscode
 .claude
+# An old SAP AI Core service key. Nothing reads it now, old checkouts still carry one.
 config/aicore_config.json
 config/settings.json
 config/chats/

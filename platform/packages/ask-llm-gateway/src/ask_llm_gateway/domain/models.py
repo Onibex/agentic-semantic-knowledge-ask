@@ -29,20 +29,3 @@ class TokenUsageRecord:
     total_tokens: int
     timestamp_utc: str
     query_id: str | None = None
-
-
-@dataclass
-class LLMConfig:
-    """Resolved LLM configuration from settings.json."""
-
-    deployment_id: str
-    model_name: str
-    embeddings_deployment_id: str = ""
-
-    @classmethod
-    def from_settings(cls, settings: dict) -> LLMConfig:
-        return cls(
-            deployment_id=settings.get("deployments", {}).get("llm", ""),
-            model_name=settings.get("model_name", ""),
-            embeddings_deployment_id=settings.get("deployments", {}).get("embeddings", ""),
-        )

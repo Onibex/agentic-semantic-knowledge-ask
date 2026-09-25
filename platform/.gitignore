@@ -62,6 +62,7 @@ venv/
 .env.*
 !.env.example
 !.env.remote.example
+# An old SAP AI Core service key. Nothing reads it now, old checkouts still carry one.
 config/aicore_config.json
 config/settings.json
 config/settings_kyma.json

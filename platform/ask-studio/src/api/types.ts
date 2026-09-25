@@ -311,104 +311,6 @@ export interface DictionaryListResponse {
   entries: PhraseEntry[];
 }
 
-// AI Core types
-export interface AicoreConfigStatus {
-  exists: boolean;
-  valid: boolean;
-  auth_url: string;
-  ai_api_url: string;
-  client_id_preview: string;
-}
-
-export interface AicoreConfigUploadResponse {
-  success: boolean;
-  message: string;
-  status: AicoreConfigStatus;
-}
-
-export interface DeploymentInfo {
-  deployment_id: string;
-  model_name: string;
-}
-
-export interface DeploymentListResponse {
-  deployments: DeploymentInfo[];
-}
-
-// ── Multi-provider LLM + Embedder config (Tier 2) ────────────────────────────
-
-export type StackMode = 'managed' | 'direct';
-
-/** Source of truth for a single field — env var, settings.json file, or default. */
-export type FieldSource = 'environment' | 'file' | 'default';
-
-export interface ProviderConfigField {
-  /** Value as stored. For sensitive fields (api_key) the server returns "***" instead. */
-  value: string;
-  source: FieldSource;
-  masked: boolean;
-}
-
-export interface EffectiveLLMConfig {
-  stack_mode: ProviderConfigField;
-  llm_provider: ProviderConfigField;
-  llm_model: ProviderConfigField;
-  llm_api_key: ProviderConfigField;
-  llm_api_base: ProviderConfigField;
-  llm_api_version: ProviderConfigField;
-  llm_deployment_id: ProviderConfigField;
-  embedder_provider: ProviderConfigField;
-  embedder_model: ProviderConfigField;
-  embedder_api_key: ProviderConfigField;
-  embedder_api_base: ProviderConfigField;
-  embedder_api_version: ProviderConfigField;
-  embedder_deployment_id: ProviderConfigField;
-  /** Literal env-var map for exotic providers (Bedrock AWS_*, Vertex VERTEXAI_*). NOT masked. */
-  llm_params: Record<string, string>;
-  embedder_params: Record<string, string>;
-}
-
-/** Partial update payload for POST /admin/llm/config. */
-export interface ProviderConfigRequest {
-  stack_mode?: string | null;
-  llm_provider?: string | null;
-  llm_model?: string | null;
-  llm_api_key?: string | null;
-  llm_api_base?: string | null;
-  llm_api_version?: string | null;
-  llm_deployment_id?: string | null;
-  llm_params?: Record<string, string> | null;
-  embedder_provider?: string | null;
-  embedder_model?: string | null;
-  embedder_api_key?: string | null;
-  embedder_api_base?: string | null;
-  embedder_api_version?: string | null;
-  embedder_deployment_id?: string | null;
-  embedder_params?: Record<string, string> | null;
-}
-
-/** Test payload — every field falls back to settings.json when null. */
-export interface TestProviderRequest {
-  target: 'llm' | 'embedder';
-  provider?: string | null;
-  model?: string | null;
-  api_key?: string | null;
-  api_base?: string | null;
-  api_version?: string | null;
-  deployment_id?: string | null;
-  params?: Record<string, string> | null;
-}
-
-export interface TestProviderResponse {
-  success: boolean;
-  target: string;
-  provider: string;
-  model: string;
-  latency_ms: number;
-  detail: string;
-  error?: string | null;
-}
-
 // ── Setup Effective (read-only system snapshot for the SPA) ─────────────────
 
 /** One displayable field. Sensitive values come server-masked as ``***``. */
@@ -474,6 +376,8 @@ export interface SecretsGetResponse {
   fields: SecretsFieldView[];
   updated_at: string;
   updated_by: string;
+  /** Embedder only: the vector size the search index stores, which the embedder must produce. */
+  index_embedding_dim?: number | null;
 }
 
 export interface SecretsPutRequest {
@@ -1005,15 +909,6 @@ export interface OpenSearchConfig {
   verify_certs: boolean;
 }
 
-export interface SapAiCoreConfig {
-  config_path: string;
-}
-
-export interface DeploymentsConfig {
-  llm: string;
-  embeddings: string;
-}
-
 export interface IasConfig {
   url: string;
   client_id: string;
@@ -1028,13 +923,10 @@ export interface DbEnvBlock {
 
 export interface AppSettings {
   db_type?: 'hana' | 'postgresql';
-  model_name?: string;
   schema_mode?: 'yaml' | 'documents' | 'both';
   hana?: Partial<HanaConfig>;
   postgresql?: Partial<PostgresConfig>;
   opensearch?: Partial<OpenSearchConfig>;
-  sap_ai_core?: Partial<SapAiCoreConfig>;
-  deployments?: Partial<DeploymentsConfig>;
   ias?: Partial<IasConfig>;
   sap_s4hana?: Partial<SapS4HanaConfig>;
   environments?: {

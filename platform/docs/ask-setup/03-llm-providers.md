@@ -65,7 +65,7 @@ then enter its connection details."*). It has two numbered steps.
 | **Azure OpenAI** | OpenAI models hosted on Azure. |
 | **Google Gemini** / **Google Vertex AI** | Gemini via the public API or via Vertex AI. |
 | **Databricks** | Databricks-served models. |
-| **SAP AI Core** | Models brokered through SAP AI Core deployments. |
+| **SAP AI Core** | The models of SAP's generative AI hub, chosen by name. See [Connect SAP AI Core](../runbooks/connect-sap-ai-core.md) for the SAP BTP side. |
 | **Hugging Face (local)** | Locally served Hugging Face models. |
 
 **Step 2. Connection details.** The fields adapt to the provider you picked:
@@ -74,7 +74,7 @@ then enter its connection details."*). It has two numbered steps.
 |---|---|---|
 | **Display name** | Yes | A label you choose to recognise this connection, demo: *Bedrock Nova Pro (prod)*. |
 | **Model** | Yes | Just the model id (the provider is already selected), demo: `us.amazon.nova-pro-v1:0`. A few suggestions appear as you type. |
-| Credential fields | Vary | Provider-specific. For Bedrock these include **AWS Access Key ID**, **AWS Secret Access Key**, **AWS Region**, and optional **AWS Session Token**; for OpenAI/Anthropic it's an **API Key**; SAP AI Core adds a **Deployment ID**. Fields marked **encrypted** are stored encrypted. |
+| Credential fields | Vary | Provider-specific. For Bedrock these include **AWS Access Key ID**, **AWS Secret Access Key**, **AWS Region**, and optional **AWS Session Token**; for OpenAI/Anthropic it's an **API Key**; for SAP AI Core it's the **Service key (JSON)**, the whole key SAP BTP issues, pasted as is, plus an optional **Resource group**. Fields marked **encrypted** are stored encrypted. A key that cannot work is refused on save, with what is missing. |
 
 Click **Save connection**. The drawer closes and the new connection appears in the list.
 
@@ -126,6 +126,11 @@ badge because it is the *same* configuration ASK Studio uses. There is one embed
 
 Click **Test** to verify it, or **Edit** to change it. The drawer opens as **Edit embedder**. Pick
 the provider and model as in step 2, demo: **AWS Bedrock** · `amazon.titan-embed-text-v2:0`.
+
+The card also shows the size of the vectors the search index stores, 1024 unless your deployment sets
+another. The embedder must produce that size. ASK asks for it from models that can shorten their
+output, such as `text-embedding-3` on SAP AI Core or OpenAI and Titan Text Embeddings V2 on Bedrock,
+and **Test** fails, naming both sizes, when a model returns another one.
 
 > **Warning, changing the embedder rebuilds the vector space.** Rotating the embedder's
 > *credentials* is safe. But changing its **provider or model** redefines the embedding vector

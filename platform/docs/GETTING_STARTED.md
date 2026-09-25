@@ -66,9 +66,8 @@ Configure two things, in this order, testing each before you save:
 
 1. **A database connection** for the **dev** environment. This is the database ASK will
    query. It is your data, wherever it already lives.
-2. **An LLM provider**. Either a direct provider through LiteLLM (OpenAI, Anthropic, Bedrock,
-   and others) or SAP AI Core if you run managed models. The same page configures the
-   embedder that powers semantic search.
+2. **An LLM provider**. Any provider LiteLLM serves: OpenAI, Anthropic, Bedrock, SAP AI Core
+   and others. The same page configures the embedder that powers semantic search.
 
 Saving reloads the affected services. The ASK Setup home page should now show both as active.
 

@@ -19,13 +19,11 @@ Resolution priority (highest wins):
        are set by step 1 OR by the deployment manifest / .env directly.
     3. ``config/settings.json`` ``llm`` / ``embedder`` sections. Legacy
        dev-time fallback; will be empty once the migration script runs.
-    4. ``deployments`` legacy shape — assume ``sap_aicore`` provider.
 
 Two paths only:
-  * ``sap_aicore``  → native gen_ai_hub adapter (SAP AI Core; LiteLLM cannot
-                      proxy its deployment-id routing).
-  * everything else → LiteLLM (Bedrock, Azure, OpenAI, Anthropic, Vertex/Gemini,
-                      Mistral, Cohere, … — adding one is config, not code).
+  * every API provider → LiteLLM (Bedrock, Azure, OpenAI, Anthropic,
+                         Vertex/Gemini, SAP AI Core, Mistral, Cohere, …;
+                         adding one is config, not code).
   * embedder ``huggingface`` → local sentence-transformers (offline, no API).
 """
 
@@ -68,17 +66,6 @@ def _seed_env_from_secrets(target: str) -> None:
 # ── LLM ─────────────────────────────────────────────────────────────────────
 
 
-def _resolve_llm_provider(cfg: dict[str, Any]) -> str:
-    llm_section = cfg.get("llm") or {}
-    provider = _env_or("LLM_PROVIDER", llm_section.get("provider"))
-    # `or {}` (not `.get(_, {})`) — the key may exist with an explicit None
-    # value, e.g. the enrichment service builds {"deployments": cfg.get(...)}.
-    deployments = cfg.get("deployments") or {}
-    if not provider and deployments.get("llm"):
-        provider = "sap_aicore"  # backward-compat: old settings shape
-    return provider
-
-
 def build_llm(config: dict[str, Any]) -> Any:
     """Return a LangChain chat model for the active provider.
 
@@ -87,7 +74,7 @@ def build_llm(config: dict[str, Any]) -> Any:
     _seed_env_from_secrets("llm")
 
     llm_section = _llm_section_from_secrets() or config.get("llm") or {}
-    provider = _resolve_llm_provider({"llm": llm_section, "deployments": config.get("deployments")})
+    provider = _env_or("LLM_PROVIDER", llm_section.get("provider"))
 
     if not provider:
         raise ValueError(
@@ -95,13 +82,6 @@ def build_llm(config: dict[str, Any]) -> Any:
             "store a config via /v1/admin/secrets/llm, or set config['llm']['provider']."
         )
 
-    if provider == "sap_aicore":
-        from .chat_llm_factory import get_chat_llm
-
-        # SAP AI Core still reads aicore_config.json via the settings dict.
-        return get_chat_llm(config)
-
-    # Every other provider goes through LiteLLM.
     from ..infrastructure.litellm_llm import build_litellm_chat
 
     return build_litellm_chat(
@@ -227,11 +207,12 @@ def build_llm_probe(provider: str, model: str, fields: dict[str, str]) -> Any:
     doc. ``fields`` are the resolved (decrypted) connection fields.
 
     Credentials are seeded into ``os.environ`` (LLM_ prefix for
-    api_key/api_base/api_version/deployment_id; AWS_*/VERTEXAI_*/GOOGLE_* verbatim)
-    so env-var providers (Bedrock, Vertex) work. Both writes are ledgered: the
-    field seeding shares the ``llm`` plane, so the next real ``build_llm()``
-    replaces it, and the LiteLLM layer writes under its own ``probe`` scope so
-    testing one connection never retires the credentials of the active one.
+    api_key/api_base/api_version; AWS_*/VERTEXAI_*/GOOGLE_*/AICORE_* verbatim)
+    so env-var providers (Bedrock, Vertex, SAP AI Core) work. Both writes are
+    ledgered: the field seeding shares the ``llm`` plane, so the next real
+    ``build_llm()`` replaces it, and the LiteLLM layer writes under its own
+    ``probe`` scope so testing one connection never retires the credentials of
+    the active one.
     """
     if not provider:
         raise ValueError("No provider configured for the connection under test.")
@@ -239,11 +220,6 @@ def build_llm_probe(provider: str, model: str, fields: dict[str, str]) -> Any:
     from ..infrastructure.secrets import export_fields_to_env
 
     export_fields_to_env("llm", fields)
-
-    if provider == "sap_aicore":
-        from .chat_llm_factory import get_chat_llm
-
-        return get_chat_llm({"deployments": {"llm": fields.get("deployment_id", "")}})
 
     from ..infrastructure.litellm_llm import build_litellm_chat
 
@@ -262,16 +238,6 @@ def build_llm_probe(provider: str, model: str, fields: dict[str, str]) -> Any:
 # ── Embedder ─────────────────────────────────────────────────────────────────
 
 
-def _resolve_embedder_provider(cfg: dict[str, Any]) -> str:
-    emb_section = cfg.get("embedder") or {}
-    provider = _env_or("EMBEDDER_PROVIDER", emb_section.get("provider"))
-    # `or {}` (not `.get(_, {})`) — see _resolve_llm_provider for the rationale.
-    deployments = cfg.get("deployments") or {}
-    if not provider and deployments.get("embeddings"):
-        provider = "sap_aicore"  # backward-compat: old settings shape
-    return provider
-
-
 def build_embedder(config: dict[str, Any]) -> Any:
     """Return an embedder for the active provider.
 
@@ -280,9 +246,7 @@ def build_embedder(config: dict[str, Any]) -> Any:
     _seed_env_from_secrets("embedder")
 
     emb_section = _embedder_section_from_secrets() or config.get("embedder") or {}
-    provider = _resolve_embedder_provider(
-        {"embedder": emb_section, "deployments": config.get("deployments")}
-    )
+    provider = _env_or("EMBEDDER_PROVIDER", emb_section.get("provider"))
 
     if not provider:
         raise ValueError(
@@ -290,11 +254,6 @@ def build_embedder(config: dict[str, Any]) -> Any:
             "Set EMBEDDER_PROVIDER env var, store a config via "
             "/v1/admin/secrets/embedder, or set config['embedder']['provider']."
         )
-
-    if provider == "sap_aicore":
-        from .embedder_factory import get_embedder
-
-        return get_embedder(config)
 
     if provider == "huggingface":
         # Local sentence-transformers — runs offline, not a LiteLLM provider.
@@ -338,22 +297,20 @@ def _embedder_section_from_secrets() -> dict[str, Any] | None:
 # ── Display label ────────────────────────────────────────────────────────────
 
 
+# Providers whose id does not title-case into their name.
+_PROVIDER_DISPLAY: dict[str, str] = {
+    "sap": "SAP AI Core",
+}
+
+
 def get_provider_display(config: dict[str, Any]) -> str:
     """Return a human-readable label for the active LLM configuration."""
     # Prefer the secrets backend so the chip label reflects what runtime uses.
     section = _llm_section_from_secrets() or config.get("llm") or {}
     provider = _env_or("LLM_PROVIDER", section.get("provider"))
-    deployments = config.get("deployments") or {}
-    if not provider and deployments.get("llm"):
-        provider = "sap_aicore"
-    model = _env_or("LLM_MODEL", section.get("model")) or config.get("model_name", "")
+    model = _env_or("LLM_MODEL", section.get("model"))
 
     if not provider:
         return "Unknown"
-    if provider == "sap_aicore":
-        deployment_id = deployments.get("llm", "") or ""
-        label = model or deployment_id[:25]
-        return f"SAP AI Core · {label}"
-    # LiteLLM providers — show provider + model as-is.
-    pretty = provider.replace("_", " ").title()
+    pretty = _PROVIDER_DISPLAY.get(provider) or provider.replace("_", " ").title()
     return f"{pretty} · {model}" if model else pretty

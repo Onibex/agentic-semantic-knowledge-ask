@@ -50,7 +50,7 @@ in `.env` (see `.env.example` / `.env.remote.example`, `redeploy.sh`, `scripts/p
 | `ask-knowledge-graph` | KG read/write, DictionaryWriter, ingestion (SAP JSON → YAML → OpenSearch), `EntityDeriver`, YAML parse/serialize (ruamel only, never `import yaml`) |
 | `ask-schema-service` | Handles SCHEMA_QUERY (metadata answers, workspace-scoped) |
 | `ask-docs-service` | Handles DOCS_QUERY (own retriever; must NOT import ask-knowledge-graph) |
-| `ask-llm-gateway` | LLM + embedder abstract factory: SAP AI Core (managed) or any LiteLLM provider; encrypted secrets store (Fernet, OpenSearch-backed); TokenTracker |
+| `ask-llm-gateway` | LLM + embedder abstract factory over LiteLLM (every provider, SAP AI Core included); encrypted secrets store (Fernet, OpenSearch-backed); the index's vector size (`embedding_space`); TokenTracker |
 | `ask-action-execution` | ACTION_EXECUTION (SAP write ops via MCP); may consume ask-llm-gateway only |
 | `ask-admin-api` | Admin REST API behind ASK Studio/Setup: workspaces, business domains, entity lifecycle, git-versioned publish (dev/prod), AI enrichment, DDL import, secrets |
 

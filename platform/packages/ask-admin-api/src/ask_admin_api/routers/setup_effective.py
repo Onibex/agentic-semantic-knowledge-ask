@@ -13,9 +13,9 @@ provider. The SPA renders one card per section without knowing about
 individual providers — the backend filters out fields that don't apply, marks
 sensitive ones, and resolves env-var vs file source per field.
 
-Scope (per Tier 2 decision): only what the SPA-visualizer consumes —
-**LLM, Embedder, OpenSearch**. Database / Auth / SAP AI Core are served by
-their own dedicated endpoints.
+Scope (per Tier 2 decision): only what the SPA-visualizer consumes:
+**LLM, Embedder, OpenSearch**. Database and Auth are served by their own
+dedicated endpoints.
 
 Source of truth (post encrypted-secrets refactor):
 
@@ -46,6 +46,7 @@ from fastapi import APIRouter, Depends
 from opensearchpy.exceptions import OpenSearchException
 from pydantic import BaseModel
 
+from ask_llm_gateway.embedding_space import DEFAULT_EMBEDDING_DIM, EMBEDDING_DIM_ENV
 from ask_llm_gateway.infrastructure.secrets import SecretsRepository, provider_fields
 
 from ..auth.validator import TokenClaims, validate_token
@@ -105,7 +106,7 @@ class OpenSearchTestResponse(BaseModel):
 
 
 _PROVIDER_LABELS: dict[str, str] = {
-    "sap_aicore": "SAP AI Core",
+    "sap": "SAP AI Core",
     "openai": "OpenAI",
     "anthropic": "Anthropic",
     "gemini": "Google Gemini",
@@ -279,7 +280,7 @@ def _build_opensearch_section() -> ConfigSection:
         _field("host", "OPENSEARCH_HOST", "localhost"),
         _field("port", "OPENSEARCH_PORT", 9200),
         _field("use_ssl", "OPENSEARCH_USE_SSL", "disabled"),
-        _field("embedding_dim", "OPENSEARCH_EMBEDDING_DIM", 1024),
+        _field("embedding_dim", EMBEDDING_DIM_ENV, DEFAULT_EMBEDDING_DIM),
     ]
     if os.getenv("OPENSEARCH_USER"):
         fields.append(_field("username", "OPENSEARCH_USER", None))

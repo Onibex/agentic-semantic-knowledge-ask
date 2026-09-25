@@ -61,28 +61,3 @@ class ConfigManager:
         if config:
             return config.get("db_type", "postgresql")
         return "postgresql"
-
-    def validate_config(self, config: Dict) -> tuple:
-        db_type = config.get("db_type", "postgresql")
-        db_section = "hana" if db_type == "hana" else "postgresql"
-        db_fields = (
-            ["host", "port", "user", "password"]
-            if db_type == "hana"
-            else ["host", "port", "database", "user", "password"]
-        )
-
-        required_fields = {
-            db_section: db_fields,
-            "opensearch": ["host", "port"],
-            "sap_ai_core": ["config_path"],
-            "deployments": ["llm", "embeddings"],
-        }
-
-        for section, fields in required_fields.items():
-            if section not in config:
-                return False, f"Missing section '{section}'"
-            for field in fields:
-                if field not in config[section] or not config[section][field]:
-                    return False, f"Missing field '{field}' in section '{section}'"
-
-        return True, "Valid configuration"

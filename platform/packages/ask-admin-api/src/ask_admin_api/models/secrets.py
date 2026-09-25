@@ -72,6 +72,13 @@ class SecretsGetResponse(BaseModel):
     fields: list[SecretsFieldView]
     updated_at: str = ""
     updated_by: str = ""
+    index_embedding_dim: int | None = Field(
+        None,
+        description=(
+            "Embedder target only: the vector size the search index stores, which "
+            "the embedder must produce (OPENSEARCH_EMBEDDING_DIM, else 1024)."
+        ),
+    )
 
 
 class SecretsTestRequest(BaseModel):

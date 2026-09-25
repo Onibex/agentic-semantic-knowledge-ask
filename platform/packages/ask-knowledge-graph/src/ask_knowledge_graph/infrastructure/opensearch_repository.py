@@ -35,6 +35,8 @@ from typing import Any
 
 from opensearchpy import OpenSearch, helpers
 
+from ask_llm_gateway.embedding_space import index_embedding_dim
+
 from ._legacy_config import ConfigManager
 from .env_index import env_index
 
@@ -356,14 +358,14 @@ class OpenSearchAskRepository:
         self.INDEX_FIELD = env_index("ask-field-registry-v1", env)
         self.INDEX_EDGE = env_index("ask-edge-registry-v1", env)
 
-        # Embedding dimension: must match the active embedder. Set
-        # OPENSEARCH_EMBEDDING_DIM when switching to an embedder of a different
-        # size, then call drop_all_registry_indices() + re-ingest all YAMLs.
-        # The mapping is immutable once the index exists, so this is a
-        # deployment decision and belongs in the environment.
-        # Default 1024 = platform standard (Bedrock Titan Text Embeddings V2,
-        # runtime_settings, /setup/effective all agree).
-        self.embedding_dim = int(os.getenv("OPENSEARCH_EMBEDDING_DIM") or 1024)
+        # Embedding dimension: must match the active embedder, which asks its
+        # model for this same size (ask_llm_gateway.embedding_space is the one
+        # place both read it). Set OPENSEARCH_EMBEDDING_DIM to change it, then
+        # call drop_all_registry_indices() + re-ingest all YAMLs: the mapping is
+        # immutable once the index exists, so this is a deployment decision and
+        # belongs in the environment. Default 1024 = platform standard (Bedrock
+        # Titan Text Embeddings V2).
+        self.embedding_dim = index_embedding_dim()
 
         # Language of the analyzer applied to every searched text field. Same
         # deployment flag the authoring prompts read, so the corpus and its index

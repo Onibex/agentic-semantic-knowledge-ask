@@ -354,7 +354,9 @@ semanticLayer:
 # It carries exactly the sections that still have live readers. There is no
 # opensearch section on purpose: every client resolves OPENSEARCH_* from the
 # environment, and a section here would be read by nothing while misleading the
-# next operator.
+# next operator. Nor is there anything for SAP AI Core: its service key is a
+# credential, entered in ASK Setup and kept in the encrypted store like every
+# other provider's.
 settings:
   hybrid_pipeline:
     anchor_top_k: 3
@@ -362,18 +364,6 @@ settings:
     expand_max_total: 5
     use_two_pass_flow: true
     max_expansion_rounds: 1
-  sap_ai_core:
-    # Points at the SAP AI Core service key, which is a credential and is
-    # therefore NOT in the ConfigMap and not in any image. Selecting the SAP AI
-    # Core embedder without mounting it raises a named error, which is loud and
-    # correct. Mount it with sapAiCore.existingSecret below.
-    config_path: config/aicore_config.json
-
-sapAiCore:
-  # Name of a Secret whose key `aicore_config.json` holds the service key JSON.
-  # Empty mounts nothing, which is right until the SAP AI Core embedder is used.
-  existingSecret: ""
-  key: aicore_config.json
 
 # ── Platform-wide settings ──────────────────────────────────────────────────
 platform:

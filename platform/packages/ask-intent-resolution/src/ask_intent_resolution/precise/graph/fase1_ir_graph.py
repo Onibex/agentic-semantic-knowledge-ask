@@ -97,7 +97,7 @@ def build_fase1_graph(
     Args:
         ir_generator:        IRGeneratorService
         semantic_dictionary: SemanticDictionaryService (hybrid search)
-        embedder:            SAPAICoreEmbedder (query vectors)
+        embedder:            the active embedder from build_embedder (query vectors)
         checkpointer:        shared with parent graph
     """
 

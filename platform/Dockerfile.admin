@@ -17,7 +17,7 @@
 #   - ask-admin-api          The FastAPI app itself.
 #   - ask-knowledge-graph    DictionaryWriter + IngestionService + Reader +
 #                            RagIndexingService + rag_vectorstore_client.
-#   - ask-llm-gateway        SAPAICoreEmbedder + aicore_env helper.
+#   - ask-llm-gateway        LLM + embedder factory (LiteLLM), secrets store.
 #   - ask-sql-executor       Pulled transitively by knowledge-graph factories.
 #
 # Intentionally NOT bundled:
@@ -43,7 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV UV_LINK_MODE=copy
 
-# Third-party deps (fastapi, uvicorn, pydantic, langchain, gen_ai_hub, etc.).
+# Third-party deps (fastapi, uvicorn, pydantic, langchain, litellm, etc.).
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system -r requirements.txt
@@ -52,7 +52,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY packages/ask-llm-gateway/pyproject.toml      packages/ask-llm-gateway/
 COPY packages/ask-llm-gateway/src                 packages/ask-llm-gateway/src
 # litellm + langchain-litellm are BASE deps of ask-llm-gateway (LiteLLM serves
-# every non-sap_aicore provider). The local offline embedder (huggingface +
+# every API provider, SAP AI Core included). The local offline embedder (huggingface +
 # sentence-transformers) is HEAVY (torch + CUDA, several GB) and off by default.
 # To test the `huggingface` embedder, rebuild with:
 #   docker compose build --build-arg GATEWAY_EXTRAS="[huggingface]" ask-admin-api

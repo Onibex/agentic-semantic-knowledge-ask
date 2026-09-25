@@ -6,7 +6,6 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 import psycopg2
-from dotenv import load_dotenv
 
 
 # ──────────────────────────────────────────────────
@@ -194,33 +193,3 @@ def test_ias_connection(config: dict) -> tuple[bool, str]:
             return False, f"IAS returned HTTP {resp.status_code}: {resp.text[:200]}"
     except Exception as e:
         return False, f"IAS connection error: {str(e)}"
-
-
-# ──────────────────────────────────────────────────
-# SAP AI Core
-# ──────────────────────────────────────────────────
-def test_sap_ai_core_connection(config_path: str) -> tuple[bool, str]:
-    """Test SAP AI Core connection"""
-    try:
-        import os
-
-        from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
-
-        load_dotenv(override=True)
-        os.environ["AICORE_CONFIG"] = os.path.abspath(config_path)
-
-        proxy_client = get_proxy_client("gen-ai-hub")
-        deployments = proxy_client.get_deployments()
-
-        if deployments:
-            return True, f"Connection successful. {len(deployments)} deployment(s) available."
-        else:
-            return False, "Connection successful but no deployments available."
-
-    except FileNotFoundError:
-        return False, f"Configuration file not found: {config_path}"
-    except Exception as e:
-        error_msg = str(e)
-        if "invalid_client" in error_msg or "Bad credentials" in error_msg:
-            return False, "Invalid credentials. Please check your .env file and aicore_config.json"
-        return False, f"Connection error: {error_msg}"

@@ -5,9 +5,8 @@
 # Source-available under PolyForm Strict 1.0.0 / PolyForm Free Trial 1.0.0.
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
-"""Application factories for the AI Core backbone."""
+"""Application factories: every consumer builds its LLM and embedder here."""
 
-from .chat_llm_factory import get_chat_llm, get_provider_display
-from .embedder_factory import get_embedder
+from .factory import build_embedder, build_llm, build_llm_probe, get_provider_display
 
-__all__ = ["get_chat_llm", "get_embedder", "get_provider_display"]
+__all__ = ["build_embedder", "build_llm", "build_llm_probe", "get_provider_display"]

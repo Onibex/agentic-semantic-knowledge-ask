@@ -73,7 +73,7 @@ def _build_repo(env: str | None = None) -> Any:
 
 
 def _build_embedder(config: dict[str, Any]) -> Any | None:
-    """Construct a SAPAICoreEmbedder, returning None on any failure.
+    """Construct the active embedder through the gateway, returning None on any failure.
 
     The dictionary admin page is permissive about a missing embedder
     (entries get saved without embeddings + a warning) — preserve that.
@@ -149,8 +149,8 @@ def build_default_ingestion_service(
 
     Wraps the production-tested `MetadataIngestionService` +
     `OpenSearchKnowledgeGraphWriter` in the Iter 6 typed Protocol.
-    `config` provides the AI Core + embedding deployment id needed by
-    SAPAICoreEmbedder.
+    The embedder is the active one in the secrets store, built by the gateway
+    factory.
 
     `with_file_storage=True` injects a `LocalFileStorageRepository` so
     `ingest_sap_json` also writes the parsed Bronze + Silver YAMLs to

@@ -17,6 +17,10 @@ dependencies = [
     # Pin the 0.3 line (see ask-llm-gateway pyproject for the 1.x footgun) + make
     # the previously-transitive dep explicit so KG resolves standalone too.
     "langchain-core>=0.3,<0.4",
+    # local: the embedder is built through the gateway factory, and the index's
+    # vector size comes from ask_llm_gateway.embedding_space, so the index and
+    # the embedder read it from one place.
+    "ask-llm-gateway",
 ]
 
 [project.scripts]

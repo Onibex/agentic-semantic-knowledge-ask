@@ -6,14 +6,13 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 """
-Credential→environment authority for the LiteLLM (direct) path.
+Credential→environment authority for the LiteLLM path.
 
 LiteLLM resolves provider credentials from process environment variables
 (``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``, ``AWS_ACCESS_KEY_ID``,
-``AZURE_API_BASE`` …) regardless of which LangChain-wrapper version is
-installed. Relying on env vars — rather than per-version constructor fields —
-is the version-stable way to pass credentials, and it mirrors how
-``aicore_env.export_aicore_env`` already boots the SAP AI Core path.
+``AZURE_API_BASE``, ``AICORE_SERVICE_KEY`` …) regardless of which
+LangChain-wrapper version is installed. Relying on env vars, rather than on
+per-version constructor fields, is the version-stable way to pass credentials.
 
 Two layers, applied in order (later wins):
 

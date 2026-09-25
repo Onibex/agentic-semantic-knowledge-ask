@@ -15,8 +15,6 @@ import type {
   ConfigGetResponse,
   SetupEffectiveResponse,
   OpenSearchTestResponse,
-  AicoreConfigStatus,
-  AicoreUploadResponse,
   DictionaryEntry,
   DictionaryListResponse,
   DictionaryUpsertResponse,
@@ -426,40 +424,6 @@ export const embedderApi = {
         detail: 'Test failed',
         error: e.response?.data?.detail ?? e.message ?? 'Test failed',
       }
-    }
-  },
-}
-
-// SAP AI Core service-key upload (legacy plane, kept for the managed provider).
-export const llmApi = {
-  getAicoreStatus: async (): Promise<AicoreConfigStatus> => {
-    try {
-      const res = await http.get<AicoreConfigStatus>('/llm/aicore/config')
-      return res.data
-    } catch (err) {
-      throw new Error(extractError(err))
-    }
-  },
-
-  getAicoreDeployments: async (): Promise<{ deployments: { deployment_id: string; model_name: string }[] }> => {
-    try {
-      const res = await http.get('/llm/aicore/deployments')
-      return res.data
-    } catch (err) {
-      throw new Error(extractError(err))
-    }
-  },
-
-  uploadAicore: async (file: File): Promise<AicoreUploadResponse> => {
-    try {
-      const form = new FormData()
-      form.append('file', file)
-      const res = await http.post<AicoreUploadResponse>('/llm/aicore/config', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      return res.data
-    } catch (err) {
-      throw new Error(extractError(err))
     }
   },
 }
