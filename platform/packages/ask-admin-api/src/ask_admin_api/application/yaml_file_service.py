@@ -501,6 +501,7 @@ class YAMLFileService:
         git_service=None,
         author_name: str | None = None,
         author_email: str | None = None,
+        origin: str = "manual upload",
     ) -> VizYAMLNode:
         """Pass I — import a hand-authored or offline YAML into the workspace.
 
@@ -512,7 +513,9 @@ class YAMLFileService:
              ``source_system`` / ``layer`` / ``module`` / ``name``.
           3. Write the file (with parent directories) using the standard
              serializer.
-          4. Optional git commit when ``git_service`` is supplied.
+          4. Optional git commit of the YAML and its enrichments sidecar when
+             ``git_service`` is supplied, naming ``origin`` (where the YAML
+             came from) in the message.
 
         Refuses to overwrite an existing file unless ``force=True`` — that's
         the safety belt against silent destruction of in-progress
@@ -612,9 +615,20 @@ class YAMLFileService:
 
         if git_service is not None and author_email:
             action = "overwrite" if force else "import"
+            commit_paths = [rel_path]
+            # The sidecar just seeded goes in the same commit, as update_yaml does:
+            # left out, it stays untracked, and every publish skips it.
+            try:
+                commit_paths.append(
+                    self._enrichments_store._path(entity_id)  # noqa: SLF001 (same module)
+                    .relative_to(self.repo_root)
+                    .as_posix()
+                )
+            except ValueError:
+                pass  # sidecar outside the repo root: nothing to commit
             git_service.commit(
-                [rel_path],
-                f"viz: {action} {entity_id} from manual upload",
+                commit_paths,
+                f"viz: {action} {entity_id} from {origin}",
                 author_name or author_email.split("@")[0],
                 author_email,
             )
