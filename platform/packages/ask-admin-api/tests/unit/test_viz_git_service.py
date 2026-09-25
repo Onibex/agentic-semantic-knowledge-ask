@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from git import GitCommandError, Repo
+from git import Repo
 
 from ask_admin_api.application.git_service import GitService
 
@@ -232,41 +232,6 @@ def test_commit_if_changed_skips_noop(svc, git_repo):
     f.write_text('{"v": 2}\n')
     sha3 = svc.commit_if_changed(["baseline.json"], "update baseline", "u", "u@x.com")
     assert sha3 is not None and sha3 != sha1
-
-
-def test_stash_unblocks_branch_switch_over_dirty_tracked_file(svc, git_repo):
-    """A dirty tracked file that differs on the target branch makes
-    ``git checkout <branch>`` abort — exactly the publish .sap_baseline sidecar
-    crash. stash_push isolates it so the switch proceeds; stash_pop restores
-    the admin's uncommitted change afterwards."""
-    g = svc.repo.git
-    working = svc.repo.active_branch.name
-
-    sidecar = git_repo / "sidecar.json"
-    sidecar.write_text('{"v": 1}\n')
-    svc.commit(["sidecar.json"], "add sidecar", "u", "u@x.com")
-
-    # dev branch with a DIFFERENT committed version of the same file.
-    g.checkout("-b", "dev")
-    sidecar.write_text('{"v": 2}\n')
-    svc.commit(["sidecar.json"], "dev sidecar", "u", "u@x.com")
-    g.checkout(working)
-
-    # Uncommitted local change that conflicts with dev's version.
-    sidecar.write_text('{"v": 99}\n')
-    with pytest.raises(GitCommandError):
-        g.checkout("dev")  # aborts: would overwrite local changes
-
-    # stash → switch now works → restore on return.
-    assert svc.stash_push("publish-autostash test") is True
-    svc.checkout_branch("dev")  # no raise
-    svc.checkout_branch(working)
-    svc.stash_pop()
-    assert sidecar.read_text() == '{"v": 99}\n'  # admin's change preserved
-
-    # Clean tree → stash_push is a no-op (nothing to pop later).
-    g.checkout("--", "sidecar.json")
-    assert svc.stash_push("noop") is False
 
 
 def test_get_log_includes_empty_publish_commits_by_entity_id(svc, git_repo):

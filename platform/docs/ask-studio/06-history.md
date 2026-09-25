@@ -68,13 +68,21 @@ Under the header sit three tabs. Selecting a Data Product resets you to **Workin
 | Tab | Shows |
 |---|---|
 | **Working** | The live draft history (main branch): every edit, enrich accept and state change. |
-| **Deployed to dev** | Only the commits that were published to the **dev** environment. |
-| **Deployed to prod** | Only the commits that were published to the **prod** environment. |
+| **Deployed to dev** | One commit for every publish to the **dev** environment, the first one included, with who published and when. |
+| **Deployed to prod** | One commit for every promotion to the **prod** environment, the same way. |
 
 When you're on **Deployed to dev** or **Deployed to prod**, a note appears on the right:
 *"Restoring from here writes to Working (main) — re-publish to redeploy."* If the Data Product was
 never deployed to that environment you'll see a **"Not deployed to `<env>` yet"** message
 instead of a timeline.
+
+> **Note, a platform upgraded from an earlier version.** Earlier versions recorded no commit for
+> the first publish of a Data Product that had not been edited since it was uploaded, so on an
+> upgraded platform these tabs can say **Not deployed to `<env>` yet** for a Data Product that is
+> live there. At its first start, the upgraded platform starts again, empty, every environment
+> branch that never recorded a publish, and keeps the old one as a backup. Publish those Data
+> Products to **dev** once more and **Deployed to dev** lists them from then on. One already in
+> **prod** appears in **Deployed to prod** from its next promotion.
 
 ![History branch tabs: Working, Deployed to dev, Deployed to prod](../images/studio-history-tabs.png)
 

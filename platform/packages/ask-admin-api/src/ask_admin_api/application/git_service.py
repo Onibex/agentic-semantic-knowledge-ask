@@ -19,6 +19,9 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess
+import tempfile
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -38,6 +41,16 @@ def _auto_init_enabled() -> bool:
     nested inside a code checkout would create a surprise nested repo.
     """
     return os.getenv("SEMANTIC_LAYER_AUTO_INIT", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _identity_env(name: str, email: str) -> dict[str, str]:
+    """Author and committer for a plumbing commit, with no git user.* config."""
+    return {
+        "GIT_AUTHOR_NAME": name,
+        "GIT_AUTHOR_EMAIL": email,
+        "GIT_COMMITTER_NAME": name,
+        "GIT_COMMITTER_EMAIL": email,
+    }
 
 
 class GitService:
@@ -274,20 +287,17 @@ class GitService:
     #   dev   — snapshot of what's published to ask-*-dev   (backend-only writes)
     #   prod  — snapshot of what's published to ask-*-prod  (backend-only writes)
     #
-    # Publish to an env never MERGES; it does a file-by-file ``git checkout
-    # <source> -- <paths>`` overwrite onto the env branch (audit §3.2/§3.3), so
-    # only the published Data Product's files move — unrelated working changes
-    # never leak across. Conflicts are structurally impossible.
-
-    def current_branch(self) -> str:
-        """Active branch name, or ``""`` when detached / no repo."""
-        if self.repo is None:
-            return ""
-        try:
-            return self.repo.active_branch.name
-        except TypeError:
-            # Detached HEAD — no symbolic branch.
-            return ""
+    # Publish to an env never MERGES: the env branch receives ONLY the published
+    # Data Product's files, as they are on the source branch (audit §3.2/§3.3),
+    # so unrelated working changes never leak across and conflicts are
+    # structurally impossible. An env branch starts EMPTY, so it holds exactly
+    # what has been published there and the first publish of each Data Product
+    # is a real change with its own commit.
+    #
+    # The env-branch commit is built with git plumbing on a private index file:
+    # the working tree, the real index and HEAD never move. Requests that read
+    # YAMLs, and commits on main that do not take the publish lock, never see
+    # an env branch or a borrowed index.
 
     def list_branches(self) -> list[str]:
         if self.repo is None:
@@ -295,63 +305,114 @@ class GitService:
         return [h.name for h in self.repo.heads]
 
     def init_release_branches(self, names: tuple[str, ...] = ("dev", "prod")) -> list[str]:
-        """Create the release branches from the current HEAD if absent. Idempotent.
+        """Create the release branches, EMPTY, when absent. Idempotent.
 
         Returns the list of branches actually created (empty when all existed).
-        Guards the bootstrap edge cases the audit + understand-phase flagged:
-          - no repo            → no-op
-          - 0 commits (invalid HEAD) → auto-seed a root commit, then branch
-            (a freshly ``git init``'d repo has no base to cut dev/prod from, so
-            publish would fail at ``git checkout dev``).
+        Each starts as a root commit with no files. They used to be cut as full
+        copies of main, which made the first publish of an unedited Data Product
+        a no-op: nothing was committed and the History env tabs stayed empty
+        (measured on 2026-09-24 on a from-zero install).
 
-        KNOWN LIMITATION (Iter 2): on a populated repo, ``dev``/``prod`` are cut
-        as FULL copies of ``main`` — so the git branch initially contains every
-        YAML even though ``ask-*-{env}`` starts empty (nothing published yet).
-        The git branch therefore overstates what's actually deployed until the
-        first publish of each DP. This is reconciled at the Iter-4 read cutover
-        (re-index + branch reseed); for the Iter-2 write capability it's benign
-        (publishes still target the correct env index + commit only real diffs).
+        Also bootstraps the working branch: an unborn HEAD with files in the
+        working tree gets a seed commit, so the publish reads
+        (``git show main:<file>``) have a base, and a git-default ``master``
+        becomes ``main``. A truly empty repo keeps its unborn HEAD; the first
+        import creates it, and the env branches do not need it.
         """
         if self.repo is None:
             return []
         if not self.repo.head.is_valid():
-            # From-zero gap: a freshly `git init`'d semantic-layer repo has no
-            # commit yet, so there is no base to cut dev/prod from and publish
-            # would fail at `git checkout dev`. Seed a root commit from whatever
-            # is in the working tree; the publish's real content commits (with
-            # the JWT author) land on top.
             self._seed_initial_commit()
-            if not self.repo.head.is_valid():
-                logger.warning(
-                    "init_release_branches: repo still has no commits after seeding — "
-                    "release branches not created"
-                )
-                return []
         self._normalize_working_branch()
-        base = self.repo.head.commit
         existing = {h.name for h in self.repo.heads}
         created: list[str] = []
         for name in names:
             if name in existing:
                 continue
             try:
-                self.repo.create_head(name, base)
+                root = self._empty_root_commit(name)
+                # An empty old value makes git refuse if the branch appeared meanwhile.
+                self.repo.git.update_ref(f"refs/heads/{name}", root, "")
                 created.append(name)
-                logger.info("Created release branch %s at %s", name, base.hexsha[:7])
+                logger.info("Created release branch %s, empty, at %s", name, root[:7])
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Could not create release branch %s: %s", name, exc)
         return created
+
+    def reset_unrecorded_release_branches(
+        self, names: tuple[str, ...] = ("dev", "prod")
+    ) -> list[str]:
+        """Start again, empty, every env branch that never recorded a publish.
+
+        Repairs repos whose env branches were cut as full copies of main: when
+        the Data Products were uploaded before their first publish, that publish
+        committed nothing. Such a branch holds copies of main and no publish
+        record, so starting it again loses nothing, and its old tip is kept at
+        ``refs/backup/<env>-<UTC time>``. A branch with one ``publish-<env>(`` or
+        ``unpublish-<env>(`` commit is never touched, and neither is a branch
+        checked out as HEAD. Returns the branches reset.
+        """
+        if self.repo is None:
+            return []
+        git = self.repo.git
+        try:
+            head_ref = git.symbolic_ref("-q", "HEAD")
+        except Exception:  # noqa: BLE001 (detached HEAD)
+            head_ref = ""
+        empty_tree = self._empty_tree()
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        reset: list[str] = []
+        for name in names:
+            ref = f"refs/heads/{name}"
+            try:
+                tip = git.rev_parse("--verify", "-q", ref)
+            except Exception:  # noqa: BLE001 (absent: init_release_branches creates it)
+                continue
+            if git.rev_parse(f"{tip}^{{tree}}") == empty_tree:
+                continue  # nothing on it to lose, or to keep
+            subjects = git.log(tip, "--format=%s").splitlines()
+            if any(s.startswith((f"publish-{name}(", f"unpublish-{name}(")) for s in subjects):
+                continue
+            if ref == head_ref:
+                logger.warning(
+                    "Release branch %s has no publish record but is checked out; left as is", name
+                )
+                continue
+            backup = f"refs/backup/{name}-{stamp}"
+            git.update_ref(backup, tip)
+            git.update_ref(ref, self._empty_root_commit(name), tip)
+            reset.append(name)
+            logger.warning(
+                "Release branch %s had no publish record; started again empty (old tip %s kept at %s)",
+                name,
+                tip[:7],
+                backup,
+            )
+        return reset
+
+    def _empty_tree(self) -> str:
+        """SHA of the tree with no entries, written to the object store."""
+        return self.repo.git.mktree(istream=subprocess.DEVNULL)
+
+    def _empty_root_commit(self, env: str) -> str:
+        """A commit with no parent and no files: where an env branch starts."""
+        return self.repo.git.commit_tree(
+            self._empty_tree(),
+            "-m",
+            f"Start {env}: nothing published yet",
+            env=_identity_env("ask-platform", "seed@onibex.com"),
+        )
 
     def _seed_initial_commit(self) -> None:
         """Create the very first commit in an empty repo (unborn HEAD).
 
         A freshly ``git init``'d semantic-layer repo has files staged/untracked
-        but no commit, so there is no base for the release branches. Stage the
+        but no commit, so main has nothing for a publish to read. Stage the
         whole working tree and commit it as a root commit with a fixed bootstrap
         identity (real content commits use the JWT author). Uses ``index.commit``
         with an explicit ``Actor`` so it works without any git user.* config and
-        does not leak that identity into later commits. Never raises — the seed
-        is best-effort and the caller re-checks ``head.is_valid()``.
+        does not leak that identity into later commits. Never raises; the seed
+        is best-effort.
         """
         if self.repo is None:
             return
@@ -361,8 +422,8 @@ class GitService:
             self.repo.git.add(A=True)  # stage everything to .git/index
             idx = self.repo.index
             if not idx.entries:
-                # Truly empty repo (no files at all) — nothing to seed. Leave
-                # HEAD unborn; the caller skips branch creation.
+                # Truly empty repo (no files at all): nothing to seed. Leave
+                # HEAD unborn; the first import creates main.
                 logger.info("empty semantic-layer repo (no files) — not seeding a commit")
                 return
             actor = Actor("ask-platform", "seed@onibex.com")
@@ -403,86 +464,6 @@ class GitService:
         except Exception as exc:  # noqa: BLE001 — never block boot/publish on this
             logger.warning("Could not normalise working branch master → %s: %s", working, exc)
 
-    def checkout_branch(self, name: str) -> None:
-        """Switch the working tree to ``name``. Raises on dirty/unknown branch."""
-        if self.repo is None:
-            return
-        self.repo.git.checkout(name)
-
-    def stash_push(self, message: str = "") -> bool:
-        """Stash uncommitted tracked changes so a branch switch can proceed.
-
-        The publish flow switches to the env branch (``git checkout dev``); any
-        uncommitted tracked change whose content differs on that branch (e.g. a
-        ``.sap_baseline/*.json`` sidecar rewritten by ingest) makes git ABORT
-        the switch. Stashing isolates those changes during the promote; the
-        caller pops them after returning to the working branch, so the admin's
-        uncommitted edits are preserved, not lost.
-
-        Returns True iff a stash was created (tree was dirty). False when the
-        tree is already clean (nothing to pop later).
-        """
-        if self.repo is None:
-            return False
-        try:
-            if not self.repo.is_dirty(untracked_files=False):
-                return False
-            args = ["push"]
-            if message:
-                args += ["-m", message]
-            self.repo.git.stash(*args)
-            return True
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("git stash push failed: %s", exc)
-            return False
-
-    def stash_pop(self) -> None:
-        """Restore the most recently stashed working-tree changes (best-effort)."""
-        if self.repo is None:
-            return
-        try:
-            self.repo.git.stash("pop")
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("git stash pop failed: %s", exc)
-
-    def checkout_files_from(self, source_branch: str, paths: list[str]) -> None:
-        """Overwrite ``paths`` in the working tree + index from ``source_branch``.
-
-        ``git checkout <source_branch> -- <paths>`` — an overwrite, NOT a merge.
-        The listed paths are replaced with the source branch's content and
-        staged; everything else on the current branch is untouched. Conflicts
-        are impossible (audit §3.3).
-        """
-        if self.repo is None or not paths:
-            return
-        self.repo.git.checkout(source_branch, "--", *paths)
-
-    def remove_files(self, paths: list[str]) -> list[str]:
-        """Remove ``paths`` from the working tree + index on the current branch.
-
-        ``git rm`` (staged for the next commit). Used by the per-env unpublish to
-        delete a Data Product's YAML from the env branch — the inverse of
-        ``checkout_files_from``. Tolerant: a path not tracked on this branch is
-        skipped (never aborts the whole unpublish). Returns the paths actually
-        removed so the caller can decide whether there is anything to commit.
-        """
-        if self.repo is None or not paths:
-            return []
-        branch = self.current_branch()
-        removed: list[str] = []
-        for p in paths:
-            # Only touch paths actually tracked on this branch — skip untracked
-            # (e.g. a sidecar that never landed here) so it is neither rm'd nor
-            # counted as removed.
-            if self.file_sha_on_branch(branch, p) is None:
-                continue
-            try:
-                self.repo.git.rm("--ignore-unmatch", "--", p)
-                removed.append(p)
-            except Exception as exc:  # noqa: BLE001 — defensive
-                logger.warning("remove_files: could not rm %s: %s", p, exc)
-        return removed
-
     def file_sha_on_branch(self, branch: str, path: str) -> str | None:
         """Blob SHA of ``path`` on ``branch``'s tip, or ``None`` if absent."""
         if self.repo is None:
@@ -492,37 +473,80 @@ class GitService:
         except Exception:  # noqa: BLE001 — path/branch may not exist
             return None
 
-    def commit_on_current_branch(
+    def publish_paths(
         self,
+        target: str,
+        source: str,
+        paths: list[str],
         message: str,
         author_name: str,
         author_email: str,
     ) -> str | None:
-        """Commit whatever is currently staged on the active branch.
+        """Commit ``paths``, as they are on ``source``, onto the ``target`` branch.
 
-        Used after ``checkout_files_from`` stages the published files onto the
-        env branch. Returns the commit SHA, or ``None`` when git is unavailable
-        or there is nothing to commit (a re-publish of identical content).
+        An overwrite of exactly those paths, never a merge, written without a
+        checkout (see the branch notes above). Paths absent on ``source`` are
+        skipped; the caller filters and warns. Returns the commit SHA, or
+        ``None`` when git is unavailable, the commit fails (logged), or
+        ``target`` already has exactly that content (a re-publish).
         """
-        if self.repo is None:
+        return self._commit_onto_branch(
+            target, message, author_name, author_email, source=source, add=paths
+        )
+
+    def unpublish_paths(
+        self,
+        target: str,
+        paths: list[str],
+        message: str,
+        author_name: str,
+        author_email: str,
+    ) -> str | None:
+        """Commit the removal of ``paths`` from the ``target`` branch, without a
+        checkout. The inverse of :meth:`publish_paths`; same return contract."""
+        return self._commit_onto_branch(target, message, author_name, author_email, remove=paths)
+
+    def _commit_onto_branch(
+        self,
+        target: str,
+        message: str,
+        author_name: str,
+        author_email: str,
+        *,
+        source: str | None = None,
+        add: Sequence[str] = (),
+        remove: Sequence[str] = (),
+    ) -> str | None:
+        if self.repo is None or not (add or remove):
             return None
+        git = self.repo.git
         try:
-            if not self.repo.index.diff("HEAD"):
-                # Nothing staged differs from HEAD — idempotent re-publish.
-                logger.info("commit_on_current_branch: no staged changes — skipping (%s)", message)
+            parent = git.rev_parse("--verify", f"refs/heads/{target}")
+            # Inside .git: always writable, even on a read-only root filesystem.
+            with tempfile.TemporaryDirectory(dir=self.repo.git_dir) as tmp:
+                index = {"GIT_INDEX_FILE": os.path.join(tmp, "index")}
+                git.read_tree(parent, env=index)
+                for path in add:
+                    listing = git.ls_tree(source, "--", path)
+                    if not listing:
+                        continue
+                    mode, _kind, sha = listing.split("\t", 1)[0].split()
+                    git.update_index("--add", "--cacheinfo", f"{mode},{sha},{path}", env=index)
+                for path in remove:
+                    git.update_index("--force-remove", "--", path, env=index)
+                tree = git.write_tree(env=index)
+            if tree == git.rev_parse(f"{parent}^{{tree}}"):
+                logger.info("%s: %s already has this content, nothing to commit", message, target)
                 return None
-            actor = Actor(author_name, author_email)
-            c = self.repo.index.commit(message, author=actor, committer=actor, skip_hooks=True)
-            logger.info(
-                "git commit %s on %s by %s: %s",
-                c.hexsha[:7],
-                self.current_branch(),
-                author_email,
-                message,
+            commit = git.commit_tree(
+                tree, "-p", parent, "-m", message, env=_identity_env(author_name, author_email)
             )
-            return c.hexsha
+            # The old value makes git refuse if the branch moved since it was read.
+            git.update_ref(f"refs/heads/{target}", commit, parent)
+            logger.info("git commit %s on %s by %s: %s", commit[:7], target, author_email, message)
+            return commit
         except Exception as exc:  # noqa: BLE001
-            logger.exception("commit_on_current_branch failed: %s", exc)
+            logger.exception("commit onto %s failed (%s): %s", target, message, exc)
             return None
 
     # ── Read ─────────────────────────────────────────────────────────────────

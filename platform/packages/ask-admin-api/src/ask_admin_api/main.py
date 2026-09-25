@@ -110,7 +110,9 @@ async def lifespan(_app: FastAPI):
 
 
 def _init_release_branches() -> None:
-    """Create the ``dev`` + ``prod`` git branches at boot if absent (audit §3.1).
+    """Create the ``dev`` + ``prod`` git branches at boot if absent (audit §3.1),
+    and start again, empty, any that never recorded a publish (see
+    ``GitService.reset_unrecorded_release_branches``).
 
     Best-effort — a failure (no repo, 0 commits) never blocks boot. Skipped
     under pytest so tests don't materialise branches in the code repo via
@@ -128,9 +130,11 @@ def _init_release_branches() -> None:
     try:
         from .application.git_service import GitService
 
-        created = GitService(repo_root=repo_root).init_release_branches()
+        git = GitService(repo_root=repo_root)
+        created = git.init_release_branches()
         if created:
             logger.info("Initialised release branches: %s", ", ".join(created))
+        git.reset_unrecorded_release_branches()
     except Exception:  # noqa: BLE001 — never block boot on branch init
         logger.warning("init_release_branches at boot failed", exc_info=True)
 
