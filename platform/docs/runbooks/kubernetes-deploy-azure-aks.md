@@ -98,7 +98,8 @@ kubectl get ns onibex-ask
 kubectl describe node <node> | sed -n '/Allocated resources/,/Events/p'
 ```
 
-**`get storageclass` must show `(default)` next to one of them**, normally `managed-csi`. Every
+**`get storageclass` must show `(default)` next to one of them**; on AKS it is the class called
+`default`. Every
 `storageClassName` in the values file is deliberately empty, which means "use the cluster default",
 so a cluster without one leaves all four volumes `Pending` forever with nothing naming the cause.
 
@@ -463,7 +464,10 @@ done
 ```
 
 `200` from the three apps and `302` from Keycloak. No `-k` here, unlike the EKS page: on AKS these
-are real Let's Encrypt certificates and a TLS error is a finding rather than noise.
+are real Let's Encrypt certificates and a TLS error is a finding rather than noise. One host at
+`000` while the other three answer is the gateway missing that one certificate, and
+[the failures worth knowing in advance](kubernetes-reference.md#the-failures-worth-knowing-in-advance)
+says how to get it.
 
 Then the two that catch the mistakes this runbook exists to prevent:
 
@@ -526,12 +530,12 @@ it change that password the first time someone signs in to the Keycloak console:
 ```bash
 AUTH=https://<auth host>
 PW=$(kubectl -n onibex-ask get secret ask-platform-secret -o jsonpath='{.data.keycloak-admin-password}' | base64 -d)
-TOKEN=$(curl -s -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
+TOKEN=$(curl -sk -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
   -d grant_type=password "$AUTH/realms/master/protocol/openid-connect/token" \
   | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-ADMIN_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
+ADMIN_ID=$(curl -sk -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
   | python -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
-curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
+curl -sk -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
   "$AUTH/admin/realms/master/users/$ADMIN_ID"
 ```
@@ -540,6 +544,12 @@ curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN
 `Account is not fully set up` until someone changes the password at
 `https://<auth host>/admin/master/console/`. Nothing in the platform signs in as this
 administrator, so nothing else stops working.
+
+**The `-k` is for a gateway that signs its own certificate**, which is what EKS without a domain
+has. There `curl` refuses the certificate with exit code 60 before Keycloak is ever reached, and
+the only thing printed is a Python `JSONDecodeError` on the first line, which looks like a Keycloak
+problem and is not one. Where the certificate is trusted, `-k` changes nothing: the checks in the
+previous step have already verified it.
 
 From there the platform is empty and
 [Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the
