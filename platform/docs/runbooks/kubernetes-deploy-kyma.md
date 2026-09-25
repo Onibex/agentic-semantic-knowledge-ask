@@ -523,12 +523,12 @@ it change that password the first time someone signs in to the Keycloak console:
 ```bash
 AUTH=https://<auth host>
 PW=$(kubectl -n onibex-ask get secret ask-platform-secret -o jsonpath='{.data.keycloak-admin-password}' | base64 -d)
-TOKEN=$(curl -s -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
+TOKEN=$(curl -sk -d client_id=admin-cli -d username=admin --data-urlencode "password=$PW" \
   -d grant_type=password "$AUTH/realms/master/protocol/openid-connect/token" \
   | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-ADMIN_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
+ADMIN_ID=$(curl -sk -H "Authorization: Bearer $TOKEN" "$AUTH/admin/realms/master/users?username=admin&exact=true" \
   | python -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
-curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
+curl -sk -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"requiredActions":["UPDATE_PASSWORD"]}' \
   "$AUTH/admin/realms/master/users/$ADMIN_ID"
 ```
@@ -537,6 +537,12 @@ curl -s -o /dev/null -w '%{http_code}\n' -X PUT -H "Authorization: Bearer $TOKEN
 `Account is not fully set up` until someone changes the password at
 `https://<auth host>/admin/master/console/`. Nothing in the platform signs in as this
 administrator, so nothing else stops working.
+
+**The `-k` is for a gateway that signs its own certificate**, which is what EKS without a domain
+has. There `curl` refuses the certificate with exit code 60 before Keycloak is ever reached, and
+the only thing printed is a Python `JSONDecodeError` on the first line, which looks like a Keycloak
+problem and is not one. Where the certificate is trusted, `-k` changes nothing: the checks in the
+previous step have already verified it.
 
 From there the platform is empty and
 [Configure the platform first · ASK Setup](../ask-setup/README.md) takes over: the database, the

@@ -198,6 +198,27 @@ The fix is a new Secret built from the full chain file the authority issued, plu
 `kubectl -n onibex-ask rollout restart deploy/<release>-gateway`. The restart is not optional:
 Caddy reads those files when it loads its config, so replacing the Secret alone changes nothing.
 
+**One app answers `000`, with `tlsv1 alert internal error`, while the other three work.** Let's
+Encrypt only. The gateway has no certificate for that one name, so it has nothing to present and
+ends the handshake. Seen on AKS on a clean install: the gateway asked before Azure had published
+the DNS name and got `NXDOMAIN`, asked again a minute later and got `order pending, authorizations
+remaining` from Let's Encrypt, and then stopped. Thirty-four minutes later it still had not tried
+again, so waiting does not fix this. The log names the host and the reason:
+
+```bash
+kubectl -n onibex-ask logs deploy/<release>-gateway | grep -E 'could not get certificate|job failed'
+```
+
+A restart makes it ask again, and the certificate arrived within ten seconds of the new pod
+starting:
+
+```bash
+kubectl -n onibex-ask rollout restart deploy/<release>-gateway
+```
+
+It costs nothing against Let's Encrypt's weekly limit. The certificates already issued and the
+ACME account are on the gateway volume, so the new pod asks only for the one that is missing.
+
 **The admin API will not start.** Two causes, and the traceback distinguishes them. It refuses to
 boot when the semantic-layer paths are empty or do not point at a real directory. It also refuses
 an unrecognised `platform.environment`, which the chart now stops at render time.
@@ -308,8 +329,13 @@ assuming it happened, and on AWS confirm from the other side as well, because a 
 behind keeps charging with nothing in the cluster pointing at it:
 
 ```bash
-aws elb describe-load-balancers --query 'LoadBalancerDescriptions[].LoadBalancerName' --output text
+VPC=$(aws eks describe-cluster --name <cluster> --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+aws elb describe-load-balancers --query "LoadBalancerDescriptions[?VPCId=='$VPC'].LoadBalancerName" --output text
 ```
+
+Empty output means they went. The filter to the cluster's VPC is not optional: an account often
+holds load balancers that belong to other clusters, and a listing of the whole account then never
+comes back empty, however complete the uninstall was.
 
 **Two things that read as bugs when a volume is kept by accident.** Keycloak does not re-import the
 realm, so a password changed in the console stays changed and the initial one keeps being rejected.
