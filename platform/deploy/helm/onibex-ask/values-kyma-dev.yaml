@@ -49,18 +49,20 @@
 
 image:
   namespace: onibexenjoy
-  # Built from 3166f05, the merge of PR #79. Three things ride in these images
-  # and none can be applied from a values file, because all three live in the
+  # Built from 32622aa, the merge of PR #83. Five things ride in these images
+  # and none can be applied from a values file, because all five live in the
   # image: the nginx `Host` header (PR #75), without which every API call the
   # apps make through a service mesh comes back 503; the `accept` lists
-  # (PR #77), whose MIME types could freeze the file picker on Windows; and
-  # the `ias` sign-in mode (PR #79), which values-ias-dev.yaml switches on.
+  # (PR #77), whose MIME types could freeze the file picker on Windows; the
+  # `ias` sign-in mode (PR #79), which values-ias-dev.yaml switches on; the
+  # `sap` model provider for SAP AI Core (PR #82); and a History page that
+  # records every publish (PR #83).
   #
   # Do not roll this tag back to "rule out the images" when something breaks.
-  # Every earlier tag carries the 503, and none of them knows the ias mode, so
-  # the rollback reproduces the failure it was meant to eliminate, and looks
-  # like confirmation.
-  tag: sha-3166f05
+  # Every earlier tag lacks at least one of these (sha-3166f05 does not know
+  # the sap provider this install's models use), so the rollback reproduces
+  # the failure it was meant to eliminate, and looks like confirmation.
+  tag: sha-32622aa
 
 auth:
   mode: keycloak
