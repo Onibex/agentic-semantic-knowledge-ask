@@ -27,7 +27,8 @@ LiteLLM keys on a ``"<provider>/<model>"`` string:
     sap/gpt-4o               (SAP AI Core orchestration: the model by name,
                               no deployment id)
 
-Required packages: litellm>=1.50, langchain-litellm>=0.2.
+Required packages: litellm and langchain-litellm, at the versions pinned in
+pyproject.toml.
 """
 
 from __future__ import annotations

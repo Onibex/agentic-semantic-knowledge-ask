@@ -66,10 +66,11 @@ image:
 
 auth:
   mode: keycloak
-  # Keycloak first, deliberately. Swapping the identity provider for SAP XSUAA
-  # is the NEXT piece of work and it is kept separate on purpose: with both
-  # changes in one install, a failed login tells you nothing about whether the
-  # deployment or the identity provider is at fault.
+  # Keycloak first, deliberately: this profile installs and verifies the
+  # deployment on its own, and values-ias-dev.yaml then switches sign-in to SAP
+  # Cloud Identity Services (platform/docs/runbooks/sign-in-with-ias.md). With
+  # both changes in one install, a failed login tells you nothing about whether
+  # the deployment or the identity provider is at fault.
   publicUrl: "https://ask-auth.ff90b8d.kyma.ondemand.com"
 
 secrets:

@@ -21,11 +21,11 @@ dependencies = [
     # Anthropic, Vertex/Gemini, SAP AI Core, Mistral, Cohere, …; adding one is
     # config, not code), so it's a BASE dependency, not an opt-in extra.
     # langchain-litellm exposes it as a LangChain BaseChatModel (ChatLiteLLM) so
-    # chains + with_structured_output keep working unchanged. The floor is the
-    # version measured with the `sap` provider that SAP AI Core goes through;
-    # older releases do not have it.
-    "litellm>=1.97",
-    "langchain-litellm>=0.2",
+    # chains + with_structured_output keep working unchanged. Both are pinned to
+    # the pair validated against a live SAP AI Core instance on 2026-09-24, the
+    # `sap` provider included: upgrading either means validating that path again.
+    "litellm==1.97.0",
+    "langchain-litellm==0.5.1",
 ]
 
 [project.optional-dependencies]

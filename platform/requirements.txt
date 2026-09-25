@@ -35,11 +35,12 @@ langchain-anthropic>=0.3.0
 # Anthropic / Azure / Vertex / Databricks / SAP AI Core / …). The
 # ask-llm-gateway factory selects it by `provider`, so it's a hard runtime dep
 # (a BASE dependency of ask-llm-gateway, not an optional extra). Pinned here too
-# so local dev / any requirements.txt-based backend env has it. The floor is the
-# version measured with the `sap` provider that SAP AI Core goes through.
+# so local dev / any requirements.txt-based backend env has it. Both are pinned
+# to the pair validated against a live SAP AI Core instance on 2026-09-24, the
+# `sap` provider included: upgrading either means validating that path again.
 # =========================
-litellm>=1.97
-langchain-litellm>=0.2
+litellm==1.97.0
+langchain-litellm==0.5.1
 
 # =========================
 # Document parsing
