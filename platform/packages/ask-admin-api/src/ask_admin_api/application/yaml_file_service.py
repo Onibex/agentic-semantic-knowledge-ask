@@ -674,7 +674,7 @@ class YAMLFileService:
         author_name: str | None = None,
         author_email: str | None = None,
     ) -> str | None:
-        """Remove a workspace YAML file (+ optional git audit commit).
+        """Remove a workspace YAML file and its sidecars (+ optional git audit commit).
 
         Part of the full DataProduct delete: without this the file lingers in the
         workspace and the entity keeps showing in the catalog. Returns the
@@ -690,12 +690,24 @@ class YAMLFileService:
             abs_path.unlink()
         except FileNotFoundError:
             return None
+        # Its sidecars go with it: left behind, they stay committed on main, and
+        # a later Data Product with the same id would read them back.
+        commit_paths = [rel_path]
+        for sidecar in (
+            self._enrichments_store._path(entity_id),  # noqa: SLF001 (same module)
+            self._conflict_store._path(entity_id),  # noqa: SLF001 (same module)
+        ):
+            sidecar.unlink(missing_ok=True)
+            try:
+                commit_paths.append(sidecar.relative_to(self.repo_root).as_posix())
+            except ValueError:
+                pass  # sidecar outside the repo root: nothing to commit
         self._invalidate_cache()
         logger.info("Deleted workspace YAML %s (%s)", entity_id, rel_path)
         if git_service is not None and author_email:
             try:
                 git_service.commit(
-                    [rel_path],
+                    commit_paths,
                     f"viz: delete {entity_id}",
                     author_name or author_email.split("@")[0],
                     author_email,

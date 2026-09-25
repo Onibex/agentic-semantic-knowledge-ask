@@ -200,8 +200,8 @@ class GitService:
 
         Hidden in a helper so ``commit`` reads as one linear flow. GitPython
         is opinionated here: ``index.add`` calls ``os.lstat`` on each path
-        and explodes on missing files; deletions need ``index.remove``
-        (which itself errors if the path is unknown to git, so we wrap it).
+        and explodes on missing files; deletions need ``index.remove``, told
+        to skip a path git never tracked (see below).
         """
         from pathlib import Path
 
@@ -226,18 +226,16 @@ class GitService:
                 # ``r=False`` keeps the operation strict to the given paths
                 # (no recursive directory sweep). ``working_tree=False`` is
                 # the default — we do NOT want git to also try to delete
-                # the file from disk (it's already gone).
-                self.repo.index.remove(to_remove)
+                # the file from disk (it's already gone). ``ignore_unmatch``
+                # skips a path git never tracked, such as a sidecar created and
+                # removed within one backend cycle, or one written before
+                # sidecars were committed. Without it git rm refuses the whole
+                # list, and a tracked YAML in the same list stays committed.
+                self.repo.index.remove(to_remove, ignore_unmatch=True)
             except Exception as exc:  # noqa: BLE001
-                # Path may have never been tracked (e.g. a sidecar that
-                # was created and removed within a single backend cycle
-                # before any commit landed). Log + continue — the rest of
-                # the commit (other paths, if any) should still succeed.
-                logger.warning(
-                    "git index.remove failed for %s (likely never tracked): %s",
-                    to_remove,
-                    exc,
-                )
+                # A locked index, say. Log and continue: the paths staged
+                # above still make the commit.
+                logger.warning("git index.remove failed for %s: %s", to_remove, exc)
 
     def empty_commit(
         self,
