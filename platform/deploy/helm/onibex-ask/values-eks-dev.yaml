@@ -108,11 +108,12 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 image:
-  # The seven public images on the corporate account. Same set the AKS install
-  # was measured against; pinned rather than left to appVersion, which resolves
-  # to a tag that has never been published.
+  # The seven public images on the corporate account, the same set as the AKS
+  # and Kyma profiles (built from 32622aa, the merge of PR #83); pinned rather
+  # than left to appVersion, which resolves to a tag that has never been
+  # published.
   namespace: onibexenjoy
-  tag: sha-eabc833
+  tag: sha-32622aa
 
 auth:
   mode: keycloak
