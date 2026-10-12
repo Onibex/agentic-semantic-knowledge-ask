@@ -123,6 +123,28 @@ def test_execute_and_format_no_rows_calls_no_results_helper(monkeypatch):
     assert formatter.no_results_calls == [("anything?", "SELECT 1 WHERE FALSE")]
 
 
+def test_execute_and_format_reports_the_sql_that_actually_ran(monkeypatch):
+    """The ClickHouse adapter may add FINAL; the answer must show that SQL."""
+    monkeypatch.setattr(
+        "ask_sql_executor.application.executor_service.get_adapter",
+        lambda db_type: (
+            lambda req: ExecutionResult(
+                success=True,
+                columns=["n"],
+                rows=[(1629,)],
+                row_count=1,
+                executed_sql="SELECT count() FROM t FINAL",
+            )
+        ),
+    )
+    svc = SqlExecutorService(_FakeFormatter())
+    formatted = svc.execute_and_format(
+        ExecutionRequest(sql="SELECT count() FROM t", db_type="clickhouse", db_config={}),
+        question="x",
+    )
+    assert formatted.sql == "SELECT count() FROM t FINAL"
+
+
 def test_execute_and_format_propagates_execution_error(monkeypatch):
     monkeypatch.setattr(
         "ask_sql_executor.application.executor_service.get_adapter",

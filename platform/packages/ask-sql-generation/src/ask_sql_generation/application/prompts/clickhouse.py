@@ -18,9 +18,11 @@ Deduplication and FINAL are INDEPENDENT concerns and the rules keep them apart:
     QUESTION asks about, expressed with standard GROUP BY / DISTINCT — the same
     reasoning in every SQL dialect, with no knowledge of the storage engine.
   * FINAL (rule 13) is a ClickHouse engine mechanism (merge-on-read for the
-    collapsing MergeTree variants). It is a deployment property, applied through
-    the connection's opt-in ``final=1`` setting in ask-sql-executor's
-    clickhouse_adapter, and it never appears in generated SQL.
+    collapsing MergeTree variants). It is a deployment property, applied by
+    ask-sql-executor's clickhouse_adapter when the connection opts in: through
+    the ``final=1`` setting, or, on a server too old for it (22.1), by adding
+    FINAL itself after each table whose engine supports it. It never appears
+    in the SQL the model generates.
 
 Treating FINAL as "how you deduplicate" is what made every query fail against a
 plain MergeTree table; the two axes must not be coupled again.

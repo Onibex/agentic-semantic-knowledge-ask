@@ -21,6 +21,19 @@ slowly than the product version.
 
 ### Fixed
 
+- **ClickHouse servers that reject the `final` setting got no deduplication.**
+  The connection's FINAL modifier option is sent as the `final=1` query
+  setting, which ClickHouse 22.1 does not know. The adapter then retried without
+  it, so ReplacingMergeTree tables counted every version of a row that
+  background merges had not collapsed yet: on a 22.1 server, 1,641 open order
+  items against 1,629 real ones, a gap that grew with each incremental load.
+  The adapter now adds FINAL itself, after each table that `system.tables`
+  reports with an engine that supports it, and leaves views and plain MergeTree
+  tables alone. If the server refuses the rewritten statement for any reason,
+  the generated one runs as before. The model still never writes FINAL. The
+  answer shows the SQL that actually ran, so it reproduces the numbers on
+  screen.
+
 - **The semantic-layer authoring standards never reached any container.**
   `get_standards_excerpt` loaded them from the bare relative path
   `docs/semantic-layer`, which resolves only when the interpreter starts in

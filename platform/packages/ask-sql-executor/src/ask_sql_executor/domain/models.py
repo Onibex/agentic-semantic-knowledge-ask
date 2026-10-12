@@ -46,6 +46,11 @@ class ExecutionResult:
     Either rows is populated (success) or error is populated (failure) — they
     are mutually exclusive in practice but both present on the dataclass for a
     flat shape.
+
+    ``executed_sql`` is set only when the adapter ran a different statement
+    from the one it was given (ClickHouse adding FINAL on a server too old for
+    the ``final`` setting). The caller shows that one, because it is the SQL
+    that reproduces the rows.
     """
 
     success: bool
@@ -53,6 +58,7 @@ class ExecutionResult:
     rows: list[tuple[Any, ...]] = field(default_factory=list)
     row_count: int = 0
     error: str | None = None
+    executed_sql: str | None = None
 
 
 @dataclass(frozen=True)

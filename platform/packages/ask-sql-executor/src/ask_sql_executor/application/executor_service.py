@@ -48,9 +48,12 @@ class SqlExecutorService(SqlExecutor):
 
     def execute_and_format(self, request: ExecutionRequest, *, question: str) -> FormattedResult:
         raw = self.execute(request)
+        # The statement that produced the rows, which is not always the one we
+        # sent: see ExecutionResult.executed_sql.
+        sql = raw.executed_sql or request.sql
         if not raw.success:
             return FormattedResult(
-                sql=request.sql,
+                sql=sql,
                 rows_dict=[],
                 answer=f"Pipeline error: {raw.error}",
                 error=raw.error,
@@ -59,9 +62,9 @@ class SqlExecutorService(SqlExecutor):
 
         if raw.row_count == 0:
             return FormattedResult(
-                sql=request.sql,
+                sql=sql,
                 rows_dict=[],
-                answer=self._formatter.no_results_answer(question, request.sql),
+                answer=self._formatter.no_results_answer(question, sql),
                 error=None,
                 row_count=0,
             )
@@ -69,7 +72,7 @@ class SqlExecutorService(SqlExecutor):
         rows_dict = [dict(zip(raw.columns, r)) for r in raw.rows]
         answer = self._formatter.format_rows(raw.columns, raw.rows, question)
         return FormattedResult(
-            sql=request.sql,
+            sql=sql,
             rows_dict=rows_dict,
             answer=answer,
             error=None,

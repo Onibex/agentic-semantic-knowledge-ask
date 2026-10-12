@@ -171,7 +171,7 @@ class FlashStrategy:
             disambiguation=None,
             error=formatted.error,
             trace=_trace(started, "flash"),
-            sql=sql,
+            sql=formatted.sql,  # what ran: the executor may have rewritten it
             rows=formatted.rows_dict if formatted.error is None else None,
             answer=formatted.answer,
         )

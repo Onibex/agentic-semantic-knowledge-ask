@@ -606,7 +606,9 @@ def _chain_sql_generation_and_executor(
     return QueryResponse(
         answer=answer,
         rows=rows,
-        sql=sql_result.sql,
+        # What actually ran, which can differ from what was generated: the
+        # ClickHouse adapter adds FINAL when the server lacks the `final` setting.
+        sql=formatted.sql,
         macro_intent=macro_intent,
         mode_used=req.mode,
         trace_id=trace_id,
