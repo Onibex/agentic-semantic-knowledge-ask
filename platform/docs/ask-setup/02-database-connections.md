@@ -104,6 +104,13 @@ Selecting an engine reveals its form. Fill in:
   - A **file upload** for BigQuery's **Service account key (JSON)**, click the field to choose your
     service-account JSON key; it is encrypted on save.
 
+ClickHouse's **FINAL modifier** toggle is for tables that keep several versions of a row until a
+background merge collapses them, such as ReplacingMergeTree or CollapsingMergeTree. With it on,
+every query reads those tables deduplicated. ASK sends ClickHouse's `final` setting, and on a server
+too old for that setting, such as 22.1, it adds `FINAL` itself to each table whose engine supports
+it, never to a view or a plain MergeTree table. The SQL shown with each answer is the one that ran.
+Deduplicating at read time costs time on large tables.
+
 Click **Save connection**. The drawer closes and the new connection appears in the list. **Save
 connection** stays disabled until at least the **Display name** and an engine are set.
 
