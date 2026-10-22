@@ -221,6 +221,21 @@ def _repair_sub_sql(failed_sql: str, error: str, db_type: str) -> str | None:
     return fixed
 
 
+def _pipeline_failure(result: Any) -> str | None:
+    """Why a ``run_query_pipeline`` result has no rows, or ``None`` when it has rows.
+
+    The pipeline reports a failure in ``answer`` with ``rows=None`` rather than
+    raising: an SQL the database rejected, or no SQL at all. A query that ran and
+    matched nothing has ``rows=[]`` and is not a failure. Reading only exceptions
+    left the main dataset empty with no error, and the sub-queries were derived
+    from the SQL that had just failed.
+    """
+    if result.rows is not None:
+        return None
+    answer = (getattr(result, "answer", "") or "").strip()
+    return answer.removeprefix("Pipeline error:").strip() or "The data request returned no data."
+
+
 # ── Format instructions keyed by format slug ─────────────────────────────────
 _FORMAT_GUIDES: dict[str, str] = {
     "executive_brief": (
@@ -409,7 +424,24 @@ def create_artifact(
                 )
                 data_result = run_query_pipeline(data_req, user)
                 sql = data_result.sql
-                rows = data_result.rows or []
+                data_error = _pipeline_failure(data_result)
+                if data_error is None:
+                    rows = data_result.rows or []
+                elif sql:
+                    # The model's own SQL failed on the database: the same single
+                    # repair a sub-query gets. Only sql_override, which the user
+                    # wrote, is never rewritten.
+                    from ask_llm_gateway.infrastructure.secrets import resolve_db_config
+
+                    fixed = _repair_sub_sql(sql, data_error, resolve_db_config(req.env)[0])
+                    if fixed:
+                        logger.info(
+                            "artifact main SQL repaired after: %s",
+                            data_error[:200],
+                            extra={"trace_id": trace_id},
+                        )
+                        sql = fixed
+                        rows, data_error = _execute_sql_direct(fixed, req.env)
             except Exception as exc:
                 data_error = str(exc)[:200]
                 logger.warning(

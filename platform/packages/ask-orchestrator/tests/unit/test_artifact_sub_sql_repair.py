@@ -42,10 +42,15 @@ _ALIAS_ERROR = (
 
 
 class _Database:
-    """Executor stub: fails the statements listed in ``failures`` with their error."""
+    """Executor stub: fails the statements listed in ``failures`` with their error.
 
-    def __init__(self, failures: dict[str, str]):
+    ``pipeline`` is what ``run_query_pipeline`` returns; by default, the main SQL
+    with one row.
+    """
+
+    def __init__(self, failures: dict[str, str], pipeline=None):
         self.failures = failures
+        self.pipeline = pipeline or SimpleNamespace(sql=_MAIN_SQL, rows=[{"n": 1}], answer="ok")
         self.executed: list[str] = []
 
     def execute_and_format(self, request, question=""):
@@ -56,7 +61,7 @@ class _Database:
         return SimpleNamespace(error=None, rows_dict=[{"n": 1}])
 
     def run_query_pipeline(self, _data_req, _user):
-        return SimpleNamespace(sql=_MAIN_SQL, rows=[{"n": 1}])
+        return self.pipeline
 
 
 class _Repairs:
@@ -76,8 +81,8 @@ def wire(monkeypatch):
     """Wire a database and a repairer behind ``create_artifact``."""
     from ask_llm_gateway.infrastructure import secrets as secrets_pkg
 
-    def _wire(sub_sqls, failures, fixes):
-        db = _Database(failures)
+    def _wire(sub_sqls, failures, fixes, pipeline=None):
+        db = _Database(failures, pipeline)
         repairs = _Repairs(fixes)
         monkeypatch.setattr(
             secrets_pkg, "resolve_db_config", lambda env=None, **_kw: ("clickhouse", {"host": "h"})
@@ -176,6 +181,80 @@ def test_a_failed_sql_override_is_the_user_s_sql_and_is_never_repaired(wire):
 
     assert repairs.calls == []
     assert response.data_error == _ALIAS_ERROR
+
+
+# The pipeline reports a failed main SQL in `answer` with rows=None; it does not
+# raise. Before, the artifact read only exceptions: the main dataset came back
+# empty with no error, and the sub-queries were derived from the failed SQL.
+_FAILED_MAIN = SimpleNamespace(
+    sql="SELECT bad_main", rows=None, answer=f"Pipeline error: {_ALIAS_ERROR}"
+)
+
+
+def test_a_main_sql_that_failed_in_the_pipeline_is_repaired_and_drives_the_sub_queries(wire):
+    db, repairs = wire(
+        sub_sqls=[{"name": "A", "sql": "SELECT 2"}],
+        failures={"SELECT bad_main": _ALIAS_ERROR},
+        fixes={"SELECT bad_main": "SELECT good_main"},
+        pipeline=_FAILED_MAIN,
+    )
+
+    response = artifact_router.create_artifact(_request(), _CLAIMS)
+
+    # The repair gets the database error, without the pipeline's prefix.
+    assert repairs.calls == [("SELECT bad_main", _ALIAS_ERROR, "clickhouse")]
+    main = _sub_dataset(response, "Main Dataset")
+    assert (main.sql, main.rows, main.error) == ("SELECT good_main", [{"n": 1}], None)
+    assert (response.sql, response.data_error) == ("SELECT good_main", None)
+    assert "SELECT 2" in db.executed  # sub-queries ran, from the repaired SQL
+
+
+def test_a_main_sql_that_cannot_be_repaired_is_reported_not_left_empty(wire):
+    db, repairs = wire(
+        sub_sqls=[{"name": "A", "sql": "SELECT 2"}],
+        failures={"SELECT bad_main": _ALIAS_ERROR},
+        fixes={},  # the repairer returns None
+        pipeline=_FAILED_MAIN,
+    )
+
+    response = artifact_router.create_artifact(_request(), _CLAIMS)
+
+    assert len(repairs.calls) == 1
+    assert response.data_error == _ALIAS_ERROR
+    assert [(ds.name, ds.error) for ds in response.datasets] == [("Main Dataset", _ALIAS_ERROR)]
+    assert db.executed == []  # no sub-query built on a statement that failed
+
+
+def test_a_pipeline_that_produced_no_sql_reports_why_and_repairs_nothing(wire):
+    _db, repairs = wire(
+        sub_sqls=[],
+        failures={},
+        fixes={},
+        pipeline=SimpleNamespace(
+            sql=None,
+            rows=None,
+            answer="Pipeline error: no schema context resolved for the question.",
+        ),
+    )
+
+    response = artifact_router.create_artifact(_request(), _CLAIMS)
+
+    assert repairs.calls == []
+    assert response.data_error == "no schema context resolved for the question."
+
+
+def test_a_main_sql_that_matched_nothing_is_not_a_failure(wire):
+    _db, repairs = wire(
+        sub_sqls=[],
+        failures={},
+        fixes={},
+        pipeline=SimpleNamespace(sql=_MAIN_SQL, rows=[], answer="No rows."),
+    )
+
+    response = artifact_router.create_artifact(_request(), _CLAIMS)
+
+    assert repairs.calls == []
+    assert response.data_error is None
 
 
 class _CapturingLLM:
