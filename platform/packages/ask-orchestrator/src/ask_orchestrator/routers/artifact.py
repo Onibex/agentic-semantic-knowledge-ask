@@ -31,9 +31,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1", tags=["artifact"])
 
 
-def _execute_sql_direct(sql: str) -> tuple[list[dict[str, Any]], str | None]:
-    """Execute a pre-built SQL string using the configured DB adapter.
+def _execute_sql_direct(sql: str, env: str) -> tuple[list[dict[str, Any]], str | None]:
+    """Execute a pre-built SQL string against ``env``'s active DB connection.
     Returns (rows, error_message).
+
+    ``env`` is required: an artifact requested in ``prod`` must never read the
+    ``dev`` connection. Nothing errors when it does, the figures are just wrong.
     """
     try:
         from ask_llm_gateway.infrastructure.secrets import resolve_db_config
@@ -43,9 +46,12 @@ def _execute_sql_direct(sql: str) -> tuple[list[dict[str, Any]], str | None]:
 
         # Route through the store-backed resolver so any registered backend
         # (not just hana/postgresql) picks up its connection. 2026-07 migration.
-        db_type, db_config = resolve_db_config(None)
+        db_type, db_config = resolve_db_config(env)
+        if not db_config:
+            # Same guard as /v1/query: prod does not inherit the dev connection.
+            return [], f"No database is configured for the '{env}' environment."
         result = _get_sql_executor().execute_and_format(
-            ExecutionRequest(sql=sql, db_type=db_type, db_config=db_config or {}),
+            ExecutionRequest(sql=sql, db_type=db_type, db_config=db_config),
             question="",
         )
         if result.error:
@@ -311,7 +317,7 @@ def create_artifact(
 
         if req.sql_override and req.sql_override.strip():
             sql = req.sql_override.strip()
-            rows, data_error = _execute_sql_direct(sql)
+            rows, data_error = _execute_sql_direct(sql, req.env)
             if data_error:
                 logger.warning(
                     "artifact sql_override execution failed: %s",
@@ -353,7 +359,7 @@ def create_artifact(
             # Generate analytical sub-queries from the main SQL
             from ask_llm_gateway.infrastructure.secrets import resolve_db_config
 
-            db_type, _db_config = resolve_db_config(None)
+            db_type, _db_config = resolve_db_config(req.env)
             hana_schema = _db_config.get("schema", "") if db_type == "hana" else ""
 
             sub_sqls = _generate_sub_sqls(
@@ -370,7 +376,8 @@ def create_artifact(
 
                 with ThreadPoolExecutor(max_workers=len(sub_sqls)) as executor:
                     future_to_item = {
-                        executor.submit(_execute_sql_direct, item["sql"]): item for item in sub_sqls
+                        executor.submit(_execute_sql_direct, item["sql"], req.env): item
+                        for item in sub_sqls
                     }
                     for future in as_completed(future_to_item):
                         item = future_to_item[future]

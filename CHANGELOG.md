@@ -21,6 +21,16 @@ slowly than the product version.
 
 ### Fixed
 
+- **Artifacts requested in `prod` read part of their data from `dev`.** The
+  analytical sub-queries and the SQL sent with `sql_override` ran against the
+  `dev` connection whatever environment the request named; only the main
+  dataset without an override honoured it. Regenerating an artifact always
+  sends its main SQL as `sql_override`, so a regenerated `prod` artifact came
+  entirely from `dev`. Nothing errored: the document carried the other
+  environment's figures. Every statement behind `/v1/artifact` now runs against
+  the requested environment, and an environment with no connection configured
+  reports that instead of falling back to `dev`, as `/v1/query` already did.
+
 - **ClickHouse servers that reject the `final` setting got no deduplication.**
   The connection's FINAL modifier option is sent as the `final=1` query
   setting, which ClickHouse 22.1 does not know. The adapter then retried without
