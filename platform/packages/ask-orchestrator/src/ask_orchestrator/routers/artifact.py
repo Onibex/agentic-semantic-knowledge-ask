@@ -16,6 +16,7 @@ Flow:
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Any
 
@@ -77,7 +78,18 @@ _DIALECT_NOTES: dict[str, str] = {
     "snowflake": "Snowflake SQL: double-quoted identifiers, DATEADD() for dates.",
     "databricks": "Databricks/Spark SQL: backtick identifiers, date_add() for dates.",
     "bigquery": "BigQuery Standard SQL: backtick-quoted identifiers, DATE_ADD()/DATE_SUB().",
-    "clickhouse": "ClickHouse SQL: backtick identifiers, addDays() for dates.",
+    # The two rules after the first sentence were measured on ClickHouse 22.1, where
+    # both broke GONAC sub-queries: an alias shadows the column it is named after, so
+    # SUM(x) AS x turns a later SUM(x) into SUM(SUM(x)) (ILLEGAL_AGGREGATION); and a
+    # window result cannot be used inside another expression of the same SELECT, not
+    # even through its alias (UNKNOWN_IDENTIFIER). The SQL each rule asks for is
+    # valid on every version, so the note does not need to know the server's.
+    "clickhouse": (
+        "ClickHouse SQL: backtick identifiers, addDays() for dates. "
+        "Never give an aggregate the alias of a column it reads: SUM(x) AS x breaks any later SUM(x). "
+        "Compute ratios or arithmetic between window functions in an outer query, "
+        "not in the SELECT that defines them."
+    ),
     "sqlserver": "SQL Server T-SQL: [bracket] identifiers, DATEADD(), TOP n (no LIMIT).",
     "db2": "IBM Db2 SQL: double-quoted identifiers, FETCH FIRST n ROWS ONLY (no LIMIT).",
     "fabric": "Microsoft Fabric (T-SQL): [bracket] identifiers, DATEADD(), TOP n.",
@@ -135,16 +147,93 @@ def _generate_sub_sqls(
 
     try:
         response = llm.invoke([SystemMessage(content=system), HumanMessage(content=user)])
-        text = response.content.strip()
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0].strip()
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0].strip()
-        result = _json.loads(text)
+        result = _json.loads(_strip_fences(response.content, "json"))
         return [r for r in result if isinstance(r, dict) and r.get("sql", "").strip()]
     except Exception as exc:
         logger.warning("sub-SQL generation failed: %s", exc)
         return []
+
+
+def _strip_fences(text: str, lang: str) -> str:
+    """The body of a ```lang (or bare ```) fenced block, else the text itself."""
+    text = text.strip()
+    if f"```{lang}" in text:
+        return text.split(f"```{lang}")[1].split("```")[0].strip()
+    if "```" in text:
+        return text.split("```")[1].split("```")[0].strip()
+    return text
+
+
+# Errors whose text does not name their own fix. Measured on ClickHouse 22.1: told
+# only "Unknown identifier: sum(x) OVER (...)", the model moved the aggregation into
+# a subquery and kept the ratio between windows in the same SELECT, which fails the
+# same way. With the hint the repair has the one change that works.
+_ERROR_HINTS: list[tuple[re.Pattern[str], str]] = [
+    (
+        re.compile(r"Unknown identifier:.*\bOVER\s*\(", re.IGNORECASE | re.DOTALL),
+        "This server cannot use a window function's result in another expression of the "
+        "SELECT that defines it, not even through its alias. Compute the window columns in "
+        "a subquery and do the arithmetic between them in the outer SELECT.",
+    ),
+    (
+        re.compile(r"is found inside another aggregate function", re.IGNORECASE),
+        "An alias that repeats a column name shadows that column: SUM(x) AS x makes every "
+        "later SUM(x) a SUM(SUM(x)). Rename such aliases (x_total) and keep the rest.",
+    ),
+]
+
+
+def _repair_sub_sql(failed_sql: str, error: str, db_type: str) -> str | None:
+    """Ask the LLM for ONE corrected version of a sub-query the database rejected.
+
+    The sub-query generator sees neither the semantic layer nor the server
+    version, so a dialect limit it does not know surfaces as an execution error.
+    That error locates the problem, which a rule in the prompt can only
+    anticipate; where its text does not name the fix, ``_ERROR_HINTS`` adds the
+    explanation. One attempt: a statement that fails twice keeps its error.
+    Returns ``None`` when no usable, different SQL comes back.
+    """
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    from ask_llm_gateway.application.factory import build_llm
+    from ask_llm_gateway.infrastructure.token_tracker import track_phase
+
+    dialect = _DIALECT_NOTES.get(db_type, f"{db_type.upper()} SQL.")
+    system = (
+        f"You fix one {db_type.upper()} SQL statement that the database rejected. {dialect} "
+        f"Keep the same tables, columns and analytical intent; change only what the error "
+        f"requires. Return ONLY the corrected SQL statement, no markdown, no explanation."
+    )
+    user = f"SQL:\n{failed_sql}\n\nDatabase error:\n{error[:800]}"
+    hints = [hint for pattern, hint in _ERROR_HINTS if pattern.search(error)]
+    if hints:
+        user += "\n\nWhat the error means:\n" + "\n".join(f"- {h}" for h in hints)
+    try:
+        llm = build_llm(SettingsCache.get())
+        with track_phase("artifact_sub_sql_repair"):
+            response = llm.invoke([SystemMessage(content=system), HumanMessage(content=user)])
+        fixed = _strip_fences(response.content, "sql").rstrip(";").strip()
+    except Exception as exc:
+        logger.warning("sub-SQL repair failed: %s", exc)
+        return None
+    if not fixed or fixed == failed_sql.strip().rstrip(";").strip():
+        return None
+    return fixed
+
+
+def _pipeline_failure(result: Any) -> str | None:
+    """Why a ``run_query_pipeline`` result has no rows, or ``None`` when it has rows.
+
+    The pipeline reports a failure in ``answer`` with ``rows=None`` rather than
+    raising: an SQL the database rejected, or no SQL at all. A query that ran and
+    matched nothing has ``rows=[]`` and is not a failure. Reading only exceptions
+    left the main dataset empty with no error, and the sub-queries were derived
+    from the SQL that had just failed.
+    """
+    if result.rows is not None:
+        return None
+    answer = (getattr(result, "answer", "") or "").strip()
+    return answer.removeprefix("Pipeline error:").strip() or "The data request returned no data."
 
 
 # ── Format instructions keyed by format slug ─────────────────────────────────
@@ -240,15 +329,15 @@ def _generate_document(
             reason = f" (query could not be executed: {data_error[:150]})"
         elif sql:
             reason = " (query returned no rows)"
+        # Until 2026-10-22 this asked for "realistic benchmarks" and "indicative
+        # estimates": with no data, the document invented figures that read exactly
+        # like real ones. A reader cannot tell them apart, so none are written.
         data_section = (
             f"*Note: No live data was retrieved from the system{reason}. "
-            f"Generate a professional, complete analytical document based on the artifact type, "
-            f"name, and purpose described below. Use industry-standard SAP S/4HANA business context "
-            f"and realistic benchmarks where specific figures are unavailable. "
-            f"If relevant, briefly acknowledge in the Executive Summary that live data is pending and "
-            f"the figures shown are indicative estimates. "
-            f"NEVER use placeholder tokens like [VALUE], [Amount], [Customer], [DATE] — "
-            f"write realistic numbers or prose instead.*"
+            f"Do NOT invent, estimate or approximate any figure, name or date. "
+            f"Write a short document that states plainly that the data could not be "
+            f"retrieved, gives the reason above if there is one, and says what the reader "
+            f"can do next (rephrase the data request, or check the data source).*"
         )
 
     system = (
@@ -256,8 +345,8 @@ def _generate_document(
         f"Generate a polished, professional document entirely in Markdown. "
         f"CRITICAL: NEVER use placeholder tokens like [VALUE], [Customer Name], [DATE], [AMOUNT], "
         f"[INSERT], or any bracket-enclosed placeholders. "
-        f"If live data is unavailable, use realistic business estimates or write 'N/A' — "
-        f"but always produce a complete, ready-to-use document, never a fill-in template.\n\n"
+        f"If live data is unavailable, say so plainly and never invent, estimate or "
+        f"approximate figures.\n\n"
         f"{format_guide}\n\n"
         f"Writing rules: use active voice, lead with the most important number, "
         f"bold key metrics, keep tables aligned."
@@ -335,7 +424,24 @@ def create_artifact(
                 )
                 data_result = run_query_pipeline(data_req, user)
                 sql = data_result.sql
-                rows = data_result.rows or []
+                data_error = _pipeline_failure(data_result)
+                if data_error is None:
+                    rows = data_result.rows or []
+                elif sql:
+                    # The model's own SQL failed on the database: the same single
+                    # repair a sub-query gets. Only sql_override, which the user
+                    # wrote, is never rewritten.
+                    from ask_llm_gateway.infrastructure.secrets import resolve_db_config
+
+                    fixed = _repair_sub_sql(sql, data_error, resolve_db_config(req.env)[0])
+                    if fixed:
+                        logger.info(
+                            "artifact main SQL repaired after: %s",
+                            data_error[:200],
+                            extra={"trace_id": trace_id},
+                        )
+                        sql = fixed
+                        rows, data_error = _execute_sql_direct(fixed, req.env)
             except Exception as exc:
                 data_error = str(exc)[:200]
                 logger.warning(
@@ -374,6 +480,7 @@ def create_artifact(
             if sub_sqls:
                 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+                executed: list[tuple[dict[str, str], str, list[dict[str, Any]], str | None]] = []
                 with ThreadPoolExecutor(max_workers=len(sub_sqls)) as executor:
                     future_to_item = {
                         executor.submit(_execute_sql_direct, item["sql"], req.env): item
@@ -385,14 +492,32 @@ def create_artifact(
                             sub_rows, sub_err = future.result()
                         except Exception as exc:
                             sub_rows, sub_err = [], str(exc)[:200]
-                        datasets.append(
-                            ArtifactDataset(
-                                name=item.get("name", f"Dataset {len(datasets) + 1}"),
-                                sql=item["sql"],
-                                rows=sub_rows,
-                                error=sub_err,
+                        executed.append((item, item["sql"], sub_rows, sub_err))
+
+                # One repair attempt per failed sub-query. Sequential and on this
+                # thread on purpose: the token tracker is a ContextVar, which the
+                # pool's worker threads do not inherit, so a repair made there would
+                # not be counted.
+                for item, sub_sql, sub_rows, sub_err in executed:
+                    if sub_err:
+                        fixed = _repair_sub_sql(sub_sql, sub_err, db_type)
+                        if fixed:
+                            logger.info(
+                                "artifact sub-query %r repaired after: %s",
+                                item.get("name"),
+                                sub_err[:200],
+                                extra={"trace_id": trace_id},
                             )
+                            sub_sql = fixed
+                            sub_rows, sub_err = _execute_sql_direct(fixed, req.env)
+                    datasets.append(
+                        ArtifactDataset(
+                            name=item.get("name", f"Dataset {len(datasets) + 1}"),
+                            sql=sub_sql,
+                            rows=sub_rows,
+                            error=sub_err,
                         )
+                    )
 
         elif sql:
             # SQL exists but execution failed or returned nothing
