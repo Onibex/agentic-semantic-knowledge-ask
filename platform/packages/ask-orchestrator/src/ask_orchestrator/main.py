@@ -24,7 +24,7 @@ from fastapi import FastAPI
 
 from .external.app import external_app
 from .logging_config import configure_logging
-from .routers import artifact, health, internal, profile, query, title
+from .routers import artifact, health, internal, profile, query, saved_items, title
 
 # Wire structured logging before anything else creates loggers.
 configure_logging()
@@ -66,6 +66,7 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(query.router)
 app.include_router(artifact.router)
+app.include_router(saved_items.router)
 app.include_router(profile.router)
 app.include_router(title.router)
 app.include_router(internal.router)
