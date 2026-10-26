@@ -173,6 +173,11 @@ export const translations = {
     artifact_empty_title: 'No artifacts yet',
     artifact_empty_desc: 'Click "New artifact" to generate your first document.',
     artifact_no_match: 'No artifacts match your search.',
+    artifact_loading: 'Loading your artifacts…',
+    artifact_load_failed: 'Your artifacts could not be loaded.',
+    artifact_retry: 'Retry',
+    artifact_open_failed: 'This artifact could not be opened.',
+    artifact_save_failed: 'This artifact was not saved. It stays open here; retry before leaving.',
     artifact_edited_prefix: 'Edited',
 
     // ── SqlResultsBlock ────────────────────────────────────
@@ -343,6 +348,11 @@ export const translations = {
     artifact_empty_title: 'Sin artefactos aún',
     artifact_empty_desc: 'Haz clic en "Nuevo artefacto" para generar tu primer documento.',
     artifact_no_match: 'Ningún artefacto coincide con tu búsqueda.',
+    artifact_loading: 'Cargando tus artefactos…',
+    artifact_load_failed: 'No se pudieron cargar tus artefactos.',
+    artifact_retry: 'Reintentar',
+    artifact_open_failed: 'No se pudo abrir este artefacto.',
+    artifact_save_failed: 'Este artefacto no se guardó. Sigue abierto aquí; reintenta antes de salir.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabla',
@@ -512,6 +522,11 @@ export const translations = {
     artifact_empty_title: 'Sem artefatos ainda',
     artifact_empty_desc: 'Clique em "Novo artefato" para gerar seu primeiro documento.',
     artifact_no_match: 'Nenhum artefato corresponde à sua pesquisa.',
+    artifact_loading: 'Carregando seus artefatos…',
+    artifact_load_failed: 'Não foi possível carregar seus artefatos.',
+    artifact_retry: 'Tentar novamente',
+    artifact_open_failed: 'Não foi possível abrir este artefato.',
+    artifact_save_failed: 'Este artefato não foi salvo. Ele continua aberto aqui; tente novamente antes de sair.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabela',

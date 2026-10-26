@@ -13,8 +13,12 @@ import {
   Plus, Search, ChevronDown, ArrowLeft, RefreshCw,
   Download, Copy, Check, Database, Pencil, X,
 } from 'lucide-react'
-import { postArtifact, extractApiError } from '@/api/orchestrator'
-import type { ArtifactResponse, ArtifactRequest, ArtifactDataset } from '@/api/orchestrator'
+import {
+  postArtifact, extractApiError, listArtifacts, getStoredArtifact, putArtifact,
+} from '@/api/orchestrator'
+import type {
+  ArtifactResponse, ArtifactRequest, ArtifactDataset, ArtifactSummary, ArtifactPut,
+} from '@/api/orchestrator'
 import { useChatStore } from '@/store/chatStore'
 import { toast } from 'sonner'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -920,22 +924,33 @@ function ArtifactViewer({
 
 // ── Artifact card (gallery) ────────────────────────────────────────────────────
 
-function ArtifactCard({ artifact, onClick }: { artifact: SavedArtifact; onClick: () => void }) {
+function ArtifactCard({
+  artifact,
+  opening,
+  onClick,
+}: {
+  artifact: ArtifactSummary
+  opening: boolean
+  onClick: () => void
+}) {
   const { t } = useTranslation()
   return (
     <button
       onClick={onClick}
-      className="group text-left rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
+      disabled={opening}
+      className="group text-left rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden disabled:opacity-60"
     >
       <div className="flex items-center justify-center h-36 bg-gray-50 border-b border-gray-100 relative">
         <div className="absolute top-2 right-2 opacity-30">
           <FileText className="h-4 w-4 text-gray-400" />
         </div>
-        {TYPE_ICONS[artifact.artifact_type] ?? <FileText className="h-8 w-8 text-gray-300" />}
+        {opening
+          ? <Loader2 className="h-8 w-8 text-gray-300 animate-spin" />
+          : TYPE_ICONS[artifact.artifact_type] ?? <FileText className="h-8 w-8 text-gray-300" />}
       </div>
       <div className="px-4 py-3">
         <p className="text-sm font-medium text-gray-900 truncate">{artifact.name}</p>
-        <p className="mt-0.5 text-xs text-gray-400">{t('artifact_edited_prefix')} {timeAgo(artifact.createdAt)}</p>
+        <p className="mt-0.5 text-xs text-gray-400">{t('artifact_edited_prefix')} {timeAgo(Date.parse(artifact.updated_at))}</p>
         <span className="mt-2 inline-block rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
           {typeLabel(artifact.artifact_type, t)}
         </span>
@@ -948,28 +963,88 @@ function ArtifactCard({ artifact, onClick }: { artifact: SavedArtifact; onClick:
 
 type PageMode = 'gallery' | 'creating'
 
-const ARTIFACTS_KEY = 'onibex_artifacts_v1'
+// Where artifacts lived before they were saved per user on the server. Nothing
+// reads it any more; it is cleared so one user's documents do not linger in a
+// browser the next user signs in on.
+const LEGACY_ARTIFACTS_KEY = 'onibex_artifacts_v1'
 
-function loadArtifacts(): SavedArtifact[] {
+function clearLegacyArtifacts(): void {
   try {
-    const raw = localStorage.getItem(ARTIFACTS_KEY)
-    return raw ? (JSON.parse(raw) as SavedArtifact[]) : []
+    localStorage.removeItem(LEGACY_ARTIFACTS_KEY)
   } catch {
-    return []
+    // Storage blocked (private window): nothing was stored, nothing to clear.
+  }
+}
+
+function toPut(a: SavedArtifact): ArtifactPut {
+  return {
+    workspace_id: a._request.workspace_id,
+    env: a._request.env,
+    name: a.name,
+    artifact_type: a.artifact_type,
+    format: a.format,
+    data: { ...a },
   }
 }
 
 export default function ArtifactsPage() {
   const { t } = useTranslation()
-  const [artifacts, setArtifacts] = useState<SavedArtifact[]>(loadArtifacts)
-
-  useEffect(() => {
-    localStorage.setItem(ARTIFACTS_KEY, JSON.stringify(artifacts))
-  }, [artifacts])
+  const [artifacts, setArtifacts] = useState<ArtifactSummary[]>([])
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [openingId, setOpeningId] = useState<string | null>(null)
   const [selected, setSelected] = useState<SavedArtifact | null>(null)
   const [pageMode, setPageMode] = useState<PageMode>('gallery')
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
+
+  const load = useCallback(async () => {
+    setLoadState('loading')
+    try {
+      setArtifacts(await listArtifacts())
+      setLoadState('ready')
+    } catch {
+      setLoadState('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    clearLegacyArtifacts()
+    void load()
+  }, [load])
+
+  // Saves the artifact for this user. It exists nowhere else, so a failure
+  // keeps it open and leaves a toast that stays until the user retries or
+  // dismisses it.
+  const save = useCallback(
+    async (a: SavedArtifact) => {
+      try {
+        const summary = await putArtifact(a.id, toPut(a))
+        setArtifacts((prev) =>
+          prev.some((x) => x.id === summary.id)
+            ? prev.map((x) => (x.id === summary.id ? summary : x))
+            : [summary, ...prev],
+        )
+      } catch (err) {
+        toast.error(`${t('artifact_save_failed')} ${extractApiError(err)}`, {
+          duration: Infinity,
+          action: { label: t('artifact_retry'), onClick: () => void save(a) },
+        })
+      }
+    },
+    [t],
+  )
+
+  const handleOpen = async (summary: ArtifactSummary) => {
+    setOpeningId(summary.id)
+    try {
+      const stored = await getStoredArtifact(summary.id)
+      setSelected({ ...(stored.data as unknown as SavedArtifact), id: stored.id })
+    } catch (err) {
+      toast.error(`${t('artifact_open_failed')} ${extractApiError(err)}`)
+    } finally {
+      setOpeningId(null)
+    }
+  }
 
   const filtered = useMemo(
     () =>
@@ -982,14 +1057,14 @@ export default function ArtifactsPage() {
   )
 
   const handleCreated = (a: SavedArtifact) => {
-    setArtifacts((prev) => [a, ...prev])
     setPageMode('gallery')
     setSelected(a)
+    void save(a)
   }
 
   const handleUpdated = (a: SavedArtifact) => {
-    setArtifacts((prev) => prev.map((x) => (x.id === a.id ? a : x)))
     setSelected(a)
+    void save(a)
   }
 
   // ── Viewer ──
@@ -1056,7 +1131,23 @@ export default function ArtifactsPage() {
 
       {/* Gallery grid */}
       <div className="flex-1 overflow-y-auto px-8 pb-8">
-        {artifacts.length === 0 ? (
+        {loadState === 'loading' ? (
+          <div className="flex items-center justify-center h-full gap-2 text-sm text-gray-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('artifact_loading')}
+          </div>
+        ) : loadState === 'error' ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <p className="text-sm font-medium text-gray-600">{t('artifact_load_failed')}</p>
+            <button
+              onClick={() => void load()}
+              className="flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              {t('artifact_retry')}
+            </button>
+          </div>
+        ) : artifacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <div className="rounded-full bg-gray-100 p-4">
               <FileText className="h-7 w-7 text-gray-400" />
@@ -1069,7 +1160,12 @@ export default function ArtifactsPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map((a) => (
-              <ArtifactCard key={a.id} artifact={a} onClick={() => setSelected(a)} />
+              <ArtifactCard
+                key={a.id}
+                artifact={a}
+                opening={openingId === a.id}
+                onClick={() => void handleOpen(a)}
+              />
             ))}
           </div>
         )}

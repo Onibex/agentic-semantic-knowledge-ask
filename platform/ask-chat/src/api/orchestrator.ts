@@ -138,6 +138,48 @@ export async function postArtifact(req: ArtifactRequest): Promise<ArtifactRespon
   return data
 }
 
+// ── /v1/artifacts (saved artifacts, per user) ────────────────────────────────
+// The browser builds the artifact and the orchestrator keeps it, so the same
+// user sees it from any browser. `data` is the artifact as the page holds it;
+// the server stores it encrypted and hands it back untouched.
+
+export interface ArtifactSummary {
+  id: string
+  workspace_id: string
+  env: Env
+  name: string
+  artifact_type: string
+  format: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoredArtifact extends ArtifactSummary {
+  data: Record<string, unknown>
+}
+
+export type ArtifactPut = Omit<ArtifactSummary, 'id' | 'created_at' | 'updated_at'> & {
+  data: Record<string, unknown>
+}
+
+export async function listArtifacts(): Promise<ArtifactSummary[]> {
+  const { data } = await axios.get<{ items: ArtifactSummary[] }>('/api/orchestrator/artifacts')
+  return data.items
+}
+
+export async function getStoredArtifact(id: string): Promise<StoredArtifact> {
+  const { data } = await axios.get<StoredArtifact>(`/api/orchestrator/artifacts/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function putArtifact(id: string, body: ArtifactPut): Promise<ArtifactSummary> {
+  const { data } = await axios.put<ArtifactSummary>(
+    `/api/orchestrator/artifacts/${encodeURIComponent(id)}`,
+    body,
+  )
+  return data
+}
+
 // ── /v1/title ─────────────────────────────────────────────────────────────────
 
 export interface TitleRequest {
