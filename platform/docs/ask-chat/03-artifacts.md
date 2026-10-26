@@ -11,7 +11,7 @@
 | **Who** | Business user / analyst |
 | **Time** | ~3 minutes per artifact |
 | **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Scope a question](01-workspace-environment-mode.md)). |
-| **You'll end with** | A downloadable business document built from live data, saved in your browser for later review. |
+| **You'll end with** | A downloadable business document built from live data, saved to your account for later review. |
 
 ---
 
@@ -21,8 +21,11 @@
   It combines a written narrative (`content`) with one or more SQL result sets (`datasets`).
 - You describe what you need in a short **conversational wizard**: no form fields, no SQL.
   The agent generates the document and data in one call.
-- Artifacts are stored **locally in your browser** (`localStorage`). They persist across
-  page refreshes but are browser- and device-specific.
+- Artifacts are **saved to your account**. You see them from any browser or device you sign
+  in on, and no other user sees them. Their content and data are stored encrypted.
+- An artifact is saved as soon as it is generated or regenerated. If saving fails, the
+  artifact stays open and a message offers **Retry**; it does not appear in your gallery
+  until a save succeeds.
 - You can **regenerate** an artifact at any time (re-runs the original request), or open the
   **Edit panel** to change the purpose, data focus, or even override the SQL before
   regenerating.
@@ -33,7 +36,7 @@
 
 ![The Artifacts gallery: cards for each artifact with its name, type and when it was last edited, a search box and a type filter](../images/chat-artifacts-gallery.png)
 
-Open the **Artifacts** page from the sidebar. The gallery shows all saved artifacts as cards
+Open the **Artifacts** page from the sidebar. The gallery shows all your saved artifacts as cards
 in a responsive grid.
 
 **Toolbar controls:**

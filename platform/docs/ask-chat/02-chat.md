@@ -19,6 +19,9 @@
 
 - Each conversation is an independent **chat session** with its own history. You can have
   multiple sessions per workspace and switch between them freely.
+- Sessions are **saved to your account** after every answer. You see them from any browser
+  or device you sign in on, and no other user sees them. Their messages and results are
+  stored encrypted. A session with no questions yet is not saved.
 - You type in **natural language**: any language, business terms only. The agent maps your
   words to the governed semantic layer; you never need to know table or column names.
 - The agent classifies every question by what answering it needs: **data** (runs SQL),
@@ -40,7 +43,7 @@ main navigation sidebar. It lists all sessions for the currently selected worksp
 |---|---|
 | **New session** | Click **New Chat** at the top of the history sidebar. |
 | **Switch session** | Click any session title in the list. |
-| **Delete session** | Hover a session and click the trash icon. If deleting leaves no sessions, one is created automatically. |
+| **Delete session** | Hover a session and click the trash icon. The session is deleted from your account, in every browser. If deleting leaves no sessions, one is created automatically. |
 
 Session titles start as *"New Chat"* and are automatically renamed by the LLM after the
 first exchange, derived from the content of your opening question.
