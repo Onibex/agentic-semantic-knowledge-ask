@@ -19,11 +19,14 @@ encrypted at rest, and the lists must not drag them along.
 
 from __future__ import annotations
 
+import importlib.util
 import itertools
+import os
+from pathlib import Path
 from typing import Any
 
 import pytest
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, MultiFernet
 from fastapi.testclient import TestClient
 from opensearchpy.exceptions import NotFoundError
 
@@ -57,10 +60,14 @@ class _FakeIndices:
         self._owner.docs[index] = {}
         self._owner.mappings[index] = body
 
+    def refresh(self, index: str) -> None:
+        pass
+
 
 class _FakeOpenSearch:
     """Just enough of opensearch-py for UserStore: get / index / delete by id,
-    and the owner-filtered search the lists run."""
+    the owner-filtered search the lists run, and the partial update the key
+    rotation script makes."""
 
     def __init__(self) -> None:
         self.docs: dict[str, dict[str, dict[str, Any]]] = {}
@@ -86,6 +93,9 @@ class _FakeOpenSearch:
         if id not in docs:
             raise NotFoundError(404, "not_found", {})
         del docs[id]
+
+    def update(self, index: str, id: str, body: dict[str, Any]) -> None:  # noqa: A002
+        self._index(index)[id].update(body["doc"])
 
     def search(self, index: str, body: dict[str, Any]) -> dict[str, Any]:
         terms = [f["term"] for f in body["query"]["bool"]["filter"]]
@@ -334,6 +344,61 @@ def test_ids_outside_the_browsers_alphabet_are_refused(as_user, bad_id):
 
 def test_an_artifact_env_outside_dev_and_prod_is_refused(as_user):
     assert as_user(ALICE).put("/v1/artifacts/a-1", json={**_artifact(), "env": "qa"}).status_code == 422
+
+
+def _rotation_script():
+    """``platform/scripts/rotate_master_key.py``, loaded by path: scripts/ is
+    not a package."""
+    path = Path(__file__).resolve().parents[4] / "scripts" / "rotate_master_key.py"
+    spec = importlib.util.spec_from_file_location("rotate_master_key", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_the_rotation_script_covers_every_index_the_store_writes():
+    """The script names the indices instead of importing them (it also runs
+    where ask_orchestrator is not installed); this keeps the two in step."""
+    assert set(_rotation_script().SAVED_ITEM_INDICES) == {CHATS.index, ARTIFACTS.index}
+
+
+def test_saved_items_survive_a_key_rotation(os_client, monkeypatch):
+    """Without the rotation, a key change leaves every saved chat and artifact
+    unreadable. After it, the new key alone reads them, and the lists keep
+    their dates."""
+    script = _rotation_script()
+    chats, artifacts = UserStore(CHATS, client=os_client), UserStore(ARTIFACTS, client=os_client)
+    chat, artifact = _chat(), _artifact()
+    chats.put("keycloak:u-alice", "", "c-1", chat, chat["data"])
+    artifacts.put("keycloak:u-alice", "", "a-1", artifact, artifact["data"])
+    def stamps() -> dict[tuple[str, str], str]:
+        return {
+            (index, doc_id): doc["updated_at"]
+            for index in (CHATS.index, ARTIFACTS.index)
+            for doc_id, doc in os_client.docs[index].items()
+        }
+
+    before = stamps()
+
+    old_key = os.environ["ONIBEX_ENCRYPTION_KEY"].encode()
+    new_key = Fernet.generate_key()
+    monkeypatch.setattr(
+        script.helpers,
+        "scan",
+        lambda client, index, query, _source: [
+            {"_id": doc_id, "_source": {"payload": doc["payload"]}}
+            for doc_id, doc in client.docs[index].items()
+        ],
+    )
+
+    rotated = script.rotate_saved_items(os_client, MultiFernet([Fernet(new_key), Fernet(old_key)]))
+
+    assert rotated == 2
+    monkeypatch.setenv("ONIBEX_ENCRYPTION_KEY", new_key.decode())
+    crypto.reset_cache_for_tests()
+    assert chats.get("keycloak:u-alice", "c-1")["data"] == chat["data"]
+    assert artifacts.get("keycloak:u-alice", "a-1")["data"] == artifact["data"]
+    assert stamps() == before
 
 
 @pytest.mark.parametrize("kind", [CHATS, ARTIFACTS], ids=["chats", "artifacts"])
