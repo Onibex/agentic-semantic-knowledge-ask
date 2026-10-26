@@ -29,23 +29,37 @@ function useChat() {
     mode,
     workspaceChats,
     activeChatIds,
+    listState,
     setChatMessages,
     updateChatTitle,
     createChat,
+    openChat,
+    saveChat,
   } = useChatStore()
+  const { t } = useTranslation()
 
   const chats = workspaceChats[workspaceId] ?? []
   const activeChatId = activeChatIds[workspaceId] ?? ''
   const activeChat = chats.find((c) => c.id === activeChatId)
   const messages = activeChat?.messages ?? []
+  // A chat listed from the server has no messages here until they are fetched.
+  const isOpening = activeChat?.sync === 'summary'
 
-  // Auto-create a chat when the workspace is set but has no valid active chat
+  // Auto-create a chat when the workspace is set but has no valid active chat.
+  // Only once the saved chats are listed: before that, every chat looks absent.
   useEffect(() => {
-    if (!workspaceId) return
+    if (!workspaceId || listState === 'idle' || listState === 'loading') return
     if (chats.length === 0 || !activeChatId || !chats.find((c) => c.id === activeChatId)) {
       createChat(workspaceId)
     }
-  }, [workspaceId, chats.length, activeChatId, createChat])
+  }, [workspaceId, listState, chats.length, activeChatId, createChat])
+
+  useEffect(() => {
+    if (!workspaceId || !activeChatId || !isOpening) return
+    openChat(workspaceId, activeChatId).catch((err) =>
+      toast.error(`${t('chat_open_failed')} ${extractApiError(err)}`),
+    )
+  }, [workspaceId, activeChatId, isOpening, openChat, t])
 
   const [isRunning, setIsRunning] = useState(false)
   const abortRef = useRef(false)
@@ -65,7 +79,16 @@ function useChat() {
 
       const wsChats = state.workspaceChats[workspaceId] ?? []
       const chat = wsChats.find((c) => c.id === chatId)
-      if (!chat) return
+      // Its messages are still on their way, and the question would be sent
+      // without the history it follows.
+      if (!chat || chat.sync !== 'loaded') return
+
+      // Saved after the exchange and after the title; never while the answer is
+      // being revealed, which rewrites the messages dozens of times.
+      const persist = () =>
+        saveChat(workspaceId, chatId).catch((err) =>
+          toast.error(`${t('chat_save_failed')} ${extractApiError(err)}`),
+        )
 
       const isFirstMessage = chat.messages.length === 0
       const history: ConversationTurn[] = chat.messages.map((m) => ({
@@ -138,7 +161,10 @@ function useChat() {
         // Generate an LLM title on the first exchange (fire-and-forget)
         if (isFirstMessage) {
           generateChatTitle({ question: userText })
-            .then(({ title }) => updateChatTitle(workspaceId, chatId, title))
+            .then(({ title }) => {
+              updateChatTitle(workspaceId, chatId, title)
+              void persist()
+            })
             .catch(() => {/* keep 'New Chat' on failure */})
         }
       } catch (err) {
@@ -151,12 +177,13 @@ function useChat() {
         setChatMessages(workspaceId, chatId, currentMsgs)
       } finally {
         setIsRunning(false)
+        void persist()
       }
     },
-    [workspaceId, env, mode, setChatMessages, updateChatTitle],
+    [workspaceId, env, mode, setChatMessages, updateChatTitle, saveChat, t],
   )
 
-  return { messages, isRunning, send }
+  return { messages, isRunning: isRunning || isOpening, send }
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────

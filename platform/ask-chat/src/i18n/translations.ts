@@ -93,6 +93,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'New Chat',
     sidebar_no_chats: 'No chats yet',
+    sidebar_loading_chats: 'Loading your chats…',
+    sidebar_chats_load_failed: 'Your saved chats could not be loaded.',
+    sidebar_retry: 'Retry',
+    chat_open_failed: 'This chat could not be opened.',
+    chat_save_failed: 'This chat was not saved; it may be missing in other browsers.',
+    chat_delete_failed: 'This chat was not deleted on the server; it will come back on reload.',
     sidebar_select_workspace: 'Select a workspace',
 
     // ── ChatPage ───────────────────────────────────────────
@@ -274,6 +280,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'Nuevo Chat',
     sidebar_no_chats: 'Sin chats aún',
+    sidebar_loading_chats: 'Cargando tus chats…',
+    sidebar_chats_load_failed: 'No se pudieron cargar tus chats guardados.',
+    sidebar_retry: 'Reintentar',
+    chat_open_failed: 'No se pudo abrir este chat.',
+    chat_save_failed: 'Este chat no se guardó; puede faltar en otros navegadores.',
+    chat_delete_failed: 'Este chat no se borró en el servidor; volverá al recargar.',
     sidebar_select_workspace: 'Selecciona un espacio',
 
     // ── ChatPage ───────────────────────────────────────────
@@ -448,6 +460,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'Novo Chat',
     sidebar_no_chats: 'Nenhum chat ainda',
+    sidebar_loading_chats: 'Carregando seus chats…',
+    sidebar_chats_load_failed: 'Não foi possível carregar seus chats salvos.',
+    sidebar_retry: 'Tentar novamente',
+    chat_open_failed: 'Não foi possível abrir este chat.',
+    chat_save_failed: 'Este chat não foi salvo; pode faltar em outros navegadores.',
+    chat_delete_failed: 'Este chat não foi excluído no servidor; voltará ao recarregar.',
     sidebar_select_workspace: 'Selecione um espaço',
 
     // ── ChatPage ───────────────────────────────────────────

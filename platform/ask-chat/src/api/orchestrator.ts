@@ -180,6 +180,47 @@ export async function putArtifact(id: string, body: ArtifactPut): Promise<Artifa
   return data
 }
 
+// ── /v1/chats (saved chats, per user) ────────────────────────────────────────
+// Same contract as /v1/artifacts: the browser builds the chat, the
+// orchestrator keeps it. `data` holds the session id and the messages.
+
+export interface ChatSummary {
+  id: string
+  workspace_id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoredChat extends ChatSummary {
+  data: Record<string, unknown>
+}
+
+export interface ChatPut {
+  workspace_id: string
+  title: string
+  data: Record<string, unknown>
+}
+
+export async function listChats(): Promise<ChatSummary[]> {
+  const { data } = await axios.get<{ items: ChatSummary[] }>('/api/orchestrator/chats')
+  return data.items
+}
+
+export async function getStoredChat(id: string): Promise<StoredChat> {
+  const { data } = await axios.get<StoredChat>(`/api/orchestrator/chats/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function putChat(id: string, body: ChatPut): Promise<ChatSummary> {
+  const { data } = await axios.put<ChatSummary>(`/api/orchestrator/chats/${encodeURIComponent(id)}`, body)
+  return data
+}
+
+export async function deleteStoredChat(id: string): Promise<void> {
+  await axios.delete(`/api/orchestrator/chats/${encodeURIComponent(id)}`)
+}
+
 // ── /v1/title ─────────────────────────────────────────────────────────────────
 
 export interface TitleRequest {

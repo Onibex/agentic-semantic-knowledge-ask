@@ -7,6 +7,7 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
+import { useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { MessageSquare, FileText, Home, ChevronDown, LogOut } from 'lucide-react'
 import onibexLogo from '@/assets/Onibex_logo-azul2.png'
@@ -182,6 +183,13 @@ function Sidebar() {
 }
 
 export default function AppLayout() {
+  // The user's saved chats, listed once per page load: the sidebar, the chat
+  // page and the home page's count all read them.
+  const loadChats = useChatStore((s) => s.loadChats)
+  useEffect(() => {
+    if (useChatStore.getState().listState === 'idle') void loadChats()
+  }, [loadChats])
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
