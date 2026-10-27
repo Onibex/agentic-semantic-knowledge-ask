@@ -108,7 +108,7 @@ Viewer** opens.
 | **Copy** | Copies the document `content` to the clipboard as plain text. |
 | **Download Excel** | Exports the artifact as an `.xls` file (see [section 4](#4-download-excel)). |
 | **Edit** | Toggles the Edit panel on the right (see [section 5](#5-edit-and-regenerate)). |
-| **Regenerate** | Re-runs the original request and replaces the artifact in place. |
+| **Regenerate** | Re-runs the original request, in the artifact's own workspace and environment, and replaces the artifact in place. |
 | **Delete** | Deletes the artifact from your account, after a confirmation (see [section 7](#7-delete-an-artifact)). |
 
 ### Document tab
@@ -160,6 +160,8 @@ Click **Apply & Regenerate** to submit. The agent re-runs the request with your 
 values and replaces the artifact in place. If the SQL Override is unchanged from the
 original, the agent regenerates from the purpose and data focus only. If the SQL Override
 is edited, the agent uses your SQL directly and skips query planning for the first dataset.
+Edits change what is asked, not where: the request runs in the artifact's own workspace,
+environment and mode, the ones shown in the header badge, whatever the sidebar selects.
 
 > **Tip:** the SQL Override is the most powerful edit. If the agent's original SQL was
 > almost right: wrong filter, wrong date range, paste a corrected version here and
@@ -170,7 +172,8 @@ is edited, the agent uses your SQL directly and skips query planning for the fir
 ## 6. Regenerate without editing
 
 Click **Regenerate** in the header (without opening the Edit panel) to re-run the exact
-original request: same name, purpose, data focus, format. The artifact is replaced in place.
+original request: same name, purpose, data focus and format, in the same workspace,
+environment and mode, whatever the sidebar selects. The artifact is replaced in place.
 Use this when the underlying data has changed and you want a fresh document.
 
 ---

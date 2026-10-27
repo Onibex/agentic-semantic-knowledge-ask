@@ -691,7 +691,6 @@ function ArtifactViewer({
   onUpdated: (a: SavedArtifact) => void
   onDeleted: (id: string) => void
 }) {
-  const { workspaceId, env, mode } = useChatStore()
   const { t } = useTranslation()
   const workspaceName = useWorkspaceName()
   const [activeTab, setActiveTab] = useState<'document' | 'data'>('document')
@@ -722,18 +721,15 @@ function ArtifactViewer({
   const datasets = artifact.datasets ?? []
   const hasData = datasets.length > 0
 
+  // Both regenerate buttons run against the artifact's own workspace, env and
+  // mode, the ones it was generated for, never the sidebar's: a prod artifact
+  // regenerated with the sidebar on dev would read the dev database and keep
+  // its prod label, with nothing to say the figures changed source.
   const handleRegenerate = async () => {
-    if (!workspaceId) { toast.warning('Select a workspace first.'); return }
     setRegenerate(true)
     try {
       const primarySql = datasets[0]?.sql ?? artifact.sql ?? undefined
-      const req: ArtifactRequest = {
-        ...artifact._request,
-        workspace_id: workspaceId,
-        env,
-        mode,
-        sql_override: primarySql ?? null,
-      }
+      const req: ArtifactRequest = { ...artifact._request, sql_override: primarySql ?? null }
       const res = await postArtifact(req)
       onUpdated({ ...res, id: artifact.id, createdAt: Date.now(), _request: artifact._request })
       toast.success('Artifact regenerated')
@@ -745,16 +741,10 @@ function ArtifactViewer({
   }
 
   const handleEditRegenerate = async () => {
-    if (!workspaceId) { toast.warning('Select a workspace first.'); return }
     setRegenerate(true)
     try {
-      const newRequest: Omit<ArtifactRequest, 'sql_override'> = {
-        ...artifact._request,
-        ...editValues,
-        workspace_id: workspaceId,
-        env,
-        mode,
-      }
+      // The edits change what is asked, not where: same workspace, env and mode.
+      const newRequest: Omit<ArtifactRequest, 'sql_override'> = { ...artifact._request, ...editValues }
       const originalSql = (artifact.datasets ?? [])[0]?.sql ?? artifact.sql ?? ''
       const sqlChanged = sqlOverride.trim() !== originalSql.trim()
       const res = await postArtifact({
@@ -1140,7 +1130,9 @@ export default function ArtifactsPage() {
   }
 
   const handleUpdated = (a: SavedArtifact) => {
-    setSelected(a)
+    // A regeneration can finish after the sidebar moved to another workspace or
+    // env, which already closed the viewer: it is saved, not reopened here.
+    if (inScope(a._request.workspace_id, a._request.env)) setSelected(a)
     void save(a)
   }
 
