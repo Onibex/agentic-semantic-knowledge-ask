@@ -109,6 +109,7 @@ Viewer** opens.
 | **Download Excel** | Exports the artifact as an `.xls` file (see [section 4](#4-download-excel)). |
 | **Edit** | Toggles the Edit panel on the right (see [section 5](#5-edit-and-regenerate)). |
 | **Regenerate** | Re-runs the original request and replaces the artifact in place. |
+| **Delete** | Deletes the artifact from your account, after a confirmation (see [section 7](#7-delete-an-artifact)). |
 
 ### Document tab
 
@@ -171,6 +172,14 @@ is edited, the agent uses your SQL directly and skips query planning for the fir
 Click **Regenerate** in the header (without opening the Edit panel) to re-run the exact
 original request: same name, purpose, data focus, format. The artifact is replaced in place.
 Use this when the underlying data has changed and you want a fresh document.
+
+---
+
+## 7. Delete an artifact
+
+Open the artifact and click **Delete** in the header. After you confirm, the artifact is
+removed from your account, in every browser, and the gallery opens without it. Deleting cannot
+be undone: to get the document back, create it again with the wizard.
 
 ---
 

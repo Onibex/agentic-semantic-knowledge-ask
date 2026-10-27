@@ -11,10 +11,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, FileText, BarChart2, Table2, FileSearch,
   Plus, Search, ChevronDown, ArrowLeft, RefreshCw,
-  Download, Copy, Check, Database, Pencil, X,
+  Download, Copy, Check, Database, Pencil, X, Trash2,
 } from 'lucide-react'
 import {
-  postArtifact, extractApiError, listArtifacts, getStoredArtifact, putArtifact,
+  postArtifact, extractApiError, listArtifacts, getStoredArtifact, putArtifact, deleteStoredArtifact,
 } from '@/api/orchestrator'
 import type {
   ArtifactResponse, ArtifactRequest, ArtifactDataset, ArtifactSummary, ArtifactPut, Env,
@@ -684,16 +684,32 @@ function ArtifactViewer({
   artifact,
   onBack,
   onUpdated,
+  onDeleted,
 }: {
   artifact: SavedArtifact
   onBack: () => void
   onUpdated: (a: SavedArtifact) => void
+  onDeleted: (id: string) => void
 }) {
   const { workspaceId, env, mode } = useChatStore()
   const { t } = useTranslation()
   const workspaceName = useWorkspaceName()
   const [activeTab, setActiveTab] = useState<'document' | 'data'>('document')
   const [regenerating, setRegenerate] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!window.confirm(t('artifact_delete_confirm').replace('{name}', artifact.name))) return
+    setDeleting(true)
+    try {
+      await deleteStoredArtifact(artifact.id)
+      toast.success(t('artifact_deleted'))
+      onDeleted(artifact.id)
+    } catch (err) {
+      toast.error(`${t('artifact_delete_failed')} ${extractApiError(err)}`)
+      setDeleting(false)
+    }
+  }
   const [editing, setEditing] = useState(false)
   const [editValues, setEditValues] = useState({
     name: artifact._request.name,
@@ -811,6 +827,14 @@ function ArtifactViewer({
           >
             <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} />
             {regenerating ? t('artifact_regenerating') : t('artifact_regenerate')}
+          </button>
+          <button
+            onClick={() => void handleDelete()}
+            disabled={deleting || regenerating}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors disabled:opacity-40"
+          >
+            {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {t('artifact_delete')}
           </button>
         </div>
       </div>
@@ -1120,6 +1144,11 @@ export default function ArtifactsPage() {
     void save(a)
   }
 
+  const handleDeleted = (id: string) => {
+    setArtifacts((prev) => prev.filter((a) => a.id !== id))
+    setSelected(null)
+  }
+
   // ── Viewer ──
   if (selected) {
     return (
@@ -1127,6 +1156,7 @@ export default function ArtifactsPage() {
         artifact={selected}
         onBack={() => setSelected(null)}
         onUpdated={handleUpdated}
+        onDeleted={handleDeleted}
       />
     )
   }

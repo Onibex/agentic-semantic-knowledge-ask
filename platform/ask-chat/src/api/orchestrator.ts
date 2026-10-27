@@ -176,6 +176,16 @@ export async function getStoredArtifact(id: string): Promise<StoredArtifact> {
   return data
 }
 
+export async function deleteStoredArtifact(id: string): Promise<void> {
+  try {
+    await axios.delete(`/api/orchestrator/artifacts/${encodeURIComponent(id)}`)
+  } catch (err) {
+    // Never saved, or already deleted from another browser: gone either way.
+    if (axios.isAxiosError(err) && err.response?.status === 404) return
+    throw err
+  }
+}
+
 export async function putArtifact(id: string, body: ArtifactPut): Promise<ArtifactSummary> {
   const { data } = await axios.put<ArtifactSummary>(
     `/api/orchestrator/artifacts/${encodeURIComponent(id)}`,

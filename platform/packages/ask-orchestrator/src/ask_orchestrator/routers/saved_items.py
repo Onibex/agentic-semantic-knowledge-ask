@@ -181,3 +181,14 @@ def put_artifact(
     return ArtifactSummary(
         **_put(store, claims, artifact_id, body.model_dump(exclude={"data"}), body.data)
     )
+
+
+@router.delete("/artifacts/{artifact_id}", status_code=204, responses=_ERRORS)
+def delete_artifact(
+    artifact_id: ItemId,
+    claims: TokenClaims = Depends(validate_token),
+    store: UserStore = Depends(get_artifact_store),
+) -> Response:
+    if not store.delete(_owner(claims), artifact_id):
+        _fail(404, "NOT_FOUND", "Not found.")
+    return Response(status_code=204)

@@ -212,8 +212,7 @@ def test_an_item_is_its_owners_alone(as_user, os_client, route, make):
     assert bob.get(f"/v1/{route}/item-1").status_code == 404
     assert bob.get(f"/v1/{route}/no-such-item").status_code == 404
     assert bob.put(f"/v1/{route}/item-1", json=make(**{"title" if route == "chats" else "name": "Bob's"})).status_code == 404
-    if route == "chats":
-        assert bob.delete("/v1/chats/item-1").status_code == 404
+    assert bob.delete(f"/v1/{route}/item-1").status_code == 404
 
     alice = as_user(ALICE)
     (listed,) = alice.get(f"/v1/{route}").json()["items"]
@@ -322,13 +321,16 @@ def test_a_list_cannot_filter_on_an_undeclared_field(os_client):
         UserStore(CHATS, client=os_client).list("keycloak:u-alice", {"env": "dev"})
 
 
-def test_a_deleted_chat_is_gone(as_user):
+@pytest.mark.parametrize(("route", "make"), KINDS)
+def test_a_deleted_item_is_gone(as_user, route, make):
     client = as_user(ALICE)
-    client.put("/v1/chats/c-1", json=_chat())
+    client.put(f"/v1/{route}/item-1", json=make())
 
-    assert client.delete("/v1/chats/c-1").status_code == 204
-    assert client.get("/v1/chats/c-1").status_code == 404
-    assert client.get("/v1/chats").json() == {"items": []}
+    assert client.delete(f"/v1/{route}/item-1").status_code == 204
+    assert client.get(f"/v1/{route}/item-1").status_code == 404
+    assert client.get(f"/v1/{route}").json() == {"items": []}
+    # A second delete finds nothing: the browser treats that as already done.
+    assert client.delete(f"/v1/{route}/item-1").status_code == 404
 
 
 def test_a_token_without_sub_cannot_save(as_user):
