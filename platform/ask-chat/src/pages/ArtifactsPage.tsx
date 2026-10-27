@@ -965,8 +965,8 @@ type PageMode = 'gallery' | 'creating'
 
 // Where artifacts lived before they were saved per user on the server. Nothing
 // reads it any more; it is cleared so one user's documents do not linger in a
-// browser the next user signs in on.
-const LEGACY_ARTIFACTS_KEY = 'onibex_artifacts_v1'
+// browser the next user signs in on. A storage key name, not a credential.
+const LEGACY_ARTIFACTS_KEY = 'onibex_artifacts_v1' // gitleaks:allow
 
 function clearLegacyArtifacts(): void {
   try {
