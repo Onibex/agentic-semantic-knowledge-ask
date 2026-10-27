@@ -36,8 +36,11 @@
 
 ![The Artifacts gallery: cards for each artifact with its name, type and when it was last edited, a search box and a type filter](../images/chat-artifacts-gallery.png)
 
-Open the **Artifacts** page from the sidebar. The gallery shows all your saved artifacts as cards
-in a responsive grid.
+Open the **Artifacts** page from the sidebar. The gallery shows your saved artifacts for the
+**workspace and environment selected in the sidebar**, as cards in a responsive grid. Their
+names appear under the page title, for example *Production Planning · Development*. Changing
+either selection loads that workspace and environment's artifacts and closes any artifact you
+had open. With no workspace selected the gallery is empty and **New artifact** is disabled.
 
 **Toolbar controls:**
 
@@ -100,6 +103,7 @@ Viewer** opens.
 | **← Back** | Returns to the gallery. |
 | Artifact name | The name you gave in step 1. |
 | Format badge | Shows the document type (e.g. *Detailed Report*). |
+| Workspace and environment badge | The workspace and environment the artifact was generated for (e.g. *Production Planning · Production*). |
 | Token count | Total tokens used to generate this artifact. |
 | **Copy** | Copies the document `content` to the clipboard as plain text. |
 | **Download Excel** | Exports the artifact as an `.xls` file (see [section 4](#4-download-excel)). |

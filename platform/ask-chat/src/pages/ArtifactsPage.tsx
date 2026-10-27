@@ -17,8 +17,10 @@ import {
   postArtifact, extractApiError, listArtifacts, getStoredArtifact, putArtifact,
 } from '@/api/orchestrator'
 import type {
-  ArtifactResponse, ArtifactRequest, ArtifactDataset, ArtifactSummary, ArtifactPut,
+  ArtifactResponse, ArtifactRequest, ArtifactDataset, ArtifactSummary, ArtifactPut, Env,
 } from '@/api/orchestrator'
+import { useQuery } from '@tanstack/react-query'
+import { listWorkspaces } from '@/api/admin'
 import { useChatStore } from '@/store/chatStore'
 import { toast } from 'sonner'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -303,6 +305,20 @@ function typeLabel(value: string, t: (k: TranslationKey) => string): string {
 function formatLabel(value: string, t: (k: TranslationKey) => string): string {
   const key = FORMAT_LABEL_KEYS[value]
   return key ? t(key) : value
+}
+
+function envLabel(env: Env, t: (k: TranslationKey) => string): string {
+  return t(env === 'prod' ? 'card_env_prod' : 'card_env_dev')
+}
+
+/** Name of a workspace from its slug, from the list the sidebar already loads. */
+function useWorkspaceName(): (slug: string) => string {
+  const { data: workspaces = [] } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: listWorkspaces,
+    staleTime: 1000 * 60 * 5,
+  })
+  return (slug) => workspaces.find((ws) => ws.slug === slug)?.name ?? slug
 }
 
 // ── Copy button ────────────────────────────────────────────────────────────────
@@ -675,6 +691,7 @@ function ArtifactViewer({
 }) {
   const { workspaceId, env, mode } = useChatStore()
   const { t } = useTranslation()
+  const workspaceName = useWorkspaceName()
   const [activeTab, setActiveTab] = useState<'document' | 'data'>('document')
   const [regenerating, setRegenerate] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -759,6 +776,9 @@ function ArtifactViewer({
         <h1 className="text-sm font-semibold text-gray-900 truncate max-w-xs">{artifact.name}</h1>
         <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
           {formatLabel(artifact.format ?? '', t)}
+        </span>
+        <span className="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs text-gray-500">
+          {workspaceName(artifact._request.workspace_id)} · {envLabel(artifact._request.env, t)}
         </span>
         {artifact.tokens_used && (
           <span className="text-[10px] text-gray-400">{artifact.tokens_used.toLocaleString()} tokens</span>
@@ -989,6 +1009,8 @@ function toPut(a: SavedArtifact): ArtifactPut {
 
 export default function ArtifactsPage() {
   const { t } = useTranslation()
+  const { workspaceId, env } = useChatStore()
+  const workspaceName = useWorkspaceName()
   const [artifacts, setArtifacts] = useState<ArtifactSummary[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [openingId, setOpeningId] = useState<string | null>(null)
@@ -997,18 +1019,45 @@ export default function ArtifactsPage() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
 
+  // The gallery is the sidebar's workspace and env, like the chat: dev and
+  // prod hold different figures. Async callbacks read the scope through this
+  // ref, because the sidebar can move on while a list or a save is in flight.
+  const scope = useRef({ workspaceId, env })
+  scope.current = { workspaceId, env }
+  const inScope = useCallback(
+    (workspace: string, artifactEnv: Env) =>
+      workspace === scope.current.workspaceId && artifactEnv === scope.current.env,
+    [],
+  )
+  const loadSeq = useRef(0)
+
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current
+    if (!workspaceId) {
+      setArtifacts([])
+      setLoadState('ready')
+      return
+    }
     setLoadState('loading')
     try {
-      setArtifacts(await listArtifacts())
+      const items = await listArtifacts({ workspace_id: workspaceId, env })
+      // A later workspace or env asked for its own list meanwhile.
+      if (seq !== loadSeq.current) return
+      setArtifacts(items)
       setLoadState('ready')
     } catch {
-      setLoadState('error')
+      if (seq === loadSeq.current) setLoadState('error')
     }
-  }, [])
+  }, [workspaceId, env])
 
   useEffect(() => {
     clearLegacyArtifacts()
+  }, [])
+
+  // Another workspace or env is another gallery: leave whatever was open.
+  useEffect(() => {
+    setSelected(null)
+    setPageMode('gallery')
     void load()
   }, [load])
 
@@ -1019,6 +1068,8 @@ export default function ArtifactsPage() {
     async (a: SavedArtifact) => {
       try {
         const summary = await putArtifact(a.id, toPut(a))
+        // Saved either way; listed here only if it belongs to this gallery.
+        if (!inScope(summary.workspace_id, summary.env)) return
         setArtifacts((prev) =>
           prev.some((x) => x.id === summary.id)
             ? prev.map((x) => (x.id === summary.id ? summary : x))
@@ -1031,7 +1082,7 @@ export default function ArtifactsPage() {
         })
       }
     },
-    [t],
+    [t, inScope],
   )
 
   const handleOpen = async (summary: ArtifactSummary) => {
@@ -1058,7 +1109,9 @@ export default function ArtifactsPage() {
 
   const handleCreated = (a: SavedArtifact) => {
     setPageMode('gallery')
-    setSelected(a)
+    // Generated for the workspace and env selected when it started. If the
+    // sidebar moved on meanwhile, it is saved and listed there, not opened here.
+    if (inScope(a._request.workspace_id, a._request.env)) setSelected(a)
     void save(a)
   }
 
@@ -1094,7 +1147,14 @@ export default function ArtifactsPage() {
       {/* Header */}
       <div className="px-8 pt-8 pb-4 shrink-0">
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-2xl font-semibold text-gray-900">{t('artifact_gallery_title')}</h1>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">{t('artifact_gallery_title')}</h1>
+            {workspaceId && (
+              <p className="mt-0.5 text-xs text-gray-500">
+                {workspaceName(workspaceId)} · {envLabel(env, t)}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <select
@@ -1111,7 +1171,8 @@ export default function ArtifactsPage() {
             </div>
             <button
               onClick={() => setPageMode('creating')}
-              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+              disabled={!workspaceId}
+              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               {t('artifact_new_btn')}
@@ -1131,7 +1192,11 @@ export default function ArtifactsPage() {
 
       {/* Gallery grid */}
       <div className="flex-1 overflow-y-auto px-8 pb-8">
-        {loadState === 'loading' ? (
+        {!workspaceId ? (
+          <div className="flex items-center justify-center h-full text-sm text-gray-500">
+            {t('artifact_select_workspace')}
+          </div>
+        ) : loadState === 'loading' ? (
           <div className="flex items-center justify-center h-full gap-2 text-sm text-gray-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t('artifact_loading')}

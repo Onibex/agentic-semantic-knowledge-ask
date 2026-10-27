@@ -26,6 +26,7 @@ from typing import Annotated, NoReturn
 from fastapi import APIRouter, Depends, HTTPException, Path, Response
 
 from ..auth.validator import TokenClaims, validate_token
+from ..models.requests import Environment
 from ..models.responses import ErrorResponse
 from ..models.saved_items import (
     ArtifactList,
@@ -105,7 +106,7 @@ def list_chats(
     store: UserStore = Depends(get_chat_store),
 ) -> ChatList:
     """The caller's chats, newest first, without their messages."""
-    return ChatList(items=store.list(_owner(claims), workspace_id=workspace_id))
+    return ChatList(items=store.list(_owner(claims), {"workspace_id": workspace_id}))
 
 
 @router.get("/chats/{chat_id}", response_model=Chat, responses=_ERRORS)
@@ -144,11 +145,20 @@ def delete_chat(
 
 @router.get("/artifacts", response_model=ArtifactList, responses=_ERRORS)
 def list_artifacts(
+    workspace_id: str | None = None,
+    env: Environment | None = None,
     claims: TokenClaims = Depends(validate_token),
     store: UserStore = Depends(get_artifact_store),
 ) -> ArtifactList:
-    """The caller's artifacts, newest first, without their content."""
-    return ArtifactList(items=store.list(_owner(claims)))
+    """The caller's artifacts, newest first, without their content.
+
+    The gallery asks for one workspace and one env, the ones the sidebar
+    selects: dev and prod hold different figures, and an artifact listed
+    under the wrong one is read as the other's.
+    """
+    return ArtifactList(
+        items=store.list(_owner(claims), {"workspace_id": workspace_id, "env": env})
+    )
 
 
 @router.get("/artifacts/{artifact_id}", response_model=SavedArtifact, responses=_ERRORS)

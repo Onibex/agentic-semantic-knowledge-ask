@@ -146,12 +146,19 @@ class UserStore:
             logger.info("Created OpenSearch index %s", index)
         self._index_ensured = True
 
-    def list(self, owner: str, workspace_id: str | None = None) -> list[dict[str, Any]]:
-        """The owner's items, newest first, without ``payload``."""
+    def list(self, owner: str, match: dict[str, str | None] | None = None) -> list[dict[str, Any]]:
+        """The owner's items, newest first, without ``payload``.
+
+        ``match`` narrows the list by cleartext fields of this kind (a chat's
+        workspace, an artifact's workspace and env); empty values are ignored.
+        """
         self.ensure_index()
         filters: list[dict[str, Any]] = [{"term": {"owner": owner}}]
-        if workspace_id:
-            filters.append({"term": {"workspace_id": workspace_id}})
+        for field, value in (match or {}).items():
+            if field not in self.kind.fields:
+                raise ValueError(f"{self.kind.index} has no list field {field!r}")
+            if value:
+                filters.append({"term": {field: value}})
         resp = self._client.search(
             index=self.kind.index,
             body={

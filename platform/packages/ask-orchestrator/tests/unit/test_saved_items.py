@@ -294,6 +294,34 @@ def test_chat_list_can_be_scoped_to_a_workspace(as_user):
     assert len(client.get("/v1/chats").json()["items"]) == 2
 
 
+def test_artifact_list_can_be_scoped_to_a_workspace_and_env(as_user):
+    """The gallery shows the sidebar's workspace and env only: dev and prod
+    hold different figures, so a prod artifact listed under dev reads as dev."""
+    client = as_user(ALICE)
+    for item_id, workspace_id, env in [
+        ("a-dev", "ws-1", "dev"),
+        ("a-prod", "ws-1", "prod"),
+        ("a-other", "ws-2", "dev"),
+    ]:
+        client.put(f"/v1/artifacts/{item_id}", json={**_artifact(), "workspace_id": workspace_id, "env": env})
+
+    def ids(**params: str) -> list[str]:
+        return [a["id"] for a in client.get("/v1/artifacts", params=params).json()["items"]]
+
+    assert ids(workspace_id="ws-1", env="dev") == ["a-dev"]
+    assert ids(workspace_id="ws-1", env="prod") == ["a-prod"]
+    assert ids(workspace_id="ws-1") == ["a-prod", "a-dev"]
+    assert sorted(ids()) == ["a-dev", "a-other", "a-prod"]
+    assert client.get("/v1/artifacts", params={"env": "qa"}).status_code == 422
+
+
+def test_a_list_cannot_filter_on_an_undeclared_field(os_client):
+    """Only the cleartext list fields of a kind can filter; anything else would
+    be a term query on a field the strict mapping does not have."""
+    with pytest.raises(ValueError):
+        UserStore(CHATS, client=os_client).list("keycloak:u-alice", {"env": "dev"})
+
+
 def test_a_deleted_chat_is_gone(as_user):
     client = as_user(ALICE)
     client.put("/v1/chats/c-1", json=_chat())

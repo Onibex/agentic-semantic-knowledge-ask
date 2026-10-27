@@ -162,8 +162,12 @@ export type ArtifactPut = Omit<ArtifactSummary, 'id' | 'created_at' | 'updated_a
   data: Record<string, unknown>
 }
 
-export async function listArtifacts(): Promise<ArtifactSummary[]> {
-  const { data } = await axios.get<{ items: ArtifactSummary[] }>('/api/orchestrator/artifacts')
+export async function listArtifacts(
+  scope: { workspace_id?: string; env?: Env } = {},
+): Promise<ArtifactSummary[]> {
+  const { data } = await axios.get<{ items: ArtifactSummary[] }>('/api/orchestrator/artifacts', {
+    params: scope,
+  })
   return data.items
 }
 
