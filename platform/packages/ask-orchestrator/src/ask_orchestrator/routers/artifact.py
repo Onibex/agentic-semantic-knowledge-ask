@@ -16,7 +16,6 @@ Flow:
 from __future__ import annotations
 
 import logging
-import re
 import uuid
 from typing import Any
 
@@ -26,6 +25,9 @@ from ..auth.validator import TokenClaims, validate_token
 from ..config import SettingsCache
 from ..models.requests import ArtifactRequest, QueryRequest
 from ..models.responses import ArtifactDataset, ArtifactResponse, ErrorResponse, TokensBreakdown
+from ..sql_repair import DIALECT_NOTES as _DIALECT_NOTES
+from ..sql_repair import repair_sql
+from ..sql_repair import strip_fences as _strip_fences
 
 logger = logging.getLogger(__name__)
 
@@ -70,30 +72,6 @@ _SUB_QUERY_COUNT: dict[str, int] = {
     "dashboard": 2,
 }
 
-# One-line dialect hint per engine for the sub-query prompt. Covers every backend
-# the DB registry supports so no engine is silently told to emit PostgreSQL.
-_DIALECT_NOTES: dict[str, str] = {
-    "hana": "SAP HANA SQL: double-quoted identifiers, ADD_DAYS() for dates, no NULLS LAST.",
-    "postgresql": 'PostgreSQL: double-quoted identifiers, public."TABLE" format.',
-    "snowflake": "Snowflake SQL: double-quoted identifiers, DATEADD() for dates.",
-    "databricks": "Databricks/Spark SQL: backtick identifiers, date_add() for dates.",
-    "bigquery": "BigQuery Standard SQL: backtick-quoted identifiers, DATE_ADD()/DATE_SUB().",
-    # The two rules after the first sentence were measured on ClickHouse 22.1, where
-    # both broke GONAC sub-queries: an alias shadows the column it is named after, so
-    # SUM(x) AS x turns a later SUM(x) into SUM(SUM(x)) (ILLEGAL_AGGREGATION); and a
-    # window result cannot be used inside another expression of the same SELECT, not
-    # even through its alias (UNKNOWN_IDENTIFIER). The SQL each rule asks for is
-    # valid on every version, so the note does not need to know the server's.
-    "clickhouse": (
-        "ClickHouse SQL: backtick identifiers, addDays() for dates. "
-        "Never give an aggregate the alias of a column it reads: SUM(x) AS x breaks any later SUM(x). "
-        "Compute ratios or arithmetic between window functions in an outer query, "
-        "not in the SELECT that defines them."
-    ),
-    "sqlserver": "SQL Server T-SQL: [bracket] identifiers, DATEADD(), TOP n (no LIMIT).",
-    "db2": "IBM Db2 SQL: double-quoted identifiers, FETCH FIRST n ROWS ONLY (no LIMIT).",
-    "fabric": "Microsoft Fabric (T-SQL): [bracket] identifiers, DATEADD(), TOP n.",
-}
 
 
 def _generate_sub_sqls(
@@ -154,71 +132,9 @@ def _generate_sub_sqls(
         return []
 
 
-def _strip_fences(text: str, lang: str) -> str:
-    """The body of a ```lang (or bare ```) fenced block, else the text itself."""
-    text = text.strip()
-    if f"```{lang}" in text:
-        return text.split(f"```{lang}")[1].split("```")[0].strip()
-    if "```" in text:
-        return text.split("```")[1].split("```")[0].strip()
-    return text
-
-
-# Errors whose text does not name their own fix. Measured on ClickHouse 22.1: told
-# only "Unknown identifier: sum(x) OVER (...)", the model moved the aggregation into
-# a subquery and kept the ratio between windows in the same SELECT, which fails the
-# same way. With the hint the repair has the one change that works.
-_ERROR_HINTS: list[tuple[re.Pattern[str], str]] = [
-    (
-        re.compile(r"Unknown identifier:.*\bOVER\s*\(", re.IGNORECASE | re.DOTALL),
-        "This server cannot use a window function's result in another expression of the "
-        "SELECT that defines it, not even through its alias. Compute the window columns in "
-        "a subquery and do the arithmetic between them in the outer SELECT.",
-    ),
-    (
-        re.compile(r"is found inside another aggregate function", re.IGNORECASE),
-        "An alias that repeats a column name shadows that column: SUM(x) AS x makes every "
-        "later SUM(x) a SUM(SUM(x)). Rename such aliases (x_total) and keep the rest.",
-    ),
-]
-
-
 def _repair_sub_sql(failed_sql: str, error: str, db_type: str) -> str | None:
-    """Ask the LLM for ONE corrected version of a sub-query the database rejected.
-
-    The sub-query generator sees neither the semantic layer nor the server
-    version, so a dialect limit it does not know surfaces as an execution error.
-    That error locates the problem, which a rule in the prompt can only
-    anticipate; where its text does not name the fix, ``_ERROR_HINTS`` adds the
-    explanation. One attempt: a statement that fails twice keeps its error.
-    Returns ``None`` when no usable, different SQL comes back.
-    """
-    from langchain_core.messages import HumanMessage, SystemMessage
-
-    from ask_llm_gateway.application.factory import build_llm
-    from ask_llm_gateway.infrastructure.token_tracker import track_phase
-
-    dialect = _DIALECT_NOTES.get(db_type, f"{db_type.upper()} SQL.")
-    system = (
-        f"You fix one {db_type.upper()} SQL statement that the database rejected. {dialect} "
-        f"Keep the same tables, columns and analytical intent; change only what the error "
-        f"requires. Return ONLY the corrected SQL statement, no markdown, no explanation."
-    )
-    user = f"SQL:\n{failed_sql}\n\nDatabase error:\n{error[:800]}"
-    hints = [hint for pattern, hint in _ERROR_HINTS if pattern.search(error)]
-    if hints:
-        user += "\n\nWhat the error means:\n" + "\n".join(f"- {h}" for h in hints)
-    try:
-        llm = build_llm(SettingsCache.get())
-        with track_phase("artifact_sub_sql_repair"):
-            response = llm.invoke([SystemMessage(content=system), HumanMessage(content=user)])
-        fixed = _strip_fences(response.content, "sql").rstrip(";").strip()
-    except Exception as exc:
-        logger.warning("sub-SQL repair failed: %s", exc)
-        return None
-    if not fixed or fixed == failed_sql.strip().rstrip(";").strip():
-        return None
-    return fixed
+    """One repair of an artifact statement the database rejected (see ``sql_repair``)."""
+    return repair_sql(failed_sql, error, db_type, phase="artifact_sub_sql_repair")
 
 
 def _pipeline_failure(result: Any) -> str | None:

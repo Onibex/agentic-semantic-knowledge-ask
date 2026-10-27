@@ -26,6 +26,13 @@ Deduplication and FINAL are INDEPENDENT concerns and the rules keep them apart:
 
 Treating FINAL as "how you deduplicate" is what made every query fail against a
 plain MergeTree table; the two axes must not be coupled again.
+
+Rules 7 (ASCII aliases), 14 and 15 come from the GONAC chat's failures on
+ClickHouse 22.1, and are stated in prose with no worked SQL: an example in a
+rules block behaves as a template the model copies (see freeform_generator.py).
+They lower how often the first statement fails; what they cannot anticipate,
+such as a column whose type differs between environments, is left to the one
+repair the orchestrator makes with the database's own error (sql_repair.py).
 """
 
 
@@ -51,7 +58,9 @@ STRICT_RULES = """STRICT CLICKHOUSE SQL RULES:
 5. Add LIMIT 500 by default to cap result size, UNLESS the user asks for aggregations/totals
    OR explicitly requests a specific number of rows (then use that exact count)
 6. For monetary values, cast with toDecimal64(value, 2) or CAST(value AS Decimal(18,2)).
-7. Prefer readable snake_case aliases for all columns
+7. Prefer readable snake_case aliases for all columns, spelled with ASCII letters, digits and underscores
+   only: no ñ and no accented vowels, even when the question is in Spanish. ClickHouse rejects any other
+   character in a name that is not quoted.
 8. String aggregation: use arrayStringConcat(groupArray(expr), ', ') — there is no STRING_AGG/LISTAGG.
 9. Dates: use today() / now(). Arithmetic: addDays(d, n), subtractDays(d, n), dateDiff('day', a, b),
    toStartOfMonth(d). (CURRENT_DATE also works but today()/now() are idiomatic.)
@@ -70,6 +79,12 @@ STRICT_RULES = """STRICT CLICKHOUSE SQL RULES:
     DEPLOYMENT (enabled per connection), unrelated to how a query deduplicates (rule 4), and plain
     MergeTree tables reject it outright: "Storage MergeTree doesn't support FINAL".
       WRONG: FROM "db"."SALES" AS t FINAL
+14. Never give an aggregate or a conversion the alias of a column it reads. In ClickHouse the alias then
+    replaces that column everywhere else in the query, so a later SUM of the same name becomes a sum of a
+    sum and a conversion is applied twice. Name the result differently, with a suffix such as _total.
+15. Ratios or any other arithmetic between window functions go in an outer query that selects the window
+    columns: ClickHouse cannot use a window function's result inside another expression of the SELECT
+    that defines it, not even through its alias.
 """
 
 ROLE_LINE = (
