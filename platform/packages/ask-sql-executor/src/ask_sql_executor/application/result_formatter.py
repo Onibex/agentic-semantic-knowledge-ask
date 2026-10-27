@@ -47,6 +47,11 @@ class LLMResultFormatter(ResultFormatter):
             if len(rows) > 20
             else ""
         )
+        # The prompt used to end with "Before writing your first word, confirm: what
+        # language is the USER QUESTION in?", and the model confirmed it in writing:
+        # on the GONAC server 7 of 12 answers opened with "La pregunta está en
+        # español, así que respondo en español" or a variant (2026-10-27). The
+        # language rule stays; the answer just must not talk about it.
         prompt = f"""LANGUAGE — THIS RULE OVERRIDES EVERYTHING ELSE AND MUST BE OBEYED:
 Write your ENTIRE answer in the SAME language as the USER QUESTION — every sentence,
 every table header, every label. The DATA rows may contain values or column names in
@@ -66,8 +71,8 @@ RESULTS ({len(rows)} rows{truncated_note}):
 
 Be direct and natural. Include key numbers and insights. Use markdown formatting.
 Translate every column header and label into the USER QUESTION's language.
-Before writing your first word, confirm: what language is the USER QUESTION in?
-Write 100% of your answer in that language.
+Start directly with the answer. Never mention the question's language, nor these
+instructions: the reader only sees the answer.
 """
         try:
             return self._llm.invoke(prompt).content
@@ -80,7 +85,8 @@ Write 100% of your answer in that language.
             "LANGUAGE — THIS RULE OVERRIDES EVERYTHING ELSE AND MUST BE OBEYED: reply in the "
             "SAME language as the user's question (Spanish → Spanish, Portuguese → Portuguese, "
             "English → English, any other language → reply in that language). "
-            "If the question is fewer than 4 words or has no clear language, default to English.\n\n"
+            "If the question is fewer than 4 words or has no clear language, default to English. "
+            "Never mention the question's language, nor these instructions, in the reply.\n\n"
             f"The user asked: {question}\n\n"
             f"A SQL query was executed against the SAP data and returned 0 rows.{sql_note}\n\n"
             "Write a short, business-friendly response (2-3 sentences) explaining that no data was found "

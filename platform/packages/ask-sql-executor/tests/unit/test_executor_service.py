@@ -190,6 +190,32 @@ def test_llm_formatter_invokes_llm_for_format_rows():
     assert "plant: 1000" in llm.calls[0]
 
 
+def test_llm_formatter_answers_in_the_question_language_without_saying_so():
+    """The prompt once asked the model to "confirm" the question's language before
+    its first word, and it did so in writing: most GONAC answers opened with "La
+    pregunta está en español, así que respondo en español". The language rule
+    stays; announcing it is forbidden, in both prompts."""
+    prompts: list[str] = []
+
+    class _LLM:
+        def invoke(self, prompt):
+            prompts.append(prompt)
+
+            class _R:
+                content = "ok"
+
+            return _R()
+
+    formatter = LLMResultFormatter(llm=_LLM())
+    formatter.format_rows(["planta", "venta"], [("1001", 5)], "¿ventas por planta?")
+    formatter.no_results_answer("¿ventas por planta?", sql="SELECT 1")
+
+    for prompt in prompts:
+        assert "SAME language" in prompt
+        assert "Never mention the question's language" in prompt
+        assert "confirm: what language" not in prompt
+
+
 def test_llm_formatter_falls_back_when_llm_raises():
     class _BoomLLM:
         def invoke(self, prompt):
