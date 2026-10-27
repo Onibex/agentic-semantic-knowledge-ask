@@ -185,6 +185,10 @@ export const translations = {
     artifact_retry: 'Retry',
     artifact_open_failed: 'This artifact could not be opened.',
     artifact_save_failed: 'This artifact was not saved. It stays open here; retry before leaving.',
+    artifact_delete: 'Delete',
+    artifact_delete_confirm: 'Delete "{name}"? This cannot be undone.',
+    artifact_delete_failed: 'This artifact could not be deleted.',
+    artifact_deleted: 'Artifact deleted.',
     artifact_edited_prefix: 'Edited',
 
     // ── SqlResultsBlock ────────────────────────────────────
@@ -367,6 +371,10 @@ export const translations = {
     artifact_retry: 'Reintentar',
     artifact_open_failed: 'No se pudo abrir este artefacto.',
     artifact_save_failed: 'Este artefacto no se guardó. Sigue abierto aquí; reintenta antes de salir.',
+    artifact_delete: 'Borrar',
+    artifact_delete_confirm: '¿Borrar "{name}"? No se puede deshacer.',
+    artifact_delete_failed: 'No se pudo borrar este artefacto.',
+    artifact_deleted: 'Artefacto borrado.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabla',
@@ -548,6 +556,10 @@ export const translations = {
     artifact_retry: 'Tentar novamente',
     artifact_open_failed: 'Não foi possível abrir este artefato.',
     artifact_save_failed: 'Este artefato não foi salvo. Ele continua aberto aqui; tente novamente antes de sair.',
+    artifact_delete: 'Excluir',
+    artifact_delete_confirm: 'Excluir "{name}"? Não é possível desfazer.',
+    artifact_delete_failed: 'Não foi possível excluir este artefato.',
+    artifact_deleted: 'Artefato excluído.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabela',
