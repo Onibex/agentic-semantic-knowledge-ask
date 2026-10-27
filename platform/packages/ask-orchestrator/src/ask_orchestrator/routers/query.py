@@ -45,6 +45,7 @@ from ..classification.macro_classifier import MacroIntentClassifier
 from ..config import SettingsCache  # in-memory cache for config/settings.json
 from ..models.requests import QueryRequest
 from ..models.responses import Citation, ErrorResponse, MacroIntent, QueryResponse, TokensBreakdown
+from ..sql_repair import is_repairable, repair_sql
 
 logger = logging.getLogger(__name__)
 
@@ -592,14 +593,25 @@ def _chain_sql_generation_and_executor(
             tokens_used=sql_result.tokens_used or resolution.trace.tokens_used,
         )
 
-    formatted = _get_sql_executor().execute_and_format(
-        ExecutionRequest(
-            sql=sql_result.sql,
-            db_type=db_type,
-            db_config=db_config or {},
-        ),
-        question=req.question,
-    )
+    def execute(sql: str):
+        return _get_sql_executor().execute_and_format(
+            ExecutionRequest(sql=sql, db_type=db_type, db_config=db_config or {}),
+            question=req.question,
+        )
+
+    formatted = execute(sql_result.sql)
+    # The generator sees neither the server's version nor each environment's
+    # column types; the database's error does. One repair, as for artifacts,
+    # and a statement that fails twice keeps its second error.
+    if formatted.error and is_repairable(formatted.error):
+        fixed = repair_sql(formatted.sql, formatted.error, db_type, phase="sql_repair")
+        if fixed:
+            logger.info(
+                "chat SQL repaired after: %s",
+                formatted.error[:200],
+                extra={"trace_id": trace_id},
+            )
+            formatted = execute(fixed)
     rows = formatted.rows_dict if formatted.error is None else None
     answer = formatted.answer
 

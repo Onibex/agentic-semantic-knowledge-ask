@@ -28,6 +28,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from ask_orchestrator import sql_repair
 from ask_orchestrator.auth.validator import TokenClaims
 from ask_orchestrator.models.requests import ArtifactRequest
 from ask_orchestrator.routers import artifact as artifact_router
@@ -275,6 +276,8 @@ def llm(monkeypatch):
         stub = _CapturingLLM(reply)
         monkeypatch.setattr(factory, "build_llm", lambda _cfg: stub)
         monkeypatch.setattr(artifact_router, "SettingsCache", SimpleNamespace(get=lambda: {}))
+        # The repair lives in sql_repair, shared with the chat.
+        monkeypatch.setattr(sql_repair, "SettingsCache", SimpleNamespace(get=lambda: {}))
         return stub
 
     return _llm
