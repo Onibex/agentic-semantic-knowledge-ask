@@ -138,6 +138,103 @@ export async function postArtifact(req: ArtifactRequest): Promise<ArtifactRespon
   return data
 }
 
+// ── /v1/artifacts (saved artifacts, per user) ────────────────────────────────
+// The browser builds the artifact and the orchestrator keeps it, so the same
+// user sees it from any browser. `data` is the artifact as the page holds it;
+// the server stores it encrypted and hands it back untouched.
+
+export interface ArtifactSummary {
+  id: string
+  workspace_id: string
+  env: Env
+  name: string
+  artifact_type: string
+  format: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoredArtifact extends ArtifactSummary {
+  data: Record<string, unknown>
+}
+
+export type ArtifactPut = Omit<ArtifactSummary, 'id' | 'created_at' | 'updated_at'> & {
+  data: Record<string, unknown>
+}
+
+export async function listArtifacts(
+  scope: { workspace_id?: string; env?: Env } = {},
+): Promise<ArtifactSummary[]> {
+  const { data } = await axios.get<{ items: ArtifactSummary[] }>('/api/orchestrator/artifacts', {
+    params: scope,
+  })
+  return data.items
+}
+
+export async function getStoredArtifact(id: string): Promise<StoredArtifact> {
+  const { data } = await axios.get<StoredArtifact>(`/api/orchestrator/artifacts/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function deleteStoredArtifact(id: string): Promise<void> {
+  try {
+    await axios.delete(`/api/orchestrator/artifacts/${encodeURIComponent(id)}`)
+  } catch (err) {
+    // Never saved, or already deleted from another browser: gone either way.
+    if (axios.isAxiosError(err) && err.response?.status === 404) return
+    throw err
+  }
+}
+
+export async function putArtifact(id: string, body: ArtifactPut): Promise<ArtifactSummary> {
+  const { data } = await axios.put<ArtifactSummary>(
+    `/api/orchestrator/artifacts/${encodeURIComponent(id)}`,
+    body,
+  )
+  return data
+}
+
+// ── /v1/chats (saved chats, per user) ────────────────────────────────────────
+// Same contract as /v1/artifacts: the browser builds the chat, the
+// orchestrator keeps it. `data` holds the session id and the messages.
+
+export interface ChatSummary {
+  id: string
+  workspace_id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoredChat extends ChatSummary {
+  data: Record<string, unknown>
+}
+
+export interface ChatPut {
+  workspace_id: string
+  title: string
+  data: Record<string, unknown>
+}
+
+export async function listChats(): Promise<ChatSummary[]> {
+  const { data } = await axios.get<{ items: ChatSummary[] }>('/api/orchestrator/chats')
+  return data.items
+}
+
+export async function getStoredChat(id: string): Promise<StoredChat> {
+  const { data } = await axios.get<StoredChat>(`/api/orchestrator/chats/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function putChat(id: string, body: ChatPut): Promise<ChatSummary> {
+  const { data } = await axios.put<ChatSummary>(`/api/orchestrator/chats/${encodeURIComponent(id)}`, body)
+  return data
+}
+
+export async function deleteStoredChat(id: string): Promise<void> {
+  await axios.delete(`/api/orchestrator/chats/${encodeURIComponent(id)}`)
+}
+
 // ── /v1/title ─────────────────────────────────────────────────────────────────
 
 export interface TitleRequest {

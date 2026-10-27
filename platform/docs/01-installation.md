@@ -86,7 +86,7 @@ version control (`.env` is gitignored). Generate secrets with the one-liners the
 
 | Variable | Required | What it is |
 |---|---|---|
-| **`ONIBEX_ENCRYPTION_KEY`** | Yes | Fernet master key (32-byte urlsafe-base64) that encrypts the **configuration store** in OpenSearch, database connections and LLM-provider credentials. Both backends **fail-closed at boot** if it's missing or malformed. Keep it **stable**, rotating it makes previously-stored secrets undecryptable. |
+| **`ONIBEX_ENCRYPTION_KEY`** | Yes | Fernet master key (32-byte urlsafe-base64) that encrypts the **configuration store** in OpenSearch, database connections and LLM-provider credentials, and the chats and artifacts users save in ASK Chat. Both backends **fail-closed at boot** if it's missing or malformed. Keep it **stable**, rotating it makes previously-stored secrets undecryptable. |
 | **`SEMANTIC_LAYER_HOST_PATH`** | Yes | Absolute host path to your semantic-layer git repo. It is bind-mounted into `ask-admin-api` at `/app/semantic-layer`. **The directory must contain a `.git`**: without it, YAML commits become silent no-ops and publish-to-environment can't work. |
 | **`AUTH_MODE`** | Yes | Auth backend: `keycloak` (local IdP), `xsuaa` (SAP BTP), or `none` (open dev). **Baked into the SPA bundles at build time**, changing it requires a SPA rebuild (see Step 6). |
 | **`DEV_BYPASS_AUTH`** | Yes | `true` disables authentication (local convenience, honored only when `ENVIRONMENT=local`); `false` enforces `AUTH_MODE`. |

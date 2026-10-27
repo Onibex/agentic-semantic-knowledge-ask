@@ -69,6 +69,13 @@
 # written, and commit ffac9b3 predates the marker.
 ffac9b3e7d14d7947059a10dd9ce792ba2153bc3:platform/packages/ask-admin-api/src/ask_admin_api/application/contracts_repository.py:generic-api-key:65
 
+# NOT A CREDENTIAL. The same localStorage key name as finding 1 of the
+# history run below, now in the constant that clears it (LEGACY_ARTIFACTS_KEY
+# in ArtifactsPage.tsx, PR #91). generic-api-key fires on a constant whose name
+# ends in KEY holding a quoted identifier. The line carries `gitleaks:allow`;
+# this fingerprint covers commit 52cbe47, which predates the marker.
+52cbe4752ffbd6433b08f9c492581b0b28fc35c2:platform/ask-chat/src/pages/ArtifactsPage.tsx:generic-api-key:969
+
 # ── The three findings from the first full-history run on main ───────────────
 #
 # All from 140ad0376f5, the commit that imported the platform. All three

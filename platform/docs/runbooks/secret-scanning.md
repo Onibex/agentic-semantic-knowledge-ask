@@ -130,10 +130,12 @@ Setup. These three cannot be, because each one is needed before that store can b
 
 **This key is the one thing on this page you cannot rotate casually.** It is the Fernet key that
 decrypts everything the platform stores in OpenSearch: the LLM provider credentials, the
-embedder credentials, the database connections and, since 2026-09-09, the SAP password.
+embedder credentials, the database connections, the SAP password, and the chats and
+artifacts every user has saved in ASK Chat.
 
 **Changing it is not a rotation, it is a data-loss event.** Every stored secret becomes
 unreadable at once, and the only recovery is re-entering all of them by hand through ASK Setup.
+Saved chats and artifacts become unreadable too, and nothing recovers them.
 It must be **byte-identical across every deployment and every upgrade** of the same
 environment. Generate it once, keep it in a vault, and copy it forward.
 

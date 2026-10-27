@@ -93,6 +93,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'New Chat',
     sidebar_no_chats: 'No chats yet',
+    sidebar_loading_chats: 'Loading your chats…',
+    sidebar_chats_load_failed: 'Your saved chats could not be loaded.',
+    sidebar_retry: 'Retry',
+    chat_open_failed: 'This chat could not be opened.',
+    chat_save_failed: 'This chat was not saved; it may be missing in other browsers.',
+    chat_delete_failed: 'This chat was not deleted on the server; it will come back on reload.',
     sidebar_select_workspace: 'Select a workspace',
 
     // ── ChatPage ───────────────────────────────────────────
@@ -173,6 +179,16 @@ export const translations = {
     artifact_empty_title: 'No artifacts yet',
     artifact_empty_desc: 'Click "New artifact" to generate your first document.',
     artifact_no_match: 'No artifacts match your search.',
+    artifact_loading: 'Loading your artifacts…',
+    artifact_select_workspace: 'Select a workspace in the sidebar to see its artifacts.',
+    artifact_load_failed: 'Your artifacts could not be loaded.',
+    artifact_retry: 'Retry',
+    artifact_open_failed: 'This artifact could not be opened.',
+    artifact_save_failed: 'This artifact was not saved. It stays open here; retry before leaving.',
+    artifact_delete: 'Delete',
+    artifact_delete_confirm: 'Delete "{name}"? This cannot be undone.',
+    artifact_delete_failed: 'This artifact could not be deleted.',
+    artifact_deleted: 'Artifact deleted.',
     artifact_edited_prefix: 'Edited',
 
     // ── SqlResultsBlock ────────────────────────────────────
@@ -269,6 +285,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'Nuevo Chat',
     sidebar_no_chats: 'Sin chats aún',
+    sidebar_loading_chats: 'Cargando tus chats…',
+    sidebar_chats_load_failed: 'No se pudieron cargar tus chats guardados.',
+    sidebar_retry: 'Reintentar',
+    chat_open_failed: 'No se pudo abrir este chat.',
+    chat_save_failed: 'Este chat no se guardó; puede faltar en otros navegadores.',
+    chat_delete_failed: 'Este chat no se borró en el servidor; volverá al recargar.',
     sidebar_select_workspace: 'Selecciona un espacio',
 
     // ── ChatPage ───────────────────────────────────────────
@@ -343,6 +365,16 @@ export const translations = {
     artifact_empty_title: 'Sin artefactos aún',
     artifact_empty_desc: 'Haz clic en "Nuevo artefacto" para generar tu primer documento.',
     artifact_no_match: 'Ningún artefacto coincide con tu búsqueda.',
+    artifact_loading: 'Cargando tus artefactos…',
+    artifact_select_workspace: 'Selecciona un espacio de trabajo en el panel lateral para ver sus artefactos.',
+    artifact_load_failed: 'No se pudieron cargar tus artefactos.',
+    artifact_retry: 'Reintentar',
+    artifact_open_failed: 'No se pudo abrir este artefacto.',
+    artifact_save_failed: 'Este artefacto no se guardó. Sigue abierto aquí; reintenta antes de salir.',
+    artifact_delete: 'Borrar',
+    artifact_delete_confirm: '¿Borrar "{name}"? No se puede deshacer.',
+    artifact_delete_failed: 'No se pudo borrar este artefacto.',
+    artifact_deleted: 'Artefacto borrado.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabla',
@@ -438,6 +470,12 @@ export const translations = {
     // ── ChatSidebar ────────────────────────────────────────
     sidebar_new_chat: 'Novo Chat',
     sidebar_no_chats: 'Nenhum chat ainda',
+    sidebar_loading_chats: 'Carregando seus chats…',
+    sidebar_chats_load_failed: 'Não foi possível carregar seus chats salvos.',
+    sidebar_retry: 'Tentar novamente',
+    chat_open_failed: 'Não foi possível abrir este chat.',
+    chat_save_failed: 'Este chat não foi salvo; pode faltar em outros navegadores.',
+    chat_delete_failed: 'Este chat não foi excluído no servidor; voltará ao recarregar.',
     sidebar_select_workspace: 'Selecione um espaço',
 
     // ── ChatPage ───────────────────────────────────────────
@@ -512,6 +550,16 @@ export const translations = {
     artifact_empty_title: 'Sem artefatos ainda',
     artifact_empty_desc: 'Clique em "Novo artefato" para gerar seu primeiro documento.',
     artifact_no_match: 'Nenhum artefato corresponde à sua pesquisa.',
+    artifact_loading: 'Carregando seus artefatos…',
+    artifact_select_workspace: 'Selecione um espaço de trabalho na barra lateral para ver seus artefatos.',
+    artifact_load_failed: 'Não foi possível carregar seus artefatos.',
+    artifact_retry: 'Tentar novamente',
+    artifact_open_failed: 'Não foi possível abrir este artefato.',
+    artifact_save_failed: 'Este artefato não foi salvo. Ele continua aberto aqui; tente novamente antes de sair.',
+    artifact_delete: 'Excluir',
+    artifact_delete_confirm: 'Excluir "{name}"? Não é possível desfazer.',
+    artifact_delete_failed: 'Não foi possível excluir este artefato.',
+    artifact_deleted: 'Artefato excluído.',
     artifact_edited_prefix: 'Editado',
 
     results_table: 'Tabela',

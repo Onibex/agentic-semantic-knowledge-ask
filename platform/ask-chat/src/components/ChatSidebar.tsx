@@ -7,7 +7,9 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
-import { Trash2, Plus, MessageSquare } from 'lucide-react'
+import { Trash2, Plus, MessageSquare, Loader2, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
+import { extractApiError } from '@/api/orchestrator'
 import { useChatStore } from '@/store/chatStore'
 import type { Chat } from '@/store/chatStore'
 import { cn } from '@/lib/utils'
@@ -60,8 +62,10 @@ function ChatItem({
 
 export function ChatSidebar() {
   const { t } = useTranslation()
-  const { workspaceId, workspaceChats, activeChatIds, createChat, deleteChat, setActiveChat } =
-    useChatStore()
+  const {
+    workspaceId, workspaceChats, activeChatIds, listState,
+    createChat, deleteChat, setActiveChat, loadChats,
+  } = useChatStore()
 
   const chats = workspaceChats[workspaceId] ?? []
   const activeChatId = activeChatIds[workspaceId] ?? ''
@@ -73,7 +77,11 @@ export function ChatSidebar() {
   const handleDelete = (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation()
     if (!workspaceId) return
-    deleteChat(workspaceId, chatId)
+    // Gone from the list at once; a failure on the server means it comes back
+    // on the next load, so say so.
+    deleteChat(workspaceId, chatId).catch((err) =>
+      toast.error(`${t('chat_delete_failed')} ${extractApiError(err)}`),
+    )
     // If no chats remain after deletion, auto-create one
     const remaining = (useChatStore.getState().workspaceChats[workspaceId] ?? [])
     if (remaining.length === 0) createChat(workspaceId)
@@ -101,9 +109,26 @@ export function ChatSidebar() {
 
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+        {listState === 'error' && (
+          <div className="mb-2 flex flex-col items-center gap-1.5 py-2 text-center">
+            <p className="text-[11px] text-muted-foreground">{t('sidebar_chats_load_failed')}</p>
+            <button
+              onClick={() => void loadChats()}
+              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-sidebar-foreground hover:bg-muted transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" />
+              {t('sidebar_retry')}
+            </button>
+          </div>
+        )}
         {!workspaceId ? (
           <p className="py-4 text-center text-[11px] text-muted-foreground">
             {t('sidebar_select_workspace')}
+          </p>
+        ) : listState === 'idle' || listState === 'loading' ? (
+          <p className="flex items-center justify-center gap-1.5 py-4 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {t('sidebar_loading_chats')}
           </p>
         ) : chats.length === 0 ? (
           <p className="py-4 text-center text-[11px] text-muted-foreground">{t('sidebar_no_chats')}</p>

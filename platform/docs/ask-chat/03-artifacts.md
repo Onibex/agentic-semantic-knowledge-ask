@@ -11,7 +11,7 @@
 | **Who** | Business user / analyst |
 | **Time** | ~3 minutes per artifact |
 | **Prerequisites** | A workspace is selected, an environment chosen, and a mode set (see [Scope a question](01-workspace-environment-mode.md)). |
-| **You'll end with** | A downloadable business document built from live data, saved in your browser for later review. |
+| **You'll end with** | A downloadable business document built from live data, saved to your account for later review. |
 
 ---
 
@@ -21,8 +21,11 @@
   It combines a written narrative (`content`) with one or more SQL result sets (`datasets`).
 - You describe what you need in a short **conversational wizard**: no form fields, no SQL.
   The agent generates the document and data in one call.
-- Artifacts are stored **locally in your browser** (`localStorage`). They persist across
-  page refreshes but are browser- and device-specific.
+- Artifacts are **saved to your account**. You see them from any browser or device you sign
+  in on, and no other user sees them. Their content and data are stored encrypted.
+- An artifact is saved as soon as it is generated or regenerated. If saving fails, the
+  artifact stays open and a message offers **Retry**; it does not appear in your gallery
+  until a save succeeds.
 - You can **regenerate** an artifact at any time (re-runs the original request), or open the
   **Edit panel** to change the purpose, data focus, or even override the SQL before
   regenerating.
@@ -33,8 +36,11 @@
 
 ![The Artifacts gallery: cards for each artifact with its name, type and when it was last edited, a search box and a type filter](../images/chat-artifacts-gallery.png)
 
-Open the **Artifacts** page from the sidebar. The gallery shows all saved artifacts as cards
-in a responsive grid.
+Open the **Artifacts** page from the sidebar. The gallery shows your saved artifacts for the
+**workspace and environment selected in the sidebar**, as cards in a responsive grid. Their
+names appear under the page title, for example *Production Planning · Development*. Changing
+either selection loads that workspace and environment's artifacts and closes any artifact you
+had open. With no workspace selected the gallery is empty and **New artifact** is disabled.
 
 **Toolbar controls:**
 
@@ -97,11 +103,13 @@ Viewer** opens.
 | **← Back** | Returns to the gallery. |
 | Artifact name | The name you gave in step 1. |
 | Format badge | Shows the document type (e.g. *Detailed Report*). |
+| Workspace and environment badge | The workspace and environment the artifact was generated for (e.g. *Production Planning · Production*). |
 | Token count | Total tokens used to generate this artifact. |
 | **Copy** | Copies the document `content` to the clipboard as plain text. |
 | **Download Excel** | Exports the artifact as an `.xls` file (see [section 4](#4-download-excel)). |
 | **Edit** | Toggles the Edit panel on the right (see [section 5](#5-edit-and-regenerate)). |
 | **Regenerate** | Re-runs the original request and replaces the artifact in place. |
+| **Delete** | Deletes the artifact from your account, after a confirmation (see [section 7](#7-delete-an-artifact)). |
 
 ### Document tab
 
@@ -164,6 +172,14 @@ is edited, the agent uses your SQL directly and skips query planning for the fir
 Click **Regenerate** in the header (without opening the Edit panel) to re-run the exact
 original request: same name, purpose, data focus, format. The artifact is replaced in place.
 Use this when the underlying data has changed and you want a fresh document.
+
+---
+
+## 7. Delete an artifact
+
+Open the artifact and click **Delete** in the header. After you confirm, the artifact is
+removed from your account, in every browser, and the gallery opens without it. Deleting cannot
+be undone: to get the document back, create it again with the wizard.
 
 ---
 

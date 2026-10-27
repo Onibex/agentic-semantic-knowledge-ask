@@ -11,10 +11,16 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, FileText, BarChart2, Table2, FileSearch,
   Plus, Search, ChevronDown, ArrowLeft, RefreshCw,
-  Download, Copy, Check, Database, Pencil, X,
+  Download, Copy, Check, Database, Pencil, X, Trash2,
 } from 'lucide-react'
-import { postArtifact, extractApiError } from '@/api/orchestrator'
-import type { ArtifactResponse, ArtifactRequest, ArtifactDataset } from '@/api/orchestrator'
+import {
+  postArtifact, extractApiError, listArtifacts, getStoredArtifact, putArtifact, deleteStoredArtifact,
+} from '@/api/orchestrator'
+import type {
+  ArtifactResponse, ArtifactRequest, ArtifactDataset, ArtifactSummary, ArtifactPut, Env,
+} from '@/api/orchestrator'
+import { useQuery } from '@tanstack/react-query'
+import { listWorkspaces } from '@/api/admin'
 import { useChatStore } from '@/store/chatStore'
 import { toast } from 'sonner'
 import { MarkdownContent } from '@/components/MarkdownContent'
@@ -299,6 +305,20 @@ function typeLabel(value: string, t: (k: TranslationKey) => string): string {
 function formatLabel(value: string, t: (k: TranslationKey) => string): string {
   const key = FORMAT_LABEL_KEYS[value]
   return key ? t(key) : value
+}
+
+function envLabel(env: Env, t: (k: TranslationKey) => string): string {
+  return t(env === 'prod' ? 'card_env_prod' : 'card_env_dev')
+}
+
+/** Name of a workspace from its slug, from the list the sidebar already loads. */
+function useWorkspaceName(): (slug: string) => string {
+  const { data: workspaces = [] } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: listWorkspaces,
+    staleTime: 1000 * 60 * 5,
+  })
+  return (slug) => workspaces.find((ws) => ws.slug === slug)?.name ?? slug
 }
 
 // ── Copy button ────────────────────────────────────────────────────────────────
@@ -664,15 +684,32 @@ function ArtifactViewer({
   artifact,
   onBack,
   onUpdated,
+  onDeleted,
 }: {
   artifact: SavedArtifact
   onBack: () => void
   onUpdated: (a: SavedArtifact) => void
+  onDeleted: (id: string) => void
 }) {
   const { workspaceId, env, mode } = useChatStore()
   const { t } = useTranslation()
+  const workspaceName = useWorkspaceName()
   const [activeTab, setActiveTab] = useState<'document' | 'data'>('document')
   const [regenerating, setRegenerate] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!window.confirm(t('artifact_delete_confirm').replace('{name}', artifact.name))) return
+    setDeleting(true)
+    try {
+      await deleteStoredArtifact(artifact.id)
+      toast.success(t('artifact_deleted'))
+      onDeleted(artifact.id)
+    } catch (err) {
+      toast.error(`${t('artifact_delete_failed')} ${extractApiError(err)}`)
+      setDeleting(false)
+    }
+  }
   const [editing, setEditing] = useState(false)
   const [editValues, setEditValues] = useState({
     name: artifact._request.name,
@@ -756,6 +793,9 @@ function ArtifactViewer({
         <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
           {formatLabel(artifact.format ?? '', t)}
         </span>
+        <span className="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs text-gray-500">
+          {workspaceName(artifact._request.workspace_id)} · {envLabel(artifact._request.env, t)}
+        </span>
         {artifact.tokens_used && (
           <span className="text-[10px] text-gray-400">{artifact.tokens_used.toLocaleString()} tokens</span>
         )}
@@ -787,6 +827,14 @@ function ArtifactViewer({
           >
             <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} />
             {regenerating ? t('artifact_regenerating') : t('artifact_regenerate')}
+          </button>
+          <button
+            onClick={() => void handleDelete()}
+            disabled={deleting || regenerating}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors disabled:opacity-40"
+          >
+            {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {t('artifact_delete')}
           </button>
         </div>
       </div>
@@ -920,22 +968,33 @@ function ArtifactViewer({
 
 // ── Artifact card (gallery) ────────────────────────────────────────────────────
 
-function ArtifactCard({ artifact, onClick }: { artifact: SavedArtifact; onClick: () => void }) {
+function ArtifactCard({
+  artifact,
+  opening,
+  onClick,
+}: {
+  artifact: ArtifactSummary
+  opening: boolean
+  onClick: () => void
+}) {
   const { t } = useTranslation()
   return (
     <button
       onClick={onClick}
-      className="group text-left rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
+      disabled={opening}
+      className="group text-left rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden disabled:opacity-60"
     >
       <div className="flex items-center justify-center h-36 bg-gray-50 border-b border-gray-100 relative">
         <div className="absolute top-2 right-2 opacity-30">
           <FileText className="h-4 w-4 text-gray-400" />
         </div>
-        {TYPE_ICONS[artifact.artifact_type] ?? <FileText className="h-8 w-8 text-gray-300" />}
+        {opening
+          ? <Loader2 className="h-8 w-8 text-gray-300 animate-spin" />
+          : TYPE_ICONS[artifact.artifact_type] ?? <FileText className="h-8 w-8 text-gray-300" />}
       </div>
       <div className="px-4 py-3">
         <p className="text-sm font-medium text-gray-900 truncate">{artifact.name}</p>
-        <p className="mt-0.5 text-xs text-gray-400">{t('artifact_edited_prefix')} {timeAgo(artifact.createdAt)}</p>
+        <p className="mt-0.5 text-xs text-gray-400">{t('artifact_edited_prefix')} {timeAgo(Date.parse(artifact.updated_at))}</p>
         <span className="mt-2 inline-block rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
           {typeLabel(artifact.artifact_type, t)}
         </span>
@@ -948,28 +1007,119 @@ function ArtifactCard({ artifact, onClick }: { artifact: SavedArtifact; onClick:
 
 type PageMode = 'gallery' | 'creating'
 
-const ARTIFACTS_KEY = 'onibex_artifacts_v1'
+// Where artifacts lived before they were saved per user on the server. Nothing
+// reads it any more; it is cleared so one user's documents do not linger in a
+// browser the next user signs in on. A storage key name, not a credential.
+const LEGACY_ARTIFACTS_KEY = 'onibex_artifacts_v1' // gitleaks:allow
 
-function loadArtifacts(): SavedArtifact[] {
+function clearLegacyArtifacts(): void {
   try {
-    const raw = localStorage.getItem(ARTIFACTS_KEY)
-    return raw ? (JSON.parse(raw) as SavedArtifact[]) : []
+    localStorage.removeItem(LEGACY_ARTIFACTS_KEY)
   } catch {
-    return []
+    // Storage blocked (private window): nothing was stored, nothing to clear.
+  }
+}
+
+function toPut(a: SavedArtifact): ArtifactPut {
+  return {
+    workspace_id: a._request.workspace_id,
+    env: a._request.env,
+    name: a.name,
+    artifact_type: a.artifact_type,
+    format: a.format,
+    data: { ...a },
   }
 }
 
 export default function ArtifactsPage() {
   const { t } = useTranslation()
-  const [artifacts, setArtifacts] = useState<SavedArtifact[]>(loadArtifacts)
-
-  useEffect(() => {
-    localStorage.setItem(ARTIFACTS_KEY, JSON.stringify(artifacts))
-  }, [artifacts])
+  const { workspaceId, env } = useChatStore()
+  const workspaceName = useWorkspaceName()
+  const [artifacts, setArtifacts] = useState<ArtifactSummary[]>([])
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [openingId, setOpeningId] = useState<string | null>(null)
   const [selected, setSelected] = useState<SavedArtifact | null>(null)
   const [pageMode, setPageMode] = useState<PageMode>('gallery')
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
+
+  // The gallery is the sidebar's workspace and env, like the chat: dev and
+  // prod hold different figures. Async callbacks read the scope through this
+  // ref, because the sidebar can move on while a list or a save is in flight.
+  const scope = useRef({ workspaceId, env })
+  scope.current = { workspaceId, env }
+  const inScope = useCallback(
+    (workspace: string, artifactEnv: Env) =>
+      workspace === scope.current.workspaceId && artifactEnv === scope.current.env,
+    [],
+  )
+  const loadSeq = useRef(0)
+
+  const load = useCallback(async () => {
+    const seq = ++loadSeq.current
+    if (!workspaceId) {
+      setArtifacts([])
+      setLoadState('ready')
+      return
+    }
+    setLoadState('loading')
+    try {
+      const items = await listArtifacts({ workspace_id: workspaceId, env })
+      // A later workspace or env asked for its own list meanwhile.
+      if (seq !== loadSeq.current) return
+      setArtifacts(items)
+      setLoadState('ready')
+    } catch {
+      if (seq === loadSeq.current) setLoadState('error')
+    }
+  }, [workspaceId, env])
+
+  useEffect(() => {
+    clearLegacyArtifacts()
+  }, [])
+
+  // Another workspace or env is another gallery: leave whatever was open.
+  useEffect(() => {
+    setSelected(null)
+    setPageMode('gallery')
+    void load()
+  }, [load])
+
+  // Saves the artifact for this user. It exists nowhere else, so a failure
+  // keeps it open and leaves a toast that stays until the user retries or
+  // dismisses it.
+  const save = useCallback(
+    async (a: SavedArtifact) => {
+      try {
+        const summary = await putArtifact(a.id, toPut(a))
+        // Saved either way; listed here only if it belongs to this gallery.
+        if (!inScope(summary.workspace_id, summary.env)) return
+        setArtifacts((prev) =>
+          prev.some((x) => x.id === summary.id)
+            ? prev.map((x) => (x.id === summary.id ? summary : x))
+            : [summary, ...prev],
+        )
+      } catch (err) {
+        toast.error(`${t('artifact_save_failed')} ${extractApiError(err)}`, {
+          duration: Infinity,
+          action: { label: t('artifact_retry'), onClick: () => void save(a) },
+        })
+      }
+    },
+    [t, inScope],
+  )
+
+  const handleOpen = async (summary: ArtifactSummary) => {
+    setOpeningId(summary.id)
+    try {
+      const stored = await getStoredArtifact(summary.id)
+      setSelected({ ...(stored.data as unknown as SavedArtifact), id: stored.id })
+    } catch (err) {
+      toast.error(`${t('artifact_open_failed')} ${extractApiError(err)}`)
+    } finally {
+      setOpeningId(null)
+    }
+  }
 
   const filtered = useMemo(
     () =>
@@ -982,14 +1132,21 @@ export default function ArtifactsPage() {
   )
 
   const handleCreated = (a: SavedArtifact) => {
-    setArtifacts((prev) => [a, ...prev])
     setPageMode('gallery')
-    setSelected(a)
+    // Generated for the workspace and env selected when it started. If the
+    // sidebar moved on meanwhile, it is saved and listed there, not opened here.
+    if (inScope(a._request.workspace_id, a._request.env)) setSelected(a)
+    void save(a)
   }
 
   const handleUpdated = (a: SavedArtifact) => {
-    setArtifacts((prev) => prev.map((x) => (x.id === a.id ? a : x)))
     setSelected(a)
+    void save(a)
+  }
+
+  const handleDeleted = (id: string) => {
+    setArtifacts((prev) => prev.filter((a) => a.id !== id))
+    setSelected(null)
   }
 
   // ── Viewer ──
@@ -999,6 +1156,7 @@ export default function ArtifactsPage() {
         artifact={selected}
         onBack={() => setSelected(null)}
         onUpdated={handleUpdated}
+        onDeleted={handleDeleted}
       />
     )
   }
@@ -1019,7 +1177,14 @@ export default function ArtifactsPage() {
       {/* Header */}
       <div className="px-8 pt-8 pb-4 shrink-0">
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-2xl font-semibold text-gray-900">{t('artifact_gallery_title')}</h1>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">{t('artifact_gallery_title')}</h1>
+            {workspaceId && (
+              <p className="mt-0.5 text-xs text-gray-500">
+                {workspaceName(workspaceId)} · {envLabel(env, t)}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <select
@@ -1036,7 +1201,8 @@ export default function ArtifactsPage() {
             </div>
             <button
               onClick={() => setPageMode('creating')}
-              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+              disabled={!workspaceId}
+              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               {t('artifact_new_btn')}
@@ -1056,7 +1222,27 @@ export default function ArtifactsPage() {
 
       {/* Gallery grid */}
       <div className="flex-1 overflow-y-auto px-8 pb-8">
-        {artifacts.length === 0 ? (
+        {!workspaceId ? (
+          <div className="flex items-center justify-center h-full text-sm text-gray-500">
+            {t('artifact_select_workspace')}
+          </div>
+        ) : loadState === 'loading' ? (
+          <div className="flex items-center justify-center h-full gap-2 text-sm text-gray-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('artifact_loading')}
+          </div>
+        ) : loadState === 'error' ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <p className="text-sm font-medium text-gray-600">{t('artifact_load_failed')}</p>
+            <button
+              onClick={() => void load()}
+              className="flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              {t('artifact_retry')}
+            </button>
+          </div>
+        ) : artifacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <div className="rounded-full bg-gray-100 p-4">
               <FileText className="h-7 w-7 text-gray-400" />
@@ -1069,7 +1255,12 @@ export default function ArtifactsPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map((a) => (
-              <ArtifactCard key={a.id} artifact={a} onClick={() => setSelected(a)} />
+              <ArtifactCard
+                key={a.id}
+                artifact={a}
+                opening={openingId === a.id}
+                onClick={() => void handleOpen(a)}
+              />
             ))}
           </div>
         )}
