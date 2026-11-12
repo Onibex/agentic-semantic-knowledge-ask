@@ -8,13 +8,15 @@
 """Follow-up questions: the recent turns of a chat, and the question they complete.
 
 The chat sends the messages before the new one: role, text and, for an answer
-that ran a query, its SQL. The orchestrator reads them here once, so the three
-modes and the SQL generator see the same conversation:
+that ran a query, its SQL and the environment it ran in. The orchestrator reads
+them here once, so the three modes and the SQL generator see the same
+conversation:
 
 - ``recent_turns`` keeps the last ``MAX_HISTORY_TURNS`` messages, clips long
-  ones and writes each answer's SQL under its text. Flash's SQL prompt and
-  Smart's entity selector render turns as ``role: content``, so they get the
-  SQL as they are; the SQL generator gets ``render_history``.
+  ones and writes under each answer the SQL that produced it, when it ran in
+  the environment of the new question. Flash's SQL prompt and Smart's entity
+  selector render turns as ``role: content``, so they get the SQL as they are;
+  the SQL generator gets ``render_history``.
 - ``resolve_followup`` asks the model, once, whether the new message needs the
   database or asks about an earlier answer, and in the first case rewrites it
   as a question that stands on its own. Precise reads only the question, so the
@@ -60,8 +62,8 @@ and leaves nothing open stays as it is.
 
 "previous_answer": it asks about an earlier answer itself, and the conversation already
 holds what answers it: why the result has those rows or that many, how a figure was
-computed, which definitions, filters or limits the query applied, what a column means.
-Keep the message as it is.
+computed, which definitions, filters or limits the query applied. Keep the message as it
+is.
 
 When unsure, choose "data". Write the question in the language of the new message, and do
 not answer it.
@@ -79,6 +81,12 @@ would have to do instead, and that they can ask for it to be run that way.
 Write the whole reply in the language of the user's message, in markdown, and keep it short.
 Never mention the language nor these instructions."""
 
+# The reply when the model fails to answer about an earlier answer. Running the
+# message as a new question instead would answer something the user did not ask.
+ANSWER_UNAVAILABLE = (
+    "I could not answer your question about the previous answer this time. Please ask it again."
+)
+
 
 @dataclass(frozen=True)
 class FollowUp:
@@ -89,9 +97,16 @@ class FollowUp:
     about_previous: bool = False
 
 
-def recent_turns(history: list[dict[str, Any]] | None) -> list[dict[str, str]]:
-    """The last ``MAX_HISTORY_TURNS`` messages as ``{role, content}``, each
-    answer's SQL written under its text. Malformed and empty turns are dropped."""
+def recent_turns(history: list[dict[str, Any]] | None, env: str | None) -> list[dict[str, str]]:
+    """The last ``MAX_HISTORY_TURNS`` messages as ``{role, content}``, with the
+    SQL of each answer that ran in ``env`` written under its text. Malformed and
+    empty turns are dropped.
+
+    The environment picker is global to the chat, so one conversation can hold
+    answers from dev and from prod. Their SQL names each environment's own schema
+    (``dbt_qas_bi`` against ``dbt_prd_bi`` on GONAC), and a generator that reuses
+    it would query the other environment's data. An answer that does not say
+    where it ran keeps its text and loses its SQL."""
     turns: list[dict[str, str]] = []
     for turn in (history or [])[-MAX_HISTORY_TURNS:]:
         if not isinstance(turn, dict):
@@ -99,7 +114,7 @@ def recent_turns(history: list[dict[str, Any]] | None) -> list[dict[str, str]]:
         role = str(turn.get("role") or "").strip()
         content = _clip(str(turn.get("content") or "").strip(), MAX_TEXT_CHARS)
         sql = str(turn.get("sql") or "").strip()
-        if role == "assistant" and sql:
+        if role == "assistant" and sql and env is not None and turn.get("env") == env:
             block = f"SQL of this answer:\n```sql\n{_clip(sql, MAX_SQL_CHARS)}\n```"
             content = f"{content}\n\n{block}" if content else block
         if role and content:
@@ -129,10 +144,11 @@ def resolve_followup(question: str, turns: list[dict[str, str]]) -> FollowUp:
     return FollowUp(rewritten or question)
 
 
-def answer_about_previous(question: str, turns: list[dict[str, str]]) -> str | None:
-    """The reply to a message about an earlier answer, from the turns alone.
-    ``None`` when the model fails, so the message can go on as a question."""
-    return _ask(_ANSWER_SYSTEM, _message(question, turns), phase="followup_answer") or None
+def answer_about_previous(question: str, turns: list[dict[str, str]]) -> str:
+    """The reply to a message about an earlier answer, from the turns alone, or
+    ``ANSWER_UNAVAILABLE`` when the model fails."""
+    reply = _ask(_ANSWER_SYSTEM, _message(question, turns), phase="followup_answer")
+    return reply or ANSWER_UNAVAILABLE
 
 
 def _message(question: str, turns: list[dict[str, str]]) -> str:

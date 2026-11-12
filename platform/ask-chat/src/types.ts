@@ -7,10 +7,13 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
-import type { TokensBreakdown } from '@/api/orchestrator'
+import type { Env, TokensBreakdown } from '@/api/orchestrator'
 
 export interface MessageMeta {
   sql?: string | null
+  // Where the SQL ran. The environment picker is global, so one chat can hold
+  // answers from dev and from prod, and a follow-up reuses only the SQL of its own.
+  env?: Env
   rows?: Record<string, unknown>[] | null
   mode_used?: string
   macro_intent?: string

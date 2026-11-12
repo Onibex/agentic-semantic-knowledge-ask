@@ -153,8 +153,8 @@ questions require explicit action-oriented wording ("create", "update", "submit"
 ## 4. Follow up
 
 With every new question the agent reads the last six messages of the session (three questions
-and their answers), each answer with the SQL that produced it. A follow-up does not need to
-repeat what it builds on:
+and their answers), each answer with the SQL that produced it when that answer came from the
+environment you are asking in. A follow-up does not need to repeat what it builds on:
 
 > *"Now break that down by month."*
 > *"Run it again for sales organization 1000 only."*
@@ -166,8 +166,9 @@ above become the earlier question with the change applied. This works the same i
 `followup_rewrite`.
 
 A question about an earlier answer, like the third one, is answered from that answer and its
-SQL: the agent explains what the query did and runs nothing new. To get a different result, ask
-for the query again with the change.
+SQL: the agent explains what the query did and runs nothing new. That reply appears in the token
+breakdown as `followup_answer`. To get a different result, ask for the query again with the
+change.
 
 Messages older than the last six are not read. To come back to one, ask the full question again.
 

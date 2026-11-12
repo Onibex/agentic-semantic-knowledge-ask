@@ -20,6 +20,10 @@ import { useTranslation } from '@/hooks/useTranslation'
 // Re-export for any consumers still importing from here
 export type { ChatMessage }
 
+// The orchestrator reads the last six messages of a chat (MAX_HISTORY_TURNS in
+// ask_orchestrator/followup.py); older ones would travel for nothing.
+const HISTORY_TURNS = 6
+
 // ── Chat hook ─────────────────────────────────────────────────────────────────
 
 function useChat() {
@@ -91,10 +95,11 @@ function useChat() {
         )
 
       const isFirstMessage = chat.messages.length === 0
-      const history: ConversationTurn[] = chat.messages.map((m) => ({
+      const history: ConversationTurn[] = chat.messages.slice(-HISTORY_TURNS).map((m) => ({
         role: m.role,
         content: m.text,
         sql: m.meta?.sql ?? undefined,
+        env: m.meta?.env ?? undefined,
       }))
 
       const userId = crypto.randomUUID()
@@ -124,6 +129,7 @@ function useChat() {
         const fullText = result.answer ?? ''
         const meta: MessageMeta = {
           sql: result.sql,
+          env,
           rows: result.rows,
           mode_used: result.mode_used,
           macro_intent: result.macro_intent,

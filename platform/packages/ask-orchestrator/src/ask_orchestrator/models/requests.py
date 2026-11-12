@@ -64,10 +64,11 @@ class QueryRequest(BaseModel):
         default=None,
         description=(
             "Prior conversation turns, oldest first: ``role`` (user or assistant), "
-            "``content`` and, for an answer that ran a query, ``sql``. The last six "
-            "are read: a follow-up is rewritten from them into a question that "
-            "stands on its own, and a question about an earlier answer is answered "
-            "from them without a query."
+            "``content`` and, for an answer that ran a query, ``sql`` and the "
+            "``env`` it ran in. The last six are read, and an answer's SQL only "
+            "when it ran in this request's ``env``: a follow-up is rewritten from "
+            "them into a question that stands on its own, and a question about an "
+            "earlier answer is answered from them without a query."
         ),
     )
 

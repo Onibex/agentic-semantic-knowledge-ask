@@ -8,8 +8,10 @@
 """POST /v1/query — request flow.
 
   0. With conversation history: complete a follow-up into a question that
-     stands on its own, or answer a question about an earlier answer from the
-     history alone (``followup``; one LLM call, two when it answers).
+     stands on its own (``followup``; one LLM call). A question about an
+     earlier answer skips 1 and, past the workspace check, is answered from the
+     history alone (a second LLM call). ACTION_EXECUTION gets the message as
+     the user wrote it, never the rewrite.
   1. Classify the macro intent (LLM call).
   2. Dispatch by intent:
      - SQL_EXECUTION  → ResolveIntent → (Flash bypass OR SqlGeneration → executor)
@@ -291,31 +293,28 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
     tracker = TokenTracker(query_id=trace_id)
     set_active_tracker(tracker)
 
+    # What the user wrote. Only a write to SAP reads it after the follow-up step.
+    as_written = req
     try:
         # A follow-up is completed from the recent turns before anything reads
         # it, so the classifier, every mode and the SQL generator get the same
         # question, standing on its own, and the same turns. A question about an
-        # earlier answer is answered from those turns, without a query.
+        # earlier answer needs no classifier: past the workspace check below, it
+        # is answered from those turns, without a query.
         req, followup = _complete_followup(req, trace_id)
+        macro_intent: MacroIntent
         if followup.about_previous:
-            answer = answer_about_previous(req.question, req.conversation_history or [])
-            if answer:
-                return _with_tokens(
-                    QueryResponse(
-                        answer=answer,
-                        macro_intent="SQL_EXECUTION",
-                        mode_used=req.mode,
-                        trace_id=trace_id,
-                    ),
-                    tracker,
-                )
-
-        # Classify macro intent first so ACTION_EXECUTION can bypass the
-        # workspace scope check (it talks to MCP, not the KG).
-        with track_phase("macro_classification"):
-            macro_intent: MacroIntent = _classifier.classify(req.question)
+            macro_intent = "SQL_EXECUTION"
+        else:
+            # Classify macro intent first so ACTION_EXECUTION can bypass the
+            # workspace scope check (it talks to MCP, not the KG).
+            with track_phase("macro_classification"):
+                macro_intent = _classifier.classify(req.question)
 
         # ACTION_EXECUTION: MCP write ops — no KG lookup, no workspace scope.
+        # The action service gets the message as written, not the rewrite: it
+        # writes to SAP without asking for confirmation, so no value the model
+        # carried over from the history may reach it unseen.
         if macro_intent == "ACTION_EXECUTION":
             logger.info(
                 "query received",
@@ -330,7 +329,7 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
                 },
             )
             try:
-                return _with_tokens(_handle_action_execution(req, trace_id), tracker)
+                return _with_tokens(_handle_action_execution(as_written, trace_id), tracker)
             except Exception as exc:  # noqa: BLE001
                 logger.exception("ACTION_EXECUTION failed", extra={"trace_id": trace_id})
                 raise HTTPException(
@@ -387,7 +386,9 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
         )
 
         try:
-            if macro_intent == "SQL_EXECUTION":
+            if followup.about_previous:
+                response = _answer_from_history(req, trace_id)
+            elif macro_intent == "SQL_EXECUTION":
                 response = _handle_sql_execution(req, macro_intent, trace_id)
             elif macro_intent == "SCHEMA_QUERY":
                 # Schema-plane scope (BACKLOG A/D1): membership ∪ composed_of
@@ -429,9 +430,10 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
 
 def _complete_followup(req: QueryRequest, trace_id: str) -> tuple[QueryRequest, FollowUp]:
     """``req`` with its history cut to the recent turns (each answer with its
-    SQL) and, for a follow-up, the question rewritten to stand on its own.
-    Without history it comes back as it was, and no model is called."""
-    turns = recent_turns(req.conversation_history)
+    SQL, when it ran in ``req.env``) and, for a follow-up, the question rewritten
+    to stand on its own. Without history it comes back as it was, and no model
+    is called."""
+    turns = recent_turns(req.conversation_history, req.env)
     followup = resolve_followup(req.question, turns)
     if turns:
         rewritten = followup.question != req.question
@@ -451,6 +453,17 @@ def _complete_followup(req: QueryRequest, trace_id: str) -> tuple[QueryRequest, 
         update={"question": followup.question, "conversation_history": turns}
     )
     return completed, followup
+
+
+def _answer_from_history(req: QueryRequest, trace_id: str) -> QueryResponse:
+    """A question about an earlier answer, answered from the recent turns. No
+    query runs, not even when the model fails: the reply then says so."""
+    return QueryResponse(
+        answer=answer_about_previous(req.question, req.conversation_history or []),
+        macro_intent="SQL_EXECUTION",
+        mode_used=req.mode,
+        trace_id=trace_id,
+    )
 
 
 @router.post(
