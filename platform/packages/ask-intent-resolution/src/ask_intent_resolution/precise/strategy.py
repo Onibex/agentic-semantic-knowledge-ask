@@ -24,10 +24,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-import uuid
 from typing import Any
-
-from langgraph.checkpoint.memory import MemorySaver
 
 from ..application._helpers import _load_settings, _trace
 from ..domain.errors import StrategyExecutionError
@@ -118,7 +115,6 @@ class PreciseStrategy:
                 ir_generator=ir_generator,
                 semantic_dictionary=semantic_dict,
                 embedder=embedder,
-                checkpointer=MemorySaver(),
             )
 
             hp_cfg = cfg.get("hybrid_pipeline", {}) or {}
@@ -146,9 +142,9 @@ class PreciseStrategy:
         bundle = self._get_bundle(request.env)
         started = time.monotonic()
 
-        thread_id = f"ask-{request.session_id or uuid.uuid4().hex}"
-
         # ── Phase 1: IR + dictionary disambiguation (legacy sub-graph) ──────
+        # Stateless: nothing from an earlier turn of the chat reaches this one
+        # (see build_fase1_graph).
         try:
             phase1_state = bundle["fase1_graph"].invoke(
                 {
@@ -157,7 +153,6 @@ class PreciseStrategy:
                     "user_role_id": "assistant",
                     "user_department": None,
                 },
-                config={"configurable": {"thread_id": thread_id}},
             )
         except Exception as exc:  # noqa: BLE001
             raise StrategyExecutionError(f"precise.fase1.invoke failed: {exc}") from exc
