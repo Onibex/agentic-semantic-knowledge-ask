@@ -94,6 +94,7 @@ function useChat() {
       const history: ConversationTurn[] = chat.messages.map((m) => ({
         role: m.role,
         content: m.text,
+        sql: m.meta?.sql ?? undefined,
       }))
 
       const userId = crypto.randomUUID()

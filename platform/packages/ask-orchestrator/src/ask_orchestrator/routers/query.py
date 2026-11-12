@@ -7,6 +7,9 @@
 
 """POST /v1/query — request flow.
 
+  0. With conversation history: complete a follow-up into a question that
+     stands on its own, or answer a question about an earlier answer from the
+     history alone (``followup``; one LLM call, two when it answers).
   1. Classify the macro intent (LLM call).
   2. Dispatch by intent:
      - SQL_EXECUTION  → ResolveIntent → (Flash bypass OR SqlGeneration → executor)
@@ -43,6 +46,13 @@ from ask_sql_generation.domain.models import SqlGenerationRequest
 from ..auth.validator import TokenClaims, validate_token
 from ..classification.macro_classifier import MacroIntentClassifier
 from ..config import SettingsCache  # in-memory cache for config/settings.json
+from ..followup import (
+    FollowUp,
+    answer_about_previous,
+    recent_turns,
+    render_history,
+    resolve_followup,
+)
 from ..models.requests import QueryRequest
 from ..models.responses import Citation, ErrorResponse, MacroIntent, QueryResponse, TokensBreakdown
 from ..sql_repair import is_repairable, repair_sql
@@ -282,6 +292,24 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
     set_active_tracker(tracker)
 
     try:
+        # A follow-up is completed from the recent turns before anything reads
+        # it, so the classifier, every mode and the SQL generator get the same
+        # question, standing on its own, and the same turns. A question about an
+        # earlier answer is answered from those turns, without a query.
+        req, followup = _complete_followup(req, trace_id)
+        if followup.about_previous:
+            answer = answer_about_previous(req.question, req.conversation_history or [])
+            if answer:
+                return _with_tokens(
+                    QueryResponse(
+                        answer=answer,
+                        macro_intent="SQL_EXECUTION",
+                        mode_used=req.mode,
+                        trace_id=trace_id,
+                    ),
+                    tracker,
+                )
+
         # Classify macro intent first so ACTION_EXECUTION can bypass the
         # workspace scope check (it talks to MCP, not the KG).
         with track_phase("macro_classification"):
@@ -397,6 +425,32 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
         return _with_tokens(response, tracker)
     finally:
         clear_active_tracker()
+
+
+def _complete_followup(req: QueryRequest, trace_id: str) -> tuple[QueryRequest, FollowUp]:
+    """``req`` with its history cut to the recent turns (each answer with its
+    SQL) and, for a follow-up, the question rewritten to stand on its own.
+    Without history it comes back as it was, and no model is called."""
+    turns = recent_turns(req.conversation_history)
+    followup = resolve_followup(req.question, turns)
+    if turns:
+        rewritten = followup.question != req.question
+        logger.info(
+            "follow-up %s",
+            "about an earlier answer" if followup.about_previous else "completed",
+            extra={
+                "trace_id": trace_id,
+                "session_id": req.session_id,
+                "turns": len(turns),
+                "rewritten": rewritten,
+                # The chat shows what the user wrote; this is what was answered.
+                **({"question": followup.question} if rewritten else {}),
+            },
+        )
+    completed = req.model_copy(
+        update={"question": followup.question, "conversation_history": turns}
+    )
+    return completed, followup
 
 
 @router.post(
@@ -577,6 +631,10 @@ def _chain_sql_generation_and_executor(
         # SQL prompt so answers are framed for this customer's install. Resolved
         # once per request; previously dropped after the Smart entity selector.
         user_system_prompt=organization_context or "",
+        # The recent turns, each answer with its SQL: what a follow-up builds on,
+        # to explain a result or run its query again with changes. ``req`` comes
+        # from ``_complete_followup``, which cut them.
+        conversation_history=render_history(req.conversation_history or []),
     )
     # Generator dialect must match the SAME env we resolved db_type/db_config
     # from above — dev and prod may target different engines.

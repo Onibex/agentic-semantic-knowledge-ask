@@ -62,7 +62,13 @@ class QueryRequest(BaseModel):
     )
     conversation_history: list[dict[str, Any]] | None = Field(
         default=None,
-        description="Prior conversation turns for context.",
+        description=(
+            "Prior conversation turns, oldest first: ``role`` (user or assistant), "
+            "``content`` and, for an answer that ran a query, ``sql``. The last six "
+            "are read: a follow-up is rewritten from them into a question that "
+            "stands on its own, and a question about an earlier answer is answered "
+            "from them without a query."
+        ),
     )
 
 

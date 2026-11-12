@@ -48,9 +48,9 @@ main navigation sidebar. It lists all sessions for the currently selected worksp
 Session titles start as *"New Chat"* and are automatically renamed by the LLM after the
 first exchange, derived from the content of your opening question.
 
-> **Tip:** each session forwards its last 10 messages as context with every new question.
-> Use **New Chat** to start a clean thread rather than appending unrelated questions to an
-> existing one.
+> **Tip:** with every new question the agent reads the last six messages of the session (see
+> [Follow up](#4-follow-up)). Use **New Chat** to start a clean thread rather than appending
+> unrelated questions to an existing one.
 
 > **Warning:** If no workspace is selected, **New Chat** is disabled and an amber banner
 > appears at the top of the page. Select a workspace first (see [Scope a question](01-workspace-environment-mode.md)).
@@ -152,14 +152,24 @@ questions require explicit action-oriented wording ("create", "update", "submit"
 
 ## 4. Follow up
 
-Each session retains the previous 10 messages as context. You can ask follow-ups naturally:
+With every new question the agent reads the last six messages of the session (three questions
+and their answers), each answer with the SQL that produced it. A follow-up does not need to
+repeat what it builds on:
 
 > *"Now break that down by month."*
-> *"Filter to sales organization 1000 only."*
-> *"What does the top material sell in the EMEA region?"*
+> *"Run it again for sales organization 1000 only."*
+> *"Why does it show 7 materials and not 10?"*
 
-The agent carries the context forward. You do not need to repeat the subject of the
-original question.
+Before any mode sees it, the agent rewrites a follow-up into a complete question: the first two
+above become the earlier question with the change applied. This works the same in **Flash**,
+**Precise** and **Smart**, and the rewrite appears in the token breakdown as
+`followup_rewrite`.
+
+A question about an earlier answer, like the third one, is answered from that answer and its
+SQL: the agent explains what the query did and runs nothing new. To get a different result, ask
+for the query again with the change.
+
+Messages older than the last six are not read. To come back to one, ask the full question again.
 
 ---
 
