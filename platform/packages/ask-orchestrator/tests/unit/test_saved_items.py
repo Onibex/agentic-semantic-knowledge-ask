@@ -172,7 +172,12 @@ def _chat(workspace_id: str = "ws-1", title: str = "Sales by plant") -> dict[str
                     "id": "m-2",
                     "role": "assistant",
                     "text": f"Total: {SECRET_FIGURE}",
-                    "meta": {"sql": "SELECT 1", "rows": [{"planta": "Monterrey", "venta": 8123456.78}]},
+                    # env: a follow-up reuses only the SQL of answers from its own env.
+                    "meta": {
+                        "sql": "SELECT 1",
+                        "env": "prod",
+                        "rows": [{"planta": "Monterrey", "venta": 8123456.78}],
+                    },
                 },
             ],
         },

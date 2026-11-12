@@ -50,6 +50,10 @@ export interface QueryRequest {
 export interface ConversationTurn {
   role: 'user' | 'assistant'
   content: string
+  // The statement behind an answer, so a follow-up can explain it or run it
+  // again with changes, and the environment it ran in.
+  sql?: string | null
+  env?: Env | null
 }
 
 // Per-request token accounting produced by the orchestrator's TokenTracker
