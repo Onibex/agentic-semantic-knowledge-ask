@@ -10,7 +10,8 @@
 Deltas vs HANA/PG: identifiers are CASE-SENSITIVE (emit exact casing — do NOT
 uppercase), two-level database.table namespace, no STRING_AGG (use
 arrayStringConcat(groupArray())), today()/now()/addDays date functions,
-Decimal(P,S) numeric casts, and no FINAL modifier (rule 13).
+round() and never a Decimal cast to get two decimals (rule 6), and no FINAL
+modifier (rule 13).
 
 Deduplication and FINAL are INDEPENDENT concerns and the rules keep them apart:
 
@@ -31,8 +32,13 @@ Rules 7 (ASCII aliases), 14 and 15 come from the GONAC chat's failures on
 ClickHouse 22.1, and are stated in prose with no worked SQL: an example in a
 rules block behaves as a template the model copies (see freeform_generator.py).
 They lower how often the first statement fails; what they cannot anticipate,
-such as a column whose type differs between environments, is left to the one
-repair the orchestrator makes with the database's own error (sql_repair.py).
+such as a column whose type differs between environments, is left to the
+repairs the orchestrator makes with the database's own error (sql_repair.py).
+
+Rule 6 asked for a Decimal(18,2) cast to get two decimals, and ClickHouse casts
+truncate: in GONAC's chat of 2026-11-11 (Q04) OXXO's share came out 9.79 where it
+is 9.80, measured on 22.1.3.7. The same cast, aliased as its own column, caused
+that chat's Code 69 (Q06).
 """
 
 
@@ -57,7 +63,10 @@ STRICT_RULES = """STRICT CLICKHOUSE SQL RULES:
        the identifying key columns, so each key appears exactly once.
 5. Add LIMIT 500 by default to cap result size, UNLESS the user asks for aggregations/totals
    OR explicitly requests a specific number of rows (then use that exact count)
-6. For monetary values, cast with toDecimal64(value, 2) or CAST(value AS Decimal(18,2)).
+6. Round monetary values and percentages with round(value, 2). Never use CAST(... AS Decimal(18,2)) or
+   toDecimal64(value, 2) to get two decimals: ClickHouse drops the extra digits instead of rounding them,
+   so 9.7997 becomes 9.79 instead of 9.80. Compute a ratio or a percentage over toFloat64(...) of its
+   operands and round the result.
 7. Prefer readable snake_case aliases for all columns, spelled with ASCII letters, digits and underscores
    only: no ñ and no accented vowels, even when the question is in Spanish. ClickHouse rejects any other
    character in a name that is not quoted.

@@ -17,11 +17,61 @@ without touching the SqlExecutorService.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from ..domain.ports import ResultFormatter
 
 logger = logging.getLogger(__name__)
+
+# How much of the result the answer is written from: a size, not a row count.
+# With the first 20 rows only, 12 of the 19 answers with data in GONAC's chat of
+# 2026-11-11 had more rows than that, and all 12 told the customer that data was
+# missing, while the table under the answer had every row. At about 185
+# characters a row (GONAC's widest results), some 100 rows fit, as many as the
+# chat's table shows; that QA's longest reference result, 77 rows, takes 14,300.
+MAX_RESULT_CHARS = 20_000
+
+
+def _render_rows(columns: list[str], rows: list[tuple[Any, ...]]) -> tuple[str, int]:
+    """The rows as ``col: value | ...`` lines within ``MAX_RESULT_CHARS``, and
+    how many made it. A first row wider than the limit is cut, not dropped."""
+    lines: list[str] = []
+    used = 0
+    for row in rows:
+        line = " | ".join(f"{col}: {val}" for col, val in zip(columns, row))
+        if lines and used + len(line) > MAX_RESULT_CHARS:
+            break
+        lines.append(line[:MAX_RESULT_CHARS])
+        used += len(line) + 1
+    return "\n".join(lines), len(lines)
+
+
+def _period_block(sql: str | None) -> str:
+    """What the answer needs to name its period: the statement that produced the
+    rows, which holds the date filters, and today's date, which says whether the
+    period has closed.
+
+    Without them the answer could not tell the period at all, and a month in
+    progress read as a closed one: in GONAC's chat of 2026-11-11 (Q24), "no zone
+    reached its target" on day 9 of 21 of the month. Today's date is computed per
+    call and in UTC, as in the SQL generator's prompt (``_format_today``).
+    """
+    if not sql:
+        return ""
+    today = datetime.now(UTC).date().isoformat()
+    return f"""
+SQL THAT PRODUCED THE ROWS (read it for the period and the filters; do not quote it):
+{sql}
+
+TODAY: {today} (UTC)
+
+PERIOD: say which period the figures cover, as the SQL's date filters set it (a year, a range
+of months, one month). If the SQL filters no dates, say they cover all the data available. If
+the period reaches the current month, say it has not closed yet and the figures are to date, so
+a figure below its target is not a final result; if the rows say how far into the period it is
+(days elapsed out of the total), say that too.
+"""
 
 
 class LLMResultFormatter(ResultFormatter):
@@ -35,18 +85,29 @@ class LLMResultFormatter(ResultFormatter):
         columns: list[str],
         rows: list[tuple[Any, ...]],
         question: str,
+        sql: str | None = None,
     ) -> str:
         if not rows:
             return "No results found for your query."
-        results_text = "\n".join(
-            " | ".join(f"{col}: {val}" for col, val in zip(columns, row)) for row in rows[:20]
-        )
-        truncated_note = (
-            " — only the first 20 are shown below, so do NOT compute totals/aggregates "
-            "beyond what the data supports"
-            if len(rows) > 20
-            else ""
-        )
+        results_text, shown = _render_rows(columns, rows)
+        period = _period_block(sql)
+        if shown == len(rows):
+            results_header = f"RESULTS (all {len(rows)} rows):"
+            coverage = (
+                "Write the answer from all of these rows: when they fall into groups (a channel, a "
+                "customer, a month), say something about every group. Never say that rows or data "
+                "are missing or limited."
+            )
+        else:
+            results_header = (
+                f"RESULTS ({len(rows)} rows; only the first {shown} fit below, the rest are not "
+                f"shown to you):"
+            )
+            coverage = (
+                f"Say that your answer covers the first {shown} of the {len(rows)} rows. Do not "
+                f"compute totals, rankings or conclusions for all {len(rows)} rows from the ones "
+                f"you see, and do not say that data is missing: the result has every row."
+            )
         # The prompt used to end with "Before writing your first word, confirm: what
         # language is the USER QUESTION in?", and the model confirmed it in writing:
         # on the GONAC server 7 of 12 answers opened with "La pregunta está en
@@ -66,9 +127,12 @@ Convert these SQL query results into a clear, concise business-friendly answer.
 
 USER QUESTION: {question}
 
-RESULTS ({len(rows)} rows{truncated_note}):
+{results_header}
 {results_text}
 
+The user sees the result rows in a table under your answer, so summarize them rather
+than copying the table. {coverage}
+{period}
 Be direct and natural. Include key numbers and insights. Use markdown formatting.
 Translate every column header and label into the USER QUESTION's language.
 Start directly with the answer. Never mention the question's language, nor these
