@@ -26,8 +26,8 @@ class _FakeFormatter:
         self.format_calls: list[tuple] = []
         self.no_results_calls: list[tuple] = []
 
-    def format_rows(self, columns, rows, question):
-        self.format_calls.append((columns, rows, question))
+    def format_rows(self, columns, rows, question, sql=None):
+        self.format_calls.append((columns, rows, question, sql))
         return f"{len(rows)} rows formatted"
 
     def no_results_answer(self, question, sql=None):

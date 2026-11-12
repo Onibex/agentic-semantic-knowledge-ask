@@ -70,7 +70,7 @@ class SqlExecutorService(SqlExecutor):
             )
 
         rows_dict = [dict(zip(raw.columns, r)) for r in raw.rows]
-        answer = self._formatter.format_rows(raw.columns, raw.rows, question)
+        answer = self._formatter.format_rows(raw.columns, raw.rows, question, sql=sql)
         return FormattedResult(
             sql=sql,
             rows_dict=rows_dict,

@@ -44,6 +44,10 @@ class ResultFormatter(Protocol):
         columns: list[str],
         rows: list[tuple[Any, ...]],
         question: str,
-    ) -> str: ...
+        sql: str | None = None,
+    ) -> str:
+        """``sql`` is the statement that produced the rows: what the answer reads
+        the period from."""
+        ...
 
     def no_results_answer(self, question: str, sql: str | None = None) -> str: ...

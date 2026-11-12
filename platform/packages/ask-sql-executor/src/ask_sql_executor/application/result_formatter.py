@@ -17,6 +17,7 @@ without touching the SqlExecutorService.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from ..domain.ports import ResultFormatter
@@ -46,6 +47,33 @@ def _render_rows(columns: list[str], rows: list[tuple[Any, ...]]) -> tuple[str, 
     return "\n".join(lines), len(lines)
 
 
+def _period_block(sql: str | None) -> str:
+    """What the answer needs to name its period: the statement that produced the
+    rows, which holds the date filters, and today's date, which says whether the
+    period has closed.
+
+    Without them the answer could not tell the period at all, and a month in
+    progress read as a closed one: in GONAC's chat of 2026-11-11 (Q24), "no zone
+    reached its target" on day 9 of 21 of the month. Today's date is computed per
+    call and in UTC, as in the SQL generator's prompt (``_format_today``).
+    """
+    if not sql:
+        return ""
+    today = datetime.now(UTC).date().isoformat()
+    return f"""
+SQL THAT PRODUCED THE ROWS (read it for the period and the filters; do not quote it):
+{sql}
+
+TODAY: {today} (UTC)
+
+PERIOD: say which period the figures cover, as the SQL's date filters set it (a year, a range
+of months, one month). If the SQL filters no dates, say they cover all the data available. If
+the period reaches the current month, say it has not closed yet and the figures are to date, so
+a figure below its target is not a final result; if the rows say how far into the period it is
+(days elapsed out of the total), say that too.
+"""
+
+
 class LLMResultFormatter(ResultFormatter):
     """LLM-driven result formatter. Falls back to a plain text summary on LLM error."""
 
@@ -57,10 +85,12 @@ class LLMResultFormatter(ResultFormatter):
         columns: list[str],
         rows: list[tuple[Any, ...]],
         question: str,
+        sql: str | None = None,
     ) -> str:
         if not rows:
             return "No results found for your query."
         results_text, shown = _render_rows(columns, rows)
+        period = _period_block(sql)
         if shown == len(rows):
             results_header = f"RESULTS (all {len(rows)} rows):"
             coverage = (
@@ -102,7 +132,7 @@ USER QUESTION: {question}
 
 The user sees the result rows in a table under your answer, so summarize them rather
 than copying the table. {coverage}
-
+{period}
 Be direct and natural. Include key numbers and insights. Use markdown formatting.
 Translate every column header and label into the USER QUESTION's language.
 Start directly with the answer. Never mention the question's language, nor these
