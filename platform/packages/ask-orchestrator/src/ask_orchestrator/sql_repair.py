@@ -11,8 +11,9 @@ The SQL generators see neither the server's version nor the physical type a
 column has in each environment, so a dialect limit or a type they do not know
 surfaces only as an execution error. That error locates the problem, which a
 prompt rule can only anticipate: ``repair_sql`` gives the model the failed
-statement and the database's own error, once. A statement that fails twice
-keeps its error.
+statement, the database's own error and, when the error carries it, the
+server's version. Each call is one attempt; how many a statement gets is the
+caller's choice.
 
 The chat (``routers/query.py``) and the artifacts (``routers/artifact.py``)
 both use it.
@@ -37,14 +38,17 @@ DIALECT_NOTES: dict[str, str] = {
     "databricks": "Databricks/Spark SQL: backtick identifiers, date_add() for dates.",
     "bigquery": "BigQuery Standard SQL: backtick-quoted identifiers, DATE_ADD()/DATE_SUB().",
     # The two rules after the first sentence were measured on ClickHouse 22.1, where
-    # both broke GONAC sub-queries: an alias shadows the column it is named after, so
-    # SUM(x) AS x turns a later SUM(x) into SUM(SUM(x)) (ILLEGAL_AGGREGATION); and a
-    # window result cannot be used inside another expression of the same SELECT, not
-    # even through its alias (UNKNOWN_IDENTIFIER). The SQL each rule asks for is
-    # valid on every version, so the note does not need to know the server's.
+    # both broke GONAC statements: an alias shadows the column it is named after, so
+    # SUM(x) AS x turns a later SUM(x) into SUM(SUM(x)) (ILLEGAL_AGGREGATION) and
+    # CAST(x AS Decimal(18, 2)) AS x makes a later ratio over x divide the converted
+    # value (Code 69, the chat's Q06 of 2026-11-11); and a window result cannot be
+    # used inside another expression of the same SELECT, not even through its alias
+    # (UNKNOWN_IDENTIFIER). The SQL each rule asks for is valid on every version.
     "clickhouse": (
         "ClickHouse SQL: backtick identifiers, addDays() for dates. "
-        "Never give an aggregate the alias of a column it reads: SUM(x) AS x breaks any later SUM(x). "
+        "Never give an aggregate or a conversion the alias of a column it reads: the alias then "
+        "replaces the column in every other expression of the SELECT, so SUM(x) AS x breaks any "
+        "later SUM(x) and CAST(x AS ...) AS x makes a later x / y divide the converted value. "
         "Compute ratios or arithmetic between window functions in an outer query, "
         "not in the SELECT that defines them."
     ),
@@ -88,7 +92,43 @@ ERROR_HINTS: list[tuple[re.Pattern[str], str]] = [
         "That column is already a Date: remove the conversion function around it and use the "
         "column as it is.",
     ),
+    # The four below come from the chat's 2026-11-11 failures on GONAC's 22.1, and
+    # every fix they name was run on a ClickHouse 22.1.3.7. Code 69 names neither
+    # the expression nor the columns when an alias is the cause; NO_COMMON_TYPE
+    # names the types but not that a literal of a different Decimal fails too.
+    (
+        re.compile(r"Unknown function \w+", re.IGNORECASE),
+        "The server does not have that function: it may be newer than the server's version. "
+        "Rewrite the expression with functions that version has and keep the rest.",
+    ),
+    (
+        re.compile(r"Unknown function make(Date|DateTime)\w*", re.IGNORECASE),
+        "To match a month given as year and month numbers, compare numbers instead of building a "
+        "date: year * 100 + month = toYYYYMM(the date). When a date is needed, "
+        "toDate(concat(toString(year), '-', toString(month), '-', toString(day))) builds it.",
+    ),
+    (
+        re.compile(r"Decimal result's scale is less than argument's one", re.IGNORECASE),
+        "This server refuses a division whose dividend has a smaller Decimal scale than its "
+        "divisor, such as a Decimal(18, 2) divided by a Decimal(76, 7). The usual cause is an alias "
+        "that repeats the name of a column it converts: CAST(x AS Decimal(18, 2)) AS x replaces x "
+        "in every other expression of that SELECT, so a ratio written over x divides the converted "
+        "value. Rename such aliases (x_2d) so the ratio reads the column, or divide toFloat64(...) "
+        "values and round the result.",
+    ),
+    (
+        re.compile(r"no supertype for types [^:]*Decimal\(", re.IGNORECASE),
+        "The branches of if() or CASE must share one type, and this server finds none between the "
+        "Decimal the error names and a number literal or a Decimal of another precision or scale. "
+        "Write the literal with exactly that type, CAST(0 AS Decimal(P, S)) with the P and S of the "
+        "error, or convert the Decimal branch with toFloat64(...).",
+    ),
 ]
+
+# ClickHouse ends every server exception with "(version 22.1.3.7 (official
+# build))". The version is the one fact the error gives that the statement does
+# not: whether a function or a syntax exists at all.
+_SERVER_VERSION = re.compile(r"\(version (\d+(?:\.\d+)+)")
 
 # Failures no rewrite of the statement can fix: the server could not be reached,
 # took too long, or refused the credentials. A repair would spend a model call and
@@ -120,7 +160,9 @@ def repair_sql(failed_sql: str, error: str, db_type: str, *, phase: str) -> str 
     """Ask the LLM for ONE corrected version of a statement the database rejected.
 
     Where the error's text does not name the fix, ``ERROR_HINTS`` adds the
-    explanation. ``phase`` names the call in the request's token breakdown.
+    explanation; where it carries the server's version, the prompt states it.
+    Both are read from the whole error, which the prompt quotes cut to 800
+    characters. ``phase`` names the call in the request's token breakdown.
     Returns ``None`` when no usable, different SQL comes back.
     """
     from langchain_core.messages import HumanMessage, SystemMessage
@@ -129,8 +171,16 @@ def repair_sql(failed_sql: str, error: str, db_type: str, *, phase: str) -> str 
     from ask_llm_gateway.infrastructure.token_tracker import track_phase
 
     dialect = DIALECT_NOTES.get(db_type, f"{db_type.upper()} SQL.")
+    version = _SERVER_VERSION.search(error)
+    server = (
+        f"The server runs version {version.group(1)}: use only functions and syntax that "
+        f"version has. "
+        if version
+        else ""
+    )
     system = (
         f"You fix one {db_type.upper()} SQL statement that the database rejected. {dialect} "
+        f"{server}"
         f"Keep the same tables, columns and analytical intent; change only what the error "
         f"requires. Return ONLY the corrected SQL statement, no markdown, no explanation."
     )

@@ -6,16 +6,24 @@
 # Commercial licenses: contact@onibex.com — see LICENSE.
 
 """
-Regression tests: a chat SQL statement the database rejects gets one repair.
+Regression tests: a chat SQL statement the database rejects gets two repairs.
 
-The bug these pin
-─────────────────
+The bugs these pin
+──────────────────
 Artifacts repaired a rejected statement once (PR #90); the chat did not, so on
 ClickHouse 22.1 (GONAC) every dialect slip reached the user as "Pipeline
 error". The real errors below came from the GONAC server's log: a Spanish alias
 with an unquoted ñ, a String date compared with a Date, a conversion applied to
 a column that already is a Date. None of them names its own fix, so each gets a
 hint; an unreachable database is not sent to the model at all.
+
+Then one repair was not enough. In the chat of 2026-11-11 (Q06) it replaced
+makeDate, which 22.1 lacks, and the repaired statement failed on an alias that
+shadowed its column (Code 69, an error that names neither); the customer got
+"Pipeline error". The chat now repairs twice, and the repair prompt explains
+Code 69, if() between a literal and a Decimal (NO_COMMON_TYPE), functions the
+server lacks, and states the server's version. Every fix the hints name was run
+on a ClickHouse 22.1.3.7.
 """
 
 from __future__ import annotations
@@ -53,6 +61,43 @@ _UNREACHABLE = (
     "Failed to establish a new connection: [Errno 111] Connection refused"
 )
 
+# Q06 of the chat of 2026-11-11, from the same log (the server's URL left out):
+# the statement as generated, as the one repair left it, and as it runs on 22.1.
+_Q06_GENERATED = (
+    'SELECT "canal_distribucion", sum("facturado") AS perdida_total FROM "gold_mv_resumen" '
+    'WHERE makeDate("ejercicio", "periodo", 1) = addMonths(toStartOfMonth(today()), -4) '
+    'GROUP BY "canal_distribucion"'
+)
+_Q06_FIRST_REPAIR = (
+    'SELECT "canal_distribucion", CAST(perdida_total AS Decimal(18, 2)) AS perdida_total, '
+    "round(100 * perdida_total / nullIf(facturado_total, 0), 2) AS pct_perdida FROM (...)"
+)
+_Q06_SECOND_REPAIR = (
+    'SELECT "canal_distribucion", CAST(perdida_total AS Decimal(18, 2)) AS perdida_total_2d, '
+    "round(100 * perdida_total / nullIf(facturado_total, 0), 2) AS pct_perdida FROM (...)"
+)
+_MAKEDATE = (
+    "Received ClickHouse exception, code: 46, server response: Code: 46. DB::Exception: Unknown "
+    "function makeDate: While processing facturado, makeDate(ejercicio, periodo, 1) = "
+    "addMonths(toStartOfMonth(today()), -4). (UNKNOWN_FUNCTION) (version 22.1.3.7 (official build))"
+)
+_CODE_69 = (
+    "Received ClickHouse exception, code: 69, server response: Code: 69. DB::Exception: Decimal "
+    "result's scale is less than argument's one. (ARGUMENT_OUT_OF_BOUND) (version 22.1.3.7 "
+    "(official build))"
+)
+# Q16b (23:25): rescued by the one repair it had, with no hint.
+_DECIMAL_IF = (
+    "Received ClickHouse exception, code: 386, server response: Code: 386. DB::Exception: There is "
+    "no supertype for types UInt8, Decimal(76, 7) because some of them are numbers and some of them "
+    "are not: While processing canal_distribucion AS canal_distribucion, canal_nombre AS "
+    "canal_nombre, if(rn = 0, 0, rn) AS posicion, if(rn = 0, 'Sin perdida', cliente) AS cliente, "
+    "if(rn = 0, 'Sin perdida', producto) AS producto, CAST(if(rn = 0, 0, ventas_aa_total), "
+    "'Decimal(18, 2)') AS ventas_aa_total, CAST(if(rn = 0, 0, facturado_total), 'Decimal(18, 2)') "
+    "AS facturado_total, CAST(if(rn = 0, 0, perdida_total), 'Decimal(18, 2)') AS perdida_venta. "
+    "(NO_COMMON_TYPE) (version 22.1.3.7 (official build))"
+)
+
 
 class _Database:
     """Executor stub with the shape of ``FormattedResult``: fails the statements
@@ -86,13 +131,13 @@ class _Repairs:
 
 @pytest.fixture
 def chat(monkeypatch):
-    """Runs the SQL chain with a stub generator (always ``_GENERATED``), the
-    given database failures and repairs."""
+    """Runs the SQL chain with a stub generator (``generated``, by default
+    ``_GENERATED``), the given database failures and repairs."""
     from ask_llm_gateway.infrastructure import secrets as secrets_pkg
 
-    def _run(failures: dict[str, str], fixes: dict[str, str]):
+    def _run(failures: dict[str, str], fixes: dict[str, str], generated: str = _GENERATED):
         db, repairs = _Database(failures), _Repairs(fixes)
-        generator = SimpleNamespace(generate=lambda _req: SimpleNamespace(sql=_GENERATED, error=None, tokens_used=10))
+        generator = SimpleNamespace(generate=lambda _req: SimpleNamespace(sql=generated, error=None, tokens_used=10))
         monkeypatch.setattr(
             secrets_pkg, "resolve_db_config", lambda env=None, **_kw: ("clickhouse", {"host": "db"})
         )
@@ -127,15 +172,51 @@ def test_a_statement_that_runs_is_not_repaired(chat):
     assert response.rows == [{"n": 1}]
 
 
-def test_a_repair_that_fails_again_keeps_its_own_error_and_is_not_repaired_twice(chat):
-    second = "Code: 47. DB::Exception: Missing columns: 'ventas_aa'. (UNKNOWN_IDENTIFIER)"
-    response, db, repairs = chat({_GENERATED: _NON_ASCII, _FIXED: second}, {_GENERATED: _FIXED, _FIXED: "SELECT 3"})
+def test_q06_a_repair_that_uncovers_a_second_error_gets_a_second_repair(chat):
+    """The first repair replaced makeDate and kept the alias that shadows its
+    column; on 2026-11-11 that second error reached the customer."""
+    response, db, repairs = chat(
+        {_Q06_GENERATED: _MAKEDATE, _Q06_FIRST_REPAIR: _CODE_69},
+        {_Q06_GENERATED: _Q06_FIRST_REPAIR, _Q06_FIRST_REPAIR: _Q06_SECOND_REPAIR},
+        generated=_Q06_GENERATED,
+    )
+
+    assert db.executed == [_Q06_GENERATED, _Q06_FIRST_REPAIR, _Q06_SECOND_REPAIR]
+    # Each repair starts from the statement that failed last, with its own error.
+    assert repairs.calls == [
+        (_Q06_GENERATED, _MAKEDATE, "clickhouse", "sql_repair"),
+        (_Q06_FIRST_REPAIR, _CODE_69, "clickhouse", "sql_repair"),
+    ]
+    assert response.rows == [{"n": 1}]
+    assert response.sql == _Q06_SECOND_REPAIR
+    assert "Pipeline error" not in response.answer
+
+
+def test_after_two_repairs_the_last_error_stands(chat):
+    third = "Code: 47. DB::Exception: Missing columns: 'ventas_aa'. (UNKNOWN_IDENTIFIER)"
+    response, db, repairs = chat(
+        {_Q06_GENERATED: _MAKEDATE, _Q06_FIRST_REPAIR: _CODE_69, _Q06_SECOND_REPAIR: third},
+        {_Q06_GENERATED: _Q06_FIRST_REPAIR, _Q06_FIRST_REPAIR: _Q06_SECOND_REPAIR, _Q06_SECOND_REPAIR: "SELECT 3"},
+        generated=_Q06_GENERATED,
+    )
+
+    assert db.executed == [_Q06_GENERATED, _Q06_FIRST_REPAIR, _Q06_SECOND_REPAIR]
+    assert len(repairs.calls) == 2
+    assert response.rows is None
+    assert response.sql == _Q06_SECOND_REPAIR
+    assert "Missing columns" in response.answer
+
+
+def test_a_repair_back_to_a_statement_that_already_failed_is_not_run_again(chat):
+    response, db, repairs = chat(
+        {_GENERATED: _NON_ASCII, _FIXED: _CODE_69},
+        {_GENERATED: _FIXED, _FIXED: _GENERATED},
+    )
 
     assert db.executed == [_GENERATED, _FIXED]
-    assert len(repairs.calls) == 1
+    assert len(repairs.calls) == 2
     assert response.rows is None
-    assert response.sql == _FIXED
-    assert "Missing columns" in response.answer
+    assert "Decimal result's scale" in response.answer
 
 
 def test_without_a_usable_repair_the_original_error_stands(chat):
@@ -201,6 +282,70 @@ def test_the_chat_failures_on_22_1_come_with_their_fix(llm, error, expected_hint
     prompt = stub.messages[-1].content
     assert _GENERATED in prompt
     assert "What the error means" in prompt and expected_hint in prompt
+
+
+@pytest.mark.parametrize(
+    "error, expected_hints",
+    [
+        (_MAKEDATE, ["may be newer than the server's version", "year * 100 + month = toYYYYMM(the date)"]),
+        (_CODE_69, ["CAST(x AS Decimal(18, 2)) AS x replaces x", "Rename such aliases"]),
+        (_DECIMAL_IF, ["CAST(0 AS Decimal(P, S)) with the P and S of the error", "toFloat64(...)"]),
+    ],
+    ids=["makedate-missing-on-22-1", "code-69-alias-shadows-its-column", "if-literal-vs-decimal"],
+)
+def test_the_q06_and_q16b_failures_come_with_their_fix(llm, error, expected_hints):
+    """Code 69 names neither the expression nor the columns, and NO_COMMON_TYPE
+    does not say that a literal of another Decimal fails too."""
+    stub = llm("SELECT fixed")
+
+    sql_repair.repair_sql(_GENERATED, error, "clickhouse", phase="sql_repair")
+
+    prompt = stub.messages[-1].content
+    assert all(hint in prompt for hint in expected_hints)
+
+
+def test_a_function_other_than_makedate_gets_only_the_generic_hint(llm):
+    stub = llm("SELECT fixed")
+    error = "Code: 46. DB::Exception: Unknown function arrayFold. (UNKNOWN_FUNCTION) (version 22.1.3.7 (official build))"
+
+    sql_repair.repair_sql(_GENERATED, error, "clickhouse", phase="sql_repair")
+
+    prompt = stub.messages[-1].content
+    assert "may be newer than the server's version" in prompt
+    assert "toYYYYMM" not in prompt
+
+
+def test_the_repair_states_the_server_version_read_from_the_whole_error(llm):
+    """The prompt quotes the error cut to 800 characters, and ClickHouse puts the
+    version at the end, after the expressions it was processing: a wider SELECT
+    than Q16b's pushes it past the cut."""
+    error = _DECIMAL_IF.replace("While processing ", "While processing " + "importe_mes AS importe_mes, " * 10)
+    assert error.index("(version 22.1.3.7") > 800
+    stub = llm("SELECT fixed")
+
+    sql_repair.repair_sql(_GENERATED, error, "clickhouse", phase="sql_repair")
+
+    system = stub.messages[0].content
+    assert "The server runs version 22.1.3.7: use only functions and syntax that version has." in system
+    assert "(version 22.1.3.7" not in stub.messages[-1].content
+
+
+def test_without_a_version_in_the_error_the_repair_states_none(llm):
+    stub = llm("SELECT fixed")
+
+    sql_repair.repair_sql(_GENERATED, 'relation "ventas" does not exist', "postgresql", phase="sql_repair")
+
+    assert "The server runs version" not in stub.messages[0].content
+
+
+def test_the_clickhouse_note_forbids_a_conversion_aliased_as_its_column(llm):
+    """The note every ClickHouse repair carries spoke of aggregates only, so the
+    repair that replaced makeDate kept CAST(perdida_total ...) AS perdida_total."""
+    stub = llm("SELECT fixed")
+
+    sql_repair.repair_sql(_GENERATED, _MAKEDATE, "clickhouse", phase="sql_repair")
+
+    assert "Never give an aggregate or a conversion the alias of a column it reads" in stub.messages[0].content
 
 
 @pytest.mark.parametrize(

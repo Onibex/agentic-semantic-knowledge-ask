@@ -65,6 +65,13 @@ router = APIRouter(prefix="/v1", tags=["query"])
 
 _classifier = MacroIntentClassifier()
 
+# Repairs a rejected chat statement gets. Two, because the first fix can uncover
+# a second error: in GONAC's chat of 2026-11-11 (Q06, ClickHouse 22.1) the only
+# repair replaced makeDate, which 22.1 lacks, and the repaired statement then
+# failed on an alias that shadowed its column (Code 69). Each costs one LLM call
+# and one more round trip to the database.
+_CHAT_SQL_REPAIRS = 2
+
 
 def reset_singletons() -> list[str]:
     """Drop every cached singleton owned by this router so the next request
@@ -672,17 +679,24 @@ def _chain_sql_generation_and_executor(
 
     formatted = execute(sql_result.sql)
     # The generator sees neither the server's version nor each environment's
-    # column types; the database's error does. One repair, as for artifacts,
-    # and a statement that fails twice keeps its second error.
-    if formatted.error and is_repairable(formatted.error):
+    # column types; the database's error does. Each repair starts from the
+    # statement that failed last, so it keeps the fixes before it, and the last
+    # error stands when the repairs run out or one gives back a statement that
+    # already failed.
+    tried = {sql_result.sql.strip()}
+    for _ in range(_CHAT_SQL_REPAIRS):
+        if not (formatted.error and is_repairable(formatted.error)):
+            break
         fixed = repair_sql(formatted.sql, formatted.error, db_type, phase="sql_repair")
-        if fixed:
-            logger.info(
-                "chat SQL repaired after: %s",
-                formatted.error[:200],
-                extra={"trace_id": trace_id},
-            )
-            formatted = execute(fixed)
+        if not fixed or fixed.strip() in tried:
+            break
+        tried.add(fixed.strip())
+        logger.info(
+            "chat SQL repaired after: %s",
+            formatted.error[:200],
+            extra={"trace_id": trace_id},
+        )
+        formatted = execute(fixed)
     rows = formatted.rows_dict if formatted.error is None else None
     answer = formatted.answer
 
