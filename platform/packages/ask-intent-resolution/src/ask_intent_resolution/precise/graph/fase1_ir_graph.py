@@ -89,16 +89,20 @@ def build_fase1_graph(
     ir_generator,
     semantic_dictionary: SemanticDictionaryService | None = None,
     embedder=None,
-    checkpointer=None,
 ):
     """
     Builds the Phase 1 sub-graph: IR generation + dictionary fallback.
+
+    The graph is compiled without a checkpointer, so every invoke starts from
+    its input alone. With one keyed by chat session, LangGraph merges each new
+    input into the previous turn's state, and any key the new turn does not
+    write (``error``, ``disambiguation_message``, ``plan_ir_dict``) answers for
+    it, so one non-analytical message would fail every later question of the chat.
 
     Args:
         ir_generator:        IRGeneratorService
         semantic_dictionary: SemanticDictionaryService (hybrid search)
         embedder:            the active embedder from build_embedder (query vectors)
-        checkpointer:        shared with parent graph
     """
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -310,4 +314,4 @@ def build_fase1_graph(
     )
     sg.add_edge("insufficient_context_node", END)
 
-    return sg.compile(checkpointer=checkpointer)
+    return sg.compile()

@@ -58,7 +58,7 @@ class QueryRequest(BaseModel):
     )
     session_id: str | None = Field(
         default=None,
-        description="Conversation session identifier (used for graph thread_id).",
+        description="Conversation session identifier, recorded in the request logs.",
     )
     conversation_history: list[dict[str, Any]] | None = Field(
         default=None,
