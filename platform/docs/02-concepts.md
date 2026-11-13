@@ -203,8 +203,9 @@ Three consequences follow, and they are why answers are trustworthy:
 2. **Every relationship is a real JOIN.** Relationships are not documentation. They are the
    exact join predicates the agent is allowed to emit.
 3. **The agent maps your words to the layer; it does not go beyond it.** If a term isn't in
-   the layer (or the semantic dictionary), the agent asks for clarification rather than
-   guessing a column.
+   the layer (or the semantic dictionary), the agent says so rather than guessing a column.
+   If a question can be read in ways that return different data and the layer does not say
+   which, ASK Chat asks you once; the agent API and artifacts take a reading and state it.
 
 ```mermaid
 flowchart LR

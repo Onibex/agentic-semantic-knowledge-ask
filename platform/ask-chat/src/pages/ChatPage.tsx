@@ -24,6 +24,31 @@ export type { ChatMessage }
 // ask_orchestrator/followup.py); older ones would travel for nothing.
 const HISTORY_TURNS = 6
 
+const isClarification = (m: ChatMessage | undefined) =>
+  m?.role === 'assistant' && !!m.meta?.clarification
+
+// The last HISTORY_TURNS messages, where a clarification and the reply to it do
+// not count: they travel with the question they complete, which the orchestrator
+// rebuilds from the three, so what the user settled is not pushed out of the
+// window by the exchange that settled it.
+function recentHistory(messages: ChatMessage[]): ConversationTurn[] {
+  const picked: ChatMessage[] = []
+  let counted = 0
+  for (let i = messages.length - 1; i >= 0 && counted < HISTORY_TURNS; i--) {
+    const m = messages[i]
+    picked.unshift(m)
+    const isReply = m.role === 'user' && isClarification(messages[i - 1])
+    if (!isClarification(m) && !isReply) counted++
+  }
+  return picked.map((m) => ({
+    role: m.role,
+    content: m.text,
+    sql: m.meta?.sql ?? undefined,
+    env: m.meta?.env ?? undefined,
+    clarification: m.meta?.clarification ?? undefined,
+  }))
+}
+
 // ── Chat hook ─────────────────────────────────────────────────────────────────
 
 function useChat() {
@@ -95,12 +120,7 @@ function useChat() {
         )
 
       const isFirstMessage = chat.messages.length === 0
-      const history: ConversationTurn[] = chat.messages.slice(-HISTORY_TURNS).map((m) => ({
-        role: m.role,
-        content: m.text,
-        sql: m.meta?.sql ?? undefined,
-        env: m.meta?.env ?? undefined,
-      }))
+      const history = recentHistory(chat.messages)
 
       const userId = crypto.randomUUID()
       const assistantId = crypto.randomUUID()
@@ -136,6 +156,7 @@ function useChat() {
           trace_id: result.trace_id,
           tokens_used: result.tokens_used,
           tokens_breakdown: result.tokens_breakdown,
+          clarification: result.clarification ?? undefined,
         }
 
         // Insert empty assistant placeholder before streaming begins

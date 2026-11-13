@@ -107,7 +107,7 @@ class _Database:
         self.failures = failures
         self.executed: list[str] = []
 
-    def execute_and_format(self, request, question=""):
+    def execute_and_format(self, request, question="", assumptions=()):
         self.executed.append(request.sql)
         error = self.failures.get(request.sql)
         if error:
@@ -137,7 +137,7 @@ def chat(monkeypatch):
 
     def _run(failures: dict[str, str], fixes: dict[str, str], generated: str = _GENERATED):
         db, repairs = _Database(failures), _Repairs(fixes)
-        generator = SimpleNamespace(generate=lambda _req: SimpleNamespace(sql=generated, error=None, tokens_used=10))
+        generator = SimpleNamespace(generate=lambda _req: SimpleNamespace(sql=generated, error=None, tokens_used=10, clarification=None, assumptions=[]))
         monkeypatch.setattr(
             secrets_pkg, "resolve_db_config", lambda env=None, **_kw: ("clickhouse", {"host": "db"})
         )
@@ -145,7 +145,7 @@ def chat(monkeypatch):
         monkeypatch.setattr(query_router, "_get_sql_executor", lambda: db)
         monkeypatch.setattr(query_router, "repair_sql", repairs)
         resolution = SimpleNamespace(
-            yamls=[{"raw_yaml": "id: gold_mv_resumen"}], plan={}, edges=[], trace=SimpleNamespace(tokens_used=5)
+            yamls=[{"raw_yaml": "id: gold_mv_resumen"}], plan={}, edges=[], disambiguation=None, trace=SimpleNamespace(tokens_used=5)
         )
         req = QueryRequest(question="resumen de ventas", workspace_id="ws-1", mode="precise", env="dev")
         response = query_router._chain_sql_generation_and_executor(resolution, req, "SQL_EXECUTION", "t-1")

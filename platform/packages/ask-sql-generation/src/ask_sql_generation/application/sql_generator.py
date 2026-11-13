@@ -24,6 +24,7 @@ from typing import Any
 
 from ..domain.errors import EmptyQuestionError, NoYamlsError
 from ..domain.models import (
+    Clarification,
     ScopeAudit,
     SqlGenerationRequest,
     SqlGenerationResult,
@@ -66,6 +67,8 @@ class FreeformSqlGenerator(SqlGenerator):
             connectivity=request.connectivity or None,
             context_expansion_enabled=request.context_expansion_enabled,
             hana_schema=request.hana_schema,
+            may_ask=request.may_ask,
+            alternative_readings=request.alternative_readings or None,
         )
         return _from_legacy_dict(legacy_dict)
 
@@ -93,4 +96,10 @@ def _from_legacy_dict(d: dict[str, Any]) -> SqlGenerationResult:
         retry_count=int(d.get("retry_count", 0)),
         tokens_used=d.get("tokens_used"),
         raw_response=d.get("raw_response"),
+        clarification=(
+            Clarification(question=clar["question"], options=list(clar["options"]))
+            if isinstance(clar := d.get("clarification"), dict)
+            else None
+        ),
+        assumptions=list(d.get("assumptions") or []),
     )

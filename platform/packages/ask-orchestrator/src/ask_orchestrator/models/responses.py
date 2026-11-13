@@ -52,6 +52,23 @@ class TokensBreakdown(BaseModel):
     records: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class Clarification(BaseModel):
+    """The one question the agent asks before answering, in the chat only."""
+
+    question: str = Field(..., description="The question, in the language of the user's.")
+    options: list[str] = Field(
+        ..., description="Two to four concrete readings the user can pick, shown as a) b) c) d)."
+    )
+    about: str = Field(
+        ...,
+        description=(
+            "The question being answered when the agent asked, standing on its own. The chat "
+            "sends this object back with the turn in ``conversation_history``, and the next "
+            "message is read as the reply."
+        ),
+    )
+
+
 class QueryResponse(BaseModel):
     answer: str = Field(
         ...,
@@ -98,6 +115,21 @@ class QueryResponse(BaseModel):
         description=(
             "Per-phase token breakdown. None when the request did not "
             "execute through a TokenTracker-instrumented path."
+        ),
+    )
+    clarification: Clarification | None = Field(
+        default=None,
+        description=(
+            "Set when the agent asks before answering: ``answer`` holds the question and "
+            "its options, and nothing ran. Only the chat gets one, and never on the turn "
+            "that replies to a clarification."
+        ),
+    )
+    assumptions: list[str] | None = Field(
+        default=None,
+        description=(
+            "The readings the query took for what the question left open, in the "
+            "language of the question. ``answer`` states them."
         ),
     )
 

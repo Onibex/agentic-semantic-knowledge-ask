@@ -26,12 +26,14 @@ class _FakeFormatter:
         self.format_calls: list[tuple] = []
         self.no_results_calls: list[tuple] = []
 
-    def format_rows(self, columns, rows, question, sql=None):
+    def format_rows(self, columns, rows, question, sql=None, assumptions=()):
         self.format_calls.append((columns, rows, question, sql))
+        self.assumptions = list(assumptions)
         return f"{len(rows)} rows formatted"
 
-    def no_results_answer(self, question, sql=None):
+    def no_results_answer(self, question, sql=None, assumptions=()):
         self.no_results_calls.append((question, sql))
+        self.assumptions = list(assumptions)
         return "No data found."
 
 

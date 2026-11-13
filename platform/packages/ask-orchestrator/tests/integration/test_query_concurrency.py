@@ -73,7 +73,7 @@ def test_50_concurrent_requests_do_not_serialize(monkeypatch):
     in well under a second."""
     per_request_seconds = 0.2
 
-    def _slow_pipeline(req, user):
+    def _slow_pipeline(req, user, **_kwargs):
         time.sleep(per_request_seconds)
         return _fake_response()
 

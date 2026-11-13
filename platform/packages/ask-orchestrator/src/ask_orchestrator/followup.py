@@ -12,11 +12,13 @@ that ran a query, its SQL and the environment it ran in. The orchestrator reads
 them here once, so the three modes and the SQL generator see the same
 conversation:
 
-- ``recent_turns`` keeps the last ``MAX_HISTORY_TURNS`` messages, clips long
-  ones and writes under each answer the SQL that produced it, when it ran in
-  the environment of the new question. Flash's SQL prompt and Smart's entity
-  selector render turns as ``role: content``, so they get the SQL as they are;
-  the SQL generator gets ``render_history``.
+- ``recent_turns`` folds each clarification the chat asked, and the reply to it,
+  into the question they complete (``clarification.collapse``), keeps the last
+  ``MAX_HISTORY_TURNS`` messages, clips long ones and writes under each answer
+  the SQL that produced it, when it ran in the environment of the new question.
+  Flash's SQL prompt and Smart's entity selector render turns as
+  ``role: content``, so they get the SQL as they are; the SQL generator gets
+  ``render_history``.
 - ``resolve_followup`` asks the model, once, whether the new message needs the
   database or asks about an earlier answer, and in the first case rewrites it
   as a question that stands on its own. Precise reads only the question, so the
@@ -32,13 +34,15 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from .clarification import collapse
 from .config import SettingsCache
 
 logger = logging.getLogger(__name__)
 
 # The last three questions and their answers. A follow-up pays for them three
 # times (the rewrite, the mode, the SQL generator), and each answer's SQL already
-# carries the definitions the earlier turns settled.
+# carries the definitions the earlier turns settled. A clarification and the
+# reply to it count as the one question they complete.
 MAX_HISTORY_TURNS = 6
 # A longer message keeps its start, where an answer puts its summary.
 MAX_TEXT_CHARS = 3000
@@ -64,6 +68,9 @@ and leaves nothing open stays as it is.
 holds what answers it: why the result has those rows or that many, how a figure was
 computed, which definitions, filters or limits the query applied. Keep the message as it
 is.
+
+A message that asks for nothing from the data nor about an earlier answer (a greeting, thanks,
+a remark, an instruction or a fact for later) is "data" and stays exactly as it is.
 
 When unsure, choose "data". Write the question in the language of the new message, and do
 not answer it.
@@ -100,7 +107,9 @@ class FollowUp:
 def recent_turns(history: list[dict[str, Any]] | None, env: str | None) -> list[dict[str, str]]:
     """The last ``MAX_HISTORY_TURNS`` messages as ``{role, content}``, with the
     SQL of each answer that ran in ``env`` written under its text. Malformed and
-    empty turns are dropped.
+    empty turns are dropped. Each clarification exchange is folded into the
+    question it completes first, so it takes one place of the window, and what
+    the user settled in it stays in view as long as that question does.
 
     The environment picker is global to the chat, so one conversation can hold
     answers from dev and from prod. Their SQL names each environment's own schema
@@ -108,7 +117,7 @@ def recent_turns(history: list[dict[str, Any]] | None, env: str | None) -> list[
     it would query the other environment's data. An answer that does not say
     where it ran keeps its text and loses its SQL."""
     turns: list[dict[str, str]] = []
-    for turn in (history or [])[-MAX_HISTORY_TURNS:]:
+    for turn in collapse(history)[-MAX_HISTORY_TURNS:]:
         if not isinstance(turn, dict):
             continue
         role = str(turn.get("role") or "").strip()
@@ -134,7 +143,7 @@ def resolve_followup(question: str, turns: list[dict[str, str]]) -> FollowUp:
     if not turns:
         return FollowUp(question)
     parsed = _parse_object(
-        _ask(_REWRITE_SYSTEM, _message(question, turns), phase="followup_rewrite")
+        ask_model(_REWRITE_SYSTEM, _message(question, turns), phase="followup_rewrite")
     )
     if parsed is None:
         return FollowUp(question)
@@ -147,7 +156,7 @@ def resolve_followup(question: str, turns: list[dict[str, str]]) -> FollowUp:
 def answer_about_previous(question: str, turns: list[dict[str, str]]) -> str:
     """The reply to a message about an earlier answer, from the turns alone, or
     ``ANSWER_UNAVAILABLE`` when the model fails."""
-    reply = _ask(_ANSWER_SYSTEM, _message(question, turns), phase="followup_answer")
+    reply = ask_model(_ANSWER_SYSTEM, _message(question, turns), phase="followup_answer")
     return reply or ANSWER_UNAVAILABLE
 
 
@@ -159,7 +168,7 @@ def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit].rstrip() + " [...]"
 
 
-def _ask(system: str, user: str, *, phase: str) -> str:
+def ask_model(system: str, user: str, *, phase: str) -> str:
     """One model call, tagged ``phase`` in the token breakdown; "" on failure."""
     from langchain_core.messages import HumanMessage, SystemMessage
 

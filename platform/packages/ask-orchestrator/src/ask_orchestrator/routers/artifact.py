@@ -220,6 +220,7 @@ def _generate_document(
     sql: str | None,
     trace_id: str,
     data_error: str | None = None,
+    assumptions: list[str] | None = None,
 ) -> str:
     from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -268,12 +269,24 @@ def _generate_document(
         f"bold key metrics, keep tables aligned."
     )
 
+    # An artifact has no one to ask: where the data request left something open
+    # that changes the figures, the query took a reading, and the document says
+    # which.
+    assumed = [a for a in (assumptions or []) if a and a.strip()]
+    assumed_section = (
+        "\n\n**Assumed when retrieving the data** (state it in the document, where the "
+        "figures it affects are first given):\n" + "\n".join(f"- {a}" for a in assumed)
+        if assumed and data_parts
+        else ""
+    )
+
     user = (
         f"Generate a **{req.artifact_type}** document.\n\n"
         f"**Name:** {req.name}\n"
         f"**Purpose / audience:** {req.purpose}\n"
         f"**Data requested:** {req.data_focus}\n\n"
         f"{data_section}"
+        f"{assumed_section}"
     )
 
     try:
@@ -319,6 +332,8 @@ def create_artifact(
         sql: str | None = None
         rows: list[dict[str, Any]] = []
         data_error: str | None = None
+        # What the query took for what the data request left open.
+        assumptions: list[str] = []
 
         if req.sql_override and req.sql_override.strip():
             sql = req.sql_override.strip()
@@ -340,6 +355,7 @@ def create_artifact(
                 )
                 data_result = run_query_pipeline(data_req, user)
                 sql = data_result.sql
+                assumptions = list(getattr(data_result, "assumptions", None) or [])
                 data_error = _pipeline_failure(data_result)
                 if data_error is None:
                     rows = data_result.rows or []
@@ -448,7 +464,9 @@ def create_artifact(
 
         # ── Step 3: generate document ──────────────────────────────────────────
         datasets_dicts = [ds.model_dump() for ds in datasets]
-        content = _generate_document(req, datasets_dicts, sql, trace_id, data_error=data_error)
+        content = _generate_document(
+            req, datasets_dicts, sql, trace_id, data_error=data_error, assumptions=assumptions
+        )
 
         # ── Step 4: token summary ──────────────────────────────────────────────
         summary = tracker.summary()

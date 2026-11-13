@@ -26,9 +26,11 @@ Prompt origin:
   We add IR hints + YAML context + glossary sections on top.
 
 Output:
-  JSON with {sql, table_name, explanation, grain, is_dashboard_ready,
-  rules_applied, error} — the shape downstream formatting/execution code
-  consumes unchanged.
+  JSON with {sql, table_name, explanation, assumptions, grain,
+  is_dashboard_ready, rules_applied, error} — the shape downstream
+  formatting/execution code consumes. When the caller lets it ask (`may_ask`,
+  the chat only), it may instead return {clarification: {question, options}}:
+  one question for the user, without SQL.
 
 Token accounting:
   Calls are tagged `freeform_sql_generation` via `track_phase(...)` and captured
@@ -299,6 +301,7 @@ OPTION A — you can answer with the supplied SCHEMA:
     "table_name": "primary table used (or comma-separated list if multiple facts)",
     "sql": "SELECT ... your query here ...",
     "explanation": "brief reasoning for the chosen approach (joins, CTEs, arithmetic)",
+    "assumptions": ["each reading you chose for something the question leaves open that changes the result, one short sentence each, in the language of the USER QUESTION; [] when nothing is open"],
     "grain": "transactional|aggregated",
     "is_dashboard_ready": true|false,
     "rules_applied": ["list of key rules from the rules block you used"]
@@ -313,6 +316,57 @@ is present in the prompt):
     ]
 }
 """
+
+# Only in a prompt that may ask (``may_ask``): the chat, outside the turn that
+# answers a clarification. Every other caller gets OPTION A's ``assumptions``.
+_CLARIFICATION_FORMAT = """
+OPTION C: you ask the user first (ONLY valid when `CLARIFICATION ALLOWED` is
+present in the prompt):
+{
+    "clarification": {
+        "question": "the one question, in the language of the USER QUESTION",
+        "options": ["a concrete reading", "another concrete reading"]
+    }
+}
+"""
+
+_CLARIFICATION_RULES = """CLARIFICATION ALLOWED: instead of writing SQL you may ask the user ONE question
+(OPTION C in the response format).
+
+ASK when the question rests on a business notion whose meaning is a rule or a
+comparison (which periods are compared, which threshold counts; for example
+"stopped buying", "lost", "inactive", "new", "recurring", "declining") and none
+of these says which: the question itself, the SCHEMA (descriptions, synonyms,
+definitions) or the CONVERSATION HISTORY (an earlier question, clarification or
+query of this chat). Each reading of such a notion returns other rows, and which
+one applies is the business's decision, not yours: do not settle it with a
+reading of your own, however common it is.
+
+Do NOT ask, and write the SQL stating your reading in "assumptions", when:
+  - the open point is a period the question omits: take the natural one (the
+    current month for a monthly target, the year to date, the life of a product)
+    and say which;
+  - the open point changes the result only a little, or is presentation (order,
+    columns, rounding, labels, chart);
+  - the question, the SCHEMA or the conversation settles it: a period, filter,
+    ranking, limit or percentage base the question gives, a definition in the
+    SCHEMA, or what an earlier question, clarification or query of this chat
+    fixed.
+
+Write the question and its options in the language of the USER QUESTION. Give 2
+to 4 options, each one a concrete reading, with its periods or criteria, that could
+be run as it stands.
+"""
+
+# Appended when a reply asked the user although the prompt did not allow it, or
+# asked without concrete options: the turn must still answer.
+_ANSWER_WITHOUT_ASKING = (
+    "ASKING THE USER IS NOT AVAILABLE FOR THIS QUESTION. Reply with OPTION A: choose "
+    'the most reasonable reading of whatever is open and state it in "assumptions".'
+)
+
+# Upper bound on the readings offered: more is a menu, not a question.
+_MAX_CLARIFICATION_OPTIONS = 4
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -353,9 +407,7 @@ def _safe_json_loads(text: str) -> dict[str, Any]:
 
 # Sibling keys the SQL-generation response is known to emit. Used to anchor the
 # loose extractor below so an unescaped quote inside the SQL doesn't fool it.
-_RESPONSE_KEYS = (
-    "table_name|explanation|grain|is_dashboard_ready|columns_used|tables_used|scope_audit"
-)
+_RESPONSE_KEYS = "table_name|explanation|assumptions|grain|is_dashboard_ready|columns_used|tables_used|scope_audit"
 
 
 def _loose_extract_sql_response(text: str) -> dict[str, Any] | None:
@@ -436,6 +488,50 @@ def _format_ir_hints(ir_hints: dict[str, Any] | None) -> str:
         "deviate if the schema makes a better choice evident."
     )
     return "\n".join(lines)
+
+
+def _format_alternative_readings(readings: list[str] | None) -> str:
+    """The other readings the semantic dictionary found for the question's terms.
+
+    Upstream picked the first module's terms to resolve the SCHEMA; these are the
+    rest, so an open point between them reaches the same decision as any other:
+    ask (when allowed) or assume and say so."""
+    if not readings:
+        return ""
+    lines = [
+        "OTHER READINGS OF THE QUESTION'S TERMS (the semantic dictionary matched them in "
+        "more than one module; the SCHEMA below follows the first):"
+    ]
+    lines.extend(f"- {r}" for r in readings)
+    lines.append(
+        "If another reading would answer a different question and nothing settles which "
+        "one is meant, that is an open point."
+    )
+    return "\n".join(lines)
+
+
+def _clarification_from(result: dict[str, Any]) -> dict[str, Any] | None:
+    """The reply's clarification, normalised, when it is one the user can
+    answer: a question and at least two concrete options. ``None`` otherwise."""
+    clar = result.get("clarification")
+    if not isinstance(clar, dict):
+        return None
+    question = str(clar.get("question") or "").strip()
+    raw = clar.get("options")
+    options = [str(o).strip() for o in raw if str(o).strip()] if isinstance(raw, list) else []
+    if not question or len(options) < 2:
+        return None
+    return {"question": question, "options": options[:_MAX_CLARIFICATION_OPTIONS]}
+
+
+def _assumptions_from(result: dict[str, Any]) -> list[str]:
+    """OPTION A's ``assumptions`` as a list of non-empty sentences."""
+    raw = result.get("assumptions")
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    return [str(a).strip() for a in raw if str(a).strip()]
 
 
 def _format_yamls(yamls: list[str]) -> str:
@@ -838,6 +934,8 @@ class FreeformSQLGeneratorService:
         connectivity: dict[str, Any] | None = None,
         context_expansion_enabled: bool = False,
         hana_schema: str = "",
+        may_ask: bool = False,
+        alternative_readings: list[str] | None = None,
     ) -> dict[str, Any]:
         if not question or not question.strip():
             return {"error": "Empty question.", "sql": None}
@@ -851,23 +949,45 @@ class FreeformSQLGeneratorService:
                 "sql": None,
             }
 
-        prompt = self._build_prompt(
-            question=question.strip(),
-            ir_hints=ir_hints or {},
-            yamls=yamls,
-            glossary=glossary,
-            conversation_history=conversation_history,
-            pg_sap_rules=pg_sap_rules,
-            user_system_prompt=user_system_prompt,
-            field_enrichments=field_enrichments,
-            edges=edges,
-            resolved_paths=resolved_paths,
-            connectivity=connectivity,
-            context_expansion_enabled=context_expansion_enabled,
-            hana_schema=hana_schema,
-        )
+        def build(*, may_ask: bool) -> str:
+            return self._build_prompt(
+                question=question.strip(),
+                ir_hints=ir_hints or {},
+                yamls=yamls,
+                glossary=glossary,
+                conversation_history=conversation_history,
+                pg_sap_rules=pg_sap_rules,
+                user_system_prompt=user_system_prompt,
+                field_enrichments=field_enrichments,
+                edges=edges,
+                resolved_paths=resolved_paths,
+                connectivity=connectivity,
+                context_expansion_enabled=context_expansion_enabled,
+                hana_schema=hana_schema,
+                may_ask=may_ask,
+                alternative_readings=alternative_readings,
+            )
 
+        prompt = build(may_ask=may_ask)
         result = self._invoke_and_parse(prompt)
+
+        # ── Clarification (OPTION C) ────────────────────────────────────────
+        # A question the user can answer goes back as it is, without SQL. One
+        # the prompt did not allow, or one without concrete options, gets one
+        # more call that may not ask: the turn answers and states what it
+        # assumed. So the turn that answers a clarification never asks again.
+        if "clarification" in result:
+            clarification = _clarification_from(result)
+            if may_ask and clarification is not None:
+                return {"sql": None, "error": None, "clarification": clarification}
+            logger.info(
+                "freeform SQL: clarification %s; answering without asking",
+                "not allowed" if not may_ask else "without concrete options",
+            )
+            prompt = build(may_ask=False)
+            result = self._invoke_and_parse(prompt + "\n\n" + _ANSWER_WITHOUT_ASKING)
+            if result.pop("clarification", None) is not None and not result.get("sql"):
+                result["error"] = "The model asked the user where asking is not available."
 
         # ── Scope validation + retry (Plan v1 #3) ───────────────────────────
         # Reject hallucinated tables (bronze lineage names, sibling-YAML tables,
@@ -1159,10 +1279,16 @@ class FreeformSQLGeneratorService:
         result.setdefault("grain", "")
         result.setdefault("is_dashboard_ready", False)
         result.setdefault("rules_applied", [])
+        result["assumptions"] = _assumptions_from(result)
 
         # Missing SQL is only an error when the LLM DID NOT intentionally
-        # request more context. The 2-pass expansion flow relies on this.
-        if not result.get("sql") and not result.get("need_more_context"):
+        # request more context or ask the user first. The 2-pass expansion flow
+        # and the clarification step in `generate` rely on this.
+        if (
+            not result.get("sql")
+            and not result.get("need_more_context")
+            and "clarification" not in result
+        ):
             result["error"] = result.get("error") or "LLM returned no SQL."
 
         return result
@@ -1185,7 +1311,10 @@ class FreeformSQLGeneratorService:
         connectivity: dict[str, Any] | None = None,
         context_expansion_enabled: bool = False,
         hana_schema: str = "",
+        may_ask: bool = False,
+        alternative_readings: list[str] | None = None,
     ) -> str:
+        readings_block = _format_alternative_readings(alternative_readings)
         history_block = (
             f"CONVERSATION HISTORY (use this to resolve follow-up questions):\n"
             f"{conversation_history}\n\n---\n\n"
@@ -1226,6 +1355,7 @@ class FreeformSQLGeneratorService:
             + f"USER QUESTION:\n{question}\n\n"
             + _format_ir_hints(ir_hints)
             + "\n\n"
+            + (readings_block + "\n\n" if readings_block else "")
             + _format_glossary(glossary)
             + "\n\n"
             + _format_field_enrichments(field_enrichments)
@@ -1262,5 +1392,7 @@ class FreeformSQLGeneratorService:
             + schema_prefix_block
             + rules_block
             + "\n"
+            + (_CLARIFICATION_RULES + "\n" if may_ask else "")
             + _RESPONSE_FORMAT
+            + (_CLARIFICATION_FORMAT if may_ask else "")
         )

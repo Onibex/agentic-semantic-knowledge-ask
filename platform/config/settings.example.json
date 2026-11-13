@@ -5,5 +5,8 @@
     "expand_max_total": 5,
     "use_two_pass_flow": true,
     "max_expansion_rounds": 1
+  },
+  "chat": {
+    "ask_for_clarification": true
   }
 }

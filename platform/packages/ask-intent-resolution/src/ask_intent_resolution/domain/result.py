@@ -30,11 +30,21 @@ DisambiguationLevel = Literal["L0", "L1", "L2", "L3"]
 
 @dataclass(frozen=True)
 class Disambiguation:
-    """A user-facing disambiguation prompt that pauses the pipeline.
+    """What the semantic dictionary made of a question it had to look up.
 
-    Iter 2 keeps the legacy "exit with message" semantics (per ADR-014 — no
-    HiTL). When `message` is non-empty, the strategy short-circuits before
-    SQL generation.
+    No strategy writes text for the user here, and only the SQL generator
+    decides whether to ask: in the chat it may ask the user one question and
+    answer with the reply (human in the loop, a plain chat message, no state
+    kept on the server); everywhere else it picks a reading and the answer says
+    so. This supersedes ADR-014 ("exit with a message", no HiTL).
+
+      - L2: the terms matched several modules. The plan follows the top one and
+        the pipeline goes on; `options` are the other readings
+        ("MODULE: label, label"), handed to the SQL generator to weigh.
+      - L3: nothing in the message maps to the semantic layer. The turn stops
+        before SQL generation and the orchestrator answers in the user's
+        language.
+    `message` is kept empty.
     """
 
     level: DisambiguationLevel
@@ -72,7 +82,8 @@ class IntentResolutionResult:
       - plan: serialized SemanticPlanIR (v1) or SemanticPlanIRv2 (v2)
       - yamls: resolved entities with raw_yaml
       - edges: JOIN edges, dialect-agnostic
-      - disambiguation: short-circuit signal (L0-L3 from the dictionary)
+      - disambiguation: what the dictionary made of the question (see
+        Disambiguation: L2 goes on with other readings, L3 stops the turn)
       - error: non-fatal failure surfaced to the caller
       - trace: observability
 

@@ -49,6 +49,7 @@ import pytest
 from fastapi import HTTPException
 
 from ask_orchestrator import followup, organization_context, workspace_context, workspace_scope
+from ask_orchestrator.classification.macro_classifier import Classification
 from ask_orchestrator.models.requests import QueryRequest
 from ask_orchestrator.routers import query as query_router
 
@@ -355,13 +356,15 @@ def pipeline(monkeypatch, model):
 
         def _classify(q):
             seen.classified.append(q)
-            return intent
+            return Classification(intent)
 
         def _generate(request):
             seen.generations.append(request)
-            return SimpleNamespace(sql="SELECT 2", error=None, tokens_used=1)
+            return SimpleNamespace(
+                sql="SELECT 2", error=None, tokens_used=1, clarification=None, assumptions=[]
+            )
 
-        def _execute(request, question=""):
+        def _execute(request, question="", assumptions=()):
             seen.formatted.append(question)
             return SimpleNamespace(
                 sql=request.sql, rows_dict=[{"n": 2}], answer="Respuesta.", error=None

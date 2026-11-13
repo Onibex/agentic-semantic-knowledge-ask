@@ -17,6 +17,7 @@ Replaces:
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 
 from ..domain.errors import UnsupportedDbTypeError
 from ..domain.models import ExecutionRequest, ExecutionResult, FormattedResult
@@ -46,7 +47,13 @@ class SqlExecutorService(SqlExecutor):
             )
         return adapter(request)
 
-    def execute_and_format(self, request: ExecutionRequest, *, question: str) -> FormattedResult:
+    def execute_and_format(
+        self,
+        request: ExecutionRequest,
+        *,
+        question: str,
+        assumptions: Sequence[str] = (),
+    ) -> FormattedResult:
         raw = self.execute(request)
         # The statement that produced the rows, which is not always the one we
         # sent: see ExecutionResult.executed_sql.
@@ -64,13 +71,15 @@ class SqlExecutorService(SqlExecutor):
             return FormattedResult(
                 sql=sql,
                 rows_dict=[],
-                answer=self._formatter.no_results_answer(question, sql),
+                answer=self._formatter.no_results_answer(question, sql, assumptions),
                 error=None,
                 row_count=0,
             )
 
         rows_dict = [dict(zip(raw.columns, r)) for r in raw.rows]
-        answer = self._formatter.format_rows(raw.columns, raw.rows, question, sql=sql)
+        answer = self._formatter.format_rows(
+            raw.columns, raw.rows, question, sql=sql, assumptions=assumptions
+        )
         return FormattedResult(
             sql=sql,
             rows_dict=rows_dict,

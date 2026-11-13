@@ -116,6 +116,35 @@ Manual procedure, run after deploying the orchestrator + ASK Chat:
   - `kubectl exec deployment/ask-chat -- wget -qO- http://ask-orchestrator-service/v1/health`
   - Network policies between pods.
 
+### 6. Turn off clarifications in the chat
+
+Use this when the chat asks before answering where it should not, and it has to answer straight
+away while the cause is looked at.
+
+Docker Compose:
+
+1. On the server, open `config/settings.json` (the folder is mounted into the orchestrator at
+   `/app/config`).
+2. Set this key at the top level of the file:
+   `"chat": {"ask_for_clarification": false}`
+3. Restart the orchestrator: `docker compose restart ask-orchestrator`
+4. Ask a question that used to get a clarification. The answer now comes straight away and
+   states the reading it took.
+
+Kubernetes:
+
+1. Set the same key in `settings.json` of the `ask-config` ConfigMap.
+2. Restart the orchestrator: `kubectl rollout restart deployment/ask-orchestrator -n onibex-ask`
+3. Check as in step 4 above.
+
+To turn asking back on, set the key to `true` or remove it: asking is on when the key is absent.
+
+Why it works this way: the orchestrator reads `settings.json` once and keeps it in memory, so it
+needs a restart (or `POST /v1/internal/reload` with a service token) to read the file again;
+nothing is rebuilt or redeployed. In Kubernetes the file is mounted with `subPath`, which a
+running pod never refreshes, so the pod has to restart. The switch only stops the chat from
+asking: replies to greetings and similar messages, and the agent API, are not affected.
+
 ---
 
 ## Useful commands

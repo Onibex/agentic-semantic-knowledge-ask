@@ -15,8 +15,10 @@ disambiguation) via the legacy fase1_ir_graph sub-graph and runs Phases
 against the legacy services. It STOPS before SQL generation. The
 orchestrator chains SqlGenerationService afterwards.
 
-The disambiguation behavior is preserved bit-for-bit because we still use
-the legacy fase1 sub-graph instead of re-implementing it.
+Of the dictionary levels, only L3 ends the turn here, with no text: the
+orchestrator answers it in the user's language. L2 goes on with the top
+module's terms and hands the other readings to the SQL generator, which is
+the one place that decides whether to ask the user.
 """
 
 from __future__ import annotations
@@ -157,18 +159,17 @@ class PreciseStrategy:
         except Exception as exc:  # noqa: BLE001
             raise StrategyExecutionError(f"precise.fase1.invoke failed: {exc}") from exc
 
-        disambig_msg = phase1_state.get("disambiguation_message")
-        if disambig_msg:
+        # Nothing in the message maps to the semantic layer, or the IR judged it
+        # not analytical: no plan to build on. The orchestrator answers it in
+        # the user's language; nothing here writes text for the user.
+        if phase1_state.get("unrelated"):
             return IntentResolutionResult(
-                plan=phase1_state.get("plan_ir_dict") or {},
+                plan={},
                 yamls=[],
                 edges=[],
-                disambiguation=Disambiguation(level="L2", message=disambig_msg),
+                disambiguation=Disambiguation(level="L3", message=""),
                 error=None,
                 trace=_trace(started, "precise"),
-                sql=None,
-                rows=None,
-                answer=disambig_msg,
             )
 
         plan_dict = phase1_state.get("plan_ir_dict")
@@ -181,10 +182,16 @@ class PreciseStrategy:
                 disambiguation=None,
                 error=err or "phase1 produced no plan_ir_dict",
                 trace=_trace(started, "precise"),
-                sql=None,
-                rows=None,
-                answer=phase1_state.get("response") or f"Phase 1 error: {err}",
             )
+
+        # Level 2: the terms matched several modules. The plan follows the top
+        # one and the rest go on as readings for the SQL generator to weigh; the
+        # turn is not cut here, so it cannot ask again on a question the user
+        # already clarified.
+        alternatives = list(phase1_state.get("alternative_readings") or [])
+        readings = (
+            Disambiguation(level="L2", message="", options=alternatives) if alternatives else None
+        )
 
         plan_ir = SemanticPlanIR(**plan_dict)
 
@@ -225,7 +232,7 @@ class PreciseStrategy:
             plan=plan_dict,
             yamls=expanded,
             edges=edges_dict,
-            disambiguation=None,
+            disambiguation=readings,
             error=None,
             trace=_trace(
                 started, "precise", notes=f"anchors={len(anchors)} expanded={len(expanded)}"

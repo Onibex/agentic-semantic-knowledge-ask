@@ -17,6 +17,7 @@ without touching the SqlExecutorService.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -74,6 +75,20 @@ a figure below its target is not a final result; if the rows say how far into th
 """
 
 
+def _assumptions_block(assumptions: Sequence[str]) -> str:
+    """What the query assumed about what the question left open: the generator
+    chose a reading instead of asking, and the reader must know which."""
+    items = [a.strip() for a in assumptions if a and a.strip()]
+    if not items:
+        return ""
+    listed = "\n".join(f"- {a}" for a in items)
+    return f"""
+ASSUMED: the question left this open and the query took the reading below. Say it in one
+short sentence in the answer, so the reader knows which reading the figures follow:
+{listed}
+"""
+
+
 class LLMResultFormatter(ResultFormatter):
     """LLM-driven result formatter. Falls back to a plain text summary on LLM error."""
 
@@ -86,11 +101,13 @@ class LLMResultFormatter(ResultFormatter):
         rows: list[tuple[Any, ...]],
         question: str,
         sql: str | None = None,
+        assumptions: Sequence[str] = (),
     ) -> str:
         if not rows:
             return "No results found for your query."
         results_text, shown = _render_rows(columns, rows)
         period = _period_block(sql)
+        assumed = _assumptions_block(assumptions)
         if shown == len(rows):
             results_header = f"RESULTS (all {len(rows)} rows):"
             coverage = (
@@ -132,7 +149,7 @@ USER QUESTION: {question}
 
 The user sees the result rows in a table under your answer, so summarize them rather
 than copying the table. {coverage}
-{period}
+{period}{assumed}
 Be direct and natural. Include key numbers and insights. Use markdown formatting.
 Translate every column header and label into the USER QUESTION's language.
 Start directly with the answer. Never mention the question's language, nor these
@@ -143,8 +160,11 @@ instructions: the reader only sees the answer.
         except Exception:  # noqa: BLE001 — best-effort formatter
             return f"Found {len(rows)} result(s).\n\n" + results_text
 
-    def no_results_answer(self, question: str, sql: str | None = None) -> str:
+    def no_results_answer(
+        self, question: str, sql: str | None = None, assumptions: Sequence[str] = ()
+    ) -> str:
         sql_note = f"\n\nThe SQL query that was executed:\n```sql\n{sql}\n```" if sql else ""
+        assumed = _assumptions_block(assumptions)
         prompt = (
             "LANGUAGE — THIS RULE OVERRIDES EVERYTHING ELSE AND MUST BE OBEYED: reply in the "
             "SAME language as the user's question (Spanish → Spanish, Portuguese → Portuguese, "
@@ -152,7 +172,8 @@ instructions: the reader only sees the answer.
             "If the question is fewer than 4 words or has no clear language, default to English. "
             "Never mention the question's language, nor these instructions, in the reply.\n\n"
             f"The user asked: {question}\n\n"
-            f"A SQL query was executed against the SAP data and returned 0 rows.{sql_note}\n\n"
+            f"A SQL query was executed against the SAP data and returned 0 rows.{sql_note}\n"
+            f"{assumed}\n"
             "Write a short, business-friendly response (2-3 sentences) explaining that no data was found "
             "for the requested criteria. Suggest possible reasons (e.g. the filters may not match existing records, "
             "the date range may have no activity, or the entity may not exist in the system). "
