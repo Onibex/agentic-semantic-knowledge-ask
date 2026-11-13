@@ -16,7 +16,12 @@ data had more than 20 rows, and all 12 told the customer that data was missing
 ("¿por qué me lo limitas a 29 registros?"), or drew conclusions from the first
 20 rows only (Q05 named the wrong customer as the largest loss), while the table
 under the answer had every row. The rows below have the width of that chat's
-results: about 185 characters each.
+results.
+
+Then the size limit itself was spent on column names. Each row repeated them
+(``col: value | ...``), so in the QA run of 2026-11-12, Q06 and Q10 returned 83
+rows of 9 columns, only 74 and 72 fit, and both answers left out the last
+channel of the result. The names now go once, in a header line.
 """
 
 from __future__ import annotations
@@ -72,7 +77,7 @@ def test_a_29_row_result_reaches_the_model_whole():
 
     prompt = _prompt_for(rows)
 
-    assert all(f"cliente: CLIENTE NUMERO {i:03d} S DE RL" in prompt for i in range(29))
+    assert all(f"CLIENTE NUMERO {i:03d} S DE RL" in prompt for i in range(29))
     assert "RESULTS (all 29 rows):" in prompt
     assert "only the first" not in prompt
     assert "Never say that rows or data are missing" in prompt
@@ -84,7 +89,7 @@ def test_the_longest_reference_result_of_the_qa_fits_whole():
 
     prompt = _prompt_for(rows)
 
-    assert f"cliente: CLIENTE NUMERO {76:03d} S DE RL" in prompt
+    assert f"CLIENTE NUMERO {76:03d} S DE RL" in prompt
     assert "RESULTS (all 77 rows):" in prompt
 
 
@@ -101,10 +106,10 @@ def test_a_result_larger_than_the_limit_is_cut_by_size_and_the_model_is_told():
 
     prompt = _prompt_for(rows)
 
-    assert 50 < shown < 500  # by size: about 100 rows of this width
+    assert 50 < shown < 500  # by size: about 190 rows of this width
     assert len(text) <= MAX_RESULT_CHARS
-    assert f"cliente: CLIENTE NUMERO {shown - 1:03d} S DE RL" in prompt
-    assert f"cliente: CLIENTE NUMERO {shown:03d} S DE RL" not in prompt
+    assert f"CLIENTE NUMERO {shown - 1:03d} S DE RL" in prompt
+    assert f"CLIENTE NUMERO {shown:03d} S DE RL" not in prompt
     assert f"RESULTS (500 rows; only the first {shown} fit below" in prompt
     assert f"covers the first {shown} of the 500 rows" in prompt
     assert "do not say that data is missing" in prompt
@@ -115,7 +120,7 @@ def test_a_single_row_wider_than_the_limit_is_cut_not_dropped():
     text, shown = _render_rows(["notas"], rows)
 
     assert shown == 1
-    assert text.startswith("notas: xxx")
+    assert text.startswith("notas\nxxx")
     assert len(text) == MAX_RESULT_CHARS
 
 
@@ -127,4 +132,87 @@ def test_without_the_model_the_rows_it_would_have_seen_are_returned():
     answer = LLMResultFormatter(llm=_BoomLLM()).format_rows(_COLUMNS, [_row(i) for i in range(29)], "x")
 
     assert answer.startswith("Found 29 result(s).")
-    assert f"cliente: CLIENTE NUMERO {28:03d} S DE RL" in answer
+    assert " | ".join(_COLUMNS) in answer
+    assert f"CLIENTE NUMERO {28:03d} S DE RL" in answer
+
+
+# ── The column names go once, in a header ────────────────────────────────────
+
+# Invented, with the shape of Q06 in the QA run of 2026-11-12: 9 columns with
+# names and values as long as that result's, 83 rows ordered by channel in groups
+# of 55, 14, 13 and 1. With the names repeated on every row they need about 270
+# characters a row, and the last rows, the last channel among them, did not fit.
+_Q06_COLUMNS = [
+    "canal_codigo",
+    "canal_nombre",
+    "producto",
+    "mes",
+    "clientes_que_dejaron_de_comprar",
+    "venta_mes_ant",
+    "perdida_venta_productos_mes",
+    "facturado_mes_previo",
+    "pct_perdida_del_mes",
+]
+
+
+def _q06_rows() -> list[tuple]:
+    rows = []
+    for channel, count in (("01", 55), ("02", 14), ("03", 13), ("04", 1)):
+        for i in range(count):
+            rows.append(
+                (
+                    channel,
+                    f"Canal {channel}",
+                    f"PRODUCTO DE PRUEBA NUMERO {len(rows):03d} BOLSA 90G",
+                    202608 + i % 3,
+                    i % 9 + 1,
+                    12345.67 + i,
+                    123456.78 + i,
+                    23456.78 + i,
+                    1.23,
+                )
+            )
+    return rows
+
+
+def test_q06_all_83_rows_of_9_columns_fit_and_every_channel_reaches_the_model():
+    rows = _q06_rows()
+    repeated_names = sum(
+        len(" | ".join(f"{col}: {val}" for col, val in zip(_Q06_COLUMNS, row))) + 1 for row in rows
+    )
+    assert repeated_names > MAX_RESULT_CHARS  # the layout that dropped the last channel
+
+    llm = _CapturingLLM()
+    LLMResultFormatter(llm=llm).format_rows(_Q06_COLUMNS, rows, "productos que dejaron de comprar")
+    text, shown = _render_rows(_Q06_COLUMNS, rows)
+
+    assert shown == 83
+    assert len(text) < MAX_RESULT_CHARS / 2
+    assert "RESULTS (all 83 rows):" in llm.prompts[0]
+    assert "04 | Canal 04 | PRODUCTO DE PRUEBA NUMERO 082 BOLSA 90G" in llm.prompts[0]
+
+
+def test_the_column_names_go_once_in_a_header_and_each_row_carries_only_values():
+    prompt = _prompt_for([_row(i) for i in range(3)])
+
+    assert prompt.count("venta_perdida") == 1
+    lines = prompt.splitlines()
+    header = lines.index(" | ".join(_COLUMNS))
+    assert lines[header + 1] == " | ".join(str(val) for val in _row(0))
+    assert lines[header + 1].startswith("01 | 1 | CLIENTE NUMERO 000 S DE RL | ")
+    assert "The first line names the columns; each line after it is one row" in prompt
+
+
+def test_a_separator_inside_a_value_or_a_name_is_escaped():
+    """A "|" would add a value to its row, and a line break a row to the result."""
+    columns = ["nombre | alias", "nota"]
+    rows = [("ACME | NORTE", "linea uno\nlinea dos"), ("BETA", "una\r\nmas")]
+
+    text, shown = _render_rows(columns, rows)
+
+    lines = text.split("\n")
+    assert shown == 2 and len(lines) == 3
+    assert all(len(line.split(" | ")) == 2 for line in lines)
+    assert lines[0] == "nombre \\| alias | nota"
+    assert lines[1] == "ACME \\| NORTE | linea uno\\nlinea dos"
+    assert lines[2] == "BETA | una\\nmas"

@@ -187,7 +187,7 @@ def test_llm_formatter_invokes_llm_for_format_rows():
     answer = formatter.format_rows(["plant", "qty"], [("1000", 42)], "how many?")
     assert answer == "summary"
     assert "USER QUESTION: how many?" in llm.calls[0]
-    assert "plant: 1000" in llm.calls[0]
+    assert "plant | qty\n1000 | 42" in llm.calls[0]
 
 
 def test_llm_formatter_answers_in_the_question_language_without_saying_so():

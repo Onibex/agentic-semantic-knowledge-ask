@@ -27,24 +27,47 @@ logger = logging.getLogger(__name__)
 # How much of the result the answer is written from: a size, not a row count.
 # With the first 20 rows only, 12 of the 19 answers with data in GONAC's chat of
 # 2026-11-11 had more rows than that, and all 12 told the customer that data was
-# missing, while the table under the answer had every row. At about 185
-# characters a row (GONAC's widest results), some 100 rows fit, as many as the
-# chat's table shows; that QA's longest reference result, 77 rows, takes 14,300.
+# missing, while the table under the answer had every row. With the column names
+# once, in a header, GONAC's widest results take about 105 characters a row, so
+# some 190 rows fit: the 83 rows of 9 columns of Q06 in the QA run of 2026-11-12
+# take 8,835.
 MAX_RESULT_CHARS = 20_000
 
 
+_SEPARATOR = " | "
+_LAYOUT = (
+    'The first line names the columns; each line after it is one row, with its values in that '
+    'order, separated by " | ". A "|" inside a value is written \\| and a line break \\n.'
+)
+
+
+def _cell(value: Any) -> str:
+    """A column name or a value on one line, with the two separators escaped: a
+    "|" inside it as \\| and a line break as \\n, so each line is one row and
+    each " | " splits two values."""
+    text = str(value).replace("|", "\\|")
+    return text.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n")
+
+
 def _render_rows(columns: list[str], rows: list[tuple[Any, ...]]) -> tuple[str, int]:
-    """The rows as ``col: value | ...`` lines within ``MAX_RESULT_CHARS``, and
-    how many made it. A first row wider than the limit is cut, not dropped."""
-    lines: list[str] = []
-    used = 0
+    """The result as a header line with the column names and one line of values
+    per row, within ``MAX_RESULT_CHARS``, and how many rows made it. A first row
+    that does not fit is cut, not dropped.
+
+    Each row used to repeat every column name (``col: value | ...``): in the QA
+    run of 2026-11-12, Q06 returned 83 rows of 9 columns, 74 fit, and the answer
+    left out a whole channel, the last in the result's order.
+    """
+    header = _SEPARATOR.join(_cell(col) for col in columns)
+    lines = [header]
+    used = len(header)
     for row in rows:
-        line = " | ".join(f"{col}: {val}" for col, val in zip(columns, row))
-        if lines and used + len(line) > MAX_RESULT_CHARS:
+        line = _SEPARATOR.join(_cell(val) for val in row)
+        if len(lines) > 1 and used + 1 + len(line) > MAX_RESULT_CHARS:
             break
-        lines.append(line[:MAX_RESULT_CHARS])
-        used += len(line) + 1
-    return "\n".join(lines), len(lines)
+        lines.append(line[: max(MAX_RESULT_CHARS - used - 1, 0)])
+        used += 1 + len(lines[-1])
+    return "\n".join(lines), len(lines) - 1
 
 
 def _period_block(sql: str | None) -> str:
@@ -128,6 +151,7 @@ Convert these SQL query results into a clear, concise business-friendly answer.
 USER QUESTION: {question}
 
 {results_header}
+{_LAYOUT}
 {results_text}
 
 The user sees the result rows in a table under your answer, so summarize them rather
