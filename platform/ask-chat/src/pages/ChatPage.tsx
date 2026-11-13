@@ -46,6 +46,7 @@ function recentHistory(messages: ChatMessage[]): ConversationTurn[] {
     sql: m.meta?.sql ?? undefined,
     env: m.meta?.env ?? undefined,
     clarification: m.meta?.clarification ?? undefined,
+    result_facts: m.meta?.result_facts ?? undefined,
   }))
 }
 
@@ -157,6 +158,7 @@ function useChat() {
           tokens_used: result.tokens_used,
           tokens_breakdown: result.tokens_breakdown,
           clarification: result.clarification ?? undefined,
+          result_facts: result.result_facts ?? undefined,
         }
 
         // Insert empty assistant placeholder before streaming begins

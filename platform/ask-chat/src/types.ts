@@ -25,6 +25,10 @@ export interface MessageMeta {
   // Set when the agent asked before answering. Sent back with this message in
   // the history, so the next message is read as the reply.
   clarification?: Clarification | null
+  // Facts the orchestrator computed from every row of the result. Never shown:
+  // sent back with this message in the history, so a follow-up is checked
+  // against the whole result and not only against the answer's text.
+  result_facts?: string | null
 }
 
 export interface ChatMessage {

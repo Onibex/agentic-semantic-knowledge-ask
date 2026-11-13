@@ -212,10 +212,12 @@ above become the earlier question with the change applied. This works the same i
 **Precise** and **Smart**, and the rewrite appears in the token breakdown as
 `followup_rewrite`.
 
-A question about an earlier answer, like the third one, is answered from that answer and its
-SQL: the agent explains what the query did and runs nothing new. That reply appears in the token
-breakdown as `followup_answer`. To get a different result, ask for the query again with the
-change.
+A question about an earlier answer, like the third one, is answered from that answer, its result
+and its SQL: the agent explains what the query did and runs nothing new. If your question takes
+for granted a figure the result does not show, such as a number of rows or customers, the reply
+corrects it first; what the answer did not cover, the agent does not guess, and offers to run it
+instead. That reply appears in the token breakdown as `followup_answer`. To get a different
+result, ask for the query again with the change.
 
 Messages older than the last six are not read. To come back to one, ask the full question again.
 

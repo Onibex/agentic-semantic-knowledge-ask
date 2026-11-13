@@ -132,6 +132,17 @@ class QueryResponse(BaseModel):
             "language of the question. ``answer`` states them."
         ),
     )
+    result_facts: str | None = Field(
+        default=None,
+        description=(
+            "Facts computed in code from every row of the result: the row count and "
+            "whether the query's LIMIT was reached, the columns, and, by the column the "
+            "rows group on, each group's rows, distinct values and totals; then the "
+            "``assumptions``. Not for display: the chat sends it back with the turn in "
+            "``conversation_history``, so a follow-up is checked against the whole "
+            "result and not only against the answer's text."
+        ),
+    )
 
 
 class ArtifactDataset(BaseModel):
