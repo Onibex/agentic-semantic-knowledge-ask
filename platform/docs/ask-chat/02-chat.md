@@ -26,7 +26,10 @@
   words to the governed semantic layer; you never need to know table or column names.
 - The agent classifies every question by what answering it needs: **data** (runs SQL),
   **schema** (describes structure) or **action** (writes to SAP via MCP). The type is
-  determined by your wording. You don't pick it.
+  determined by your wording. You don't pick it. A message that asks for nothing, such as a
+  greeting, gets a short reply and runs nothing.
+- When a data question can be read in more than one way and nothing settles which, the agent
+  **asks you once** before answering (see [When the agent asks first](#when-the-agent-asks-first)).
 - For data questions, a **chart is drawn automatically** whenever the result has more than
   one row.
 
@@ -135,6 +138,48 @@ cost of the answer: by phase, and per call with the model that served it and whe
 That panel is why an answer's cost is a fact rather than an estimate. It is also where a slow
 answer explains itself: the phase that took the time is named.
 
+### When the agent asks first
+
+Some questions can be read in more than one way, and each reading returns different data.
+*"Which plants are confirming less yield than before?"* does not say what "before" is, and
+the semantic layer does not define it. When the question, the semantic layer and the earlier
+messages of the session all leave that open, the agent asks you one question instead of
+guessing, with two to four readings to pick from:
+
+> *Compared with what?*
+>
+> - a) This month against last month
+> - b) This quarter against the same quarter last year
+> - c) Confirmed yield against planned quantity, this month
+
+Reply with a letter, with one of the readings, or in your own words. The agent joins your reply
+to the original question and answers it, and does not ask again: if something is still open,
+the answer says which reading it took. What you settled stays with that question for the rest
+of the session (see [Follow up](#4-follow-up)), so a later question that builds on it is not
+asked again.
+
+The agent asks only when the open point changes the result. When it changes little, or one
+reading is clearly the usual one, the agent answers and says which reading it took. It never
+asks about something the question already gives (a period, a filter, a top N) or that the
+semantic layer defines.
+
+- Only **Precise** and **Smart** ask. **Flash** answers straight away.
+- Only ASK Chat asks. Answers through the agent API (`/external/ask`: watsonx Orchestrate,
+  n8n, Zapier, Microsoft Teams) and documents built as artifacts have no one to reply, so they
+  take the most reasonable reading and state it.
+- An administrator can turn asking off without redeploying (see
+  [Orchestrator troubleshooting](../runbooks/orchestrator-troubleshooting.md#6-turn-off-clarifications-in-the-chat)).
+  The chat then answers like the agent API.
+
+### Messages the agent runs no query for
+
+- **A message that asks for nothing**, such as a greeting, thanks, or an instruction for later
+  (*"remember the database is version 22.1"*), gets a short reply in your language. The agent
+  keeps no instructions between questions: put what matters in the question it applies to.
+- **A question whose terms the semantic layer does not hold** (Precise) gets a short reply in
+  your language saying so: ask again naming the measure and how to break it down, or ask
+  whoever maintains the semantic layer to add the term.
+
 ### Schema questions
 
 The agent describes the Data Product's structure: tables, fields, their types and roles, and the
@@ -154,7 +199,9 @@ questions require explicit action-oriented wording ("create", "update", "submit"
 
 With every new question the agent reads the last six messages of the session (three questions
 and their answers), each answer with the SQL that produced it when that answer came from the
-environment you are asking in. A follow-up does not need to repeat what it builds on:
+environment you are asking in. A question the agent asked you about and your reply to it count
+as one message: the question they complete, with what you settled in it. A follow-up does not
+need to repeat what it builds on:
 
 > *"Now break that down by month."*
 > *"Run it again for sales organization 1000 only."*

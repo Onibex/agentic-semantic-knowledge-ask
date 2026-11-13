@@ -12,6 +12,8 @@ Real LLM invocation is mocked — we only verify the contract:
   - 4 legacy intents map to the 3 public values (DASHBOARD_GEN folds into SQL_EXECUTION)
   - Empty input raises ValueError
   - LLM failures fail closed to SQL_EXECUTION (avoid breaking the chat path)
+  - A message that asks for nothing gets its reply only when the classifier is
+    sure: in doubt it is a data question
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ import pytest
 
 from ask_orchestrator.classification.macro_classifier import (
     _LEGACY_TO_PUBLIC,
+    Classification,
     MacroIntentClassifier,
     _ClassifierOutput,
     _LegacyMacroIntent,
@@ -59,7 +62,7 @@ def test_classify_llm_failure_falls_back_to_sql_execution(monkeypatch):
         "_get_chain",
         classmethod(lambda cls: (_BoomChain(), _StubParser())),
     )
-    assert classifier.classify("anything") == "SQL_EXECUTION"
+    assert classifier.classify("anything") == Classification("SQL_EXECUTION")
 
 
 @pytest.mark.parametrize(
@@ -93,4 +96,79 @@ def test_classify_returns_public_intent_with_stubbed_llm(
         "_get_chain",
         classmethod(lambda cls: (_Chain(), _StubParser())),
     )
-    assert classifier.classify("anything") == expected_public
+    assert classifier.classify("anything") == Classification(expected_public)
+
+
+def _stub_output(monkeypatch, output: _ClassifierOutput) -> MacroIntentClassifier:
+    class _Chain:
+        def invoke(self, _payload):
+            return output
+
+    class _StubParser:
+        def get_format_instructions(self):
+            return ""
+
+    monkeypatch.setattr(
+        MacroIntentClassifier,
+        "_get_chain",
+        classmethod(lambda cls: (_Chain(), _StubParser())),
+    )
+    return MacroIntentClassifier()
+
+
+_REPLY = "Gracias por el dato. No guardo instrucciones entre preguntas: inclúyelo en la pregunta."
+
+
+def test_a_message_that_asks_for_nothing_gets_its_reply(monkeypatch):
+    """Q07 of GONAC's chat: «Recuerda que estás utilizando la versión de
+    clickhouse 22.1.3.7». No query; a short reply in the user's language."""
+    classifier = _stub_output(
+        monkeypatch,
+        _ClassifierOutput(
+            intent=_LegacyMacroIntent.CONVERSATION,
+            confidence="high",
+            reasoning="an instruction for later",
+            reply=_REPLY,
+        ),
+    )
+
+    assert classifier.classify("Recuerda que estás utilizando ClickHouse 22.1.3.7") == (
+        Classification("SQL_EXECUTION", _REPLY)
+    )
+
+
+@pytest.mark.parametrize("confidence", ["medium", "low"])
+def test_in_doubt_a_message_is_a_data_question(monkeypatch, confidence):
+    classifier = _stub_output(
+        monkeypatch,
+        _ClassifierOutput(
+            intent=_LegacyMacroIntent.CONVERSATION,
+            confidence=confidence,
+            reasoning="maybe",
+            reply=_REPLY,
+        ),
+    )
+
+    assert classifier.classify("¿y lo de ayer?") == Classification("SQL_EXECUTION")
+
+
+def test_a_conversation_without_a_reply_is_a_data_question(monkeypatch):
+    classifier = _stub_output(
+        monkeypatch,
+        _ClassifierOutput(
+            intent=_LegacyMacroIntent.CONVERSATION, confidence="high", reasoning="x", reply="  "
+        ),
+    )
+
+    assert classifier.classify("hola") == Classification("SQL_EXECUTION")
+
+
+def test_a_reply_on_any_other_intent_is_ignored(monkeypatch):
+    classifier = _stub_output(
+        monkeypatch,
+        _ClassifierOutput(
+            intent=_LegacyMacroIntent.SQL_EXECUTION, confidence="high", reasoning="x", reply="hola"
+        ),
+    )
+
+    assert classifier.classify("ventas de octubre") == Classification("SQL_EXECUTION")

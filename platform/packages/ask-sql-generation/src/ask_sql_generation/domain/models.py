@@ -46,12 +46,26 @@ class ScopeAudit:
 
 
 @dataclass(frozen=True)
+class Clarification:
+    """The one question the generator asks instead of writing SQL, in the
+    language of the user's question, with 2 to 4 readings to pick from."""
+
+    question: str
+    options: list[str]
+
+
+@dataclass(frozen=True)
 class SqlGenerationRequest:
     """Inputs for one SQL generation call.
 
     `yamls`, `edges` and `resolved_paths` come from the upstream
     IntentResolutionResult. `ir_hints` is the serialized SemanticPlanIR.
     Optional fields default to "no extra context".
+
+    `may_ask` lets the generator answer with a `Clarification` instead of SQL;
+    only the chat sets it, and never on the turn that answers a clarification.
+    `alternative_readings` are other business terms the question's wording also
+    matched, which the generator weighs before asking or assuming.
     """
 
     question: str
@@ -70,6 +84,8 @@ class SqlGenerationRequest:
     max_scope_retries: int = 1
     context_expansion_enabled: bool = False
     hana_schema: str = ""
+    may_ask: bool = False
+    alternative_readings: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -79,6 +95,10 @@ class SqlGenerationResult:
     `error` and `sql` are mutually exclusive in the happy path:
       - sql populated, error=None     → success
       - sql=None,    error populated  → generator could not produce SQL
+      - sql=None,    clarification    → the generator asks the user first
+        (only when the request set `may_ask`)
+    `assumptions` are the readings the SQL took for what the question left open,
+    in the language of the question, for the answer to state.
     `scope_warning` is populated when the scope auditor failed but we still
     return the SQL (legacy behavior — non-fatal).
     """
@@ -92,3 +112,5 @@ class SqlGenerationResult:
     retry_count: int = 0
     tokens_used: int | None = None
     raw_response: str | None = None
+    clarification: Clarification | None = None
+    assumptions: list[str] = field(default_factory=list)

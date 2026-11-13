@@ -19,6 +19,7 @@ Outbound:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Protocol
 
 from .models import ExecutionRequest, ExecutionResult, FormattedResult
@@ -31,8 +32,16 @@ class SqlExecutor(Protocol):
         """Run the SQL and return rows as tuples (driver-native shape)."""
         ...
 
-    def execute_and_format(self, request: ExecutionRequest, *, question: str) -> FormattedResult:
-        """Run + format. Used by the orchestrator's SQL_EXECUTION branch."""
+    def execute_and_format(
+        self,
+        request: ExecutionRequest,
+        *,
+        question: str,
+        assumptions: Sequence[str] = (),
+    ) -> FormattedResult:
+        """Run + format. Used by the orchestrator's SQL_EXECUTION branch.
+        ``assumptions`` are the readings the SQL took for what the question left
+        open; the answer states them."""
         ...
 
 
@@ -45,9 +54,12 @@ class ResultFormatter(Protocol):
         rows: list[tuple[Any, ...]],
         question: str,
         sql: str | None = None,
+        assumptions: Sequence[str] = (),
     ) -> str:
         """``sql`` is the statement that produced the rows: what the answer reads
-        the period from."""
+        the period from. ``assumptions``: what the answer must say it assumed."""
         ...
 
-    def no_results_answer(self, question: str, sql: str | None = None) -> str: ...
+    def no_results_answer(
+        self, question: str, sql: str | None = None, assumptions: Sequence[str] = ()
+    ) -> str: ...

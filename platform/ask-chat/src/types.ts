@@ -7,7 +7,7 @@
  * Commercial licenses: contact@onibex.com — see LICENSE.
  */
 
-import type { Env, TokensBreakdown } from '@/api/orchestrator'
+import type { Clarification, Env, TokensBreakdown } from '@/api/orchestrator'
 
 export interface MessageMeta {
   sql?: string | null
@@ -22,6 +22,9 @@ export interface MessageMeta {
   // render a per-phase expander next to the mode badge.
   tokens_used?: number | null
   tokens_breakdown?: TokensBreakdown | null
+  // Set when the agent asked before answering. Sent back with this message in
+  // the history, so the next message is read as the reply.
+  clarification?: Clarification | null
 }
 
 export interface ChatMessage {

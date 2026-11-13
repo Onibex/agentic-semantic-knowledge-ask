@@ -54,6 +54,18 @@ export interface ConversationTurn {
   // again with changes, and the environment it ran in.
   sql?: string | null
   env?: Env | null
+  // A turn where the agent asked first: sent back as the response gave it, so
+  // the next message is read as the reply.
+  clarification?: Clarification | null
+}
+
+// The one question the agent asks before answering, with the question it was
+// answering (`about`). The chat keeps it in the message's meta; the server keeps
+// nothing.
+export interface Clarification {
+  question: string
+  options: string[]
+  about: string
 }
 
 // Per-request token accounting produced by the orchestrator's TokenTracker
@@ -96,6 +108,8 @@ export interface QueryResponse {
   tokens_used?: number | null
   tokens_breakdown?: TokensBreakdown | null
   trace_id?: string
+  clarification?: Clarification | null
+  assumptions?: string[] | null
 }
 
 export async function postQuery(req: QueryRequest): Promise<QueryResponse> {

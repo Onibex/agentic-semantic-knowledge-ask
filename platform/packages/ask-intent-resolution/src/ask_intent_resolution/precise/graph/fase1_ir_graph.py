@@ -25,8 +25,14 @@ Separation of concerns:
 
 3-Level Disambiguation (only when IR is empty):
   Level 1 — Single module:  populate IR with business terms from dictionary.
-  Level 2 — Multi-module:   informative response listing options per module.
-  Level 3 — No match:       "contact the Agentic Trainer".
+  Level 2 — Multi-module:   populate IR with the top module's terms and keep
+                            the other modules' terms as `alternative_readings`.
+                            The SQL generator weighs them: in the chat it may
+                            ask the user once, elsewhere it assumes and says so.
+  Level 3 — No match:       `unrelated`: nothing in the message maps to the
+                            semantic layer.
+The graph writes no text for the user: the orchestrator answers an unrelated
+message in the user's language.
 
 Topology:
 ─────────────────────────────────────────────────────────────────────────────
@@ -37,17 +43,11 @@ Topology:
              │
          ir_router
       ┌──────┼──────────────┐
-      │ error               │ ok
+      │ error, unrelated    │ ok
       ▼                     ▼
      END         [dictionary_check_node]  ← only if IR is empty
                             │
-                    dictionary_router
-                 ┌──────────┼──────────┐
-                 │ disambig            │ ok
-                 ▼                     ▼
-     [insufficient_context_node]      END
-                 │
-                END
+                           END
 ─────────────────────────────────────────────────────────────────────────────
 """
 
@@ -75,9 +75,11 @@ class Phase1State(TypedDict, total=False):
     user_role_id: str | None
     user_department: str | None
     plan_ir_dict: dict[str, Any] | None
-    disambiguation_message: str | None
+    # Level 2: the other modules' terms, "MODULE: label, label".
+    alternative_readings: list[str] | None
+    # Level 3, or a message the IR judged not analytical.
+    unrelated: bool | None
     error: str | None
-    response: str | None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -96,7 +98,7 @@ def build_fase1_graph(
     The graph is compiled without a checkpointer, so every invoke starts from
     its input alone. With one keyed by chat session, LangGraph merges each new
     input into the previous turn's state, and any key the new turn does not
-    write (``error``, ``disambiguation_message``, ``plan_ir_dict``) answers for
+    write (``error``, ``unrelated``, ``plan_ir_dict``) answers for
     it, so one non-analytical message would fail every later question of the chat.
 
     Args:
@@ -117,11 +119,7 @@ def build_fase1_graph(
             plan_ir: SemanticPlanIR = ir_generator.generate_plan(question)
 
             if plan_ir.is_impossible:
-                return {
-                    "error": (
-                        "Could not interpret your question analytically. Please try rephrasing it."
-                    ),
-                }
+                return {"unrelated": True}
 
             plan_dict = plan_ir.model_dump()
             print("   ✅ Plan IR generated.")
@@ -161,13 +159,13 @@ def build_fase1_graph(
         print("\n🔍 [dictionary_check_node] Empty IR — searching dictionary.")
 
         if not semantic_dictionary or not embedder:
-            return _level3_response()
+            return {"unrelated": True}
 
         try:
             query_vector = embedder.embed_query(question)
         except Exception as e:
             print(f"   ⚠️  Embedding failed: {e}")
-            return _level3_response()
+            return {"unrelated": True}
 
         results = semantic_dictionary.search_hybrid(
             query=question,
@@ -178,7 +176,7 @@ def build_fase1_graph(
 
         if not results:
             print("   ❌ [Level 3] No matches.")
-            return _level3_response()
+            return {"unrelated": True}
 
         # ── Group by module ───────────────────────────────────────────────
         by_module: dict[str, list[dict]] = defaultdict(list)
@@ -197,100 +195,64 @@ def build_fase1_graph(
             len(ranked) == 1 or second_score == 0 or top_score / max(second_score, 0.001) > 1.5
         )
 
+        # ── Level 1 (and Level 2): populate IR with the top module's terms ──
+        found_metrics = []
+        found_dimensions = []
+
+        for entry in by_module[top_module]:
+            label = entry.get("canonical_label", "")
+            if not label:
+                continue
+            entry_type = entry.get("type", "")
+            if entry_type == "metric":
+                found_metrics.append(label)
+            elif entry_type in ("dimension", "identifier", "timestamp", "filter"):
+                found_dimensions.append(label)
+            elif entry_type == "phrase":
+                # Phrases go as a single business term — Phase 2 will
+                # expand them via dictionary short-circuit
+                found_dimensions.append(label)
+
+        # Deduplicate
+        found_metrics = list(dict.fromkeys(found_metrics))
+        found_dimensions = list(dict.fromkeys(found_dimensions))
+
+        if not found_metrics and not found_dimensions:
+            print("   ⚠️  [Level 3] Results found but no labeled entries.")
+            return {"unrelated": True}
+
+        enriched = dict(plan_dict)
+        enriched["semantic_metrics"] = found_metrics
+        enriched["semantic_dimensions"] = found_dimensions
+        if not enriched.get("module_hint"):
+            enriched["module_hint"] = top_module
+
         if is_single_module:
-            # ── Level 1: Populate IR with business terms from top module ──
-            found_metrics = []
-            found_dimensions = []
-
-            for entry in by_module[top_module]:
-                label = entry.get("canonical_label", "")
-                if not label:
-                    continue
-                entry_type = entry.get("type", "")
-                if entry_type == "metric":
-                    found_metrics.append(label)
-                elif entry_type in ("dimension", "identifier", "timestamp", "filter"):
-                    found_dimensions.append(label)
-                elif entry_type == "phrase":
-                    # Phrases go as a single business term — Phase 2 will
-                    # expand them via dictionary short-circuit
-                    found_dimensions.append(label)
-
-            # Deduplicate
-            found_metrics = list(dict.fromkeys(found_metrics))
-            found_dimensions = list(dict.fromkeys(found_dimensions))
-
-            if not found_metrics and not found_dimensions:
-                print("   ⚠️  [Level 3] Results found but no labeled entries.")
-                return _level3_response(
-                    "I found related terms but couldn't determine what you need. "
-                    "Please be more specific or contact the Agentic Trainer."
-                )
-
             print(
                 f"   ✅ [Level 1] → module={top_module}, "
                 f"metrics={found_metrics}, dims={found_dimensions}"
             )
-
-            enriched = dict(plan_dict)
-            enriched["semantic_metrics"] = found_metrics
-            enriched["semantic_dimensions"] = found_dimensions
-            if not enriched.get("module_hint"):
-                enriched["module_hint"] = top_module
             return {"plan_ir_dict": enriched}
 
-        # ── Level 2: Multiple modules — disambiguation ────────────────────
-        print(f"   ⚠️  [Level 2] Modules: {list(by_module.keys())}")
-
-        lines = ["I found multiple interpretations for your query:\n"]
-        for mod in sorted(by_module.keys()):
-            labels = []
-            for e in by_module[mod][:5]:
-                label = e.get("canonical_label", e.get("technical_name", ""))
-                if label:
-                    labels.append(label)
+        # ── Level 2: the other modules' terms travel as alternative readings ──
+        alternatives = []
+        for mod, _score in ranked[1:]:
+            labels = [
+                e.get("canonical_label") or e.get("technical_name", "") for e in by_module[mod][:5]
+            ]
+            labels = [label for label in labels if label]
             if labels:
-                lines.append(f"  - **{mod}**: {', '.join(labels)}")
-        lines.append(
-            "\nTry being more specific (e.g., 'sales order net value' or "
-            "'purchase order quantity'). If the issue persists, contact "
-            "the Agentic Trainer."
-        )
-        return {"disambiguation_message": "\n".join(lines)}
+                alternatives.append(f"{mod}: {', '.join(labels)}")
+        print(f"   ⚠️  [Level 2] → module={top_module}, alternatives={alternatives}")
+        return {"plan_ir_dict": enriched, "alternative_readings": alternatives}
 
     # ─────────────────────────────────────────────────────────────────────────
-    # Level 3 helper
-    # ─────────────────────────────────────────────────────────────────────────
-    def _level3_response(msg: str = None) -> dict:
-        return {
-            "disambiguation_message": msg
-            or (
-                "I don't have enough context to interpret this query. "
-                "Please contact the Agentic Trainer to register the "
-                "necessary business terms."
-            ),
-        }
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # NODE 3: insufficient_context_node
-    # ─────────────────────────────────────────────────────────────────────────
-    def insufficient_context_node(state: Phase1State) -> Phase1State:
-        msg = state.get("disambiguation_message", "")
-        print(f"\n📋 [insufficient_context] {msg[:80]}...")
-        return {"response": msg, "error": msg}
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # ROUTERS
+    # ROUTER
     # ─────────────────────────────────────────────────────────────────────────
     def ir_router(state: Phase1State) -> str:
-        if state.get("error") and not state.get("plan_ir_dict"):
-            return "ir_error"
+        if state.get("unrelated") or (state.get("error") and not state.get("plan_ir_dict")):
+            return "stop"
         return "dictionary_check_node"
-
-    def dictionary_router(state: Phase1State) -> str:
-        if state.get("disambiguation_message"):
-            return "insufficient_context_node"
-        return "done"
 
     # ─────────────────────────────────────────────────────────────────────────
     # BUILD GRAPH
@@ -299,19 +261,13 @@ def build_fase1_graph(
 
     sg.add_node("generate_ir_node", generate_ir_node)
     sg.add_node("dictionary_check_node", dictionary_check_node)
-    sg.add_node("insufficient_context_node", insufficient_context_node)
 
     sg.add_edge(START, "generate_ir_node")
     sg.add_conditional_edges(
         "generate_ir_node",
         ir_router,
-        {"dictionary_check_node": "dictionary_check_node", "ir_error": END},
+        {"dictionary_check_node": "dictionary_check_node", "stop": END},
     )
-    sg.add_conditional_edges(
-        "dictionary_check_node",
-        dictionary_router,
-        {"done": END, "insufficient_context_node": "insufficient_context_node"},
-    )
-    sg.add_edge("insufficient_context_node", END)
+    sg.add_edge("dictionary_check_node", END)
 
     return sg.compile()

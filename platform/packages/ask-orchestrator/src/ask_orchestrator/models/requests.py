@@ -65,10 +65,14 @@ class QueryRequest(BaseModel):
         description=(
             "Prior conversation turns, oldest first: ``role`` (user or assistant), "
             "``content`` and, for an answer that ran a query, ``sql`` and the "
-            "``env`` it ran in. The last six are read, and an answer's SQL only "
-            "when it ran in this request's ``env``: a follow-up is rewritten from "
-            "them into a question that stands on its own, and a question about an "
-            "earlier answer is answered from them without a query."
+            "``env`` it ran in; for a turn where the agent asked first, the "
+            "``clarification`` object of that response. The last six are read, a "
+            "clarification and its reply counting as the question they complete, "
+            "and an answer's SQL only when it ran in this request's ``env``: a "
+            "follow-up is rewritten from them into a question that stands on its "
+            "own, and a question about an earlier answer is answered from them "
+            "without a query. When the last turn is a clarification, ``question`` "
+            "is the reply to it."
         ),
     )
 

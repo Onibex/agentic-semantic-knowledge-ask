@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import pytest
 
+from ask_orchestrator.classification.macro_classifier import Classification
 from ask_orchestrator.models.requests import QueryRequest
 from ask_orchestrator.models.responses import QueryResponse
 from ask_orchestrator.routers import query as query_router
@@ -42,7 +43,7 @@ def _stub_classifier(monkeypatch, intent: str) -> None:
     is why the breakdown is never legitimately None."""
     from ask_llm_gateway.infrastructure.token_tracker import get_active_tracker
 
-    def _classify(_question: str) -> str:
+    def _classify(_question: str) -> Classification:
         tracker = get_active_tracker()
         assert tracker is not None, "pipeline must install a tracker before classifying"
         tracker.record(
@@ -51,7 +52,7 @@ def _stub_classifier(monkeypatch, intent: str) -> None:
             input_tokens=120,
             output_tokens=8,
         )
-        return intent
+        return Classification(intent)
 
     monkeypatch.setattr(query_router._classifier, "classify", _classify)
 
@@ -107,7 +108,7 @@ def test_sql_path_still_carries_the_breakdown(monkeypatch):
 
     monkeypatch.setattr(workspace_scope, "_provider", _StubScope())
 
-    def _handler(req, macro_intent, trace_id):
+    def _handler(req, macro_intent, trace_id, **_kwargs):
         return QueryResponse(
             answer="42",
             macro_intent=macro_intent,
@@ -126,7 +127,9 @@ def test_sql_path_still_carries_the_breakdown(monkeypatch):
 def test_breakdown_is_none_only_when_nothing_was_tracked(monkeypatch):
     """The one legitimate None: a classifier that records no call at all. Keeps
     ``_build_tokens_breakdown``'s guard honest instead of fabricating zeros."""
-    monkeypatch.setattr(query_router._classifier, "classify", lambda _q: "ACTION_EXECUTION")
+    monkeypatch.setattr(
+        query_router._classifier, "classify", lambda _q: Classification("ACTION_EXECUTION")
+    )
     monkeypatch.setattr(query_router, "_get_action_service", lambda: _StubActionService())
 
     response = query_router.run_query_pipeline(_request(), _USER)

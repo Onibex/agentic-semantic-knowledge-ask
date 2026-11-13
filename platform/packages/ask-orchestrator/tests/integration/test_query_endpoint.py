@@ -30,6 +30,7 @@ from ask_intent_resolution.domain.result import (
 )
 from ask_orchestrator import config as config_module
 from ask_orchestrator.auth.validator import TokenClaims, validate_token
+from ask_orchestrator.classification.macro_classifier import Classification
 from ask_orchestrator.main import app
 from ask_orchestrator.models.responses import MacroIntent
 from ask_orchestrator.routers import query as query_router
@@ -113,7 +114,9 @@ def bypass_auth_and_reset_settings(monkeypatch):
 
 
 def _stub_classifier(monkeypatch, intent: MacroIntent) -> None:
-    monkeypatch.setattr(query_router._classifier, "classify", lambda question: intent)
+    monkeypatch.setattr(
+        query_router._classifier, "classify", lambda question: Classification(intent)
+    )
 
 
 def _stub_use_case(monkeypatch, result: IntentResolutionResult) -> dict:
@@ -145,8 +148,9 @@ def _stub_executor(monkeypatch, rows, answer, *, error=None):
     captured: dict = {}
 
     class _StubExec:
-        def execute_and_format(self, request, *, question):
+        def execute_and_format(self, request, *, question, assumptions=()):
             captured["sql"] = request.sql
+            captured["assumptions"] = list(assumptions)
             captured["db_type"] = request.db_type
             captured["question"] = question
             return FormattedResult(
@@ -317,9 +321,11 @@ def test_flash_bypasses_sql_generation_chain(monkeypatch):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Disambiguation short-circuit
+# Dictionary levels: L3 stops with a reply in the user's language, L2 goes on
 # ─────────────────────────────────────────────────────────────────────────────
-def test_disambiguation_short_circuits_chain(monkeypatch):
+def test_a_message_unrelated_to_the_layer_is_answered_in_the_users_language(monkeypatch):
+    """Precise L3: nothing maps to the semantic layer. No SQL is generated, and
+    the reply comes from the model in the user's language, not a fixed text."""
     _stub_classifier(monkeypatch, "SQL_EXECUTION")
     _stub_use_case(
         monkeypatch,
@@ -327,26 +333,62 @@ def test_disambiguation_short_circuits_chain(monkeypatch):
             plan={},
             yamls=[],
             edges=[],
-            disambiguation=Disambiguation(level="L2", message="Did you mean A or B?"),
+            disambiguation=Disambiguation(level="L3", message=""),
             error=None,
             trace=ResolutionTrace(strategy="precise"),
         ),
     )
+    asked: list[str] = []
+
+    def _unrelated(question: str) -> str:
+        asked.append(question)
+        return "No pude relacionar tu mensaje con los datos disponibles."
+
+    monkeypatch.setattr(query_router, "unrelated_answer", _unrelated)
 
     class _BoomGen:
         def generate(self, request):
-            raise AssertionError("Disambiguation must short-circuit before SqlGen")
+            raise AssertionError("an unrelated message must stop before SqlGen")
 
     monkeypatch.setattr(query_router, "_get_sql_generator", lambda *a, **k: _BoomGen())
+
+    client = TestClient(app)
+    response = client.post(
+        "/v1/query", json={"workspace_id": "ws-test", "question": "¿Y lo otro?", "mode": "precise"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sql"] is None
+    assert body["answer"] == "No pude relacionar tu mensaje con los datos disponibles."
+    assert asked == ["¿Y lo otro?"]
+
+
+def test_terms_in_several_modules_reach_the_generator_as_other_readings(monkeypatch):
+    """Precise L2 does not end the turn: the generator gets the other readings."""
+    _stub_classifier(monkeypatch, "SQL_EXECUTION")
+    _stub_use_case(
+        monkeypatch,
+        IntentResolutionResult(
+            plan={"semantic_metrics": ["net billed amount"]},
+            yamls=[{"id": "gold_x", "raw_yaml": "id: gold_x"}],
+            edges=[],
+            disambiguation=Disambiguation(
+                level="L2", message="", options=["MM: goods receipt quantity"]
+            ),
+            error=None,
+            trace=ResolutionTrace(strategy="precise"),
+        ),
+    )
+    captured = _stub_sql_generator(monkeypatch, SqlGenerationResult(sql="SELECT 1", error=None))
+    _stub_executor(monkeypatch, [{"x": 1}], "Una fila.")
 
     client = TestClient(app)
     response = client.post(
         "/v1/query", json={"workspace_id": "ws-test", "question": "x", "mode": "precise"}
     )
     assert response.status_code == 200
-    body = response.json()
-    assert body["sql"] is None
-    assert body["answer"] == "Did you mean A or B?"
+    assert response.json()["answer"] == "Una fila."
+    assert captured["request"].alternative_readings == ["MM: goods receipt quantity"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

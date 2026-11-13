@@ -24,6 +24,14 @@ Iter 2 contract change
     but DASHBOARD_GEN is FOLDED into SQL_EXECUTION because dashboard
     rendering is a UI concern, not a backend intent. ACTION_EXECUTION
     stays reserved for Iter 7.
+
+Messages that are not requests
+  - CONVERSATION is a message that asks for nothing: a greeting, thanks, a
+    remark, an instruction or a fact for later ("remember you are on
+    ClickHouse 22.1.3.7"). The same call writes the short `reply`, in the
+    language of the message, and nothing is queried. It counts only with high
+    confidence: in doubt, a message is a data question. It is reported as
+    SQL_EXECUTION, so the public contract keeps its 4 values.
 """
 
 from __future__ import annotations
@@ -31,6 +39,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Literal
@@ -52,19 +61,36 @@ class _LegacyMacroIntent(str, Enum):
     SQL_EXECUTION = "SQL_EXECUTION"
     DASHBOARD_GEN = "DASHBOARD_GEN"
     ACTION_EXECUTION = "ACTION_EXECUTION"
+    CONVERSATION = "CONVERSATION"
 
 
 class _ClassifierOutput(BaseModel):
     intent: _LegacyMacroIntent = Field(...)
     confidence: Literal["high", "medium", "low"] = Field(...)
     reasoning: str = Field(...)
+    reply: str | None = Field(
+        default=None,
+        description=(
+            "Only for CONVERSATION: the short reply to the user, in the language of "
+            "the message. null for every other intent."
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class Classification:
+    """The public intent and, for a message that asks for nothing, the reply to
+    it (``None`` otherwise)."""
+
+    intent: MacroIntent
+    reply: str | None = None
 
 
 _SYSTEM_TEMPLATE = """
 You are a macro-intent classifier for "ASK Agentic IA", a natural language
 interface to SAP S/4HANA data (PostgreSQL / HANA).
 
-Your ONLY task is to classify the user's question into ONE of the five
+Your ONLY task is to classify the user's message into ONE of the six
 permitted categories below. Read every word carefully before deciding.
 
 ──────────────────────────────────────────────────────────────
@@ -114,6 +140,20 @@ CATEGORIES
    IMPORTANT: If the request is about WRITING/MODIFYING data → ACTION_EXECUTION,
               even if it mentions specific field values or SAP objects.
 
+6. CONVERSATION
+   → Messages that ask for nothing: a greeting, thanks, a remark, or an
+     instruction or a fact meant for later questions.
+   Examples:
+     - "Hello"
+     - "Thanks, that's all"
+     - "Remember that you are using ClickHouse version 22.1.3.7"
+   For CONVERSATION only, write `reply`: one or two short sentences in the
+   language of the message, as the data assistant. If the message gives an
+   instruction or a fact for later, say that you do not keep instructions
+   between questions and that it should go in the question it applies to. If
+   it is a greeting or thanks, invite the user to ask about their data. Never
+   claim to have done, changed or remembered anything.
+
 ──────────────────────────────────────────────────────────────
 DECISION RULES
 ──────────────────────────────────────────────────────────────
@@ -123,7 +163,9 @@ DECISION RULES
   → prefer DASHBOARD_GEN.
 • If uncertain between SQL_EXECUTION and DOCS_QUERY, check: does the answer
   require querying a database? Yes → SQL_EXECUTION. No → DOCS_QUERY.
-• Greetings, tests, or nonsensical inputs → SQL_EXECUTION with low confidence.
+• CONVERSATION only when you are sure the message asks for nothing. If it might
+  ask for data, even vaguely or as a fragment, → SQL_EXECUTION.
+• Tests or nonsensical inputs → SQL_EXECUTION with low confidence.
 
 {format_instructions}
 """.strip()
@@ -140,6 +182,8 @@ _LEGACY_TO_PUBLIC: dict[_LegacyMacroIntent, MacroIntent] = {
     _LegacyMacroIntent.SQL_EXECUTION: "SQL_EXECUTION",
     _LegacyMacroIntent.DASHBOARD_GEN: "SQL_EXECUTION",
     _LegacyMacroIntent.ACTION_EXECUTION: "ACTION_EXECUTION",
+    # Reported as SQL_EXECUTION; the reply is what tells the pipeline apart.
+    _LegacyMacroIntent.CONVERSATION: "SQL_EXECUTION",
 }
 
 
@@ -187,8 +231,9 @@ class MacroIntentClassifier:
             cls._chain_revision = revision
             return cls._chain
 
-    def classify(self, question: str) -> MacroIntent:
-        """Return one of the public MacroIntent values (DASHBOARD_GEN is folded)."""
+    def classify(self, question: str) -> Classification:
+        """Return one of the public MacroIntent values (DASHBOARD_GEN is folded)
+        and, for a message that asks for nothing, the reply to it."""
         if not question or not question.strip():
             raise ValueError("question must not be empty")
 
@@ -202,15 +247,24 @@ class MacroIntentClassifier:
             )
         except Exception as exc:  # noqa: BLE001 — boundary
             logger.warning("macro classifier failed (%s) — defaulting to SQL_EXECUTION", exc)
-            return "SQL_EXECUTION"
+            return Classification("SQL_EXECUTION")
 
         public = _LEGACY_TO_PUBLIC[output.intent]
+        # In doubt, a message is a data question: only a sure CONVERSATION, with
+        # a reply to give, skips the query.
+        reply = (output.reply or "").strip()
+        conversation = (
+            output.intent is _LegacyMacroIntent.CONVERSATION
+            and output.confidence == "high"
+            and bool(reply)
+        )
         logger.info(
             "macro classifier",
             extra={
                 "legacy_intent": output.intent.value,
                 "public_intent": public,
                 "confidence": output.confidence,
+                "conversation": conversation,
             },
         )
-        return public
+        return Classification(public, reply if conversation else None)

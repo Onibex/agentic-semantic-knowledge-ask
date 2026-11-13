@@ -7,12 +7,18 @@
 
 """POST /v1/query — request flow.
 
-  0. With conversation history: complete a follow-up into a question that
+  0. When the last turn of the history is a clarification the chat asked, the
+     message is the reply: it is joined to the question asked about
+     (``clarification``; code, no LLM call), goes straight to SQL_EXECUTION and
+     may not ask again. Steps 0b and 1 are skipped.
+  0b. With conversation history: complete a follow-up into a question that
      stands on its own (``followup``; one LLM call). A question about an
      earlier answer skips 1 and, past the workspace check, is answered from the
      history alone (a second LLM call). ACTION_EXECUTION gets the message as
      the user wrote it, never the rewrite.
-  1. Classify the macro intent (LLM call).
+  1. Classify the macro intent (LLM call). A message that asks for nothing (a
+     greeting, an instruction for later) comes back with its reply, given past
+     the workspace check without a query.
   2. Dispatch by intent:
      - SQL_EXECUTION  → ResolveIntent → (Flash bypass OR SqlGeneration → executor)
      - SCHEMA_QUERY   → ask-schema-service
@@ -24,7 +30,11 @@ For SQL_EXECUTION, the chain is:
     SqlGenerationService.
   - Precise/Smart strategies return YAMLs+IR+edges only — orchestrator calls
     ask_sql_generation.FreeformSqlGenerator, then runs the SQL through
-    ask-sql-executor.
+    ask-sql-executor. In the chat (``can_clarify``) the generator may ask the
+    user one question instead; elsewhere it picks a reading, and the answer
+    says which.
+  - A message Precise cannot relate to the semantic layer (dictionary L3) gets
+    a short reply in the user's language (one LLM call, on that path only).
 """
 
 from __future__ import annotations
@@ -46,6 +56,14 @@ from ask_sql_executor.domain.models import ExecutionRequest
 from ask_sql_generation.domain.models import SqlGenerationRequest
 
 from ..auth.validator import TokenClaims, validate_token
+from ..clarification import Clarification as AskedClarification
+from ..clarification import (
+    asking_enabled,
+    join,
+    render,
+    split_pending,
+    unrelated_answer,
+)
 from ..classification.macro_classifier import MacroIntentClassifier
 from ..config import SettingsCache  # in-memory cache for config/settings.json
 from ..followup import (
@@ -56,7 +74,14 @@ from ..followup import (
     resolve_followup,
 )
 from ..models.requests import QueryRequest
-from ..models.responses import Citation, ErrorResponse, MacroIntent, QueryResponse, TokensBreakdown
+from ..models.responses import (
+    Citation,
+    Clarification,
+    ErrorResponse,
+    MacroIntent,
+    QueryResponse,
+    TokensBreakdown,
+)
 from ..sql_repair import is_repairable, repair_sql
 
 logger = logging.getLogger(__name__)
@@ -282,12 +307,19 @@ def _get_action_service() -> Any:
         return _action_singleton
 
 
-def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
+def run_query_pipeline(
+    req: QueryRequest, user: dict, *, can_clarify: bool = False
+) -> QueryResponse:
     """Core pipeline: TokenTracker setup → macro classify → handler dispatch
     → tokens breakdown injection. Auth-agnostic so it can be reused by
     multiple front doors (the /v1/query router, the public /external/ask
     sub-app, future MCP shims, etc.). Each caller decides its own auth
     posture and passes a `user` dict for log correlation.
+
+    ``can_clarify``: the caller has someone to answer a question, so the SQL
+    generator may ask one before answering (while ``asking_enabled``). Only the
+    chat passes it; Teams, n8n, watsonx and the artifacts keep the default and
+    get an answer that states what it assumed.
     """
     from ask_llm_gateway.infrastructure.token_tracker import (
         TokenTracker,
@@ -303,20 +335,39 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
     # What the user wrote. Only a write to SAP reads it after the follow-up step.
     as_written = req
     try:
-        # A follow-up is completed from the recent turns before anything reads
-        # it, so the classifier, every mode and the SQL generator get the same
-        # question, standing on its own, and the same turns. A question about an
-        # earlier answer needs no classifier: past the workspace check below, it
-        # is answered from those turns, without a query.
-        req, followup = _complete_followup(req, trace_id)
         macro_intent: MacroIntent
-        if followup.about_previous:
+        # The reply to a message that asks for nothing, from the classifier.
+        reply: str | None = None
+        earlier, pending = split_pending(req.conversation_history)
+        if pending is not None:
+            # The message replies to the clarification the chat asked last. It
+            # is joined to the question asked about, in code, and the turn may
+            # not ask again. It skips the follow-up step, which could take it
+            # for a question about an earlier answer and answer without a
+            # query, and the classifier: a clarification only comes from a data
+            # question, so the joined question never reaches a write to SAP.
+            req = _reply_to_clarification(req, earlier, pending, trace_id)
+            followup = FollowUp(req.question)
             macro_intent = "SQL_EXECUTION"
+            may_ask = False
         else:
-            # Classify macro intent first so ACTION_EXECUTION can bypass the
-            # workspace scope check (it talks to MCP, not the KG).
-            with track_phase("macro_classification"):
-                macro_intent = _classifier.classify(req.question)
+            # A follow-up is completed from the recent turns before anything
+            # reads it, so the classifier, every mode and the SQL generator get
+            # the same question, standing on its own, and the same turns. A
+            # question about an earlier answer needs no classifier: past the
+            # workspace check below, it is answered from those turns, without a
+            # query.
+            req, followup = _complete_followup(req, trace_id)
+            if followup.about_previous:
+                macro_intent = "SQL_EXECUTION"
+            else:
+                # Classify macro intent first so ACTION_EXECUTION can bypass the
+                # workspace scope check (it talks to MCP, not the KG).
+                with track_phase("macro_classification"):
+                    classification = _classifier.classify(req.question)
+                macro_intent = classification.intent
+                reply = classification.reply
+            may_ask = can_clarify and asking_enabled()
 
         # ACTION_EXECUTION: MCP write ops — no KG lookup, no workspace scope.
         # The action service gets the message as written, not the rewrite: it
@@ -395,8 +446,10 @@ def run_query_pipeline(req: QueryRequest, user: dict) -> QueryResponse:
         try:
             if followup.about_previous:
                 response = _answer_from_history(req, trace_id)
+            elif reply is not None:
+                response = _answer_conversation(req, reply, trace_id)
             elif macro_intent == "SQL_EXECUTION":
-                response = _handle_sql_execution(req, macro_intent, trace_id)
+                response = _handle_sql_execution(req, macro_intent, trace_id, may_ask=may_ask)
             elif macro_intent == "SCHEMA_QUERY":
                 # Schema-plane scope (BACKLOG A/D1): membership ∪ composed_of
                 # bronzes, so "describe VBAK" works when VBAK composes an
@@ -462,11 +515,45 @@ def _complete_followup(req: QueryRequest, trace_id: str) -> tuple[QueryRequest, 
     return completed, followup
 
 
+def _reply_to_clarification(
+    req: QueryRequest,
+    earlier: list[dict[str, Any]],
+    pending: AskedClarification,
+    trace_id: str,
+) -> QueryRequest:
+    """``req`` with the question the turn answers: the one the clarification
+    asked about, the clarification and the user's reply, joined; and the turns
+    before that question, cut like any history."""
+    joined = join(pending, req.question)
+    turns = recent_turns(earlier, req.env)
+    logger.info(
+        "clarification answered",
+        extra={
+            "trace_id": trace_id,
+            "session_id": req.session_id,
+            "turns": len(turns),
+            "question": joined,
+        },
+    )
+    return req.model_copy(update={"question": joined, "conversation_history": turns})
+
+
 def _answer_from_history(req: QueryRequest, trace_id: str) -> QueryResponse:
     """A question about an earlier answer, answered from the recent turns. No
     query runs, not even when the model fails: the reply then says so."""
     return QueryResponse(
         answer=answer_about_previous(req.question, req.conversation_history or []),
+        macro_intent="SQL_EXECUTION",
+        mode_used=req.mode,
+        trace_id=trace_id,
+    )
+
+
+def _answer_conversation(req: QueryRequest, reply: str, trace_id: str) -> QueryResponse:
+    """A message that asks for nothing (a greeting, an instruction for later):
+    the classifier's reply, in the user's language, and no query."""
+    return QueryResponse(
+        answer=reply,
         macro_intent="SQL_EXECUTION",
         mode_used=req.mode,
         trace_id=trace_id,
@@ -490,19 +577,23 @@ def query(
     event loop.
     """
     user = {"email": claims.email, "bypass": False, "roles": claims.roles}
-    return run_query_pipeline(req, user)
+    # The chat has someone to answer a clarification.
+    return run_query_pipeline(req, user, can_clarify=True)
 
 
 def _handle_sql_execution(
     req: QueryRequest,
     macro_intent: MacroIntent,
     trace_id: str,
+    *,
+    may_ask: bool = False,
 ) -> QueryResponse:
     """SQL_EXECUTION branch — Resolve → SqlGen → exec.
 
     Flash strategy bypasses the chain (returns sql/rows/answer directly).
     Precise/Smart return YAMLs+IR+edges; orchestrator chains them through
-    SqlGenerationService → SqlExecutorService.
+    SqlGenerationService → SqlExecutorService. ``may_ask`` lets the generator
+    ask the user one question instead.
     """
     # Per-environment DB guard. ``prod`` does NOT inherit the dev connection
     # (see resolve_db_config) — if the requested env has no DB configured in the
@@ -562,11 +653,21 @@ def _handle_sql_execution(
     )
 
     # Flash bypass — strategy already produced sql/rows/answer.
-    if resolution.sql is not None or resolution.disambiguation is not None or resolution.error:
+    if resolution.sql is not None or resolution.error:
         return _build_response_from_resolution(resolution, req, macro_intent, trace_id)
 
+    # Nothing in the message maps to the semantic layer (Precise, dictionary
+    # L3): no schema to write SQL from, and no reading to ask about.
+    if resolution.disambiguation is not None and resolution.disambiguation.level == "L3":
+        return QueryResponse(
+            answer=unrelated_answer(req.question),
+            macro_intent=macro_intent,
+            mode_used=req.mode,
+            trace_id=trace_id,
+        )
+
     return _chain_sql_generation_and_executor(
-        resolution, req, macro_intent, trace_id, system_context
+        resolution, req, macro_intent, trace_id, system_context, may_ask=may_ask
     )
 
 
@@ -576,7 +677,7 @@ def _build_response_from_resolution(
     macro_intent: MacroIntent,
     trace_id: str,
 ) -> QueryResponse:
-    """Used by Flash + disambiguation + IR-resolution errors (no SQL chain)."""
+    """Used by Flash + IR-resolution errors (no SQL chain)."""
     return QueryResponse(
         answer=resolution.answer or _fallback_answer(resolution),
         rows=resolution.rows,
@@ -597,8 +698,6 @@ def _join_context(*blocks: str | None) -> str | None:
 
 
 def _fallback_answer(resolution: IntentResolutionResult) -> str:
-    if resolution.disambiguation is not None:
-        return resolution.disambiguation.message
     if resolution.error:
         return f"Pipeline error: {resolution.error}"
     return "No results."
@@ -610,8 +709,15 @@ def _chain_sql_generation_and_executor(
     macro_intent: MacroIntent,
     trace_id: str,
     organization_context: str | None = None,
+    *,
+    may_ask: bool = False,
 ) -> QueryResponse:
-    """Run SqlGenerationService over Precise/Smart resolution then execute."""
+    """Run SqlGenerationService over Precise/Smart resolution then execute.
+
+    With ``may_ask`` the generator may return one question for the user
+    instead of SQL; it goes back as the answer, with nothing run. Without it, a
+    generator that still asks is not passed on: the generator itself retries
+    without asking, and a reply with no SQL is an error, never a question."""
     # Per-environment DB target from the encrypted store (2026-07 migration).
     # The env comes from the QueryRequest (default ``'dev'``); ``resolve_db_config``
     # reads the ``db_dev`` / ``db_prod`` doc. ``prod`` never inherits ``dev``.
@@ -655,10 +761,39 @@ def _chain_sql_generation_and_executor(
         # to explain a result or run its query again with changes. ``req`` comes
         # from ``_complete_followup``, which cut them.
         conversation_history=render_history(req.conversation_history or []),
+        may_ask=may_ask,
+        # Precise's dictionary matched the terms in more than one module (L2):
+        # the other readings, for the generator to weigh like any open point.
+        alternative_readings=(
+            list(resolution.disambiguation.options)
+            if resolution.disambiguation is not None and resolution.disambiguation.level == "L2"
+            else []
+        ),
     )
     # Generator dialect must match the SAME env we resolved db_type/db_config
     # from above — dev and prod may target different engines.
     sql_result = _get_sql_generator(req.env).generate(sql_request)
+
+    if may_ask and sql_result.clarification is not None:
+        asked = sql_result.clarification
+        logger.info(
+            "clarification asked",
+            extra={
+                "trace_id": trace_id,
+                "session_id": req.session_id,
+                "options": len(asked.options),
+            },
+        )
+        return QueryResponse(
+            answer=render(asked.question, asked.options),
+            macro_intent=macro_intent,
+            mode_used=req.mode,
+            trace_id=trace_id,
+            tokens_used=sql_result.tokens_used or resolution.trace.tokens_used,
+            clarification=Clarification(
+                question=asked.question, options=list(asked.options), about=req.question
+            ),
+        )
 
     if sql_result.error or not sql_result.sql:
         return QueryResponse(
@@ -671,10 +806,14 @@ def _chain_sql_generation_and_executor(
             tokens_used=sql_result.tokens_used or resolution.trace.tokens_used,
         )
 
+    # What the SQL took for what the question left open: the answer says it.
+    assumptions = list(sql_result.assumptions or [])
+
     def execute(sql: str):
         return _get_sql_executor().execute_and_format(
             ExecutionRequest(sql=sql, db_type=db_type, db_config=db_config or {}),
             question=req.question,
+            assumptions=assumptions,
         )
 
     formatted = execute(sql_result.sql)
@@ -710,6 +849,7 @@ def _chain_sql_generation_and_executor(
         mode_used=req.mode,
         trace_id=trace_id,
         tokens_used=sql_result.tokens_used or resolution.trace.tokens_used,
+        assumptions=assumptions or None,
     )
 
 

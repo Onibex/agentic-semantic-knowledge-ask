@@ -145,6 +145,23 @@ None of them invents a column, because none of them is ever shown one it could i
 differs between the engines is how much is *computed* rather than judged, not whether the
 semantic layer is enforced.
 
+## When a question is open
+
+A question can leave open something that changes the result, such as which periods a
+comparison takes. Precise and Smart hand their Data Products to the same SQL generator, and that
+generator decides, in the call that writes the SQL, whether the question, the semantic layer
+and the conversation settle it:
+
+| Entry point | Something open that changes the result |
+|---|---|
+| **ASK Chat**, Precise or Smart | Asks the user one question with two to four readings, then answers the question with the reply. Never asks twice for the same question. |
+| **ASK Chat**, Flash | Answers straight away. Flash writes its SQL in its own call. |
+| **`/external/ask`** and **artifacts** | Take the most reasonable reading and state it in the answer or the document. |
+
+Precise's semantic dictionary feeds the same decision: when a question's terms match business
+terms in more than one SAP module, the engine follows the closest module and passes the others
+on as alternative readings.
+
 ---
 
 ## What's next

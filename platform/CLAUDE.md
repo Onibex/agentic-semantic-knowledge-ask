@@ -146,8 +146,14 @@ Indices are env-suffixed (dev/prod) where the publish flow applies.
 2. **Determinism over creativity**, the semantic layer is the only source of truth.
 3. **Medallion re-ranking**. Gold > Silver > Bronze in entity resolution.
 4. **Bronze is schema-docs plane**, never enters text-to-SQL retrieval.
-5. **3-level disambiguation** via the global semantic dictionary (L1 auto-resolve,
-   L2 multi-module options, L3 "contact the trainer"); no HiTL in chat.
+5. **One clarification, in the chat only.** The SQL generator decides, in the call
+   that writes the SQL, whether a question is open in a way the question, the layer
+   and the conversation leave unsettled; then the chat asks once, with 2 to 4 options,
+   and answers the question joined to the reply (`ask_orchestrator/clarification.py`).
+   The reply's turn never asks again (enforced in code), nothing is kept on the server,
+   and `chat.ask_for_clarification` in `settings.json` turns it off. `/external/ask`,
+   artifacts and Flash never ask: they state the reading they took. Precise's
+   dictionary L2 feeds that same decision; L3 gets a reply in the user's language.
 6. **Additivity contract**, `aggregation_behavior` = function; `additivity` /
    `non_additive_over` = scope, derived at ingest.
 
