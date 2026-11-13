@@ -28,7 +28,7 @@ from ask_sql_executor.application.executor_service import SqlExecutorService
 from ask_sql_executor.application.result_formatter import LLMResultFormatter
 from ask_sql_executor.domain.models import ExecutionRequest, ExecutionResult
 
-# Q24: compliance with the month's target, by zone, on 2026-11-12.
+# Q24: compliance with the month's target, by zone. Invented figures.
 _Q24_SQL = (
     'SELECT "zona", round(toFloat64(sum("facturado")), 2) AS facturado_total, '
     'round(toFloat64(sum("objetivo")), 2) AS objetivo_total, '
@@ -38,9 +38,9 @@ _Q24_SQL = (
 )
 _Q24_COLUMNS = ["zona", "facturado_total", "objetivo_total", "cumplimiento_pct"]
 _Q24_ROWS = [
-    ("DH", 23803161.04, 64408905.51, 36.96),
-    ("Sur", 49967100.58, 155370288.99, 32.16),
-    ("Norte", 21128128.37, 51434536.19, 41.08),
+    ("DH", 12500000.00, 40000000.00, 31.25),
+    ("Sur", 30000000.00, 80000000.00, 37.5),
+    ("Norte", 18000000.00, 45000000.00, 40.0),
 ]
 
 
