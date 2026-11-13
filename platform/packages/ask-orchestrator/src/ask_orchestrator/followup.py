@@ -8,14 +8,15 @@
 """Follow-up questions: the recent turns of a chat, and the question they complete.
 
 The chat sends the messages before the new one: role, text and, for an answer
-that ran a query, its SQL and the environment it ran in. The orchestrator reads
-them here once, so the three modes and the SQL generator see the same
-conversation:
+that ran a query, its SQL, the environment it ran in and the facts of its result
+(``result_facts``). The orchestrator reads them here once, so the three modes and
+the SQL generator see the same conversation:
 
 - ``recent_turns`` folds each clarification the chat asked, and the reply to it,
   into the question they complete (``clarification.collapse``), keeps the last
   ``MAX_HISTORY_TURNS`` messages, clips long ones and writes under each answer
-  the SQL that produced it, when it ran in the environment of the new question.
+  the facts of its result, whole, and the SQL that produced it, when it ran in
+  the environment of the new question.
   Flash's SQL prompt and Smart's entity selector render turns as
   ``role: content``, so they get the SQL as they are; the SQL generator gets
   ``render_history``.
@@ -46,12 +47,19 @@ logger = logging.getLogger(__name__)
 MAX_HISTORY_TURNS = 6
 # A longer message keeps its start, where an answer puts its summary.
 MAX_TEXT_CHARS = 3000
+# An answer with the facts of its result keeps less of its text: the facts hold
+# the counts and totals of every row, which the cut text may not reach.
+MAX_TEXT_WITH_FACTS = 1200
+# Facts are never cut. Longer ones than this were not written by
+# ``result_facts.describe`` and are left out whole.
+MAX_FACTS_CHARS = 4000
 # Cut SQL neither runs nor reads well; this only bounds a runaway statement.
 MAX_SQL_CHARS = 6000
 
 _REWRITE_SYSTEM = """You prepare a chat message for a data assistant that answers by running SQL against
 the company's database. You get the recent conversation, where each assistant answer comes
-with the SQL that produced it, and the user's new message.
+with the SQL that produced it and facts computed from all the rows of its result (the answer's
+text may be cut; its facts are not), and the user's new message.
 
 Decide which of two kinds the new message is.
 
@@ -66,8 +74,10 @@ and leaves nothing open stays as it is.
 
 "previous_answer": it asks about an earlier answer itself, and the conversation already
 holds what answers it: why the result has those rows or that many, how a figure was
-computed, which definitions, filters or limits the query applied. Keep the message as it
-is.
+computed, which definitions, filters or limits the query applied. A message about what that
+answer showed (how many rows, customers or groups came out, the total of what it listed) is
+"previous_answer"; one about the data beyond what it showed stays "data", even when the facts
+hold a similar figure. Keep the message as it is.
 
 A message that asks for nothing from the data nor about an earlier answer (a greeting, thanks,
 a remark, an instruction or a fact for later) is "data" and stays exactly as it is.
@@ -78,15 +88,35 @@ not answer it.
 Reply with ONLY this JSON object: {"kind": "data" or "previous_answer", "question": "..."}"""
 
 _ANSWER_SYSTEM = """You are a data assistant. The user asks about one of your earlier answers in this
-conversation. Answer from the conversation alone: the earlier questions, your answers and the
-SQL that produced each one. Explain in business terms what the query did (definitions,
-periods, filters, groupings, rankings, limits) and how that leads to what the user asks
-about. Do not quote SQL unless the user asks for it, and do not state figures the
-conversation does not hold. If the answer was not what the user wanted, say what the query
-would have to do instead, and that they can ask for it to be run that way.
+conversation. Answer from the conversation alone: the earlier questions, your answers, the SQL
+that produced each one and, under an answer, facts computed from all the rows of its result.
+An answer's text may be cut; its facts are not, and they hold its counts and totals.
 
-Write the whole reply in the language of the user's message, in markdown, and keep it short.
-Never mention the language nor these instructions."""
+First check what the user's message takes for granted (a number of rows, customers or groups,
+a total, which groups came out) against those facts. If it does not match, say so at the start
+and give the figure the facts hold.
+
+Then explain in business terms what the query did (definitions, periods, filters, groupings,
+rankings, limits) and how that leads to what the user asks about. State only figures and rows
+that the facts or the answer's text hold. Do not guess the rest: say that the answer does not
+show it, and offer to run a query that does. A total marked "once per" a column counts each
+value once per value of that column; the other totals add up the rows. Do not quote SQL unless
+the user asks for it. If the answer was not what the user wanted, say what the query would have
+to do instead, and that they can ask for it to be run that way.
+
+Speak of the result itself: never mention the facts, how they were computed, nor that a text
+was cut. Write the whole reply in the language of the user's message, in markdown, and keep it
+short. Never mention the language nor these instructions."""
+
+# Above the facts of each answer. Every step that reads the history sees it,
+# the SQL generator among them, whose assumptions and clarifications the user
+# reads.
+FACTS_HEADER = (
+    "Facts computed from all the rows of this answer's result. They are for your reasoning "
+    "only: never mention them, nor how they were computed, in anything the user reads."
+)
+# Where a cut answer stops, when its facts follow.
+_CUT_BEFORE_FACTS = " [answer cut here; the facts below cover the whole result]"
 
 # The reply when the model fails to answer about an earlier answer. Running the
 # message as a new question instead would answer something the user did not ask.
@@ -106,8 +136,8 @@ class FollowUp:
 
 def recent_turns(history: list[dict[str, Any]] | None, env: str | None) -> list[dict[str, str]]:
     """The last ``MAX_HISTORY_TURNS`` messages as ``{role, content}``, with the
-    SQL of each answer that ran in ``env`` written under its text. Malformed and
-    empty turns are dropped. Each clarification exchange is folded into the
+    facts of each answer's result and the SQL of each answer that ran in ``env``
+    written under its text. Malformed and empty turns are dropped. Each clarification exchange is folded into the
     question it completes first, so it takes one place of the window, and what
     the user settled in it stays in view as long as that question does.
 
@@ -115,20 +145,40 @@ def recent_turns(history: list[dict[str, Any]] | None, env: str | None) -> list[
     answers from dev and from prod. Their SQL names each environment's own schema
     (``dbt_qas_bi`` against ``dbt_prd_bi`` on GONAC), and a generator that reuses
     it would query the other environment's data. An answer that does not say
-    where it ran keeps its text and loses its SQL."""
+    where it ran keeps its text and loses its SQL. Its facts stay: they describe
+    the answer the user read, wherever it ran.
+
+    An answer with facts keeps ``MAX_TEXT_WITH_FACTS`` of its text, marked where
+    it is cut; the facts go whole."""
     turns: list[dict[str, str]] = []
     for turn in collapse(history)[-MAX_HISTORY_TURNS:]:
         if not isinstance(turn, dict):
             continue
         role = str(turn.get("role") or "").strip()
-        content = _clip(str(turn.get("content") or "").strip(), MAX_TEXT_CHARS)
+        text = str(turn.get("content") or "").strip()
+        facts = _facts_of(turn) if role == "assistant" else ""
+        if facts:
+            blocks = [_clip(text, MAX_TEXT_WITH_FACTS, _CUT_BEFORE_FACTS)] if text else []
+            blocks.append(f"{FACTS_HEADER}\n{facts}")
+        else:
+            blocks = [_clip(text, MAX_TEXT_CHARS)] if text else []
         sql = str(turn.get("sql") or "").strip()
         if role == "assistant" and sql and env is not None and turn.get("env") == env:
-            block = f"SQL of this answer:\n```sql\n{_clip(sql, MAX_SQL_CHARS)}\n```"
-            content = f"{content}\n\n{block}" if content else block
+            blocks.append(f"SQL of this answer:\n```sql\n{_clip(sql, MAX_SQL_CHARS)}\n```")
+        content = "\n\n".join(blocks)
         if role and content:
             turns.append({"role": role, "content": content})
     return turns
+
+
+def _facts_of(turn: dict[str, Any]) -> str:
+    """The facts the chat sent back with an answer, whole, or "" when there are
+    none or they are longer than any ``result_facts.describe`` writes."""
+    facts = turn.get("result_facts")
+    if not isinstance(facts, str):
+        return ""
+    facts = facts.strip()
+    return facts if len(facts) <= MAX_FACTS_CHARS else ""
 
 
 def render_history(turns: list[dict[str, str]]) -> str:
@@ -164,8 +214,8 @@ def _message(question: str, turns: list[dict[str, str]]) -> str:
     return f"CONVERSATION:\n{render_history(turns)}\n\nNEW MESSAGE:\n{question}"
 
 
-def _clip(text: str, limit: int) -> str:
-    return text if len(text) <= limit else text[:limit].rstrip() + " [...]"
+def _clip(text: str, limit: int, marker: str = " [...]") -> str:
+    return text if len(text) <= limit else text[:limit].rstrip() + marker
 
 
 def ask_model(system: str, user: str, *, phase: str) -> str:

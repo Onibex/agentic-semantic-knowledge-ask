@@ -82,6 +82,7 @@ from ..models.responses import (
     QueryResponse,
     TokensBreakdown,
 )
+from ..result_facts import describe as describe_result
 from ..sql_repair import is_repairable, repair_sql
 
 logger = logging.getLogger(__name__)
@@ -686,7 +687,33 @@ def _build_response_from_resolution(
         mode_used=req.mode,
         trace_id=trace_id,
         tokens_used=resolution.trace.tokens_used,
+        result_facts=(
+            None
+            if resolution.error
+            else _result_facts(resolution.rows, resolution.sql, [], trace_id)
+        ),
     )
+
+
+def _result_facts(
+    rows: list[dict[str, Any]] | None,
+    sql: str | None,
+    assumptions: list[str],
+    trace_id: str,
+) -> str | None:
+    """The facts of a result, for the chat to send back with the answer, or
+    ``None`` when nothing ran. They never cost the answer: a failure is logged
+    by the type of the error alone, since its message can carry row values, and
+    the answer goes out without them."""
+    if rows is None:
+        return None
+    try:
+        return describe_result(rows, sql, assumptions) or None
+    except Exception as exc:  # noqa: BLE001 (the answer goes on without its facts)
+        logger.warning(
+            "result facts not computed: %s", type(exc).__name__, extra={"trace_id": trace_id}
+        )
+        return None
 
 
 def _join_context(*blocks: str | None) -> str | None:
@@ -850,6 +877,9 @@ def _chain_sql_generation_and_executor(
         trace_id=trace_id,
         tokens_used=sql_result.tokens_used or resolution.trace.tokens_used,
         assumptions=assumptions or None,
+        # Counted from every row, so a follow-up is checked against the whole
+        # result and not against the answer's text, which the history cuts.
+        result_facts=_result_facts(rows, formatted.sql, assumptions, trace_id),
     )
 
 

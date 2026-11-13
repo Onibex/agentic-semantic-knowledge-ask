@@ -57,6 +57,8 @@ export interface ConversationTurn {
   // A turn where the agent asked first: sent back as the response gave it, so
   // the next message is read as the reply.
   clarification?: Clarification | null
+  // The facts of an answer's result, sent back as the response gave them.
+  result_facts?: string | null
 }
 
 // The one question the agent asks before answering, with the question it was
@@ -110,6 +112,8 @@ export interface QueryResponse {
   trace_id?: string
   clarification?: Clarification | null
   assumptions?: string[] | null
+  // For the history, not for display (see MessageMeta.result_facts).
+  result_facts?: string | null
 }
 
 export async function postQuery(req: QueryRequest): Promise<QueryResponse> {

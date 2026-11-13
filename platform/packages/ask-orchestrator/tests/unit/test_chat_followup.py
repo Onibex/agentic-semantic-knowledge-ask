@@ -535,3 +535,159 @@ def test_without_history_the_question_goes_on_untouched_and_no_model_is_called(p
     assert generation.question == question
     assert generation.conversation_history == ""
     assert response.answer == "Respuesta."
+
+
+# ── The facts of each result ─────────────────────────────────────────────────
+#
+# In the QA run of 2026-11-13, Q13 asked why the previous answer had "29
+# records". That answer was cut at 3,000 characters in the history, before its
+# last channel, and the model took the 29 for granted. Each answer now carries
+# the facts of its result (``result_facts.describe``): counted from every row,
+# never cut, never logged, never named to the user.
+
+_FACTS = (
+    "79 rows, LIMIT 500 not reached. Columns: canal, cliente, producto, venta.\n"
+    "By canal (4 groups):\n"
+    "canal | rows | distinct cliente | total venta\n"
+    "Mayoreo | 52 | 10 | 100.00\nAutoservicio | 11 | 3 | 20.00\n"
+    "Conveniencia | 15 | 10 | 30.00\nExterior | 1 | 1 | 5.00\n"
+    "All rows: distinct canal 4, cliente 24; total venta 155.00."
+)
+_LONG_ANSWER = "Resumen: 79 combinaciones en 4 canales. " + "Detalle por canal. " * 300
+
+
+def _history_with_facts(env: str | None = "prod", facts: str = _FACTS) -> list[dict]:
+    return [
+        {"role": "user", "content": _Q12},
+        {
+            "role": "assistant",
+            "content": _LONG_ANSWER,
+            "sql": _Q12_SQL,
+            "env": env,
+            "result_facts": facts,
+        },
+    ]
+
+
+def test_an_answer_carries_its_facts_whole_under_a_shorter_text_and_above_its_sql():
+    (_question, answer) = followup.recent_turns(_history_with_facts(), "prod")
+
+    content = answer["content"]
+    assert content.startswith("Resumen: 79 combinaciones en 4 canales.")
+    cut = content.index(" [answer cut here; the facts below cover the whole result]")
+    assert cut <= followup.MAX_TEXT_WITH_FACTS
+    assert content.index(f"{followup.FACTS_HEADER}\n{_FACTS}") > cut
+    assert content.index(_Q12_SQL) > content.index(_FACTS)
+
+
+def test_an_answer_without_facts_keeps_its_longer_text():
+    """Chats saved before the facts, and answers with no rows."""
+    history = _history_with_facts()
+    del history[1]["result_facts"]
+
+    (_question, answer) = followup.recent_turns(history, "prod")
+
+    assert followup.FACTS_HEADER not in answer["content"]
+    assert "[answer cut here" not in answer["content"]
+    cut = answer["content"].index(" [...]")
+    assert followup.MAX_TEXT_WITH_FACTS < cut <= followup.MAX_TEXT_CHARS
+
+
+def test_the_facts_stay_when_the_answer_ran_in_another_environment():
+    """They describe the answer the user read; only its SQL names the other
+    environment's schema."""
+    (_question, answer) = followup.recent_turns(_history_with_facts(env="dev"), "prod")
+
+    assert _FACTS in answer["content"]
+    assert _Q12_SQL not in answer["content"]
+
+
+@pytest.mark.parametrize(
+    "facts", ["x" * (followup.MAX_FACTS_CHARS + 1), ["no", "es", "texto"], "   "]
+)
+def test_facts_this_server_did_not_write_are_left_out_whole(facts):
+    (_question, answer) = followup.recent_turns(_history_with_facts(facts=facts), "prod")
+
+    assert followup.FACTS_HEADER not in answer["content"]
+    assert "xxx" not in answer["content"]
+
+
+def test_a_user_turn_carries_no_facts():
+    (turn,) = followup.recent_turns(
+        [{"role": "user", "content": "hola", "result_facts": _FACTS}], "prod"
+    )
+
+    assert turn["content"] == "hola"
+
+
+def test_the_facts_reach_every_step_and_tell_each_not_to_name_them(pipeline, caplog):
+    """The SQL generator writes assumptions and clarifications the user reads, so
+    the header above the facts carries the rule, not only the answer step."""
+    caplog.set_level(logging.DEBUG)
+
+    _response, seen, llm = pipeline(_Q14, _history_with_facts(), rewrite=_data(_Q14_COMPLETE))
+
+    assert "never mention them" in followup.FACTS_HEADER
+    ((_phase, _system, rewrite_input),) = llm.calls
+    assert _FACTS in rewrite_input
+    (resolution,) = seen.resolutions
+    assert _FACTS in resolution.conversation_history[-1]["content"]
+    (generation,) = seen.generations
+    assert f"{followup.FACTS_HEADER}\n{_FACTS}" in generation.conversation_history
+    assert not any("Mayoreo" in record.getMessage() for record in caplog.records)
+
+
+def test_the_answer_about_the_previous_one_checks_the_premise_against_the_facts(pipeline):
+    _response, _seen, llm = pipeline(
+        _Q13, _history_with_facts(), rewrite=_ABOUT_PREVIOUS, answer=_EXPLANATION
+    )
+
+    _phase, system, user = llm.calls[1]
+    assert _FACTS in user
+    words = " ".join(system.split())
+    assert "First check what the user's message takes for granted" in words
+    assert "If it does not match, say so at the start and give the figure the facts hold" in words
+    assert "Do not guess the rest: say that the answer does not show it, and offer to run" in words
+    assert 'A total marked "once per" a column counts each value once' in words
+    assert "never mention the facts, how they were computed, nor that a text was cut" in words
+
+
+def test_a_question_about_the_data_beyond_what_an_answer_showed_is_not_about_that_answer():
+    """After a top 10 per channel, "how many customers of a channel stopped
+    buying?" asks about all of them, not about the 10 the answer showed."""
+    words = " ".join(followup._REWRITE_SYSTEM.split())
+
+    assert (
+        "A message about what that answer showed (how many rows, customers or groups came "
+        'out, the total of what it listed) is "previous_answer"; one about the data beyond '
+        'what it showed stays "data", even when the facts hold a similar figure.'
+    ) in words
+    assert 'When unsure, choose "data".' in words
+
+
+@pytest.mark.parametrize("mode", ["flash", "precise", "smart"])
+def test_every_mode_returns_the_facts_of_its_result(pipeline, mode):
+    response, _seen, _llm = pipeline("¿Cuántas ventas hubo?", None, mode=mode)
+
+    assert response.result_facts.startswith("1 row. Columns: n.")
+    assert "All rows: total n " in response.result_facts
+
+
+def test_when_the_facts_fail_the_answer_goes_out_without_them_and_the_log_has_no_value(
+    pipeline, monkeypatch, caplog
+):
+    def _boom(rows, sql, assumptions):
+        raise ValueError("no se pudo leer CLIENTE SECRETO 123")
+
+    monkeypatch.setattr(query_router, "describe_result", _boom)
+    caplog.set_level(logging.DEBUG)
+
+    response, _seen, _llm = pipeline("¿Cuántas ventas hubo?", None)
+
+    assert response.answer == "Respuesta."
+    assert response.rows == [{"n": 2}]
+    assert response.result_facts is None
+    (failure,) = [r for r in caplog.records if r.getMessage().startswith("result facts")]
+    assert failure.getMessage() == "result facts not computed: ValueError"
+    assert failure.exc_info is None
+    assert not any("SECRETO" in r.getMessage() for r in caplog.records)
