@@ -44,11 +44,11 @@ def _row(i: int) -> tuple:
         f"{i // 10 + 1:02d}",
         i % 10 + 1,
         f"CLIENTE NUMERO {i:03d} S DE RL",
-        f"CHIDAS PAPAS PRODUCTO {i:03d} TUBI 93G 6/5 PZ",
-        Decimal("142959.4400000"),
-        Decimal("148090.4000000"),
-        Decimal("-3167.0500000"),
-        Decimal("291049.8400000"),
+        f"ARTICULO DE PRUEBA NUMERO {i:03d} CAJA GRANDE",
+        Decimal("135792.4600000"),
+        Decimal("157913.5800000"),
+        Decimal("-2468.1300000"),
+        Decimal("293706.0400000"),
     )
 
 
